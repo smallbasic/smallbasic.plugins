@@ -20,15 +20,17 @@ AC_CHECK_HEADER(mysql/mysql.h, [], [AC_MSG_ERROR("install mysql")])
 
 AC_LIBTOOL_DLOPEN
 AC_PROG_LIBTOOL
+AC_PROG_CXX
 LT_PREREQ([2.2])
 
-BUILD_SUBDIRS="mysql"
+BUILD_SUBDIRS="mysql nuklear"
 AC_SUBST(BUILD_SUBDIRS)
 
 libdir=${libdir}/smallbasic
 
 AC_CONFIG_FILES([
 Makefile
+nuklear/Makefile
 mysql/Makefile])
 
 AC_OUTPUT
