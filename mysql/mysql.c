@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <mysql/mysql.h>
+#include "config.h"
 #include "mod_utils.h"
 
 typedef struct {

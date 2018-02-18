@@ -18,7 +18,9 @@
 #define NK_INCLUDE_DEFAULT_FONT
 #define NK_INCLUDE_FONT_BAKING
 #define NK_IMPLEMENTATION
+#define NK_SDL_GL2_IMPLEMENTATION
 
+#include "config.h"
 #include "nuklear/nuklear.h"
 #include "nuklear/nuklear_sdl_gl2.h"
 #include "var.h"
@@ -27,13 +29,56 @@
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
 
-SDL_Window *win;
+SDL_Window *window;
 SDL_GLContext glContext;
 int win_width, win_height;
 
 // GUI
 struct nk_context *ctx;
 struct nk_colorf bg;
+
+void createWindow() {
+  SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
+  SDL_Init(SDL_INIT_VIDEO);
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+  window = SDL_CreateWindow("Demo",
+                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                            WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
+  glContext = SDL_GL_CreateContext(window);
+  SDL_GetWindowSize(window, &win_width, &win_height);
+  
+  // GUI
+  ctx = nk_sdl_init(window);
+
+  /* Load Fonts: if none of these are loaded a default font will be used  */
+  /* Load Cursor: if you uncomment cursor loading please hide the cursor */
+  struct nk_font_atlas *atlas;
+  nk_sdl_font_stash_begin(&atlas);
+
+  /*struct nk_font *droid = nk_font_atlas_add_from_file(atlas, "../../../extra_font/DroidSans.ttf", 14, 0);*/
+  /*struct nk_font *roboto = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Roboto-Regular.ttf", 16, 0);*/
+  /*struct nk_font *future = nk_font_atlas_add_from_file(atlas, "../../../extra_font/kenvector_future_thin.ttf", 13, 0);*/
+  /*struct nk_font *clean = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyClean.ttf", 12, 0);*/
+  /*struct nk_font *tiny = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyTiny.ttf", 10, 0);*/
+  /*struct nk_font *cousine = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Cousine-Regular.ttf", 13, 0);*/
+  nk_sdl_font_stash_end();
+  /*nk_style_load_all_cursors(ctx, atlas->cursors);*/
+  /*nk_style_set_font(ctx, &roboto->handle)*/
+
+  /*set_style(ctx, THEME_WHITE);*/
+  /*set_style(ctx, THEME_RED);*/
+  /*set_style(ctx, THEME_BLUE);*/
+  /*set_style(ctx, THEME_DARK);*/
+
+  bg.r = 0.10f;
+  bg.g = 0.18f;
+  bg.b = 0.24f;
+  bg.a = 1.0f;
+}
 
 typedef struct API {
   const char *name;
@@ -229,53 +274,20 @@ int cmd_widgetishovered(int param_count, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_windowbegin(int param_count, slib_par_t *params, var_t *retval) {
-
-  SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
-  SDL_Init(SDL_INIT_VIDEO);
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-  win = SDL_CreateWindow("Demo",
-                         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                         WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
-  glContext = SDL_GL_CreateContext(win);
-  SDL_GetWindowSize(win, &win_width, &win_height);
-  
-  // GUI
-  ctx = nk_sdl_init(win);
-
-  /* Load Fonts: if none of these are loaded a default font will be used  */
-  /* Load Cursor: if you uncomment cursor loading please hide the cursor */
-  struct nk_font_atlas *atlas;
-  nk_sdl_font_stash_begin(&atlas);
-
-  /*struct nk_font *droid = nk_font_atlas_add_from_file(atlas, "../../../extra_font/DroidSans.ttf", 14, 0);*/
-  /*struct nk_font *roboto = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Roboto-Regular.ttf", 16, 0);*/
-  /*struct nk_font *future = nk_font_atlas_add_from_file(atlas, "../../../extra_font/kenvector_future_thin.ttf", 13, 0);*/
-  /*struct nk_font *clean = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyClean.ttf", 12, 0);*/
-  /*struct nk_font *tiny = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyTiny.ttf", 10, 0);*/
-  /*struct nk_font *cousine = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Cousine-Regular.ttf", 13, 0);*/
-  nk_sdl_font_stash_end();
-  /*nk_style_load_all_cursors(ctx, atlas->cursors);*/
-  /*nk_style_set_font(ctx, &roboto->handle)*/
-
-  /*set_style(ctx, THEME_WHITE);*/
-  /*set_style(ctx, THEME_RED);*/
-  /*set_style(ctx, THEME_BLUE);*/
-  /*set_style(ctx, THEME_DARK);*/
-
-  bg.r = 0.10f;
-  bg.g = 0.18f;
-  bg.b = 0.24f;
-  bg.a = 1.0f;
-
-  return 0;
+  if (window == NULL) {
+    createWindow();
+  }
+  sblib_events(0);
+  int result = nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
+                        NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+                        NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE);
+  v_setint(retval, result);
+  return 1;
 }
 
 int cmd_windowend(int param_count, slib_par_t *params, var_t *retval) {
-  return 0;
+  nk_end(ctx);
+  return param_count == 0;
 }
 
 int cmd_windowgetbounds(int param_count, slib_par_t *params, var_t *retval) {
@@ -338,6 +350,13 @@ API lib_func[] = {
   {"WINDOWGETBOUNDS", cmd_windowgetbounds}
 };
 
+int sblib_init(void) {
+  window = NULL;
+  glContext = NULL;
+  ctx = NULL;
+  return 1;
+}
+
 int sblib_proc_count() {
   return (sizeof(lib_proc) / sizeof(lib_proc[0]));
 }
@@ -389,7 +408,7 @@ int sblib_func_exec(int index, int param_count, slib_par_t *params, var_t *retva
 }
 
 int sblib_events(int wait_flag) {
-  SDL_GetWindowSize(win, &win_width, &win_height);
+  SDL_GetWindowSize(window, &win_width, &win_height);
   glViewport(0, 0, win_width, win_height);
   glClear(GL_COLOR_BUFFER_BIT);
   glClearColor(bg.r, bg.g, bg.b, bg.a);
@@ -399,7 +418,7 @@ int sblib_events(int wait_flag) {
    * Make sure to either a.) save and restore or b.) reset your own state after
    * rendering the UI. */
   nk_sdl_render(NK_ANTI_ALIASING_ON);
-  SDL_GL_SwapWindow(win);
+  SDL_GL_SwapWindow(window);
 
   int result = 0;
   SDL_Event evt;
@@ -417,8 +436,10 @@ int sblib_events(int wait_flag) {
 }
 
 void sblib_close() {
-  nk_sdl_shutdown();
-  SDL_GL_DeleteContext(glContext);
-  SDL_DestroyWindow(win);
-
+  if (ctx) {
+    nk_sdl_shutdown();
+    SDL_GL_DeleteContext(glContext);
+    SDL_DestroyWindow(window);
+    sblib_init();
+  }
 }

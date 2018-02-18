@@ -15,8 +15,18 @@ AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
 LT_INIT([win32-dll])
 
-# Checks for header files.
+# checks for mysql
 AC_CHECK_HEADER(mysql/mysql.h, [], [AC_MSG_ERROR("install mysql")])
+
+# checks for nuklear
+AC_CHECK_PROG(have_sdl, sdl2-config, [yes], [no])
+if test "${have_sdl}" = "no" ; then
+  AC_MSG_ERROR([libsdl2-dev not installed: configure failed.])
+fi
+
+dnl change default aru setting to avoid warning
+ARFLAGS=cr
+AC_SUBST(ARFLAGS)
 
 AC_LIBTOOL_DLOPEN
 AC_PROG_LIBTOOL
