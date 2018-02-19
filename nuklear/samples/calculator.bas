@@ -53,9 +53,7 @@ func display()
 end
 
 sub main
-  logprint "create window"
   if nk.windowBegin("Calculator", 50, 50, 180, 250, "border", "movable", "title") then
-    logprint "windowBegin true"
     'nk.layoutRow("dynamic", 35, 1)
     'nk.label(display(), "right")
     'nk.layoutRow("dynamic", 35, 4)
@@ -84,8 +82,6 @@ sub main
       '  end
       endif
     next i
-  else
-    logprint "windowBegin false"  
   endif
   nk.windowEnd()
 end

@@ -7,9 +7,6 @@
 //
 // Copyright(C) 2018 Chris Warren-Smith
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_opengl.h>
-
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_STANDARD_IO
 #define NK_INCLUDE_STANDARD_VARARGS
@@ -19,25 +16,51 @@
 #define NK_INCLUDE_FONT_BAKING
 #define NK_IMPLEMENTATION
 #define NK_SDL_GL2_IMPLEMENTATION
+#define WINDOW_WIDTH 600
+#define WINDOW_HEIGHT 480
 
 #include "config.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
 #include "nuklear/nuklear.h"
 #include "nuklear/nuklear_sdl_gl2.h"
 #include "var.h"
 #include "module.h"
 
-#define WINDOW_WIDTH 1200
-#define WINDOW_HEIGHT 800
+SDL_Window *_window;
+SDL_GLContext _glContext;
+struct nk_context *_ctx;
+bool _sdlExit;
 
-SDL_Window *window;
-SDL_GLContext glContext;
-int win_width, win_height;
+int get_param_int(int param_count, slib_par_t *params, int n, int def) {
+  int result;
+  if (n >= 0 && n < param_count) {
+    switch (params[n].var_p->type) {
+    case V_INT:
+      result = params[n].var_p->v.i;
+    case V_NUM:
+      result = params[n].var_p->v.n;
+    default:
+      result = def;
+    }
+  } else {
+    result = def;
+  }
+  return result;
+}
 
-// GUI
-struct nk_context *ctx;
-struct nk_colorf bg;
+const char *get_param_str(int param_count, slib_par_t *params, int n, const char *def) {
+  const char *result;
+  if (n >= 0 && n < param_count &&
+      params[n].var_p->type == V_STR) {
+    result = params[n].var_p->v.p.ptr;
+  } else {
+    result = def;
+  }
+  return result;
+}
 
-void createWindow() {
+void createWindow(const char *title, int width, int height) {
   SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -45,14 +68,14 @@ void createWindow() {
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-  window = SDL_CreateWindow("Demo",
-                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                            WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
-  glContext = SDL_GL_CreateContext(window);
-  SDL_GetWindowSize(window, &win_width, &win_height);
-  
+  _window = SDL_CreateWindow(title,
+                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
+                             SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
+  _glContext = SDL_GL_CreateContext(_window);
+  glClearColor(0.10f, 0.18f, 0.24f, 1.0f);
+
   // GUI
-  ctx = nk_sdl_init(window);
+  _ctx = nk_sdl_init(_window);
 
   /* Load Fonts: if none of these are loaded a default font will be used  */
   /* Load Cursor: if you uncomment cursor loading please hide the cursor */
@@ -64,20 +87,8 @@ void createWindow() {
   /*struct nk_font *future = nk_font_atlas_add_from_file(atlas, "../../../extra_font/kenvector_future_thin.ttf", 13, 0);*/
   /*struct nk_font *clean = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyClean.ttf", 12, 0);*/
   /*struct nk_font *tiny = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyTiny.ttf", 10, 0);*/
-  /*struct nk_font *cousine = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Cousine-Regular.ttf", 13, 0);*/
+  //  struct nk_font *cousine = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Cousine-Regular.ttf", 13, 0);
   nk_sdl_font_stash_end();
-  /*nk_style_load_all_cursors(ctx, atlas->cursors);*/
-  /*nk_style_set_font(ctx, &roboto->handle)*/
-
-  /*set_style(ctx, THEME_WHITE);*/
-  /*set_style(ctx, THEME_RED);*/
-  /*set_style(ctx, THEME_BLUE);*/
-  /*set_style(ctx, THEME_DARK);*/
-
-  bg.r = 0.10f;
-  bg.g = 0.18f;
-  bg.b = 0.24f;
-  bg.a = 1.0f;
 }
 
 typedef struct API {
@@ -274,19 +285,62 @@ int cmd_widgetishovered(int param_count, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_windowbegin(int param_count, slib_par_t *params, var_t *retval) {
-  if (window == NULL) {
-    createWindow();
+  const char *title = get_param_str(param_count, params, 0, "Untitled");
+  int x = get_param_int(param_count, params, 1, 50);
+  int y = get_param_int(param_count, params, 2, 50);
+  int w = get_param_int(param_count, params, 3, 180);
+  int h = get_param_int(param_count, params, 4, 250);
+
+  if (_window == NULL) {
+    createWindow(title, WINDOW_WIDTH, WINDOW_HEIGHT);
   }
-  sblib_events(0);
-  int result = nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
-                        NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-                        NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE);
+
+  SDL_Event evt;
+  nk_input_begin(_ctx);
+  while (SDL_PollEvent(&evt)) {
+    if (evt.type == SDL_QUIT) {
+      _sdlExit = true;
+      break;
+    }
+    nk_sdl_handle_event(&evt);
+  }
+  nk_input_end(_ctx);
+
+  nk_flags flags = NK_WINDOW_MINIMIZABLE;
+  for (int i = 5; i < param_count; i++) {
+    const char *flag = get_param_str(param_count, params, i, NULL);
+    if (flag != NULL && flag[0] != '\0') {
+      if (strcasecmp(flag, "border") == 0) {
+        flags |= NK_WINDOW_BORDER;
+      } else if (strcasecmp(flag, "movable") == 0) {
+        flags |= NK_WINDOW_MOVABLE;
+      } else if (strcasecmp(flag, "title") == 0) {
+        flags |= NK_WINDOW_TITLE;
+      } else if (strcasecmp(flag, "scalable") == 0) {
+        flags |= NK_WINDOW_SCALABLE;
+      }
+    }
+  }
+  int result = nk_begin(_ctx, title, nk_rect(x, y, w, h), flags);
   v_setint(retval, result);
   return 1;
 }
 
 int cmd_windowend(int param_count, slib_par_t *params, var_t *retval) {
-  nk_end(ctx);
+  nk_end(_ctx);
+
+  int width;
+  int height;
+  SDL_GetWindowSize(_window, &width, &height);
+  glViewport(0, 0, width, height);
+  glClear(GL_COLOR_BUFFER_BIT);
+  /* IMPORTANT: `nk_sdl_render` modifies some global OpenGL state
+   * with blending, scissor, face culling, depth test and viewport and
+   * defaults everything back into a default state.
+   * Make sure to either a.) save and restore or b.) reset your own state after
+   * rendering the UI. */
+  nk_sdl_render(NK_ANTI_ALIASING_ON);
+  SDL_GL_SwapWindow(_window);
   return param_count == 0;
 }
 
@@ -351,9 +405,10 @@ API lib_func[] = {
 };
 
 int sblib_init(void) {
-  window = NULL;
-  glContext = NULL;
-  ctx = NULL;
+  _window = NULL;
+  _glContext = NULL;
+  _ctx = NULL;
+  _sdlExit = false;
   return 1;
 }
 
@@ -408,38 +463,14 @@ int sblib_func_exec(int index, int param_count, slib_par_t *params, var_t *retva
 }
 
 int sblib_events(int wait_flag) {
-  SDL_GetWindowSize(window, &win_width, &win_height);
-  glViewport(0, 0, win_width, win_height);
-  glClear(GL_COLOR_BUFFER_BIT);
-  glClearColor(bg.r, bg.g, bg.b, bg.a);
-  /* IMPORTANT: `nk_sdl_render` modifies some global OpenGL state
-   * with blending, scissor, face culling, depth test and viewport and
-   * defaults everything back into a default state.
-   * Make sure to either a.) save and restore or b.) reset your own state after
-   * rendering the UI. */
-  nk_sdl_render(NK_ANTI_ALIASING_ON);
-  SDL_GL_SwapWindow(window);
-
-  int result = 0;
-  SDL_Event evt;
-  nk_input_begin(ctx);
-  while (SDL_PollEvent(&evt)) {
-    if (evt.type == SDL_QUIT) {
-      result = -2;
-      break;
-    }
-    nk_sdl_handle_event(&evt);
-  }
-  nk_input_end(ctx);
-  
-  return result;
+  return _sdlExit ? -2 : 0;
 }
 
 void sblib_close() {
-  if (ctx) {
+  if (_ctx) {
     nk_sdl_shutdown();
-    SDL_GL_DeleteContext(glContext);
-    SDL_DestroyWindow(window);
+    SDL_GL_DeleteContext(_glContext);
+    SDL_DestroyWindow(_window);
     sblib_init();
   }
 }
