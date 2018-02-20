@@ -16,8 +16,6 @@
 #define NK_INCLUDE_FONT_BAKING
 #define NK_IMPLEMENTATION
 #define NK_SDL_GL2_IMPLEMENTATION
-#define WINDOW_WIDTH 600
-#define WINDOW_HEIGHT 480
 
 #include "config.h"
 #include <SDL2/SDL.h>
@@ -32,16 +30,43 @@ SDL_GLContext _glContext;
 struct nk_context *_ctx;
 bool _sdlExit;
 
+#define WINDOW_WIDTH 600
+#define WINDOW_HEIGHT 480
+#define LOOP_DELAY 120
+
 int get_param_int(int param_count, slib_par_t *params, int n, int def) {
   int result;
   if (n >= 0 && n < param_count) {
     switch (params[n].var_p->type) {
     case V_INT:
       result = params[n].var_p->v.i;
+      break;
     case V_NUM:
       result = params[n].var_p->v.n;
+      break;
     default:
       result = def;
+    }
+  } else {
+    result = def;
+  }
+  return result;
+}
+
+var_num_t get_param_num(int param_count, slib_par_t *params, int n, var_num_t def) {
+  var_num_t result;
+  var_p_t p = params[n].var_p;
+  if (n >= 0 && n < param_count) {
+    switch (params[n].var_p->type) {
+    case V_INT:
+      result = params[n].var_p->v.i;
+      break;
+    case V_NUM:
+      result = params[n].var_p->v.n;
+      break;
+    default:
+      result = def;
+      break;
     }
   } else {
     result = def;
@@ -73,21 +98,9 @@ void createWindow(const char *title, int width, int height) {
                              SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
   _glContext = SDL_GL_CreateContext(_window);
   glClearColor(0.10f, 0.18f, 0.24f, 1.0f);
-
-  // GUI
   _ctx = nk_sdl_init(_window);
-
-  /* Load Fonts: if none of these are loaded a default font will be used  */
-  /* Load Cursor: if you uncomment cursor loading please hide the cursor */
   struct nk_font_atlas *atlas;
   nk_sdl_font_stash_begin(&atlas);
-
-  /*struct nk_font *droid = nk_font_atlas_add_from_file(atlas, "../../../extra_font/DroidSans.ttf", 14, 0);*/
-  /*struct nk_font *roboto = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Roboto-Regular.ttf", 16, 0);*/
-  /*struct nk_font *future = nk_font_atlas_add_from_file(atlas, "../../../extra_font/kenvector_future_thin.ttf", 13, 0);*/
-  /*struct nk_font *clean = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyClean.ttf", 12, 0);*/
-  /*struct nk_font *tiny = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyTiny.ttf", 10, 0);*/
-  //  struct nk_font *cousine = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Cousine-Regular.ttf", 13, 0);
   nk_sdl_font_stash_end();
 }
 
@@ -101,7 +114,17 @@ int cmd_arc(int param_count, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_button(int param_count, slib_par_t *params, var_t *retval) {
-  return 0;
+  const char *title = get_param_str(param_count, params, 0, NULL);
+  int result;
+  if (title != NULL) {
+    result = nk_button_label(_ctx, title);
+  } else {
+    char buf[256];
+    sprintf(buf, "%d", get_param_int(param_count, params, 0, 0));
+    result = nk_button_text(_ctx, buf, strlen(buf));
+  }
+  v_setint(retval, result);
+  return param_count == 1;
 }
 
 int cmd_checkbox(int param_count, slib_par_t *params, var_t *retval) {
@@ -177,11 +200,38 @@ int cmd_keypressed(int param_count, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_label(int param_count, slib_par_t *params, var_t *retval) {
-  return 0;
+  const char *label = get_param_str(param_count, params, 0, NULL);
+  const char *position = get_param_str(param_count, params, 0, NULL);
+  int result;
+  if (label != NULL && position != NULL) {
+    nk_flags alignment;
+    if (strcasecmp(position, "left") == 0) {
+      alignment = NK_TEXT_LEFT;
+    } else if (strcasecmp(position, "centered") == 0) {
+      alignment = NK_TEXT_CENTERED;
+    } else if (strcasecmp(position, "right") == 0) {
+      alignment = NK_TEXT_RIGHT;
+    }
+    nk_label(_ctx, label, alignment);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 int cmd_layoutrow(int param_count, slib_par_t *params, var_t *retval) {
-  return 0;
+  const char *format = get_param_str(param_count, params, 0, NULL);
+  var_num_t height = get_param_num(param_count, params, 1, 0);
+  int cols = get_param_int(param_count, params, 2, 0);
+  if (format != NULL) {
+    if (strcasecmp(format, "dynamic") == 0) {
+      nk_row_layout(_ctx, NK_DYNAMIC, height, cols, 0);
+    } else if (strcasecmp(format, "static") == 0) {
+      nk_row_layout(_ctx, NK_STATIC, height, cols, 0);
+    }
+  }
+  return param_count == 3;
 }
 
 int cmd_line(int param_count, slib_par_t *params, var_t *retval) {
@@ -295,6 +345,7 @@ int cmd_windowbegin(int param_count, slib_par_t *params, var_t *retval) {
     createWindow(title, WINDOW_WIDTH, WINDOW_HEIGHT);
   }
 
+  SDL_Delay(LOOP_DELAY);
   SDL_Event evt;
   nk_input_begin(_ctx);
   while (SDL_PollEvent(&evt)) {
@@ -318,6 +369,8 @@ int cmd_windowbegin(int param_count, slib_par_t *params, var_t *retval) {
         flags |= NK_WINDOW_TITLE;
       } else if (strcasecmp(flag, "scalable") == 0) {
         flags |= NK_WINDOW_SCALABLE;
+      } else if (strcasecmp(flag, "no_scrollbar") == 0) {
+        flags |= NK_WINDOW_NO_SCROLLBAR;
       }
     }
   }

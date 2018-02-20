@@ -3,7 +3,7 @@ rem adapted from love-nuklear example, see: https://github.com/keharriso/love-nu
 
 import nuklear as nk
 
-local ops = {'+', '-', '*', '/'}
+local ops = ["+","-","*","/"]
 local a, b, op = '0'
 
 sub clear()
@@ -53,33 +53,33 @@ func display()
 end
 
 sub main
-  if nk.windowBegin("Calculator", 50, 50, 180, 250, "border", "movable", "title") then
-    'nk.layoutRow("dynamic", 35, 1)
-    'nk.label(display(), "right")
-    'nk.layoutRow("dynamic", 35, 4)
+  if nk.windowBegin("Calculator", 50, 50, 180, 250, "border", "movable", "title", "no_scrollbar") then
+    nk.layoutRow("dynamic", 35, 1)
+    nk.label("aaa", "right")
+    nk.layoutRow("dynamic", 35, 4)
     for i = 1 to 16
       if i >= 13 and i < 16 then
         if i == 13 then
-          'if nk.button("C") then
-          '  clear()
-          'endif
-          'if nk.button("0") then
-          '  digit("0")
-          'endif
-          'if nk.button("=") then
-          '  equals()
-          'endif
+          if nk.button("C") then
+            clear()
+          endif
+          if nk.button("0") then
+            digit("0")
+          endif
+          if nk.button("=") then
+            equals()
+          endif
         endif
-      'elseif i % 4 ~= 0 then
-      '  local d = tostring(math.floor(i / 4) * 3 + (i % 4))
-      '  if nk.button(d) then
-      '    digit(d)
-      '  end
-      'else
-      '  local o = ops[math.floor(i / 4)]
-      '  if nk.button(o) then
-      '    operator(o)
-      '  end
+      elseif i % 4 == 0 then
+        local d = floor((i / 4) * 3 + (i % 4))
+        if nk.button(d) then
+          digit(d)
+        endif
+      else
+        local o = ops[floor(i / 4)]
+        if nk.button(o) then
+          operator(o)
+        endif
       endif
     next i
   endif
