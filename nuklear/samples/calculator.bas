@@ -4,61 +4,47 @@ rem adapted from love-nuklear example, see: https://github.com/keharriso/love-nu
 import nuklear as nk
 
 local ops = ["+","-","*","/"]
-local a, b, op = '0'
+local numbers = [1,2,3,0,4,5,6,0,7,8,9]
+local a, b, c, oper
 
 sub clear()
   a = 0
   b = 0
-  op = '0'
+  c = "0"
 end
 
 sub digit(d)
-  if op then
-    if (b == Nil or b == "0") then
-      b = d
-    else
-      b = b.d
-    endif
-  else if a == "0" then
-    a = d
-  else
-    a = a.d
-  endif
+  if (c == "0") then c = ""
+  c += str(d)
 end
 
 sub equals()
-'  if not tonumber(b) then
-'    return
-'  end
-'  if op == "+" then
-'    a, b, op = tostring(tonumber(a) + tonumber(b))
-'  elseif op == "-" then
-'    a, b, op = tostring(tonumber(a) - tonumber(b))
-'  elseif op == "*" then
-'    a, b, op = tostring(tonumber(a) * tonumber(b))
-'  elseif op == "/" then
-'    a, b, op = tostring(tonumber(a) / tonumber(b))
-'  end
+  b = val(c)
+  select case oper
+  case "+"
+    c = str(a + b)
+  case "-"
+    c = str(a - b)
+  case "/"
+    c = str(a / b)
+  case "*"
+    c = str(a * b)
+  end select
 end
 
-sub operator(byref o)
-  if op then
-    equals()
-  endif
-  op = o
-end
-
-func display()
-  return b or a
+sub operator(o)
+  a = val(c)
+  oper = o
+  c = "0"
 end
 
 sub main
-  if nk.windowBegin("Calculator", 50, 50, 180, 250, "border", "movable", "title", "no_scrollbar") then
+  if nk.windowBegin("Calculator", 10, 10, 180, 250, "border", "movable", "title", "no_scrollbar") then
     nk.layoutRow("dynamic", 35, 1)
-    nk.label("aaa", "right")
+    nk.label(c, "right")
     nk.layoutRow("dynamic", 35, 4)
-    for i = 1 to 16
-      if i >= 13 and i < 16 then
+    for i = 0 to 15
+      if i >= 12 and i < 15 then
         if i == 13 then
           if nk.button("C") then
             clear()
@@ -70,15 +56,15 @@ sub main
             equals()
           endif
         endif
-      elseif i % 4 == 0 then
-        local d = floor((i / 4) * 3 + (i % 4))
-        if nk.button(d) then
-          digit(d)
-        endif
-      else
-        local o = ops[floor(i / 4)]
+      elseif (i+1) % 4 == 0 then
+        local o = ops[int(i / 4)]
         if nk.button(o) then
           operator(o)
+        endif
+      else
+        local n = numbers[i]
+        if nk.button(n) then
+          digit(n)
         endif
       endif
     next i

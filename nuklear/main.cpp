@@ -76,9 +76,21 @@ var_num_t get_param_num(int param_count, slib_par_t *params, int n, var_num_t de
 
 const char *get_param_str(int param_count, slib_par_t *params, int n, const char *def) {
   const char *result;
-  if (n >= 0 && n < param_count &&
-      params[n].var_p->type == V_STR) {
-    result = params[n].var_p->v.p.ptr;
+  static char buf[256];
+  if (n >= 0 && n < param_count) {
+    switch (params[n].var_p->type) {
+    case V_STR:
+      result = params[n].var_p->v.p.ptr;
+      break;
+    case V_INT:
+      sprintf(buf, "%ld", params[n].var_p->v.i);
+      result = buf;
+      break;
+    case V_NUM:
+      sprintf(buf, "%f", params[n].var_p->v.n);
+      result = buf;
+      break;
+    }
   } else {
     result = def;
   }
@@ -119,9 +131,7 @@ int cmd_button(int param_count, slib_par_t *params, var_t *retval) {
   if (title != NULL) {
     result = nk_button_label(_ctx, title);
   } else {
-    char buf[256];
-    sprintf(buf, "%d", get_param_int(param_count, params, 0, 0));
-    result = nk_button_text(_ctx, buf, strlen(buf));
+    result = 0;
   }
   v_setint(retval, result);
   return param_count == 1;
@@ -201,7 +211,7 @@ int cmd_keypressed(int param_count, slib_par_t *params, var_t *retval) {
 
 int cmd_label(int param_count, slib_par_t *params, var_t *retval) {
   const char *label = get_param_str(param_count, params, 0, NULL);
-  const char *position = get_param_str(param_count, params, 0, NULL);
+  const char *position = get_param_str(param_count, params, 1, NULL);
   int result;
   if (label != NULL && position != NULL) {
     nk_flags alignment;
@@ -215,6 +225,7 @@ int cmd_label(int param_count, slib_par_t *params, var_t *retval) {
     nk_label(_ctx, label, alignment);
     result = 1;
   } else {
+    v_setstr(retval, "Empty label and position");
     result = 0;
   }
   return result;
@@ -307,7 +318,14 @@ int cmd_text(int param_count, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_textinput(int param_count, slib_par_t *params, var_t *retval) {
-  return 0;
+  int len;
+  char buf[256];
+  const char *text = get_param_str(param_count, params, 0, NULL);
+  strcpy(buf, text);
+  nk_edit_string(_ctx, NK_EDIT_SIMPLE, buf, &len, sizeof(buf) - 1, nk_filter_float);
+  buf[len] = 0;
+  v_setstr(retval, buf);
+  return 1;
 }
 
 int cmd_tooltip(int param_count, slib_par_t *params, var_t *retval) {
