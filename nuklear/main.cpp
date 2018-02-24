@@ -293,7 +293,7 @@ int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
     }
     v_setint(retval, changed);
   } else {
-    v_setstr(retval, "invalid arg");
+    v_setstr(retval, "Invalid checkbox input");
   }
   return (argc == 2);
 }
@@ -328,11 +328,11 @@ int cmd_colorpicker(int argc, slib_par_t *params, var_t *retval) {
         v_setstr(map_get(params[0].var_p, "value"), new_color_string);
       }
     } else {
-      v_setstr(retval, "Missing: color string value");
+      v_setstr(retval, "Invalid colorpicker input");
       result = 0;
     }
   } else {
-    v_setstr(retval, "Missing: int or map");
+    v_setstr(retval, "Invalid colorpicker input");
     result = 0;
   }
   return result;
@@ -340,7 +340,7 @@ int cmd_colorpicker(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_combobox(int argc, slib_par_t *params, var_t *retval) {
   int success = 0;
-  if (is_param_map(argc, params, 0)) { 
+  if (is_param_map(argc, params, 0)) {
     var_t *map = params[1].var_p;
     var_p_t v_value = map_get(map, "value");
     var_p_t v_items = map_get(map, "items");
@@ -363,7 +363,7 @@ int cmd_combobox(int argc, slib_par_t *params, var_t *retval) {
     }
   }
   if (!success) {
-    v_setstr(retval, "invalid input");
+    v_setstr(retval, "Invalid combobox input");
   }
   return success;
 }
@@ -378,8 +378,7 @@ int cmd_contextualbegin(int argc, slib_par_t *params, var_t *retval) {
   trigger.w = get_param_num(argc, params, 4, 0);
   trigger.h = get_param_num(argc, params, 5, 0);
   nk_flags flags = NK_WINDOW_NO_SCROLLBAR;
-  int open = nk_contextual_begin(_ctx, flags, size, trigger);
-  v_setint(retval, open);
+  v_setint(retval, nk_contextual_begin(_ctx, flags, size, trigger));
   return (argc == 6);
 }
 
@@ -437,17 +436,17 @@ int cmd_framebegin(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_frameend(int argc, slib_par_t *params, var_t *retval) {
   nk_input_begin(_ctx);
-  return 0;
+  return 1;
 }
 
 int cmd_groupbegin(int argc, slib_par_t *params, var_t *retval) {
   nk_input_begin(_ctx);
-  return 0;
+  return 1;
 }
 
 int cmd_groupend(int argc, slib_par_t *params, var_t *retval) {
   nk_group_end(_ctx);
-  return 0;
+  return 1;
 }
 
 int cmd_image(int argc, slib_par_t *params, var_t *retval) {
@@ -464,13 +463,13 @@ int cmd_keypressed(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_label(int argc, slib_par_t *params, var_t *retval) {
   const char *label = get_param_str(argc, params, 0, NULL);
-  const char *position = get_param_str(argc, params, 1, NULL);
+  const char *position = get_param_str(argc, params, 1, "left");
   int result;
-  if (label != NULL && position != NULL) {
+  if (label != NULL) {
     nk_label(_ctx, label, get_alignment(position));
     result = 1;
   } else {
-    v_setstr(retval, "Missing: label and position");
+    v_setstr(retval, "Label is blank");
     result = 0;
   }
   return result;
@@ -499,25 +498,35 @@ int cmd_line(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_menubegin(int argc, slib_par_t *params, var_t *retval) {
+  int result;
   const char *text = get_param_str(argc, params, 0, NULL);
-  int result = 0;
   if (text != NULL) {
     struct nk_vec2 size;
     size.x = get_param_num(argc, params, 2, 0);
     size.y = get_param_num(argc, params, 3, 0);
-    result = nk_menu_begin_label(_ctx, text, NK_TEXT_LEFT, size);
+    v_setint(retval, nk_menu_begin_label(_ctx, text, NK_TEXT_LEFT, size));
+    result = 1;
+  } else {
+    result = 0;
   }
-  v_setint(retval, result);
   return result;
 }
 
 int cmd_menuend(int argc, slib_par_t *params, var_t *retval) {
   nk_menu_end(_ctx);
-  return 0;
+  return 1;
 }
 
 int cmd_menuitem(int argc, slib_par_t *params, var_t *retval) {
-  return (argc >= 1 && argc <= 3);
+  int result;
+  const char *text = get_param_str(argc, params, 0, NULL);
+  if (text != NULL) {
+    result = nk_menu_item_label(_ctx, text, NK_TEXT_LEFT);
+  } else {
+    v_setstr(retval, "Menu text is blank");
+    result = 0;
+  }
+  return result;
 }
 
 int cmd_menubarbegin(int argc, slib_par_t *params, var_t *retval) {
