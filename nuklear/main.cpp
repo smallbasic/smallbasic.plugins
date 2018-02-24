@@ -28,7 +28,7 @@
 
 #define WINDOW_WIDTH 600
 #define WINDOW_HEIGHT 480
-#define LOOP_DELAY 120
+#define LOOP_DELAY 80
 #define MAX_FLOATS 40
 #define MAX_COMBOBOX_ITEMS 10
 
@@ -36,11 +36,13 @@ static SDL_Window *_window;
 static SDL_GLContext _glContext;
 static struct nk_context *_ctx;
 static float _floats[MAX_FLOATS];
-static const char *combobox_items[MAX_COMBOBOX_ITEMS];
+static const char *_comboboxItems[MAX_COMBOBOX_ITEMS];
 static bool _sdlExit;
 static struct nk_color _fg_color;
 static struct nk_color _bg_color;
 static float _line_thickness;
+static int _width;
+static int _height;
 
 enum drawmode {DRAW_FILL, DRAW_LINE, DRAW_NONE};
 
@@ -263,7 +265,8 @@ void createWindow(const char *title, int width, int height) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
   _window = SDL_CreateWindow(title,
                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-                             SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
+                             SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|
+                             SDL_WINDOW_ALLOW_HIGHDPI|SDL_WINDOW_RESIZABLE);
   _glContext = SDL_GL_CreateContext(_window);
   glClearColor(0.10f, 0.18f, 0.24f, 1.0f);
   _ctx = nk_sdl_init(_window);
@@ -373,13 +376,13 @@ int cmd_combobox(int argc, slib_par_t *params, var_t *retval) {
       for (int i = 0; i < len && i < MAX_COMBOBOX_ITEMS; i++) {
         var_p_t elem = v_elem(v_items, i);
         if (v_is_type(elem, V_STR)) {
-          combobox_items[count++] = elem->v.p.ptr;
+          _comboboxItems[count++] = elem->v.p.ptr;
         }
       }
       struct nk_rect bounds = nk_widget_bounds(_ctx);
       struct nk_vec2 size = nk_vec2(bounds.w, bounds.h * 8);
       int selected = v_value->v.i;
-      nk_combobox(_ctx, combobox_items, count, &selected, bounds.h, size);
+      nk_combobox(_ctx, _comboboxItems, count, &selected, bounds.h, size);
       v_value->v.i = selected;
       success = 1;
     }
@@ -749,7 +752,7 @@ int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
   int h = get_param_int(argc, params, 4, 250);
 
   if (_window == NULL) {
-    createWindow(title, WINDOW_WIDTH, WINDOW_HEIGHT);
+    createWindow(title, _width, _height);
   }
 
   SDL_Event evt;
@@ -851,6 +854,10 @@ API lib_func[] = {
 };
 
 int sblib_init(void) {
+  return 1;
+}
+
+void sblib_devinit(int width, int height) {
   _window = NULL;
   _glContext = NULL;
   _ctx = NULL;
@@ -858,7 +865,8 @@ int sblib_init(void) {
   _bg_color = nk_black;
   _fg_color = nk_white;
   _line_thickness = 1;
-  return 1;
+  _width = (width < 10) ? WINDOW_WIDTH : width;
+  _height = (height < 10) ? WINDOW_HEIGHT : height;
 }
 
 int sblib_proc_count() {
