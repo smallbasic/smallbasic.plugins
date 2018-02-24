@@ -224,6 +224,27 @@ nk_flags get_alignment(const char *s) {
   return result;
 }
 
+nk_flags get_window_flags(int argc, slib_par_t *params, int n) {
+  nk_flags flags = NK_WINDOW_MINIMIZABLE;
+  for (int i = n; i < argc; i++) {
+    const char *flag = get_param_str(argc, params, i, NULL);
+    if (flag != NULL && flag[0] != '\0') {
+      if (!strcasecmp(flag, "border")) {
+        flags |= NK_WINDOW_BORDER;
+      } else if (!strcasecmp(flag, "movable")) {
+        flags |= NK_WINDOW_MOVABLE;
+      } else if (!strcasecmp(flag, "title")) {
+        flags |= NK_WINDOW_TITLE;
+      } else if (!strcasecmp(flag, "scalable")) {
+        flags |= NK_WINDOW_SCALABLE;
+      } else if (!strcasecmp(flag, "no_scrollbar")) {
+        flags |= NK_WINDOW_NO_SCROLLBAR;
+      }
+    }
+  }
+  return flags;
+}
+
 void nk_rgba_str(struct nk_color c, char *str) {
   if (c.a < 255) {
     sprintf(str, "#%02x%02x%02x%02x", c.r, c.g, c.b, c.a);
@@ -270,12 +291,13 @@ int cmd_button(int argc, slib_par_t *params, var_t *retval) {
   const char *title = get_param_str(argc, params, 0, NULL);
   int result;
   if (title != NULL) {
-    result = nk_button_label(_ctx, title);
+    v_setint(retval, nk_button_label(_ctx, title));
+    result = 1;
   } else {
+    v_setstr(retval, "Invalid button input");
     result = 0;
   }
-  v_setint(retval, result);
-  return argc == 1;
+  return result;
 }
 
 int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
@@ -341,7 +363,7 @@ int cmd_colorpicker(int argc, slib_par_t *params, var_t *retval) {
 int cmd_combobox(int argc, slib_par_t *params, var_t *retval) {
   int success = 0;
   if (is_param_map(argc, params, 0)) {
-    var_t *map = params[1].var_p;
+    var_t *map = params[0].var_p;
     var_p_t v_value = map_get(map, "value");
     var_p_t v_items = map_get(map, "items");
     if (v_is_type(v_value, V_INT) &&
@@ -409,11 +431,11 @@ int cmd_curve(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_draw(int argc, slib_par_t *params, var_t *retval) {
-  return 0;
+  return 1;
 }
 
 int cmd_edit(int argc, slib_par_t *params, var_t *retval) {
-  return 0;
+  return 1;
 }
 
 int cmd_ellipse(int argc, slib_par_t *params, var_t *retval) {
@@ -431,17 +453,17 @@ int cmd_ellipse(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_framebegin(int argc, slib_par_t *params, var_t *retval) {
-  return 0;
+  return 1;
 }
 
 int cmd_frameend(int argc, slib_par_t *params, var_t *retval) {
-  nk_input_begin(_ctx);
   return 1;
 }
 
 int cmd_groupbegin(int argc, slib_par_t *params, var_t *retval) {
-  nk_input_begin(_ctx);
-  return 1;
+  const char *title = get_param_str(argc, params, 0, NULL);
+  nk_flags flags = get_window_flags(argc, params, 1);
+  return nk_group_begin(_ctx, title, flags);
 }
 
 int cmd_groupend(int argc, slib_par_t *params, var_t *retval) {
@@ -579,11 +601,43 @@ int cmd_progress(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_property(int argc, slib_par_t *params, var_t *retval) {
-  return 0;
+  const char *name = get_param_str(argc, params, 0, NULL);
+  double min = get_param_num(argc, params, 1, 0);
+  double max = get_param_num(argc, params, 3, 0);
+  double step = get_param_num(argc, params, 4, 0);
+  double inc_per_pixel = get_param_num(argc, params, 5, 0);
+  if (is_param_num(argc, params, 2)) {
+    double value = get_param_num(argc, params, 2, 0);
+    value = nk_propertyd(_ctx, name, min, value, max, step, inc_per_pixel);
+  } else if (is_param_map(argc, params, 2)) {
+    double value = get_param_num_field(argc, params, 2, "value");
+    double old = value;
+    nk_property_double(_ctx, name, min, &value, max, step, inc_per_pixel);
+    if (value != old) {
+      v_setreal(map_get(params[2].var_p, "value"), value);
+    }
+  } else {
+    v_setstr(retval, "Invalid property input");
+  }
+  return 1;
 }
 
 int cmd_radio(int argc, slib_par_t *params, var_t *retval) {
-  return (argc == 2 || argc == 3);
+  int result;
+  const char *name = get_param_str(argc, params, 0, NULL);
+  if (name != NULL && is_param_map(argc, params, 1)) {
+    const char *value = get_param_str_field(argc, params, 1, "value");
+    int active = !strcasecmp(value, name);
+    int changed = nk_radio_label(_ctx, value, &active);
+    if (changed && active) {
+      v_setstr(map_get(params[1].var_p, "value"), name);
+    }
+    result = 1;
+  } else {
+    v_setstr(retval, "Invalid radio input");
+    result = 0;
+  }
+  return result;
 }
 
 int cmd_rectmulticolor(int argc, slib_par_t *params, var_t *retval) {
@@ -604,7 +658,24 @@ int cmd_selectable(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_slider(int argc, slib_par_t *params, var_t *retval) {
-  return 0;
+  float min = get_param_num(argc, params, 0, 0);
+  float max = get_param_num(argc, params, 2, 0);
+  float step = get_param_num(argc, params, 3, 0);
+  int result = 1;
+  if (is_param_num(argc, params, 1)) {
+    float value = get_param_num(argc, params, 1, 0);
+    value = nk_slide_float(_ctx, min, value, max, step);
+  } else if (is_param_map(argc, params, 1)) {
+    float value = get_param_num_field(argc, params, 1, "value");
+    int changed = nk_slider_float(_ctx, min, &value, max, step);
+    if (changed) {
+      v_setreal(map_get(params[1].var_p, "value"), value);
+    }
+  } else {
+    v_setstr(retval, "Invalid slider input");
+    result = 0;
+  }
+  return result;
 }
 
 int cmd_spacing(int argc, slib_par_t *params, var_t *retval) {
@@ -696,25 +767,8 @@ int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
   }
   nk_input_end(_ctx);
 
-  nk_flags flags = NK_WINDOW_MINIMIZABLE;
-  for (int i = 5; i < argc; i++) {
-    const char *flag = get_param_str(argc, params, i, NULL);
-    if (flag != NULL && flag[0] != '\0') {
-      if (!strcasecmp(flag, "border")) {
-        flags |= NK_WINDOW_BORDER;
-      } else if (!strcasecmp(flag, "movable")) {
-        flags |= NK_WINDOW_MOVABLE;
-      } else if (!strcasecmp(flag, "title")) {
-        flags |= NK_WINDOW_TITLE;
-      } else if (!strcasecmp(flag, "scalable")) {
-        flags |= NK_WINDOW_SCALABLE;
-      } else if (!strcasecmp(flag, "no_scrollbar")) {
-        flags |= NK_WINDOW_NO_SCROLLBAR;
-      }
-    }
-  }
-  int result = nk_begin(_ctx, title, nk_rect(x, y, w, h), flags);
-  v_setint(retval, result);
+  nk_flags flags = get_window_flags(argc, params, 5);
+  v_setint(retval, nk_begin(_ctx, title, nk_rect(x, y, w, h), flags));
   return 1;
 }
 
