@@ -29,12 +29,14 @@
 #define WINDOW_WIDTH 600
 #define WINDOW_HEIGHT 480
 #define LOOP_DELAY 120
-#define NUM_FLOATS 40
+#define MAX_FLOATS 40
+#define MAX_COMBOBOX_ITEMS 10
 
 static SDL_Window *_window;
 static SDL_GLContext _glContext;
 static struct nk_context *_ctx;
-static float _floats[NUM_FLOATS];
+static float _floats[MAX_FLOATS];
+static const char *combobox_items[MAX_COMBOBOX_ITEMS];
 static bool _sdlExit;
 static struct nk_color _fg_color;
 static struct nk_color _bg_color;
@@ -337,7 +339,33 @@ int cmd_colorpicker(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_combobox(int argc, slib_par_t *params, var_t *retval) {
-  return (argc >= 2 && argc <= 5);
+  int success = 0;
+  if (is_param_map(argc, params, 0)) { 
+    var_t *map = params[1].var_p;
+    var_p_t v_value = map_get(map, "value");
+    var_p_t v_items = map_get(map, "items");
+    if (v_is_type(v_value, V_INT) &&
+        v_is_type(v_items, V_ARRAY)) {
+      int len = v_asize(v_items);
+      int count = 0;
+      for (int i = 0; i < len && i < MAX_COMBOBOX_ITEMS; i++) {
+        var_p_t elem = v_elem(v_items, i);
+        if (v_is_type(elem, V_STR)) {
+          combobox_items[count++] = elem->v.p.ptr;
+        }
+      }
+      struct nk_rect bounds = nk_widget_bounds(_ctx);
+      struct nk_vec2 size = nk_vec2(bounds.w, bounds.h * 8);
+      int selected = v_value->v.i;
+      nk_combobox(_ctx, combobox_items, count, &selected, bounds.h, size);
+      v_value->v.i = selected;
+      success = 1;
+    }
+  }
+  if (!success) {
+    v_setstr(retval, "invalid input");
+  }
+  return success;
 }
 
 int cmd_contextualbegin(int argc, slib_par_t *params, var_t *retval) {
@@ -463,7 +491,7 @@ int cmd_layoutrow(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_line(int argc, slib_par_t *params, var_t *retval) {
-  for (int i = 0; i < argc && i < NUM_FLOATS; ++i) {
+  for (int i = 0; i < argc && i < MAX_FLOATS; ++i) {
     _floats[i] = get_param_num(argc, params, i, 0);
   }
   nk_stroke_polyline(&_ctx->current->buffer, _floats, argc / 2, _line_thickness, _fg_color);
@@ -471,7 +499,16 @@ int cmd_line(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_menubegin(int argc, slib_par_t *params, var_t *retval) {
-  return (argc >= 4 && argc <= 5);
+  const char *text = get_param_str(argc, params, 0, NULL);
+  int result = 0;
+  if (text != NULL) {
+    struct nk_vec2 size;
+    size.x = get_param_num(argc, params, 2, 0);
+    size.y = get_param_num(argc, params, 3, 0);
+    result = nk_menu_begin_label(_ctx, text, NK_TEXT_LEFT, size);
+  }
+  v_setint(retval, result);
+  return result;
 }
 
 int cmd_menuend(int argc, slib_par_t *params, var_t *retval) {
@@ -517,7 +554,7 @@ int cmd_mousereleased(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_polygon(int argc, slib_par_t *params, var_t *retval) {
   enum drawmode mode = get_draw_mode(argc, params, 0);
-  for (int i = 0; i < argc - 1 && i < NUM_FLOATS; ++i) {
+  for (int i = 0; i < argc - 1 && i < MAX_FLOATS; ++i) {
     _floats[i] = get_param_num(argc, params, i + 1, 0);
   }
   if (mode == DRAW_FILL) {

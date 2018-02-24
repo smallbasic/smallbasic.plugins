@@ -86,7 +86,7 @@ while 1
       nk.spacing(1)
       nk.layoutRow("dynamic", 30, 1)
       nk.label("Combobox:")
-      nk.combobox(comboA, comboA.items)
+      nk.combobox(comboA)
       nk.layoutRow("dynamic", 5, 1)
       nk.spacing(1)
       nk.layoutRow("dynamic", 30, 1)
