@@ -44,6 +44,25 @@ static float _line_thickness;
 
 enum drawmode {DRAW_FILL, DRAW_LINE, DRAW_NONE};
 
+const nk_color _colors[] = {
+  {0  ,0  ,0  ,255}, // 0 black
+  {0  ,0  ,128,255}, // 1 blue
+  {0  ,128,0  ,255}, // 2 green
+  {0  ,128,128,255}, // 3 cyan
+  {128,0  ,0  ,255}, // 4 red
+  {128,0  ,128,255}, // 5 magenta
+  {128,128,0  ,255}, // 6 yellow
+  {192,192,192,255}, // 7 white
+  {128,128,128,255}, // 8 gray
+  {0  ,0  ,255,255}, // 9 light blue
+  {0  ,255,0  ,255}, // 10 light green
+  {0  ,255,255,255}, // 11 light cyan
+  {255,0  ,0  ,255}, // 12 light red
+  {255,0  ,255,255}, // 13 light magenta
+  {255,255,0  ,255}, // 14 light yellow
+  {255,255,255,255}  // 15 bright white
+};
+
 typedef struct API {
   const char *name;
   int (*command)(int, slib_par_t *, var_t *retval);
@@ -224,8 +243,25 @@ nk_flags get_alignment(const char *s) {
   return result;
 }
 
+void process_events() {
+  SDL_Event evt;
+  nk_input_begin(_ctx);
+  while (!_sdlExit) {
+    if (SDL_PollEvent(&evt)) {
+      nk_sdl_handle_event(&evt);
+      if (evt.type == SDL_QUIT) {
+        _sdlExit = true;
+      }
+      break;
+    } else {
+      SDL_Delay(LOOP_DELAY);
+    }
+  }
+  nk_input_end(_ctx);
+}
+
 nk_flags get_window_flags(int argc, slib_par_t *params, int n) {
-  nk_flags flags = NK_WINDOW_MINIMIZABLE;
+  nk_flags flags = 0;
   for (int i = n; i < argc; i++) {
     const char *flag = get_param_str(argc, params, i, NULL);
     if (flag != NULL && flag[0] != '\0') {
@@ -233,12 +269,24 @@ nk_flags get_window_flags(int argc, slib_par_t *params, int n) {
         flags |= NK_WINDOW_BORDER;
       } else if (!strcasecmp(flag, "movable")) {
         flags |= NK_WINDOW_MOVABLE;
-      } else if (!strcasecmp(flag, "title")) {
-        flags |= NK_WINDOW_TITLE;
       } else if (!strcasecmp(flag, "scalable")) {
         flags |= NK_WINDOW_SCALABLE;
+      } else if (!strcasecmp(flag, "closable")) {
+        flags |= NK_WINDOW_CLOSABLE;
+      } else if (!strcasecmp(flag, "minimizable")) {
+        flags |= NK_WINDOW_MINIMIZABLE;
       } else if (!strcasecmp(flag, "no_scrollbar")) {
         flags |= NK_WINDOW_NO_SCROLLBAR;
+      } else if (!strcasecmp(flag, "title")) {
+        flags |= NK_WINDOW_TITLE;
+      } else if (!strcasecmp(flag, "scroll_auto_hide")) {
+        flags |= NK_WINDOW_SCROLL_AUTO_HIDE;
+      } else if (!strcasecmp(flag, "background")) {
+        flags |= NK_WINDOW_BACKGROUND;
+      } else if (!strcasecmp(flag, "scale_left")) {
+        flags |= NK_WINDOW_SCALE_LEFT;
+      } else if (!strcasecmp(flag, "no_input")) {
+        flags |= NK_WINDOW_NO_INPUT;
       }
     }
   }
@@ -728,23 +776,8 @@ int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
   int y = get_param_int(argc, params, 2, 50);
   int w = get_param_int(argc, params, 3, 180);
   int h = get_param_int(argc, params, 4, 250);
-
-  SDL_Event evt;
-  nk_input_begin(_ctx);
-  while (!_sdlExit) {
-    if (SDL_PollEvent(&evt)) {
-      nk_sdl_handle_event(&evt);
-      if (evt.type == SDL_QUIT) {
-        _sdlExit = true;
-      }
-      break;
-    } else {
-      SDL_Delay(LOOP_DELAY);
-    }
-  }
-  nk_input_end(_ctx);
-
   nk_flags flags = get_window_flags(argc, params, 5);
+  process_events();
   v_setint(retval, nk_begin(_ctx, title, nk_rect(x, y, w, h), flags));
   return 1;
 }
@@ -937,10 +970,19 @@ void sblib_close() {
 }
 
 struct nk_color sb_color(long c) {
-  uint8_t r = (c & 0xff0000) >> 16;
-  uint8_t g = (c & 0xff00) >> 8;
-  uint8_t b = (c & 0xff);
-  return nk_rgba(r, g, b, 255);
+  nk_color result;
+  if (c >= 0 && c < 16) {
+    result = _colors[c];
+  } else {
+    if (c < 0) {
+      c = -c;
+    }
+    uint8_t r = (c & 0xff0000) >> 16;
+    uint8_t g = (c & 0xff00) >> 8;
+    uint8_t b = (c & 0xff);
+    result = nk_rgba(r, g, b, 255);
+  }
+  return result;
 }
 
 void sblib_settextcolor(long fg, long bg) {

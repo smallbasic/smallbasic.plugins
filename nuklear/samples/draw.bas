@@ -1,10 +1,11 @@
 rem adapted from love-nuklear example, see: https://github.com/keharriso/love-nuklear.git
 
 import nuklear as nk
-color rgb(10,10,255)
+color rgb(128,54,0), 1
+option predef grmode 304x304
 
 while 1
-  if nk.windowBegin("Draw Example", 10, 10, 300, 300, "title", "movable", "border") then
+  if nk.windowBegin("Draw Example", 2, 2, 300, 300, "scroll_auto_hide") then
     [x, y, w, h] = nk.windowGetBounds()
     nk.line(x + 10, y + 40, x + 50, y + 40, x + 50, y + 80)
     nk.curve(x + 50, y + 80, x + 80, y + 40, x + 100, y + 80, x + 80, y + 80)
