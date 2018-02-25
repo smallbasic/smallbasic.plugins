@@ -520,7 +520,7 @@ int cmd_label(int argc, slib_par_t *params, var_t *retval) {
     nk_label(_ctx, label, get_alignment(position));
     result = 1;
   } else {
-    v_setstr(retval, "Label is blank");
+    v_setstr(retval, "Invalid label input");
     result = 0;
   }
   return result;
@@ -574,7 +574,7 @@ int cmd_menuitem(int argc, slib_par_t *params, var_t *retval) {
   if (text != NULL) {
     result = nk_menu_item_label(_ctx, text, NK_TEXT_LEFT);
   } else {
-    v_setstr(retval, "Menu text is blank");
+    v_setstr(retval, "Invalid menu input");
     result = 0;
   }
   return result;
@@ -965,7 +965,6 @@ void sblib_close() {
     nk_sdl_shutdown();
     SDL_GL_DeleteContext(_glContext);
     SDL_DestroyWindow(_window);
-    sblib_init();
   }
 }
 
