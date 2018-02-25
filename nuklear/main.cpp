@@ -41,8 +41,6 @@ static bool _sdlExit;
 static struct nk_color _fg_color;
 static struct nk_color _bg_color;
 static float _line_thickness;
-static int _width;
-static int _height;
 
 enum drawmode {DRAW_FILL, DRAW_LINE, DRAW_NONE};
 
@@ -253,26 +251,6 @@ void nk_rgba_str(struct nk_color c, char *str) {
   } else {
     sprintf(str, "#%02x%02x%02x", c.r, c.g, c.b);
   }
-}
-
-void createWindow(const char *title, int width, int height) {
-  SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
-  SDL_Init(SDL_INIT_VIDEO);
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-  _window = SDL_CreateWindow(title,
-                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-                             SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|
-                             SDL_WINDOW_ALLOW_HIGHDPI|SDL_WINDOW_RESIZABLE);
-  _glContext = SDL_GL_CreateContext(_window);
-  glClearColor(0.10f, 0.18f, 0.24f, 1.0f);
-  _ctx = nk_sdl_init(_window);
-  struct nk_font_atlas *atlas;
-  nk_sdl_font_stash_begin(&atlas);
-  nk_sdl_font_stash_end();
 }
 
 int cmd_arc(int argc, slib_par_t *params, var_t *retval) {
@@ -751,10 +729,6 @@ int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
   int w = get_param_int(argc, params, 3, 180);
   int h = get_param_int(argc, params, 4, 250);
 
-  if (_window == NULL) {
-    createWindow(title, _width, _height);
-  }
-
   SDL_Event evt;
   nk_input_begin(_ctx);
   while (!_sdlExit) {
@@ -857,7 +831,7 @@ int sblib_init(void) {
   return 1;
 }
 
-void sblib_devinit(int width, int height) {
+void sblib_devinit(const char *prog, int width, int height) {
   _window = NULL;
   _glContext = NULL;
   _ctx = NULL;
@@ -865,8 +839,37 @@ void sblib_devinit(int width, int height) {
   _bg_color = nk_black;
   _fg_color = nk_white;
   _line_thickness = 1;
-  _width = (width < 10) ? WINDOW_WIDTH : width;
-  _height = (height < 10) ? WINDOW_HEIGHT : height;
+
+  const char *name = strrchr(prog, '/');
+  if (name == NULL) {
+    name = prog;
+  } else {
+    name++;
+  }
+  int len = strlen(name) + 16;
+  char *title = new char[len];
+  sprintf(title, "%s - SmallBASIC", name);
+
+  SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
+  SDL_Init(SDL_INIT_VIDEO);
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+  _window = SDL_CreateWindow(title,
+                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                             (width < 10) ? WINDOW_WIDTH : width,
+                             (height < 10) ? WINDOW_HEIGHT : height,
+                             SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|
+                             SDL_WINDOW_ALLOW_HIGHDPI|SDL_WINDOW_RESIZABLE);
+  delete [] title;
+  _glContext = SDL_GL_CreateContext(_window);
+  glClearColor(0.10f, 0.18f, 0.24f, 1.0f);
+  _ctx = nk_sdl_init(_window);
+  struct nk_font_atlas *atlas;
+  nk_sdl_font_stash_begin(&atlas);
+  nk_sdl_font_stash_end();
 }
 
 int sblib_proc_count() {
@@ -943,6 +946,8 @@ struct nk_color sb_color(long c) {
 void sblib_settextcolor(long fg, long bg) {
   _fg_color = sb_color(fg);
   _bg_color = sb_color(bg);
+  struct nk_colorf c = nk_color_cf(_bg_color);
+  glClearColor(c.r, c.g, c.b, c.a);
 }
 
 void sblib_setcolor(long fg) {
