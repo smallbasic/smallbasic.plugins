@@ -16,7 +16,7 @@ local edit = {value: "Edit text"}
 local comboA = {value: 1, items: ["A", "B", "C"]}
 
 while 1
-  if nk.windowBegin("Overview", 100, 100, 600, 450, "border", "movable", "title") then
+  if nk.windowBegin("Overview", 10, 10, "100% - 20", "100% - 20") then
     nk.menubarBegin()
     nk.layoutRow("dynamic", 30, 1)
     if nk.menuBegin("Menu", nil, 120, 90) then
@@ -34,6 +34,7 @@ while 1
       nk.label("Centered label", "centered")
       nk.label("Right label", "right")
       nk.label("Colored label", "left", "#ff0000")
+      nk.label("A very long wrapped label - The quick brown fox jumps over the ...", "right", "wrap")
       if nk.treePush("tab", "Tree Tab") then
         if nk.treePush("node", "Tree Node 1") then
           nk.label("Label 1")

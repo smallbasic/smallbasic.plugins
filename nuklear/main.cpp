@@ -220,6 +220,15 @@ int get_value(const char *str, int range) {
   if (*end == '%') {
     result = result * range / 100;
   }
+  for (const char *next = end; *next != '\0'; next++) {
+    if (*next == '+') {
+      result += nk_strtoi(next + 1, &end);
+      break;
+    } else if (*next == '-') {
+      result -= nk_strtoi(next + 1, &end);
+      break;
+    }
+  }
   return result;
 }
 
@@ -376,17 +385,13 @@ int cmd_button(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
-  const char *text = get_param_str(argc, params, 0, "checkbox");
-  if (is_param_num(argc, params, 1)) {
-    int value = get_param_int(argc, params, 1, 0);
-    value = nk_check_label(_ctx, text, value);
-    v_setint(retval, value);
-  } else if (is_param_map(argc, params, 1)) {
+  const char *label = get_param_str(argc, params, 0, NULL);
+  if (label != NULL && is_param_map(argc, params, 1)) {
     var_t *map = params[1].var_p;
     int value = map_get_bool(map, "value");
-    int changed = nk_checkbox_label(_ctx, text, &value);
+    int changed = nk_checkbox_label(_ctx, label, &value);
     if (changed) {
-      map_set_int(map, "value", !value);
+      map_set_int(map, "value", value);
     }
     v_setint(retval, changed);
   } else {
@@ -555,7 +560,29 @@ int cmd_label(int argc, slib_par_t *params, var_t *retval) {
   const char *position = get_param_str(argc, params, 1, "left");
   int result;
   if (label != NULL) {
-    nk_label(_ctx, label, get_alignment(position));
+    bool wrap = false;
+    bool use_color = 0;
+    struct nk_color color;
+    for (int n = 2; n < argc; n++) {
+      if (params[n].var_p->type == V_STR) {
+        const char *str = params[n].var_p->v.p.ptr;
+        if (!strcasecmp(str, "wrap")) {
+          wrap = true;
+        } else {
+          color = nk_rgb_hex(str);
+          use_color = true;
+        }
+      }
+    }
+    if (wrap && use_color) {
+      nk_label_colored_wrap(_ctx, label, color);
+    } else if (use_color) {
+      nk_label_colored(_ctx, label, get_alignment(position), color);
+    } else if (wrap) {
+      nk_label_wrap(_ctx, label);
+    } else {
+      nk_label(_ctx, label, get_alignment(position));
+    }
     result = 1;
   } else {
     v_setstr(retval, "Invalid label input");
@@ -596,6 +623,7 @@ int cmd_menubegin(int argc, slib_par_t *params, var_t *retval) {
     v_setint(retval, nk_menu_begin_label(_ctx, text, NK_TEXT_LEFT, size));
     result = 1;
   } else {
+    v_setstr(retval, "Invalid menu begin input");
     result = 0;
   }
   return result;
@@ -611,8 +639,9 @@ int cmd_menuitem(int argc, slib_par_t *params, var_t *retval) {
   const char *text = get_param_str(argc, params, 0, NULL);
   if (text != NULL) {
     result = nk_menu_item_label(_ctx, text, NK_TEXT_LEFT);
+    result = 1;
   } else {
-    v_setstr(retval, "Invalid menu input");
+    v_setstr(retval, "Invalid menu item input");
     result = 0;
   }
   return result;
@@ -719,7 +748,7 @@ int cmd_radio(int argc, slib_par_t *params, var_t *retval) {
   if (name != NULL && is_param_map(argc, params, 1)) {
     const char *value = get_param_str_field(argc, params, 1, "value");
     int active = !strcasecmp(value, name);
-    int changed = nk_radio_label(_ctx, value, &active);
+    int changed = nk_radio_label(_ctx, name, &active);
     if (changed && active) {
       v_setstr(map_get(params[1].var_p, "value"), name);
     }
