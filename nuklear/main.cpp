@@ -68,6 +68,42 @@ typedef struct API {
   int (*command)(int, slib_par_t *, var_t *retval);
 } API;
 
+
+int is_hex(char c) {
+  return ((c >= '0' && c <= '9') ||
+          (c >= 'a' && c <= 'f') ||
+          (c >= 'A' && c <= 'F'));
+}
+
+int is_color(const char *str, size_t len) {
+  int result = 0;
+  if ((len == 7 || len == 9) && str[0] == '#') {
+    result = 1;
+    for (int i = 1; i < len && result; i++) {
+      result = is_hex(str[i]);
+    }
+  }
+  return result;
+}
+
+int get_value(const char *str, int range) {
+  const char *end;
+  int result = nk_strtoi(str, &end);
+  if (*end == '%') {
+    result = result * range / 100;
+  }
+  for (const char *next = end; *next != '\0'; next++) {
+    if (*next == '+') {
+      result += nk_strtoi(next + 1, &end);
+      break;
+    } else if (*next == '-') {
+      result -= nk_strtoi(next + 1, &end);
+      break;
+    }
+  }
+  return result;
+}
+
 int is_param_num(int argc, slib_par_t *params, int n) {
   int result;
   if (n >= 0 && n < argc) {
@@ -206,28 +242,10 @@ const char *get_param_str_field(int argc, slib_par_t *params, int n, const char 
 nk_color get_param_color(int argc, slib_par_t *params, int n) {
   nk_color result;
   const char *color = get_param_str(argc, params, n, NULL);
-  if (color != NULL) {
+  if (color != NULL && is_color(color, v_strlen(params[n].var_p))) {
     result = nk_rgb_hex(color);
   } else {
     result = nk_black;
-  }
-  return result;
-}
-
-int get_value(const char *str, int range) {
-  const char *end;
-  int result = nk_strtoi(str, &end);
-  if (*end == '%') {
-    result = result * range / 100;
-  }
-  for (const char *next = end; *next != '\0'; next++) {
-    if (*next == '+') {
-      result += nk_strtoi(next + 1, &end);
-      break;
-    } else if (*next == '-') {
-      result -= nk_strtoi(next + 1, &end);
-      break;
-    }
   }
   return result;
 }
@@ -375,7 +393,11 @@ int cmd_button(int argc, slib_par_t *params, var_t *retval) {
   const char *title = get_param_str(argc, params, 0, NULL);
   int result;
   if (title != NULL) {
-    v_setint(retval, nk_button_label(_ctx, title));
+    if (is_color(title, v_strlen(params[0].var_p))) {
+			v_setint(retval, nk_button_color(_ctx, nk_rgb_hex(title)));
+    } else {
+      v_setint(retval, nk_button_label(_ctx, title));
+    }
     result = 1;
   } else {
     v_setstr(retval, "Invalid button input");
@@ -528,14 +550,6 @@ int cmd_ellipse(int argc, slib_par_t *params, var_t *retval) {
   return (argc == 5);
 }
 
-int cmd_framebegin(int argc, slib_par_t *params, var_t *retval) {
-  return 0;
-}
-
-int cmd_frameend(int argc, slib_par_t *params, var_t *retval) {
-  return 0;
-}
-
 int cmd_groupbegin(int argc, slib_par_t *params, var_t *retval) {
   const char *title = get_param_str(argc, params, 0, NULL);
   nk_flags flags = get_window_flags(argc, params, 1);
@@ -548,10 +562,6 @@ int cmd_groupend(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_image(int argc, slib_par_t *params, var_t *retval) {
-  return 0;
-}
-
-int cmd_keypressed(int argc, slib_par_t *params, var_t *retval) {
   return 0;
 }
 
@@ -657,35 +667,6 @@ int cmd_menubarend(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_mousemoved(int argc, slib_par_t *params, var_t *retval) {
-  int x = get_param_int(argc, params, 0, 0);
-  int y = get_param_int(argc, params, 2, 0);
-  int dx = get_param_int(argc, params, 3, 0);
-  int dy = get_param_int(argc, params, 4, 0);
-  //int istouch = nk_love_checkboolean(argc, params, 5);
-  //int consume = nk_love_mousemoved_event(x, y, dx, dy, istouch);
-  return 0;
-}
-
-int cmd_mousepressed(int argc, slib_par_t *params, var_t *retval) {
-  int x = get_param_int(argc, params, 0, 0);
-  int y = get_param_int(argc, params, 2, 0);
-  int button = get_param_int(argc, params, 3, 0);
-  //  int istouch = nk_love_checkboolean(argc, params, 4);
-  //  int consume = nk_love_clickevent(x, y, button, istouch, 1);
-  return 0;
-}
-
-int cmd_mousereleased(int argc, slib_par_t *params, var_t *retval) {
-  int x = get_param_int(argc, params, 0, 0);
-  int y = get_param_int(argc, params, 2, 0);
-  int button = get_param_int(argc, params, 3, 0);
-  //  int istouch = nk_love_checkboolean(argc, params, 4);
-  //  int consume = nk_love_clickevent(x, y, button, istouch, 0);
-  //  v_setint(retval, (argc, params, consume);
-  return 0;
-}
-
 int cmd_polygon(int argc, slib_par_t *params, var_t *retval) {
   enum drawmode mode = get_draw_mode(argc, params, 0);
   for (int i = 0; i < argc - 1 && i < MAX_FLOATS; ++i) {
@@ -700,19 +681,13 @@ int cmd_polygon(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_progress(int argc, slib_par_t *params, var_t *retval) {
-  nk_size max = get_param_num(argc, params, 0, 0);
-  int modifiable = 0;
-  if (argc >= 3 && !is_param_nil(argc, params, 2)) {
-    modifiable = get_param_int(argc, params, 2, 0);
-  }
-  if (is_param_num(argc, params, 0)) {
-    nk_size value = get_param_num(argc, params, 0, 0);
-    value = nk_prog(_ctx, value, max, modifiable);
-  } else if (is_param_map(argc, params, 0)) {
+  nk_size max = get_param_num(argc, params, 1, 0);
+  int modifiable = get_param_int(argc, params, 2, 0);
+  if (is_param_map(argc, params, 0)) {
     nk_size value = (nk_size)get_param_num_field(argc, params, 0, "value");
     int changed = nk_progress(_ctx, &value, max, modifiable);
     if (changed) {
-      v_setreal(map_get(params[2].var_p, "value"), value);
+      v_setreal(map_get(params[0].var_p, "value"), value);
     }
   } else {
     v_setstr(retval, "Invalid progress input");
@@ -793,10 +768,7 @@ int cmd_slider(int argc, slib_par_t *params, var_t *retval) {
   float max = get_param_num(argc, params, 2, 0);
   float step = get_param_num(argc, params, 3, 0);
   int result = 1;
-  if (is_param_num(argc, params, 1)) {
-    float value = get_param_num(argc, params, 1, 0);
-    value = nk_slide_float(_ctx, min, value, max, step);
-  } else if (is_param_map(argc, params, 1)) {
+  if (is_param_map(argc, params, 1)) {
     float value = get_param_num_field(argc, params, 1, "value");
     int changed = nk_slider_float(_ctx, min, &value, max, step);
     if (changed) {
@@ -936,12 +908,9 @@ API lib_proc[] = {
   {"DRAW", cmd_draw},
   {"EDIT", cmd_edit},
   {"ELLIPSE", cmd_ellipse},
-  {"FRAMEBEGIN", cmd_framebegin},
-  {"FRAMEEND", cmd_frameend},
   {"GROUPBEGIN", cmd_groupbegin},
   {"GROUPEND", cmd_groupend},
   {"IMAGE", cmd_image},
-  {"KEYPRESSED", cmd_keypressed},
   {"LABEL", cmd_label},
   {"LAYOUTROW", cmd_layoutrow},
   {"LINE", cmd_line},
@@ -949,9 +918,6 @@ API lib_proc[] = {
   {"MENUBAREND", cmd_menubarend},
   {"MENUEND", cmd_menuend},
   {"MENUITEM", cmd_menuitem},
-  {"MOUSEMOVED", cmd_mousemoved},
-  {"MOUSEPRESSED", cmd_mousepressed},
-  {"MOUSERELEASED", cmd_mousereleased},
   {"POLYGON", cmd_polygon},
   {"PROGRESS", cmd_progress},
   {"PROPERTY", cmd_property},
@@ -1071,7 +1037,6 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   } else {
     result = 0;
   }
-
   return result;
 }
 

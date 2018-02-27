@@ -1,5 +1,6 @@
 rem adapted from love-nuklear example, see: https://github.com/keharriso/love-nuklear.git
 rem An overview of most of the supported widgets.
+option predef grmode 850x600
 
 import nuklear as nk
 
@@ -9,7 +10,7 @@ local radio = {value: "A"}
 local selectA = {value: false}
 local selectB = {value: true}
 local slider = {value: 0.2}
-local progress = {value: 1}
+local progress = {value: 5}
 local colorPicker = {value: "#ff0000"}
 local property = {value: 6}
 local edit = {value: "Edit text"}
@@ -27,7 +28,7 @@ while 1
       nk.menuEnd()
     endif
     nk.menubarEnd()
-    nk.layoutRow("dynamic", 400, 3)
+    nk.layoutRow("dynamic", 500, 3)
     nk.groupBegin("Group 1", "border")
       nk.layoutRow("dynamic", 30, 1)
       nk.label("Left label")
@@ -64,15 +65,15 @@ while 1
       nk.layoutRow("dynamic", 30, 1)
       nk.selectable("Selectable A", selectA)
       nk.selectable("Selectable B", selectB)
-      nk.layoutRow("dynamic", 30, {.35, .65})
+      nk.layoutRow("dynamic", 30, 1)
       nk.label("Slider:")
-      nk.slider(0, slider, 1, 0.05)
+      nk.slider(1, progress, 10, .5)
       nk.label("Progress:")
       nk.progress(progress, 10, true)
       nk.layoutRow("dynamic", 30, 2)
       nk.spacing(2)
       nk.label("Color picker:")
-      nk.button(nil, colorPicker.value)
+      nk.button(colorPicker.value)
       nk.layoutRow("dynamic", 90, 1)
       nk.colorPicker(colorPicker)
     nk.groupEnd()
