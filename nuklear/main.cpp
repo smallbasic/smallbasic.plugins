@@ -68,7 +68,6 @@ typedef struct API {
   int (*command)(int, slib_par_t *, var_t *retval);
 } API;
 
-
 int is_hex(char c) {
   return ((c >= '0' && c <= '9') ||
           (c >= 'a' && c <= 'f') ||
@@ -84,6 +83,56 @@ int is_color(const char *str, size_t len) {
     }
   }
   return result;
+}
+
+nk_flags get_alignment(const char *s) {
+  nk_flags result;
+  if (!strcasecmp(s, "left")) {
+    result = NK_TEXT_LEFT;
+  } else if (!strcasecmp(s, "centered")) {
+    result = NK_TEXT_CENTERED;
+  } else if (!strcasecmp(s, "right")) {
+    result = NK_TEXT_RIGHT;
+  } else if (!strcasecmp(s, "top left")) {
+    result = NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT;
+  } else if (!strcasecmp(s, "top centered")) {
+    result = NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_CENTERED;
+  } else if (!strcasecmp(s, "top right")) {
+    result = NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_RIGHT;
+  } else if (!strcasecmp(s, "bottom left")) {
+    result = NK_TEXT_ALIGN_BOTTOM | NK_TEXT_ALIGN_LEFT;
+  } else if (!strcasecmp(s, "bottom centered")) {
+    result = NK_TEXT_ALIGN_BOTTOM | NK_TEXT_ALIGN_CENTERED;
+  } else if (!strcasecmp(s, "bottom right")) {
+    result = NK_TEXT_ALIGN_BOTTOM | NK_TEXT_ALIGN_RIGHT;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+struct nk_color get_color(long c) {
+  nk_color result;
+  if (c >= 0 && c < 16) {
+    result = _colors[c];
+  } else {
+    if (c < 0) {
+      c = -c;
+    }
+    uint8_t r = (c & 0xff0000) >> 16;
+    uint8_t g = (c & 0xff00) >> 8;
+    uint8_t b = (c & 0xff);
+    result = nk_rgba(r, g, b, 255);
+  }
+  return result;
+}
+
+void get_rgba_str(struct nk_color c, char *str) {
+  if (c.a < 255) {
+    sprintf(str, "#%02x%02x%02x%02x", c.r, c.g, c.b, c.a);
+  } else {
+    sprintf(str, "#%02x%02x%02x", c.r, c.g, c.b);
+  }
 }
 
 int get_value(const char *str, int range) {
@@ -102,6 +151,23 @@ int get_value(const char *str, int range) {
     }
   }
   return result;
+}
+
+void process_events() {
+  SDL_Event evt;
+  nk_input_begin(_ctx);
+  while (!_sdlExit) {
+    if (SDL_PollEvent(&evt)) {
+      nk_sdl_handle_event(&evt);
+      if (evt.type == SDL_QUIT) {
+        _sdlExit = true;
+      }
+      break;
+    } else {
+      SDL_Delay(LOOP_DELAY);
+    }
+  }
+  nk_input_end(_ctx);
 }
 
 int is_param_num(int argc, slib_par_t *params, int n) {
@@ -277,8 +343,8 @@ struct nk_rect get_param_rect(int argc, slib_par_t *params, int n) {
   return nk_rect(x, y, w, h);
 }
 
-enum drawmode get_draw_mode(int argc, slib_par_t *params, int n) {
-  const char *mode = get_param_str(argc, params, n, NULL);
+enum drawmode get_param_draw_mode(int argc, slib_par_t *params, int n) {
+  const char *mode = get_param_str(argc, params, n, "none");
   drawmode result;
   if (!strcasecmp(mode, "fill")) {
     result = DRAW_FILL;
@@ -290,50 +356,7 @@ enum drawmode get_draw_mode(int argc, slib_par_t *params, int n) {
   return result;
 }
 
-nk_flags get_alignment(const char *s) {
-  nk_flags result;
-  if (!strcasecmp(s, "left")) {
-    result = NK_TEXT_LEFT;
-  } else if (!strcasecmp(s, "centered")) {
-    result = NK_TEXT_CENTERED;
-  } else if (!strcasecmp(s, "right")) {
-    result = NK_TEXT_RIGHT;
-  } else if (!strcasecmp(s, "top left")) {
-    result = NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT;
-  } else if (!strcasecmp(s, "top centered")) {
-    result = NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_CENTERED;
-  } else if (!strcasecmp(s, "top right")) {
-    result = NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_RIGHT;
-  } else if (!strcasecmp(s, "bottom left")) {
-    result = NK_TEXT_ALIGN_BOTTOM | NK_TEXT_ALIGN_LEFT;
-  } else if (!strcasecmp(s, "bottom centered")) {
-    result = NK_TEXT_ALIGN_BOTTOM | NK_TEXT_ALIGN_CENTERED;
-  } else if (!strcasecmp(s, "bottom right")) {
-    result = NK_TEXT_ALIGN_BOTTOM | NK_TEXT_ALIGN_RIGHT;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-void process_events() {
-  SDL_Event evt;
-  nk_input_begin(_ctx);
-  while (!_sdlExit) {
-    if (SDL_PollEvent(&evt)) {
-      nk_sdl_handle_event(&evt);
-      if (evt.type == SDL_QUIT) {
-        _sdlExit = true;
-      }
-      break;
-    } else {
-      SDL_Delay(LOOP_DELAY);
-    }
-  }
-  nk_input_end(_ctx);
-}
-
-nk_flags get_window_flags(int argc, slib_par_t *params, int n) {
+nk_flags get_param_window_flags(int argc, slib_par_t *params, int n) {
   nk_flags flags = 0;
   for (int i = n; i < argc; i++) {
     const char *flag = get_param_str(argc, params, i, NULL);
@@ -366,16 +389,8 @@ nk_flags get_window_flags(int argc, slib_par_t *params, int n) {
   return flags;
 }
 
-void nk_rgba_str(struct nk_color c, char *str) {
-  if (c.a < 255) {
-    sprintf(str, "#%02x%02x%02x%02x", c.r, c.g, c.b, c.a);
-  } else {
-    sprintf(str, "#%02x%02x%02x", c.r, c.g, c.b);
-  }
-}
-
 int cmd_arc(int argc, slib_par_t *params, var_t *retval) {
-  enum drawmode mode = get_draw_mode(argc, params, 0);
+  enum drawmode mode = get_param_draw_mode(argc, params, 0);
   float cx = get_param_num(argc, params, 1, 0);
   float cy = get_param_num(argc, params, 2, 0);
   float r = get_param_num(argc, params, 3, 0);
@@ -423,7 +438,7 @@ int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_circle(int argc, slib_par_t *params, var_t *retval) {
-  enum drawmode mode = get_draw_mode(argc, params, 0);
+  enum drawmode mode = get_param_draw_mode(argc, params, 0);
   float x = get_param_num(argc, params, 1, 0);
   float y = get_param_num(argc, params, 2, 0);
   float r = get_param_num(argc, params, 3, 0);
@@ -441,14 +456,14 @@ int cmd_colorpicker(int argc, slib_par_t *params, var_t *retval) {
   if (is_param_str(argc, params, 0)) {
     struct nk_colorf color = nk_color_cf(get_param_color(argc, params, 0));
     color = nk_color_picker(_ctx, color, NK_RGB);
-    nk_rgba_str(nk_rgba_cf(color), new_color_string);
+    get_rgba_str(nk_rgba_cf(color), new_color_string);
   } else if (is_param_map(argc, params, 0)) {
     const char *value = get_param_str_field(argc, params, 0, "value");
     if (value != NULL) {
       struct nk_colorf color = nk_color_cf(nk_rgb_hex(value));
       int changed = nk_color_pick(_ctx, &color, NK_RGB);
       if (changed) {
-        nk_rgba_str(nk_rgba_cf(color), new_color_string);
+        get_rgba_str(nk_rgba_cf(color), new_color_string);
         v_setstr(map_get(params[0].var_p, "value"), new_color_string);
       }
     } else {
@@ -536,8 +551,23 @@ int cmd_edit(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
+int cmd_image(int argc, slib_par_t *params, var_t *retval) {
+  return 0;
+}
+
+int cmd_text(int argc, slib_par_t *params, var_t *retval) {
+  const char *text = get_param_str(argc, params, 0, NULL);
+  float x = get_param_num(argc, params, 1, 0);
+  float y = get_param_num(argc, params, 2, 0);
+  float w = get_param_num(argc, params, 3, 0);
+  float h = get_param_num(argc, params, 4, 0);
+  //nk_draw_text(&_ctx->current->buffer, nk_rect(x, y, w, h), text, strlen(text),
+  // &fonts[font_count++], nk_rgba(0, 0, 0, 0), _fg_color);
+  return (argc == 5);
+}
+
 int cmd_ellipse(int argc, slib_par_t *params, var_t *retval) {
-  enum drawmode mode = get_draw_mode(argc, params, 0);
+  enum drawmode mode = get_param_draw_mode(argc, params, 0);
   float x = get_param_num(argc, params, 1, 0);
   float y = get_param_num(argc, params, 2, 0);
   float rx = get_param_num(argc, params, 3, 0);
@@ -552,17 +582,13 @@ int cmd_ellipse(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_groupbegin(int argc, slib_par_t *params, var_t *retval) {
   const char *title = get_param_str(argc, params, 0, NULL);
-  nk_flags flags = get_window_flags(argc, params, 1);
+  nk_flags flags = get_param_window_flags(argc, params, 1);
   return nk_group_begin(_ctx, title, flags);
 }
 
 int cmd_groupend(int argc, slib_par_t *params, var_t *retval) {
   nk_group_end(_ctx);
   return 1;
-}
-
-int cmd_image(int argc, slib_par_t *params, var_t *retval) {
-  return 0;
 }
 
 int cmd_label(int argc, slib_par_t *params, var_t *retval) {
@@ -668,7 +694,7 @@ int cmd_menubarend(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_polygon(int argc, slib_par_t *params, var_t *retval) {
-  enum drawmode mode = get_draw_mode(argc, params, 0);
+  enum drawmode mode = get_param_draw_mode(argc, params, 0);
   for (int i = 0; i < argc - 1 && i < MAX_FLOATS; ++i) {
     _floats[i] = get_param_num(argc, params, i + 1, 0);
   }
@@ -786,17 +812,6 @@ int cmd_spacing(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_text(int argc, slib_par_t *params, var_t *retval) {
-  const char *text = get_param_str(argc, params, 0, NULL);
-  float x = get_param_num(argc, params, 1, 0);
-  float y = get_param_num(argc, params, 2, 0);
-  float w = get_param_num(argc, params, 3, 0);
-  float h = get_param_num(argc, params, 4, 0);
-  //nk_draw_text(&_ctx->current->buffer, nk_rect(x, y, w, h), text, strlen(text),
-  // &fonts[font_count++], nk_rgba(0, 0, 0, 0), _fg_color);
-  return (argc == 5);
-}
-
 int cmd_textinput(int argc, slib_par_t *params, var_t *retval) {
   int len;
   char buf[256];
@@ -844,12 +859,6 @@ int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
   return (argc == 2);
 }
 
-int cmd_wheelmoved(int argc, slib_par_t *params, var_t *retval) {
-  //  nk_input_scroll(_ctx, (float)y);
-  v_setint(retval, nk_window_is_any_hovered(_ctx));
-  return 1;
-}
-
 int cmd_widgetbounds(int argc, slib_par_t *params, var_t *retval) {
   struct nk_rect rc = nk_widget_bounds(_ctx);
   v_toarray1(retval, 4);
@@ -869,7 +878,7 @@ int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
   process_events();
   const char *title = get_param_str(argc, params, 0, "Untitled");
   struct nk_rect rc = get_param_rect(argc, params, 1);
-  nk_flags flags = get_window_flags(argc, params, 5);
+  nk_flags flags = get_param_window_flags(argc, params, 5);
   v_setint(retval, nk_begin(_ctx, title, rc, flags));
   return 1;
 }
@@ -930,7 +939,6 @@ API lib_proc[] = {
   {"TEXTINPUT", cmd_textinput},
   {"TOOLTIP", cmd_tooltip},
   {"TREEPOP", cmd_treepop},
-  {"WHEELMOVED", cmd_wheelmoved},
   {"WINDOWEND", cmd_windowend},
 };
 
@@ -1052,29 +1060,13 @@ void sblib_close() {
   }
 }
 
-struct nk_color sb_color(long c) {
-  nk_color result;
-  if (c >= 0 && c < 16) {
-    result = _colors[c];
-  } else {
-    if (c < 0) {
-      c = -c;
-    }
-    uint8_t r = (c & 0xff0000) >> 16;
-    uint8_t g = (c & 0xff00) >> 8;
-    uint8_t b = (c & 0xff);
-    result = nk_rgba(r, g, b, 255);
-  }
-  return result;
-}
-
 void sblib_settextcolor(long fg, long bg) {
-  _fg_color = sb_color(fg);
-  _bg_color = sb_color(bg);
+  _fg_color = get_color(fg);
+  _bg_color = get_color(bg);
   struct nk_colorf c = nk_color_cf(_bg_color);
   glClearColor(c.r, c.g, c.b, c.a);
 }
 
 void sblib_setcolor(long fg) {
-  _fg_color = sb_color(fg);
+  _fg_color = get_color(fg);
 }
