@@ -31,12 +31,14 @@
 #define LOOP_DELAY 80
 #define MAX_FLOATS 40
 #define MAX_COMBOBOX_ITEMS 10
+#define MAX_EDIT_BUFFER_LEN 2048
 
 static SDL_Window *_window;
 static SDL_GLContext _glContext;
 static struct nk_context *_ctx;
 static float _floats[MAX_FLOATS];
 static const char *_comboboxItems[MAX_COMBOBOX_ITEMS];
+static char _edit_buffer[MAX_EDIT_BUFFER_LEN];
 static bool _sdlExit;
 static struct nk_color _fg_color;
 static struct nk_color _bg_color;
@@ -409,7 +411,7 @@ int cmd_button(int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (title != NULL) {
     if (is_color(title, v_strlen(params[0].var_p))) {
-			v_setint(retval, nk_button_color(_ctx, nk_rgb_hex(title)));
+      v_setint(retval, nk_button_color(_ctx, nk_rgb_hex(title)));
     } else {
       v_setint(retval, nk_button_label(_ctx, title));
     }
@@ -543,16 +545,38 @@ int cmd_curve(int argc, slib_par_t *params, var_t *retval) {
   return argc == 8;
 }
 
-int cmd_draw(int argc, slib_par_t *params, var_t *retval) {
-  return 1;
-}
-
 int cmd_edit(int argc, slib_par_t *params, var_t *retval) {
-  return 1;
+  int success = 0;
+  const char *styleStr = get_param_str(argc, params, 0, NULL);
+  if (styleStr != NULL && is_param_map(argc, params, 1)) {
+    nk_flags style = 0;
+    if (!strcasecmp(styleStr, "simple")) {
+      style = NK_EDIT_SIMPLE;
+    } else if (!strcasecmp(styleStr, "field")) {
+      style = NK_EDIT_FIELD;
+    } else if (!strcasecmp(styleStr, "editor")) {
+      style = NK_EDIT_EDITOR;
+    } else if (!strcasecmp(styleStr, "box")) {
+      style = NK_EDIT_BOX;
+    }
+    const char *value = get_param_str_field(argc, params, 1, "value");
+    if (value != NULL && style != 0) {
+      size_t len = NK_CLAMP(0, strlen(value), MAX_EDIT_BUFFER_LEN - 1);
+      memcpy(_edit_buffer, value, len);
+      _edit_buffer[len] = '\0';
+      nk_flags event = nk_edit_string_zero_terminated(_ctx, style, _edit_buffer,
+                                                      MAX_EDIT_BUFFER_LEN - 1, nk_filter_default);
+      v_setstr(map_get(params[1].var_p, "value"), _edit_buffer);
+      success = 1;
+    }
+  } else {
+    v_setstr(retval, "Invalid edit input");
+  }
+  return success;
 }
 
 int cmd_image(int argc, slib_par_t *params, var_t *retval) {
-  return 0;
+  return 1;
 }
 
 int cmd_text(int argc, slib_par_t *params, var_t *retval) {
@@ -561,8 +585,10 @@ int cmd_text(int argc, slib_par_t *params, var_t *retval) {
   float y = get_param_num(argc, params, 2, 0);
   float w = get_param_num(argc, params, 3, 0);
   float h = get_param_num(argc, params, 4, 0);
-  //nk_draw_text(&_ctx->current->buffer, nk_rect(x, y, w, h), text, strlen(text),
-  // &fonts[font_count++], nk_rgba(0, 0, 0, 0), _fg_color);
+  if (argc == 5) {
+    nk_draw_text(&_ctx->current->buffer, nk_rect(x, y, w, h), text, strlen(text),
+                 _ctx->style.font, nk_rgba(0, 0, 0, 0), _fg_color);
+  }
   return (argc == 5);
 }
 
@@ -914,7 +940,6 @@ API lib_proc[] = {
   {"CONTEXTUALEND", cmd_contextualend},
   {"CONTEXTUALITEM", cmd_contextualitem},
   {"CURVE", cmd_curve},
-  {"DRAW", cmd_draw},
   {"EDIT", cmd_edit},
   {"ELLIPSE", cmd_ellipse},
   {"GROUPBEGIN", cmd_groupbegin},
