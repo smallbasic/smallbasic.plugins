@@ -6,4 +6,4 @@ Collection of loadable plugin modules to extend the functionality provided by Sm
 
 https://github.com/vurtun/nuklear
 
-![screenshot_2018-02-25_09-37-26](https://user-images.githubusercontent.com/785121/36636294-b1bfe522-1a0f-11e8-8946-736a67baeaea.png)
+![screenshot_2018-02-28_21-09-09](https://user-images.githubusercontent.com/785121/36784602-bc6e1c32-1ccb-11e8-801b-a88c51a7b43a.png)
