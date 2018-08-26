@@ -2,6 +2,9 @@
 
 Collection of loadable plugin modules to extend the functionality provided by SmallBASIC.
 
+Install:
+sudo apt-get install libmysqlclient-dev libglfw3-dev libglfw3 libglew-dev
+
 ## Gallery
 
 https://github.com/vurtun/nuklear
