@@ -20,8 +20,8 @@
 #include "config.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
-#include "nuklear/nuklear.h"
-#include "nuklear/nuklear_sdl_gl2.h"
+#include "Nuklear/nuklear.h"
+#include "Nuklear/demo/sdl_opengl2/nuklear_sdl_gl2.h"
 #include "var.h"
 #include "var_map.h"
 #include "module.h"
