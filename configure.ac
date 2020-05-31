@@ -1,13 +1,13 @@
 dnl 
 dnl Configure script for SmallBASIC plugins
 dnl
-dnl Copyright(C) 2001-2018 Chris Warren-Smith.
+dnl Copyright(C) 2001-2020 Chris Warren-Smith.
 dnl
 dnl This program is distributed under the terms of the GPL v2.0
 dnl Download the GNU Public License (GPL) from www.gnu.org
 dnl
 
-AC_INIT([smallbasic], [0.12.13])
+AC_INIT([smallbasic], [20.0])
 AC_CONFIG_AUX_DIR(aux-dist)
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_SRCDIR([mysql/mysql.c])
@@ -40,6 +40,9 @@ if test "${have_sdl}" = "no" ; then
   AC_MSG_ERROR([libsdl2-dev not installed: configure failed.])
 fi
 
+# checks for glfw
+AC_CHECK_HEADERS([GL/gl.h], [], [AC_MSG_ERROR([GL/gl.h not found])])
+
 dnl change default aru setting to avoid warning
 ARFLAGS=cr
 AC_SUBST(ARFLAGS)
@@ -49,7 +52,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CXX
 LT_PREREQ([2.2])
 
-BUILD_SUBDIRS="mysql nuklear"
+BUILD_SUBDIRS="mysql nuklear glfw"
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
 
@@ -58,6 +61,7 @@ libdir=${libdir}/smallbasic
 AC_CONFIG_FILES([
 Makefile
 nuklear/Makefile
+glfw/Makefile
 mysql/Makefile])
 
 AC_OUTPUT
