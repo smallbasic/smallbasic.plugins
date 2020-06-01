@@ -12,7 +12,7 @@ AC_CONFIG_AUX_DIR(aux-dist)
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_SRCDIR([mysql/mysql.c])
 AC_CONFIG_HEADER([config.h])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([subdir-objects])
 LT_INIT([win32-dll])
 
 function checkDebugMode() {

@@ -1,0 +1,14 @@
+{
+   ignore_iris_dri
+   Memcheck:Addr4
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/dri/iris_dri.so
+   ...
+}
+{
+   ignore_iris_dri
+   Memcheck:Addr8
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/dri/iris_dri.so
+   ...
+}
