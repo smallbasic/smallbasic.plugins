@@ -14,6 +14,7 @@ endif
 
 t1=timer
 
+
 # Loop until the user closes the window
 while not glfw.window_should_close(wnd)
   # Render here
@@ -27,16 +28,22 @@ while not glfw.window_should_close(wnd)
   if g >= 256 then g = 0
   b += 3
   if b >= 256 then b = 0
-  color 0, rgb(r, g, b)
+  color 8, rgb(r, g, b)
 
   cls
-  line 0, 0, 100, 100
+  pset 10,10 color 7
+  pset 11,11 color 7
+  pset 12,12 color 7
+  line 20,40,140,40 color r
+  line 20,80,140,80 color r
+  line 60,0,60,120 color r
+  line 100,0,100,120 color r
 
   # Swap front and back buffers
   glfw.swap_buffers(wnd)
 
   # Poll for and process events
-  glfw.poll_events()
+  glfw.wait_events()
 
   t2 = ticks - t1
   if (t2 > 0) then
