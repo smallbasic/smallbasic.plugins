@@ -12,15 +12,9 @@ if not wnd then
   throw "glfw create window failed"
 endif
 
-t1=timer
+maxfps = 0
 
-
-# Loop until the user closes the window
-while not glfw.window_should_close(wnd)
-  # Render here
-  t1 = TICKS
-
-  #  key = glfw.key_event();
+sub render
   r += 1
   if r >= 256 then r = 0
   if r >= 15 then r = 0
@@ -31,6 +25,9 @@ while not glfw.window_should_close(wnd)
   color 8, rgb(r, g, b)
 
   cls
+  glfw.line_width(lw)
+  lw = iff(lw == 20, 1, lw+1)
+
   pset 10,10 color 7
   pset 11,11 color 7
   pset 12,12 color 7
@@ -39,19 +36,33 @@ while not glfw.window_should_close(wnd)
   line 60,0,60,120 color r
   line 100,0,100,120 color r
 
+  rect 100, 100, 200, 200 color r
+  rect 130, 130, 230, 230 color r filled
+end
+
+# Loop until the user closes the window
+while not glfw.window_should_close(wnd)
+  t=TICKS
+  #  key = glfw.key_event();
+
+  render()
+
   # Swap front and back buffers
   glfw.swap_buffers(wnd)
 
   # Poll for and process events
-  glfw.wait_events()
+  glfw.poll_events()
 
-  t2 = ticks - t1
+  t2 = (ticks-t)
   if (t2 > 0) then
-    fps = 1000 / t2
-    # print format("Fps:  ###.##", fps)
+    fps=1000/t2
+    if (fps>maxfps) then
+      maxfps = fps
+    endif
   endif
 wend
 
 glfw.terminate()
-print "done!"
+print format("Fps:  ###.##", fps)
+print format("Best:  ####.##", maxfps)
 

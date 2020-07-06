@@ -138,10 +138,10 @@ int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
     if (result) {
       glfwMakeContextCurrent(window);
       gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
-      glfwSwapInterval(1);
       glfwSetErrorCallback(error_callback);
       glfwSetKeyCallback(window, key_callback);
       glfwSetWindowSizeCallback(window, window_size_callback);
+
       glMatrixMode(GL_PROJECTION);
       glLoadIdentity();
       glMatrixMode(GL_MODELVIEW);
@@ -155,11 +155,12 @@ int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
 
       result = ++_nextId;
       _windowMap[result] = window;
+      _width = width;
+      _height = height;
+
       v_setint(retval, result);
       sblib_settextcolor(1, 0);
       sblib_cls();
-      _width = width;
-      _height = height;
 
       GLenum error = glGetError();
       if (error != GL_NO_ERROR) {
@@ -194,6 +195,12 @@ int cmd_window_should_close(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
+}
+
+// glfw.line_width(10)
+int cmd_line_width(int argc, slib_par_t *params, var_t *retval) {
+  glLineWidth(get_param_int(argc, params, 0, 1));
+  return argc == 1;
 }
 
 // glfw.poll_events()
@@ -233,6 +240,7 @@ int cmd_terminate(int argc, slib_par_t *params, var_t *retval) {
 }
 
 API lib_proc[] = {
+  {"LINE_WIDTH", cmd_line_width},
   {"POLL_EVENTS", cmd_poll_events},
   {"WAIT_EVENTS", cmd_wait_events},
   {"SWAP_BUFFERS", cmd_swap_buffers},
@@ -342,14 +350,6 @@ void sblib_line(int x1, int y1, int x2, int y2) {
   glEnd();
 }
 
-// draw an ellipse
-void sblib_ellipse(int xc, int yc, int xr, int yr, int fill) {
-}
-
-// draw an arc
-void sblib_arc(int xc, int yc, double r, double as, double ae, double aspect) {
-}
-
 // draw a pixel
 void sblib_setpixel(int x, int y) {
   glColor3f(_fg_color._r, _fg_color._g, _fg_color._b);
@@ -360,4 +360,11 @@ void sblib_setpixel(int x, int y) {
 
 // draw rectangle
 void sblib_rect(int x1, int y1, int x2, int y2, int fill) {
+  glColor3f(_fg_color._r, _fg_color._g, _fg_color._b);
+  glBegin(fill ? GL_POLYGON : GL_LINE_LOOP);
+  glVertex2f(scaleX(x1), scaleY(y1));
+  glVertex2f(scaleX(x2), scaleY(y1));
+  glVertex2f(scaleX(x2), scaleY(y2));
+  glVertex2f(scaleX(x1), scaleY(y2));
+  glEnd();
 }

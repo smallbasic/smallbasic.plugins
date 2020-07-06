@@ -31,6 +31,11 @@ function checkDebugMode() {
   AC_SUBST(CFLAGS)
 }
 
+case "${host_os}" in
+   *mingw* | pw32* | cygwin*)
+    AC_DEFINE(WIN32, 1, [building for win32])
+esac
+
 # checks for mysql
 AC_CHECK_HEADER(mysql/mysql.h, [], [AC_MSG_ERROR("install mysql")])
 
@@ -43,6 +48,9 @@ fi
 # checks for glfw
 AC_CHECK_HEADERS([GL/gl.h], [], [AC_MSG_ERROR([GL/gl.h not found])])
 
+# checks for clipboard
+AC_CHECK_HEADERS([libclipboard.h], [], [AC_MSG_ERROR([libclipboard.h not found])])
+
 dnl change default aru setting to avoid warning
 ARFLAGS=cr
 AC_SUBST(ARFLAGS)
@@ -52,7 +60,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CXX
 LT_PREREQ([2.2])
 
-BUILD_SUBDIRS="mysql nuklear glfw"
+BUILD_SUBDIRS="mysql nuklear glfw clipboard"
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
 
@@ -62,6 +70,7 @@ AC_CONFIG_FILES([
 Makefile
 nuklear/Makefile
 glfw/Makefile
+clipboard/Makefile
 mysql/Makefile])
 
 AC_OUTPUT

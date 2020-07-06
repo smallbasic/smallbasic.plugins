@@ -4,3 +4,6 @@
 [submodule "nuklear/Nuklear"]
 	path = nuklear/Nuklear
 	url = https://github.com/Immediate-Mode-UI/Nuklear.git
+[submodule "clipboard/libclipboard"]
+	path = clipboard/libclipboard
+	url = https://github.com/jtanx/libclipboard.git
