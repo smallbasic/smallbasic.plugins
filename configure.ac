@@ -32,8 +32,13 @@ function checkDebugMode() {
 }
 
 case "${host_os}" in
-   *mingw* | pw32* | cygwin*)
+  *mingw* | pw32* | cygwin*)
     AC_DEFINE(WIN32, 1, [building for win32])
+    ;;
+
+  *)
+    CLIPBOARD_LDFLAGS=`pkg-config xcb --libs`
+    AC_SUBST(CLIPBOARD_LDFLAGS)
 esac
 
 # checks for mysql
