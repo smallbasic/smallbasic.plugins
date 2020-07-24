@@ -7,3 +7,6 @@
 [submodule "clipboard/libclipboard"]
 	path = clipboard/libclipboard
 	url = https://github.com/jtanx/libclipboard.git
+[submodule "websocket/mongoose"]
+	path = websocket/mongoose
+	url = https://github.com/cesanta/mongoose.git

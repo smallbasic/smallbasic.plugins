@@ -47,7 +47,7 @@ extern "C" {
 #endif
 
 struct var_s;
-typedef void (*method) (struct var_s *self);
+typedef void (*method) (struct var_s *self, struct var_s *retval);
 
 typedef struct var_s {
   union {
@@ -466,6 +466,13 @@ int v_strlen(const var_t *v);
  * @return whether the variable is of the given type
  */
 #define v_is_type(v, t) (v != NULL && v->type == t)
+
+/**
+ * @ingroup var
+ *
+ * setup a method on the map using the given name
+ */
+void v_create_func(var_p_t map, const char *name, method cb);
 
 #if defined(__cplusplus)
 }

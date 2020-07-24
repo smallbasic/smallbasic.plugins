@@ -65,7 +65,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CXX
 LT_PREREQ([2.2])
 
-BUILD_SUBDIRS="mysql nuklear glfw clipboard"
+BUILD_SUBDIRS="mysql nuklear glfw clipboard websocket"
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
 
@@ -73,9 +73,10 @@ libdir=${libdir}/smallbasic
 
 AC_CONFIG_FILES([
 Makefile
+mysql/Makefile
 nuklear/Makefile
 glfw/Makefile
 clipboard/Makefile
-mysql/Makefile])
+websocket/Makefile])
 
 AC_OUTPUT

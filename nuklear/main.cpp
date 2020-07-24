@@ -926,7 +926,7 @@ int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
 
 int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   int result;
-  if (index < sblib_proc_count()) {
+  if (index < sblib_func_count()) {
     result = lib_func[index].command(argc, params, retval);
   } else {
     result = 0;
