@@ -31,7 +31,7 @@ enum ConnectionState {
 };
 
 struct Session {
-  Session() : _conn(nullptr), _state(kInit) {
+  Session() : _state(kInit) {
     _handle = ++nextHandle;
     sessions[_handle] = this;
   }
@@ -42,7 +42,6 @@ struct Session {
 
   std::string _send;
   std::string _recv;
-  mg_connection *_conn;
   ConnectionState _state;
   int _handle;
 };
@@ -123,9 +122,11 @@ static void client_handshake(Session *session, http_message *message) {
   }
 }
 
-static void client_poll(Session *session) {
-  //char msg[500];
-  //mg_send_websocket_frame(conn, WEBSOCKET_OP_TEXT, msg, sizeof(msg));
+static void client_poll(Session *session, mg_connection *conn) {
+  if (!session->_send.empty()) {
+    mg_send_websocket_frame(conn, WEBSOCKET_OP_TEXT, session->_send.c_str(), session->_send.length());
+    session->_send.clear();
+  }
 }
 
 static void client_receive(Session *session, websocket_message *message) {
@@ -150,7 +151,7 @@ static void client_handler(mg_connection *conn, int event, void *eventData, void
     break;
 
   case MG_EV_POLL:
-    client_poll((Session *)session);
+    client_poll((Session *)session, conn);
     break;
 
   case MG_EV_WEBSOCKET_FRAME:
@@ -232,7 +233,6 @@ int cmd_create(int argc, slib_par_t *params, var_t *retval) {
       delete session;
       v_setstr(retval, "Connection failed");
     } else {
-      session->_conn = conn;
       v_setint(retval, session->_handle);
       result = 1;
     }
