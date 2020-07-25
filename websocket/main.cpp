@@ -8,27 +8,30 @@
 #include "config.h"
 #include <string.h>
 #include <map>
+#include <string>
 
 #include "mongoose/mongoose.h"
 #include "var.h"
 #include "var_map.h"
 #include "param.h"
 
+#define MAX_POLL_SLEEP 100
+
 struct Session {
-  Session() : _conn(nullptr), _send(nullptr), _recv(nullptr), _open(false) {}
+  Session() : _conn(nullptr), _response(0), _status(0), _open(false) {}
 
   virtual ~Session() {
-    delete _send;
-    delete _recv;
   }
 
   mg_connection *_conn;
-  char *_send;
-  char *_recv;
+  std::string _send;
+  std::string _recv;
+  int _response;
+  int _status;
   bool _open;
 };
 
-int nextHandle = 1;
+int nextHandle = 0;
 std::map<int, Session *> sessions;
 mg_mgr manager;
 
@@ -81,67 +84,127 @@ static void server_handler(mg_connection *conn, int event, void *session, void *
   }
 }
 
-static void client_handler(mg_connection *conn, int event, void *sess, void *eventData) {
-  int status;
-  http_message *hm;
-  websocket_message *wm;
+static void connect(Session *session, int status) {
+  session->_status = status;
+}
 
+static void handshake(Session *session, http_message *message) {
+  session->_response = message->resp_code;
+  session->_open = (message->resp_code == 101);
+}
+
+static void poll(Session *session) {
+  //char msg[500];
+  //mg_send_websocket_frame(conn, WEBSOCKET_OP_TEXT, msg, sizeof(msg));
+}
+
+static void receive(Session *session, websocket_message *message) {
+  session->_recv.clear();
+  session->_recv.append((char *)message->data, message->size);
+}
+
+static void close(Session *session) {
+  session->_open = false;
+}
+
+static void client_handler(mg_connection *conn, int event, void *session, void *eventData) {
   switch (event) {
   case MG_EV_CONNECT:
-    status = *((int *)eventData);
-    if (status != 0) {
-      printf("-- Connection error: %d\n", status);
-    }
+    connect((Session *)session, *((int *)eventData));
     break;
 
   case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
-    hm = (struct http_message *)eventData;
-    if (hm->resp_code == 101) {
-      printf("-- Connected\n");
-    } else {
-      printf("-- Connection failed! HTTP code %d\n", hm->resp_code);
-      // Connection will be closed after this.
-    }
+    handshake((Session *)session, (http_message *)eventData);
     break;
 
-  case MG_EV_POLL: {
-    //char msg[500];
-    //mg_send_websocket_frame(conn, WEBSOCKET_OP_TEXT, msg, sizeof(msg));
+  case MG_EV_POLL:
+    poll((Session *)session);
     break;
-  }
 
   case MG_EV_WEBSOCKET_FRAME:
-    wm = (struct websocket_message *)eventData;
-    printf("%.*s\n", (int) wm->size, wm->data);
+    receive((Session *)session, (websocket_message *)eventData);
     break;
 
   case MG_EV_CLOSE:
+    close((Session *)session);
+    break;
+
+  default:
     break;
   }
 }
 
+Session *getSession(int argc, slib_par_t *params) {
+  return sessions[get_param_int(argc, params, 0, 0)];
+}
+
+//
 // ws.close(conn)
+//
 int cmd_close(int argc, slib_par_t *params, var_t *retval) {
-  fprintf(stderr, "close!\n");
+  int result;
+  auto session = getSession(argc, params);
+  if (session != nullptr) {
+    result = 1;
+  } else {
+    result = 0;
+  }
+  v_setint(retval, result);
+  return result;
   return 1;
 }
 
+//
 // msg = ws.receive(conn)
+//
 int cmd_receive(int argc, slib_par_t *params, var_t *retval) {
-  return 1;
+  int result;
+  auto session = getSession(argc, params);
+  if (session != nullptr) {
+    result = 1;
+  } else {
+    result = 0;
+  }
+  v_setint(retval, result);
+  return result;
 }
 
+//
 // while ws.open(conn)
+//
 int cmd_open(int argc, slib_par_t *params, var_t *retval) {
-  v_setint(retval, 1);
-  return 1;
+  int result;
+  auto session = getSession(argc, params);
+  if (session != nullptr) {
+    result = 1;
+  } else {
+    result = 0;
+  }
+  v_setint(retval, result);
+  return result;
 }
 
-// ws.send("hello")
+//
+// ws.send(conn, "hello")
+//
 int cmd_send(int argc, slib_par_t *params, var_t *retval) {
-  return 1;
+  int result = 0;
+  auto session = getSession(argc, params);
+  if (session != nullptr) {
+    const char *message = get_param_str(argc, params, 1, nullptr);
+    if (message != nullptr && message[0] != '\0') {
+      session->_send.clear();
+      session->_send.append(message);
+      result = 1;
+    }
+  }
+  v_setint(retval, result);
+  return result;
 }
 
+//
+// conn = ws.create("ws://127.0.0.1:8000", "ws_chat")
+//
 int cmd_create(int argc, slib_par_t *params, var_t *retval) {
   int result = 0;
   const char *url = get_param_str(argc, params, 0, nullptr);
@@ -151,18 +214,22 @@ int cmd_create(int argc, slib_par_t *params, var_t *retval) {
     mg_connection *conn = mg_connect_ws(&manager, client_handler, session, url, protocol, nullptr);
     if (conn == nullptr) {
       delete session;
-      v_setstr(retval, "Invalid address");
+      v_setstr(retval, "Connection failed");
     } else {
       sessions[++nextHandle] = session;
       session->_conn = conn;
+      v_setint(retval, nextHandle);
       result = 1;
     }
   } else {
-    v_setstr(retval, "Invalid arguments");
+    v_setstr(retval, "Invalid url");
   }
   return result;
 }
 
+//
+// conn = ws.listen(8080)
+//
 int cmd_listen(int argc, slib_par_t *params, var_t *retval) {
   int result;
   const char *port = get_param_str(argc, params, 0, nullptr);
@@ -180,14 +247,8 @@ API lib_func[] = {
   {"CREATE", cmd_create},
   {"OPEN", cmd_open},
   {"LISTEN", cmd_listen},
-  {"SEND", cmd_send},
   {"RECEIVE", cmd_receive},
-  {"CLOSE", cmd_close}
 };
-
-int sblib_proc_count() {
-  return 0;
-}
 
 int sblib_func_count() {
   return (sizeof(lib_func) / sizeof(lib_func[0]));
@@ -214,9 +275,38 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
+API lib_proc[] = {
+  {"SEND", cmd_send},
+  {"CLOSE", cmd_close}
+};
+
+int sblib_proc_count() {
+  return (sizeof(lib_proc) / sizeof(lib_proc[0]));
+}
+
+int sblib_proc_getname(int index, char *proc_name) {
+  int result;
+  if (index < sblib_proc_count()) {
+    strcpy(proc_name, lib_proc[index].name);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  if (index < sblib_proc_count()) {
+    result = lib_proc[index].command(argc, params, retval);
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
 int sblib_events(int wait_flag, int *w, int *h) {
-  fprintf(stderr, "sblib_events\n");
-  mg_mgr_poll(&manager, 100);
+  mg_mgr_poll(&manager, MAX_POLL_SLEEP);
   return 0;
 }
 
