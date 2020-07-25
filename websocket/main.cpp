@@ -17,23 +17,40 @@
 
 #define MAX_POLL_SLEEP 100
 
-struct Session {
-  Session() : _conn(nullptr), _response(0), _status(0), _open(false) {}
+sig_atomic_t signalReceived = 0;
+mg_mgr manager;
+int nextHandle = 0;
+struct Session;
+std::map<int, Session *> sessions;
 
-  virtual ~Session() {
-  }
-
-  mg_connection *_conn;
-  std::string _send;
-  std::string _recv;
-  int _response;
-  int _status;
-  bool _open;
+enum ConnectionState {
+  kInit,
+  kConnect,
+  kOpen,
+  kClose
 };
 
-int nextHandle = 0;
-std::map<int, Session *> sessions;
-mg_mgr manager;
+struct Session {
+  Session() : _conn(nullptr), _state(kInit) {
+    _handle = ++nextHandle;
+    sessions[_handle] = this;
+  }
+
+  virtual ~Session() {
+    sessions.erase(_handle);
+  }
+
+  std::string _send;
+  std::string _recv;
+  mg_connection *_conn;
+  ConnectionState _state;
+  int _handle;
+};
+
+static void signal_handler(int sig_num) {
+  signal(sig_num, signal_handler);
+  signalReceived = sig_num;
+}
 
 static int is_websocket(const mg_connection *conn) {
   return conn->flags & MG_F_IS_WEBSOCKET;
@@ -55,78 +72,93 @@ static void broadcast(struct mg_connection *conn, const mg_str msg) {
   }
 }
 
-static void server_handler(mg_connection *conn, int event, void *session, void *eventData) {
-  websocket_message *wm;
-  mg_str d;
+static void server_handshake(mg_connection *conn) {
+  broadcast(conn, mg_mk_str("++ joined"));
+}
 
+static void server_frame(mg_connection *conn, websocket_message *message) {
+  // New websocket message. Tell everybody.
+  mg_str d = {(char *)message->data, message->size};
+  broadcast(conn, d);
+}
+
+static void server_close(mg_connection *conn) {
+  // Disconnect. Tell everybody.
+  if (is_websocket(conn)) {
+    broadcast(conn, mg_mk_str("-- left"));
+  }
+}
+
+static void server_handler(mg_connection *conn, int event, void *eventData, void *session) {
   switch (event) {
   case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
-    // New websocket connection. Tell everybody.
-    broadcast(conn, mg_mk_str("++ joined"));
+    server_handshake(conn);
     break;
 
   case MG_EV_WEBSOCKET_FRAME:
-    wm = (struct websocket_message *)eventData;
-    // New websocket message. Tell everybody.
-    d = {(char *)wm->data, wm->size};
-    broadcast(conn, d);
+    server_frame(conn, (websocket_message *)eventData);
     break;
 
   case MG_EV_HTTP_REQUEST:
     break;
 
   case MG_EV_CLOSE:
-    // Disconnect. Tell everybody.
-    if (is_websocket(conn)) {
-      broadcast(conn, mg_mk_str("-- left"));
-    }
+    server_close(conn);
+    break;
+
+  default:
     break;
   }
 }
 
-static void connect(Session *session, int status) {
-  session->_status = status;
+static void client_connect(Session *session, int status) {
+  if (session != nullptr && session->_state == kInit) {
+    session->_state = kConnect;
+  }
 }
 
-static void handshake(Session *session, http_message *message) {
-  session->_response = message->resp_code;
-  session->_open = (message->resp_code == 101);
+static void client_handshake(Session *session, http_message *message) {
+  if (session->_state == kConnect && message->resp_code == 101) {
+    session->_state = kOpen;
+  }
 }
 
-static void poll(Session *session) {
+static void client_poll(Session *session) {
   //char msg[500];
   //mg_send_websocket_frame(conn, WEBSOCKET_OP_TEXT, msg, sizeof(msg));
 }
 
-static void receive(Session *session, websocket_message *message) {
+static void client_receive(Session *session, websocket_message *message) {
   session->_recv.clear();
   session->_recv.append((char *)message->data, message->size);
 }
 
-static void close(Session *session) {
-  session->_open = false;
+static void client_close(Session *session) {
+  if (session != nullptr) {
+    delete session;
+  }
 }
 
-static void client_handler(mg_connection *conn, int event, void *session, void *eventData) {
+static void client_handler(mg_connection *conn, int event, void *eventData, void *session) {
   switch (event) {
   case MG_EV_CONNECT:
-    connect((Session *)session, *((int *)eventData));
+    client_connect((Session *)session, *((int *)eventData));
     break;
 
   case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
-    handshake((Session *)session, (http_message *)eventData);
+    client_handshake((Session *)session, (http_message *)eventData);
     break;
 
   case MG_EV_POLL:
-    poll((Session *)session);
+    client_poll((Session *)session);
     break;
 
   case MG_EV_WEBSOCKET_FRAME:
-    receive((Session *)session, (websocket_message *)eventData);
+    client_receive((Session *)session, (websocket_message *)eventData);
     break;
 
   case MG_EV_CLOSE:
-    close((Session *)session);
+    client_close((Session *)session);
     break;
 
   default:
@@ -142,64 +174,48 @@ Session *getSession(int argc, slib_par_t *params) {
 // ws.close(conn)
 //
 int cmd_close(int argc, slib_par_t *params, var_t *retval) {
-  int result;
   auto session = getSession(argc, params);
   if (session != nullptr) {
-    result = 1;
-  } else {
-    result = 0;
+    // close socket
   }
-  v_setint(retval, result);
-  return result;
-  return 1;
+  return argc == 1;
 }
 
 //
 // msg = ws.receive(conn)
 //
 int cmd_receive(int argc, slib_par_t *params, var_t *retval) {
-  int result;
   auto session = getSession(argc, params);
   if (session != nullptr) {
-    result = 1;
-  } else {
-    result = 0;
+    v_setstr(retval, session->_recv.c_str());
   }
-  v_setint(retval, result);
-  return result;
+  return argc == 1;
 }
 
 //
 // while ws.open(conn)
 //
 int cmd_open(int argc, slib_par_t *params, var_t *retval) {
-  int result;
   auto session = getSession(argc, params);
   if (session != nullptr) {
-    result = 1;
-  } else {
-    result = 0;
+    v_setint(retval, session->_state != kClose && signalReceived == 0);
   }
-  v_setint(retval, result);
-  return result;
+  return argc == 1;
 }
 
 //
 // ws.send(conn, "hello")
 //
 int cmd_send(int argc, slib_par_t *params, var_t *retval) {
-  int result = 0;
   auto session = getSession(argc, params);
   if (session != nullptr) {
     const char *message = get_param_str(argc, params, 1, nullptr);
     if (message != nullptr && message[0] != '\0') {
       session->_send.clear();
       session->_send.append(message);
-      result = 1;
     }
   }
-  v_setint(retval, result);
-  return result;
+  return argc == 2;
 }
 
 //
@@ -209,16 +225,15 @@ int cmd_create(int argc, slib_par_t *params, var_t *retval) {
   int result = 0;
   const char *url = get_param_str(argc, params, 0, nullptr);
   const char *protocol = get_param_str(argc, params, 1, nullptr);
-  if (url != nullptr && protocol != nullptr) {
-    Session *session = new Session();
+  if (url != nullptr) {
+    auto session = new Session();
     mg_connection *conn = mg_connect_ws(&manager, client_handler, session, url, protocol, nullptr);
     if (conn == nullptr) {
       delete session;
       v_setstr(retval, "Connection failed");
     } else {
-      sessions[++nextHandle] = session;
       session->_conn = conn;
-      v_setint(retval, nextHandle);
+      v_setint(retval, session->_handle);
       result = 1;
     }
   } else {
@@ -307,10 +322,12 @@ int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
 
 int sblib_events(int wait_flag, int *w, int *h) {
   mg_mgr_poll(&manager, MAX_POLL_SLEEP);
-  return 0;
+  return signalReceived ? 2 : 0;
 }
 
 int sblib_init(void) {
+  signal(SIGTERM, signal_handler);
+  signal(SIGINT, signal_handler);
   mg_mgr_init(&manager, nullptr);
   return 1;
 }
