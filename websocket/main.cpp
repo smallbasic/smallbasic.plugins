@@ -24,7 +24,7 @@ struct Session;
 std::map<int, Session *> sessions;
 
 enum ConnectionState {
-  kInit,
+  kInit = 0,
   kConnect,
   kOpen,
   kClose
@@ -40,8 +40,8 @@ struct Session {
     sessions.erase(_handle);
   }
 
-  std::string _send;
   std::string _recv;
+  mg_connection *_conn;
   ConnectionState _state;
   int _handle;
 };
@@ -55,7 +55,7 @@ static int is_websocket(const mg_connection *conn) {
   return conn->flags & MG_F_IS_WEBSOCKET;
 }
 
-static void broadcast(struct mg_connection *conn, const mg_str msg) {
+static void broadcast(mg_connection *conn, const mg_str msg) {
   struct mg_connection *c;
   char buf[500];
   char addr[32];
@@ -122,16 +122,22 @@ static void client_handshake(Session *session, http_message *message) {
   }
 }
 
-static void client_poll(Session *session, mg_connection *conn) {
-  if (!session->_send.empty()) {
-    mg_send_websocket_frame(conn, WEBSOCKET_OP_TEXT, session->_send.c_str(), session->_send.length());
-    session->_send.clear();
-  }
-}
-
-static void client_receive(Session *session, websocket_message *message) {
+static void client_receive_frame(Session *session, websocket_message *message) {
   session->_recv.clear();
   session->_recv.append((char *)message->data, message->size);
+}
+
+static void client_receive(Session *session, mg_connection *conn) {
+  if (conn->recv_mbuf.len && session->_state == kOpen) {
+    session->_recv.clear();
+    if ((unsigned char)conn->recv_mbuf.buf[0] > 128) {
+      // spurious first char?
+      session->_recv.append((char *)conn->recv_mbuf.buf + 1, conn->recv_mbuf.len - 1);
+    } else {
+      session->_recv.append((char *)conn->recv_mbuf.buf, conn->recv_mbuf.len);
+    }
+    mbuf_remove(&conn->recv_mbuf, conn->recv_mbuf.len);
+  }
 }
 
 static void client_close(Session *session) {
@@ -146,20 +152,23 @@ static void client_handler(mg_connection *conn, int event, void *eventData, void
     client_connect((Session *)session, *((int *)eventData));
     break;
 
-  case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
-    client_handshake((Session *)session, (http_message *)eventData);
-    break;
-
-  case MG_EV_POLL:
-    client_poll((Session *)session, conn);
-    break;
-
-  case MG_EV_WEBSOCKET_FRAME:
-    client_receive((Session *)session, (websocket_message *)eventData);
+  case MG_EV_RECV:
+    client_receive((Session *)session, conn);
     break;
 
   case MG_EV_CLOSE:
     client_close((Session *)session);
+    break;
+
+  case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
+    client_handshake((Session *)session, (http_message *)eventData);
+    break;
+
+  case MG_EV_WEBSOCKET_FRAME:
+    client_receive_frame((Session *)session, (websocket_message *)eventData);
+    break;
+
+  case MG_EV_WEBSOCKET_CONTROL_FRAME:
     break;
 
   default:
@@ -177,7 +186,7 @@ Session *getSession(int argc, slib_par_t *params) {
 int cmd_close(int argc, slib_par_t *params, var_t *retval) {
   auto session = getSession(argc, params);
   if (session != nullptr) {
-    // close socket
+    session->_conn->flags |= MG_F_CLOSE_IMMEDIATELY;
   }
   return argc == 1;
 }
@@ -187,8 +196,11 @@ int cmd_close(int argc, slib_par_t *params, var_t *retval) {
 //
 int cmd_receive(int argc, slib_par_t *params, var_t *retval) {
   auto session = getSession(argc, params);
-  if (session != nullptr) {
+  if (session != nullptr && !session->_recv.empty())  {
     v_setstr(retval, session->_recv.c_str());
+    session->_recv.clear();
+  } else {
+    v_setstr(retval, "");
   }
   return argc == 1;
 }
@@ -208,15 +220,20 @@ int cmd_open(int argc, slib_par_t *params, var_t *retval) {
 // ws.send(conn, "hello")
 //
 int cmd_send(int argc, slib_par_t *params, var_t *retval) {
+  int result = argc == 2;
   auto session = getSession(argc, params);
   if (session != nullptr) {
     const char *message = get_param_str(argc, params, 1, nullptr);
     if (message != nullptr && message[0] != '\0') {
-      session->_send.clear();
-      session->_send.append(message);
+      //session->_send.clear();
+      //session->_send.append(message);
+      mg_send_websocket_frame(session->_conn, WEBSOCKET_OP_TEXT, message, strlen(message));
+    } else {
+      v_setstr(retval, "Send failed");
+      result = 0;
     }
   }
-  return argc == 2;
+  return result;
 }
 
 //
@@ -234,6 +251,7 @@ int cmd_create(int argc, slib_par_t *params, var_t *retval) {
       v_setstr(retval, "Connection failed");
     } else {
       v_setint(retval, session->_handle);
+      session->_conn = conn;
       result = 1;
     }
   } else {

@@ -1,15 +1,14 @@
 import websocket as ws
 
 conn = ws.create("ws://127.0.0.1:8000", "ws_chat")
-print "conn = " + conn
-i = 0
-while ws.open(conn) == 1 && i < 5
-  i++
-  ws.send(conn, "hello: " + i)
+while ws.open(conn) == 1
   msg = ws.receive(conn)
   if (len(msg) > 0) then
-    print "message = " + msg
-  endif
+    print "Received:" + msg
+    input k
+    if (len(k) == 0) then exit loop
+    ws.send(conn, k)
+  endif  
   delay 1000
 wend
 
