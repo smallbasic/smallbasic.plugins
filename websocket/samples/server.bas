@@ -1,11 +1,12 @@
-import websocket
+import websocket as ws
 
-rem receive
-ws = websocket.listen(8080)
-while ws.open()
-  # read the next message from one of the connections
-  msg = ws.receive()
-  ws.post("cats")
-  
+print "websocket server"
+conn = ws.listen(8080, 1)
+while ws.open(conn) == 1
+  msg = ws.receive(conn)
+  if (len(msg) > 0) then
+    print msg
+  endif
+  delay 1000
 wend
 
