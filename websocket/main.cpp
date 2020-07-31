@@ -58,19 +58,14 @@ static void session_close(Session *session) {
   }
 }
 
-static void server_frame(mg_connection *conn, websocket_message *message) {
-  mg_str msg = {(char *)message->data, message->size};
-  struct mg_connection *c;
-  char buf[500];
-  char addr[32];
-
-  mg_sock_addr_to_str(&conn->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
-  snprintf(buf, sizeof(buf), "%s %.*s", addr, (int) msg.len, msg.p);
-
-  for (c = mg_next(conn->mgr, nullptr); c != nullptr; c = mg_next(conn->mgr, c)) {
+static void server_frame(mg_connection *conn, websocket_message *message, Session *session) {
+  if (session != nullptr) {
+    session->_recv.clear();
+    session->_recv.append((char *)message->data, message->size);
+  }
+  for (mg_connection *c = mg_next(conn->mgr, nullptr); c != nullptr; c = mg_next(conn->mgr, c)) {
     if (c != conn) {
-      // don't send to the sender
-      mg_send_websocket_frame(c, WEBSOCKET_OP_TEXT, buf, strlen(buf));
+      mg_send_websocket_frame(c, WEBSOCKET_OP_TEXT, message->data, message->size);
     }
   }
 }
@@ -78,15 +73,11 @@ static void server_frame(mg_connection *conn, websocket_message *message) {
 static void server_handler(mg_connection *conn, int event, void *eventData, void *session) {
   switch (event) {
   case MG_EV_WEBSOCKET_FRAME:
-    server_frame(conn, (websocket_message *)eventData);
+    server_frame(conn, (websocket_message *)eventData, (Session *)session);
     break;
 
   case MG_EV_HTTP_REQUEST:
     mg_serve_http(conn, (http_message *)eventData, s_http_server_opts);
-    break;
-
-  case MG_EV_CLOSE:
-    session_close((Session *)session);
     break;
 
   default:
@@ -101,18 +92,20 @@ static void client_connect(Session *session, int status) {
 }
 
 static void client_handshake(Session *session, http_message *message) {
-  if (session->_state == kConnect && message->resp_code == 101) {
+  if (session != nullptr && session->_state == kConnect && message->resp_code == 101) {
     session->_state = kOpen;
   }
 }
 
 static void client_receive_frame(Session *session, websocket_message *message) {
-  session->_recv.clear();
-  session->_recv.append((char *)message->data, message->size);
+  if (session != nullptr) {
+    session->_recv.clear();
+    session->_recv.append((char *)message->data, message->size);
+  }
 }
 
 static void client_receive(Session *session, mg_connection *conn) {
-  if (conn->recv_mbuf.len && session->_state == kOpen) {
+  if (session != nullptr && conn->recv_mbuf.len && session->_state == kOpen) {
     session->_recv.clear();
     if ((unsigned char)conn->recv_mbuf.buf[0] > 128) {
       // spurious first char?
@@ -244,7 +237,7 @@ int cmd_listen(int argc, slib_par_t *params, var_t *retval) {
   const char *port = get_param_str(argc, params, 0, nullptr);
   if (port != nullptr) {
     auto session = new Session();
-    mg_connection *conn = mg_bind(&manager, port, server_handler, nullptr);
+    mg_connection *conn = mg_bind(&manager, port, server_handler, session);
     if (conn == nullptr) {
       delete session;
       v_setstr(retval, "Listen failed");
@@ -342,4 +335,7 @@ int sblib_init(void) {
 
 void sblib_close(void) {
   mg_mgr_free(&manager);
+  for (unsigned i = 0; i < sessions.size(); i++) {
+    delete sessions[i];
+  }
 }
