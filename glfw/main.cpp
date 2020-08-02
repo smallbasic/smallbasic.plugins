@@ -13,6 +13,7 @@
 #include <GLFW/glfw3.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 #include <map>
 
 #include "var.h"
@@ -368,3 +369,31 @@ void sblib_rect(int x1, int y1, int x2, int y2, int fill) {
   glVertex2f(scaleX(x1), scaleY(y2));
   glEnd();
 }
+
+// draw ellipse
+// see: https://stackoverflow.com/questions/5886628/effecient-way-to-draw-ellipse-with-opengl-or-d3d
+void sblib_ellipse(int xc, int yc, int xr, int yr, int fill) {
+  double num_segments = 64.0;
+  double theta = (2.0 * M_PI) / num_segments;
+
+  // precalculate the sine and cosine
+  float s = sin(theta);
+  float c = cos(theta);
+  float x = 1;
+  float y = 0;
+
+  glColor3f(_fg_color._r, _fg_color._g, _fg_color._b);
+  glBegin(fill ? GL_POLYGON : GL_LINE_LOOP);
+
+  for (int i = 0; i < num_segments; i++)  {
+    // apply radius and offset
+    glVertex2f(scaleX(x * xr + xc), scaleY(y * yr + yc));
+
+    // apply the rotation matrix
+    float t = x;
+    x = c * x - s * y;
+    y = s * t + c * y;
+  }
+  glEnd();
+}
+
