@@ -10,13 +10,17 @@
 #include "config.h"
 
 #include <raylib/raylib/src/raylib.h>
-#include <stdlib.h>
 #include <cstring>
+#include <map>
 
 #include "var.h"
 #include "var_map.h"
 #include "module.h"
 #include "param.h"
+
+std::map<int, Music> _musicMap;
+std::map<int, Sound> _soundMap;
+int _nextId = 1;
 
 int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
@@ -1396,9 +1400,9 @@ int cmd_getmousey(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmusictimelength(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetMusicTimeLength(music);
-    // v_setint(retval, fnResult);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    auto fnResult = GetMusicTimeLength(music);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: GetMusicTimeLength");
@@ -1409,9 +1413,9 @@ int cmd_getmusictimelength(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmusictimeplayed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetMusicTimePlayed(music);
-    // v_setint(retval, fnResult);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    auto fnResult = GetMusicTimePlayed(music);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: GetMusicTimePlayed");
@@ -1871,8 +1875,8 @@ int cmd_initaudiostream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isaudiodeviceready(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsAudioDeviceReady();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsAudioDeviceReady();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsAudioDeviceReady");
@@ -1883,9 +1887,9 @@ int cmd_isaudiodeviceready(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isaudiostreamplaying(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto stream = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsAudioStreamPlaying(stream);
-    // v_setint(retval, fnResult);
+    //auto stream = get_param_int(argc, params, 0, 0);
+    //auto fnResult = IsAudioStreamPlaying(stream);
+    //v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsAudioStreamPlaying");
@@ -1896,9 +1900,9 @@ int cmd_isaudiostreamplaying(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isaudiostreamprocessed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto stream = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsAudioStreamProcessed(stream);
-    // v_setint(retval, fnResult);
+    //auto stream = get_param_str(argc, params, 0, NULL);
+    //auto fnResult = IsAudioStreamProcessed(stream);
+    //v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsAudioStreamProcessed");
@@ -1909,8 +1913,8 @@ int cmd_isaudiostreamprocessed(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iscursorhidden(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsCursorHidden();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsCursorHidden();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsCursorHidden");
@@ -1921,8 +1925,8 @@ int cmd_iscursorhidden(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iscursoronscreen(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsCursorOnScreen();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsCursorOnScreen();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsCursorOnScreen");
@@ -1933,8 +1937,8 @@ int cmd_iscursoronscreen(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isfiledropped(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsFileDropped();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsFileDropped();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsFileDropped");
@@ -1945,10 +1949,10 @@ int cmd_isfiledropped(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isfileextension(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto fileName = get_param_str(argc, params, 0, NULL);
-    // auto ext = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = IsFileExtension(fileName, ext);
-    // v_setint(retval, fnResult);
+    auto fileName = get_param_str(argc, params, 0, NULL);
+    auto ext = get_param_str(argc, params, 1, NULL);
+    auto fnResult = IsFileExtension(fileName, ext);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsFileExtension");
@@ -1959,9 +1963,9 @@ int cmd_isfileextension(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isgamepadavailable(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto gamepad = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsGamepadAvailable(gamepad);
-    // v_setint(retval, fnResult);
+    auto gamepad = get_param_int(argc, params, 0, 0);
+    auto fnResult = IsGamepadAvailable(gamepad);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsGamepadAvailable");
@@ -1972,10 +1976,10 @@ int cmd_isgamepadavailable(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isgamepadbuttondown(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto gamepad = get_param_str(argc, params, 0, NULL);
-    // auto button = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = IsGamepadButtonDown(gamepad, button);
-    // v_setint(retval, fnResult);
+    auto gamepad = get_param_int(argc, params, 0, 0);
+    auto button = get_param_int(argc, params, 1, 0);
+    auto fnResult = IsGamepadButtonDown(gamepad, button);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsGamepadButtonDown");
@@ -1986,10 +1990,10 @@ int cmd_isgamepadbuttondown(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isgamepadbuttonpressed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto gamepad = get_param_str(argc, params, 0, NULL);
-    // auto button = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = IsGamepadButtonPressed(gamepad, button);
-    // v_setint(retval, fnResult);
+    auto gamepad = get_param_int(argc, params, 0, 0);
+    auto button = get_param_int(argc, params, 1, 0);
+    auto fnResult = IsGamepadButtonPressed(gamepad, button);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsGamepadButtonPressed");
@@ -2000,10 +2004,10 @@ int cmd_isgamepadbuttonpressed(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isgamepadbuttonreleased(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto gamepad = get_param_str(argc, params, 0, NULL);
-    // auto button = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = IsGamepadButtonReleased(gamepad, button);
-    // v_setint(retval, fnResult);
+    auto gamepad = get_param_int(argc, params, 0, 0);
+    auto button = get_param_int(argc, params, 1, 0);
+    auto fnResult = IsGamepadButtonReleased(gamepad, button);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsGamepadButtonReleased");
@@ -2014,10 +2018,10 @@ int cmd_isgamepadbuttonreleased(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isgamepadbuttonup(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto gamepad = get_param_str(argc, params, 0, NULL);
-    // auto button = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = IsGamepadButtonUp(gamepad, button);
-    // v_setint(retval, fnResult);
+    auto gamepad = get_param_int(argc, params, 0, 0);
+    auto button = get_param_int(argc, params, 1, 0);
+    auto fnResult = IsGamepadButtonUp(gamepad, button);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsGamepadButtonUp");
@@ -2028,10 +2032,10 @@ int cmd_isgamepadbuttonup(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isgamepadname(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto gamepad = get_param_str(argc, params, 0, NULL);
-    // auto name = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = IsGamepadName(gamepad, name);
-    // v_setint(retval, fnResult);
+    auto gamepad = get_param_int(argc, params, 0, 0);
+    auto name = get_param_str(argc, params, 1, NULL);
+    auto fnResult = IsGamepadName(gamepad, name);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsGamepadName");
@@ -2042,9 +2046,9 @@ int cmd_isgamepadname(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isgesturedetected(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto gesture = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsGestureDetected(gesture);
-    // v_setint(retval, fnResult);
+    auto gesture = get_param_int(argc, params, 0, 0);
+    auto fnResult = IsGestureDetected(gesture);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsGestureDetected");
@@ -2055,9 +2059,9 @@ int cmd_isgesturedetected(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iskeydown(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto key = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsKeyDown(key);
-    // v_setint(retval, fnResult);
+    auto key = get_param_int(argc, params, 0, 0);
+    auto fnResult = IsKeyDown(key);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsKeyDown");
@@ -2068,9 +2072,9 @@ int cmd_iskeydown(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iskeypressed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto key = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsKeyPressed(key);
-    // v_setint(retval, fnResult);
+    auto key = get_param_int(argc, params, 0, 0);
+    auto fnResult = IsKeyPressed(key);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsKeyPressed");
@@ -2081,9 +2085,9 @@ int cmd_iskeypressed(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iskeyreleased(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto key = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsKeyReleased(key);
-    // v_setint(retval, fnResult);
+    auto key = get_param_int(argc, params, 0, 0);
+    auto fnResult = IsKeyReleased(key);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsKeyReleased");
@@ -2094,9 +2098,9 @@ int cmd_iskeyreleased(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iskeyup(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto key = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsKeyUp(key);
-    // v_setint(retval, fnResult);
+    auto key = get_param_int(argc, params, 0, 0);
+    auto fnResult = IsKeyUp(key);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsKeyUp");
@@ -2107,10 +2111,10 @@ int cmd_iskeyup(int argc, slib_par_t *params, var_t *retval) {
 int cmd_ismodelanimationvalid(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto model = get_param_str(argc, params, 0, NULL);
-    // auto anim = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = IsModelAnimationValid(model, anim);
-    // v_setint(retval, fnResult);
+    //auto model = get_param_str(argc, params, 0, NULL);
+    //auto anim = get_param_str(argc, params, 1, NULL);
+    //auto fnResult = IsModelAnimationValid(model, anim);
+    //v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsModelAnimationValid");
@@ -2121,9 +2125,9 @@ int cmd_ismodelanimationvalid(int argc, slib_par_t *params, var_t *retval) {
 int cmd_ismousebuttondown(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto button = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsMouseButtonDown(button);
-    // v_setint(retval, fnResult);
+    auto button = get_param_int(argc, params, 0, 0);
+    auto fnResult = IsMouseButtonDown(button);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsMouseButtonDown");
@@ -2134,9 +2138,9 @@ int cmd_ismousebuttondown(int argc, slib_par_t *params, var_t *retval) {
 int cmd_ismousebuttonpressed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto button = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsMouseButtonPressed(button);
-    // v_setint(retval, fnResult);
+    auto button = get_param_int(argc, params, 0, 0);
+    auto fnResult = IsMouseButtonPressed(button);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsMouseButtonPressed");
@@ -2147,9 +2151,9 @@ int cmd_ismousebuttonpressed(int argc, slib_par_t *params, var_t *retval) {
 int cmd_ismousebuttonreleased(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto button = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsMouseButtonReleased(button);
-    // v_setint(retval, fnResult);
+    auto button = get_param_int(argc, params, 0, 0);
+    auto fnResult = IsMouseButtonReleased(button);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsMouseButtonReleased");
@@ -2160,9 +2164,9 @@ int cmd_ismousebuttonreleased(int argc, slib_par_t *params, var_t *retval) {
 int cmd_ismousebuttonup(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto button = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsMouseButtonUp(button);
-    // v_setint(retval, fnResult);
+    auto button = get_param_int(argc, params, 0, 0);
+    auto fnResult = IsMouseButtonUp(button);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsMouseButtonUp");
@@ -2173,9 +2177,9 @@ int cmd_ismousebuttonup(int argc, slib_par_t *params, var_t *retval) {
 int cmd_ismusicplaying(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsMusicPlaying(music);
-    // v_setint(retval, fnResult);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    auto fnResult = IsMusicPlaying(music);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsMusicPlaying");
@@ -2186,9 +2190,9 @@ int cmd_ismusicplaying(int argc, slib_par_t *params, var_t *retval) {
 int cmd_issoundplaying(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto sound = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = IsSoundPlaying(sound);
-    // v_setint(retval, fnResult);
+    auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    auto fnResult = IsSoundPlaying(sound);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsSoundPlaying");
@@ -2199,8 +2203,8 @@ int cmd_issoundplaying(int argc, slib_par_t *params, var_t *retval) {
 int cmd_isvrsimulatorready(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsVrSimulatorReady();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsVrSimulatorReady();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsVrSimulatorReady");
@@ -2211,8 +2215,8 @@ int cmd_isvrsimulatorready(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iswindowfocused(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsWindowFocused();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsWindowFocused();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsWindowFocused");
@@ -2223,8 +2227,8 @@ int cmd_iswindowfocused(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iswindowfullscreen(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsWindowFullscreen();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsWindowFullscreen();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsWindowFullscreen");
@@ -2235,8 +2239,8 @@ int cmd_iswindowfullscreen(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iswindowhidden(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsWindowHidden();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsWindowHidden();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsWindowHidden");
@@ -2247,8 +2251,8 @@ int cmd_iswindowhidden(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iswindowmaximized(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsWindowMaximized();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsWindowMaximized();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsWindowMaximized");
@@ -2259,8 +2263,8 @@ int cmd_iswindowmaximized(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iswindowminimized(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsWindowMinimized();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsWindowMinimized();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsWindowMinimized");
@@ -2271,8 +2275,8 @@ int cmd_iswindowminimized(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iswindowready(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsWindowReady();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsWindowReady();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsWindowReady");
@@ -2283,8 +2287,8 @@ int cmd_iswindowready(int argc, slib_par_t *params, var_t *retval) {
 int cmd_iswindowresized(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = IsWindowResized();
-    // v_setint(retval, fnResult);
+    auto fnResult = IsWindowResized();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: IsWindowResized");
@@ -2541,9 +2545,10 @@ int cmd_loadmodelfrommesh(int argc, slib_par_t *params, var_t *retval) {
 int cmd_loadmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto fileName = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = LoadMusicStream(fileName);
-    // v_setint(retval, fnResult);
+    auto fileName = get_param_str(argc, params, 0, NULL);
+    int fnResult = ++_nextId;
+    _musicMap[result] = LoadMusicStream(fileName);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: LoadMusicStream");
@@ -2596,12 +2601,13 @@ int cmd_loadshadercode(int argc, slib_par_t *params, var_t *retval) {
 int cmd_loadsound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto fileName = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = LoadSound(fileName);
-    // v_setint(retval, fnResult);
+    auto fileName = get_param_str(argc, params, 0, NULL);
+    int fnResult = ++_nextId;
+    _soundMap[result] = LoadSound(fileName);
+    v_setint(retval, fnResult);
   }
   else {
-    v_setstr(retval, "Invalid input: LoadSound");
+    v_setstr(retval, "Invalid input:L oadSound");
   }
   return result;
 }
@@ -2968,8 +2974,8 @@ int cmd_wavecopy(int argc, slib_par_t *params, var_t *retval) {
 int cmd_windowshouldclose(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = WindowShouldClose();
-    // v_setint(retval, fnResult);
+    auto fnResult = WindowShouldClose();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: WindowShouldClose");
@@ -5143,8 +5149,8 @@ int cmd_pauseaudiostream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_pausemusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // PauseMusicStream(music);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    PauseMusicStream(music);
   }
   else {
     v_setstr(retval, "Invalid input: PauseMusicStream");
@@ -5155,8 +5161,8 @@ int cmd_pausemusicstream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_pausesound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto sound = get_param_str(argc, params, 0, NULL);
-    // PauseSound(sound);
+    auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    PauseSound(sound);
   }
   else {
     v_setstr(retval, "Invalid input: PauseSound");
@@ -5179,8 +5185,8 @@ int cmd_playaudiostream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_playmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // PlayMusicStream(music);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    PlayMusicStream(music);
   }
   else {
     v_setstr(retval, "Invalid input: PlayMusicStream");
@@ -5191,8 +5197,8 @@ int cmd_playmusicstream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_playsound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto sound = get_param_str(argc, params, 0, NULL);
-    // PlaySound(sound);
+    auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    PlaySound(sound);
   }
   else {
     v_setstr(retval, "Invalid input: PlaySound");
@@ -5203,8 +5209,8 @@ int cmd_playsound(int argc, slib_par_t *params, var_t *retval) {
 int cmd_playsoundmulti(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto sound = get_param_str(argc, params, 0, NULL);
-    // PlaySoundMulti(sound);
+    auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    PlaySoundMulti(sound);
   }
   else {
     v_setstr(retval, "Invalid input: PlaySoundMulti");
@@ -5238,8 +5244,8 @@ int cmd_resumeaudiostream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_resumemusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // ResumeMusicStream(music);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    ResumeMusicStream(music);
   }
   else {
     v_setstr(retval, "Invalid input: ResumeMusicStream");
@@ -5250,8 +5256,8 @@ int cmd_resumemusicstream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_resumesound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto sound = get_param_str(argc, params, 0, NULL);
-    // ResumeSound(sound);
+    auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    ResumeSound(sound);
   }
   else {
     v_setstr(retval, "Invalid input: ResumeSound");
@@ -5557,9 +5563,9 @@ int cmd_setmousescale(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setmusicpitch(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // auto pitch = get_param_str(argc, params, 1, NULL);
-    // SetMusicPitch(music, pitch);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    auto pitch = get_param_int(argc, params, 1, 0);
+    SetMusicPitch(music, pitch);
   }
   else {
     v_setstr(retval, "Invalid input: SetMusicPitch");
@@ -5570,9 +5576,9 @@ int cmd_setmusicpitch(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setmusicvolume(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // auto volume = get_param_str(argc, params, 1, NULL);
-    // SetMusicVolume(music, volume);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    auto volume = get_param_int(argc, params, 1, 0);
+    SetMusicVolume(music, volume);
   }
   else {
     v_setstr(retval, "Invalid input: SetMusicVolume");
@@ -5669,9 +5675,9 @@ int cmd_setshapestexture(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setsoundpitch(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto sound = get_param_str(argc, params, 0, NULL);
-    // auto pitch = get_param_str(argc, params, 1, NULL);
-    // SetSoundPitch(sound, pitch);
+    auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    auto pitch = get_param_int(argc, params, 1, 0);
+    SetSoundPitch(sound, pitch);
   }
   else {
     v_setstr(retval, "Invalid input: SetSoundPitch");
@@ -5682,9 +5688,9 @@ int cmd_setsoundpitch(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setsoundvolume(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto sound = get_param_str(argc, params, 0, NULL);
-    // auto volume = get_param_str(argc, params, 1, NULL);
-    // SetSoundVolume(sound, volume);
+    auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    auto volume = get_param_int(argc, params, 1, 0);
+    SetSoundVolume(sound, volume);
   }
   else {
     v_setstr(retval, "Invalid input: SetSoundVolume");
@@ -5695,8 +5701,8 @@ int cmd_setsoundvolume(int argc, slib_par_t *params, var_t *retval) {
 int cmd_settargetfps(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto fps = get_param_str(argc, params, 0, NULL);
-    // SetTargetFPS(fps);
+    auto fps = get_param_int(argc, params, 0, 50);
+    SetTargetFPS(fps);
   }
   else {
     v_setstr(retval, "Invalid input: SetTargetFPS");
@@ -5880,8 +5886,8 @@ int cmd_stopaudiostream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_stopmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // StopMusicStream(music);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    StopMusicStream(music);
   }
   else {
     v_setstr(retval, "Invalid input: StopMusicStream");
@@ -5892,8 +5898,8 @@ int cmd_stopmusicstream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_stopsound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto sound = get_param_str(argc, params, 0, NULL);
-    // StopSound(sound);
+    auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    StopSound(sound);
   }
   else {
     v_setstr(retval, "Invalid input: StopSound");
@@ -6070,8 +6076,8 @@ int cmd_unloadmodelanimation(int argc, slib_par_t *params, var_t *retval) {
 int cmd_unloadmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // UnloadMusicStream(music);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    UnloadMusicStream(music);
   }
   else {
     v_setstr(retval, "Invalid input: UnloadMusicStream");
@@ -6106,8 +6112,8 @@ int cmd_unloadshader(int argc, slib_par_t *params, var_t *retval) {
 int cmd_unloadsound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto sound = get_param_str(argc, params, 0, NULL);
-    // UnloadSound(sound);
+    auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    UnloadSound(sound);
   }
   else {
     v_setstr(retval, "Invalid input: UnloadSound");
@@ -6182,8 +6188,8 @@ int cmd_updatemodelanimation(int argc, slib_par_t *params, var_t *retval) {
 int cmd_updatemusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto music = get_param_str(argc, params, 0, NULL);
-    // UpdateMusicStream(music);
+    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    UpdateMusicStream(music);
   }
   else {
     v_setstr(retval, "Invalid input: UpdateMusicStream");
@@ -6194,10 +6200,10 @@ int cmd_updatemusicstream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_updatesound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto sound = get_param_str(argc, params, 0, NULL);
-    // auto data = get_param_str(argc, params, 1, NULL);
-    // auto samplesCount = get_param_str(argc, params, 2, NULL);
-    // UpdateSound(sound, data, samplesCount);
+    //auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    //auto data = get_param_int(argc, params, 1, 0);
+    //auto samplesCount = get_param_int(argc, params, 2, 0);
+    //UpdateSound(sound, data, samplesCount);
   }
   else {
     v_setstr(retval, "Invalid input: UpdateSound");
@@ -6373,8 +6379,8 @@ API lib_func[] = {
   // {"GETMOUSEWHEELMOVE", cmd_getmousewheelmove},
   // {"GETMOUSEX", cmd_getmousex},
   // {"GETMOUSEY", cmd_getmousey},
-  // {"GETMUSICTIMELENGTH", cmd_getmusictimelength},
-  // {"GETMUSICTIMEPLAYED", cmd_getmusictimeplayed},
+  {"GETMUSICTIMELENGTH", cmd_getmusictimelength},
+  {"GETMUSICTIMEPLAYED", cmd_getmusictimeplayed},
   // {"GETNEXTCODEPOINT", cmd_getnextcodepoint},
   // {"GETPIXELCOLOR", cmd_getpixelcolor},
   // {"GETPIXELDATASIZE", cmd_getpixeldatasize},
@@ -6389,7 +6395,7 @@ API lib_func[] = {
   // {"GETSHADERLOCATIONATTRIB", cmd_getshaderlocationattrib},
   // {"GETSHAPESTEXTURE", cmd_getshapestexture},
   // {"GETSHAPESTEXTUREREC", cmd_getshapestexturerec},
-  // {"GETSOUNDSPLAYING", cmd_getsoundsplaying},
+  {"GETSOUNDSPLAYING", cmd_getsoundsplaying},
   // {"GETTEXTUREDATA", cmd_gettexturedata},
   // {"GETTEXTUREDEFAULT", cmd_gettexturedefault},
   // {"GETTIME", cmd_gettime},
@@ -6409,39 +6415,39 @@ API lib_func[] = {
   // {"IMAGETEXT", cmd_imagetext},
   // {"IMAGETEXTEX", cmd_imagetextex},
   // {"INITAUDIOSTREAM", cmd_initaudiostream},
-  // {"ISAUDIODEVICEREADY", cmd_isaudiodeviceready},
-  // {"ISAUDIOSTREAMPLAYING", cmd_isaudiostreamplaying},
-  // {"ISAUDIOSTREAMPROCESSED", cmd_isaudiostreamprocessed},
-  // {"ISCURSORHIDDEN", cmd_iscursorhidden},
-  // {"ISCURSORONSCREEN", cmd_iscursoronscreen},
-  // {"ISFILEDROPPED", cmd_isfiledropped},
-  // {"ISFILEEXTENSION", cmd_isfileextension},
-  // {"ISGAMEPADAVAILABLE", cmd_isgamepadavailable},
-  // {"ISGAMEPADBUTTONDOWN", cmd_isgamepadbuttondown},
-  // {"ISGAMEPADBUTTONPRESSED", cmd_isgamepadbuttonpressed},
-  // {"ISGAMEPADBUTTONRELEASED", cmd_isgamepadbuttonreleased},
-  // {"ISGAMEPADBUTTONUP", cmd_isgamepadbuttonup},
-  // {"ISGAMEPADNAME", cmd_isgamepadname},
-  // {"ISGESTUREDETECTED", cmd_isgesturedetected},
-  // {"ISKEYDOWN", cmd_iskeydown},
-  // {"ISKEYPRESSED", cmd_iskeypressed},
-  // {"ISKEYRELEASED", cmd_iskeyreleased},
-  // {"ISKEYUP", cmd_iskeyup},
-  // {"ISMODELANIMATIONVALID", cmd_ismodelanimationvalid},
-  // {"ISMOUSEBUTTONDOWN", cmd_ismousebuttondown},
-  // {"ISMOUSEBUTTONPRESSED", cmd_ismousebuttonpressed},
-  // {"ISMOUSEBUTTONRELEASED", cmd_ismousebuttonreleased},
-  // {"ISMOUSEBUTTONUP", cmd_ismousebuttonup},
-  // {"ISMUSICPLAYING", cmd_ismusicplaying},
-  // {"ISSOUNDPLAYING", cmd_issoundplaying},
-  // {"ISVRSIMULATORREADY", cmd_isvrsimulatorready},
-  // {"ISWINDOWFOCUSED", cmd_iswindowfocused},
-  // {"ISWINDOWFULLSCREEN", cmd_iswindowfullscreen},
-  // {"ISWINDOWHIDDEN", cmd_iswindowhidden},
-  // {"ISWINDOWMAXIMIZED", cmd_iswindowmaximized},
-  // {"ISWINDOWMINIMIZED", cmd_iswindowminimized},
-  // {"ISWINDOWREADY", cmd_iswindowready},
-  // {"ISWINDOWRESIZED", cmd_iswindowresized},
+  {"ISAUDIODEVICEREADY", cmd_isaudiodeviceready},
+  //{"ISAUDIOSTREAMPLAYING", cmd_isaudiostreamplaying},
+  //{"ISAUDIOSTREAMPROCESSED", cmd_isaudiostreamprocessed},
+  {"ISCURSORHIDDEN", cmd_iscursorhidden},
+  {"ISCURSORONSCREEN", cmd_iscursoronscreen},
+  {"ISFILEDROPPED", cmd_isfiledropped},
+  {"ISFILEEXTENSION", cmd_isfileextension},
+  {"ISGAMEPADAVAILABLE", cmd_isgamepadavailable},
+  {"ISGAMEPADBUTTONDOWN", cmd_isgamepadbuttondown},
+  {"ISGAMEPADBUTTONPRESSED", cmd_isgamepadbuttonpressed},
+  {"ISGAMEPADBUTTONRELEASED", cmd_isgamepadbuttonreleased},
+  {"ISGAMEPADBUTTONUP", cmd_isgamepadbuttonup},
+  {"ISGAMEPADNAME", cmd_isgamepadname},
+  {"ISGESTUREDETECTED", cmd_isgesturedetected},
+  {"ISKEYDOWN", cmd_iskeydown},
+  {"ISKEYPRESSED", cmd_iskeypressed},
+  {"ISKEYRELEASED", cmd_iskeyreleased},
+  {"ISKEYUP", cmd_iskeyup},
+  //{"ISMODELANIMATIONVALID", cmd_ismodelanimationvalid},
+  {"ISMOUSEBUTTONDOWN", cmd_ismousebuttondown},
+  {"ISMOUSEBUTTONPRESSED", cmd_ismousebuttonpressed},
+  {"ISMOUSEBUTTONRELEASED", cmd_ismousebuttonreleased},
+  {"ISMOUSEBUTTONUP", cmd_ismousebuttonup},
+  {"ISMUSICPLAYING", cmd_ismusicplaying},
+  {"ISSOUNDPLAYING", cmd_issoundplaying},
+  {"ISVRSIMULATORREADY", cmd_isvrsimulatorready},
+  {"ISWINDOWFOCUSED", cmd_iswindowfocused},
+  {"ISWINDOWFULLSCREEN", cmd_iswindowfullscreen},
+  {"ISWINDOWHIDDEN", cmd_iswindowhidden},
+  {"ISWINDOWMAXIMIZED", cmd_iswindowmaximized},
+  {"ISWINDOWMINIMIZED", cmd_iswindowminimized},
+  {"ISWINDOWREADY", cmd_iswindowready},
+  {"ISWINDOWRESIZED", cmd_iswindowresized},
   // {"LOADFILEDATA", cmd_loadfiledata},
   // {"LOADFILETEXT", cmd_loadfiletext},
   // {"LOADFONT", cmd_loadfont},
@@ -6459,12 +6465,12 @@ API lib_func[] = {
   // {"LOADMODEL", cmd_loadmodel},
   // {"LOADMODELANIMATIONS", cmd_loadmodelanimations},
   // {"LOADMODELFROMMESH", cmd_loadmodelfrommesh},
-  // {"LOADMUSICSTREAM", cmd_loadmusicstream},
+  {"LOADMUSICSTREAM", cmd_loadmusicstream},
   // {"LOADRENDERTEXTURE", cmd_loadrendertexture},
   // {"LOADSHADER", cmd_loadshader},
   // {"LOADSHADERCODE", cmd_loadshadercode},
-  // {"LOADSOUND", cmd_loadsound},
-  // {"LOADSOUNDFROMWAVE", cmd_loadsoundfromwave},
+  {"LOADSOUND", cmd_loadsound},
+  {"LOADSOUNDFROMWAVE", cmd_loadsoundfromwave},
   // {"LOADSTORAGEVALUE", cmd_loadstoragevalue},
   // {"LOADTEXTURE", cmd_loadtexture},
   // {"LOADTEXTURECUBEMAP", cmd_loadtexturecubemap},
@@ -6490,7 +6496,7 @@ API lib_func[] = {
   // {"TEXTTOUPPER", cmd_texttoupper},
   // {"TEXTTOUTF8", cmd_texttoutf8},
   // {"WAVECOPY", cmd_wavecopy},
-  // {"WINDOWSHOULDCLOSE", cmd_windowshouldclose},
+  {"WINDOWSHOULDCLOSE", cmd_windowshouldclose},
 };
 
 API lib_proc[] = {
@@ -6648,16 +6654,16 @@ API lib_proc[] = {
   // {"MESHTANGENTS", cmd_meshtangents},
   // {"OPENURL", cmd_openurl},
   // {"PAUSEAUDIOSTREAM", cmd_pauseaudiostream},
-  // {"PAUSEMUSICSTREAM", cmd_pausemusicstream},
-  // {"PAUSESOUND", cmd_pausesound},
+  {"PAUSEMUSICSTREAM", cmd_pausemusicstream},
+  {"PAUSESOUND", cmd_pausesound},
   // {"PLAYAUDIOSTREAM", cmd_playaudiostream},
-  // {"PLAYMUSICSTREAM", cmd_playmusicstream},
-  // {"PLAYSOUND", cmd_playsound},
-  // {"PLAYSOUNDMULTI", cmd_playsoundmulti},
+  {"PLAYMUSICSTREAM", cmd_playmusicstream},
+  {"PLAYSOUND", cmd_playsound},
+  {"PLAYSOUNDMULTI", cmd_playsoundmulti},
   {"RESTOREWINDOW", cmd_restorewindow},
   // {"RESUMEAUDIOSTREAM", cmd_resumeaudiostream},
-  // {"RESUMEMUSICSTREAM", cmd_resumemusicstream},
-  // {"RESUMESOUND", cmd_resumesound},
+  {"RESUMEMUSICSTREAM", cmd_resumemusicstream},
+  {"RESUMESOUND", cmd_resumesound},
   // {"SAVEFILEDATA", cmd_savefiledata},
   // {"SAVEFILETEXT", cmd_savefiletext},
   // {"SAVESTORAGEVALUE", cmd_savestoragevalue},
@@ -6681,17 +6687,17 @@ API lib_proc[] = {
   // {"SETMOUSEOFFSET", cmd_setmouseoffset},
   // {"SETMOUSEPOSITION", cmd_setmouseposition},
   // {"SETMOUSESCALE", cmd_setmousescale},
-  // {"SETMUSICPITCH", cmd_setmusicpitch},
-  // {"SETMUSICVOLUME", cmd_setmusicvolume},
+  {"SETMUSICPITCH", cmd_setmusicpitch},
+  {"SETMUSICVOLUME", cmd_setmusicvolume},
   // {"SETPIXELCOLOR", cmd_setpixelcolor},
   // {"SETSHADERVALUE", cmd_setshadervalue},
   // {"SETSHADERVALUEMATRIX", cmd_setshadervaluematrix},
   // {"SETSHADERVALUETEXTURE", cmd_setshadervaluetexture},
   // {"SETSHADERVALUEV", cmd_setshadervaluev},
   // {"SETSHAPESTEXTURE", cmd_setshapestexture},
-  // {"SETSOUNDPITCH", cmd_setsoundpitch},
-  // {"SETSOUNDVOLUME", cmd_setsoundvolume},
-  // {"SETTARGETFPS", cmd_settargetfps},
+  {"SETSOUNDPITCH", cmd_setsoundpitch},
+  {"SETSOUNDVOLUME", cmd_setsoundvolume},
+  {"SETTARGETFPS", cmd_settargetfps},
   // {"SETTEXTUREFILTER", cmd_settexturefilter},
   // {"SETTEXTUREWRAP", cmd_settexturewrap},
   // {"SETTRACELOGCALLBACK", cmd_settracelogcallback},
@@ -6706,7 +6712,7 @@ API lib_proc[] = {
   // {"SETWINDOWTITLE", cmd_setwindowtitle},
   {"SHOWCURSOR", cmd_showcursor},
   // {"STOPAUDIOSTREAM", cmd_stopaudiostream},
-  // {"STOPMUSICSTREAM", cmd_stopmusicstream},
+   {"STOPMUSICSTREAM", cmd_stopmusicstream},
   // {"STOPSOUND", cmd_stopsound},
   {"STOPSOUNDMULTI", cmd_stopsoundmulti},
   // {"TAKESCREENSHOT", cmd_takescreenshot},
@@ -6722,16 +6728,16 @@ API lib_proc[] = {
   // {"UNLOADMESH", cmd_unloadmesh},
   // {"UNLOADMODEL", cmd_unloadmodel},
   // {"UNLOADMODELANIMATION", cmd_unloadmodelanimation},
-  // {"UNLOADMUSICSTREAM", cmd_unloadmusicstream},
+  {"UNLOADMUSICSTREAM", cmd_unloadmusicstream},
   // {"UNLOADRENDERTEXTURE", cmd_unloadrendertexture},
   // {"UNLOADSHADER", cmd_unloadshader},
-  // {"UNLOADSOUND", cmd_unloadsound},
+  {"UNLOADSOUND", cmd_unloadsound},
   // {"UNLOADTEXTURE", cmd_unloadtexture},
   // {"UNLOADWAVE", cmd_unloadwave},
   // {"UPDATEAUDIOSTREAM", cmd_updateaudiostream},
   // {"UPDATECAMERA", cmd_updatecamera},
   // {"UPDATEMODELANIMATION", cmd_updatemodelanimation},
-  // {"UPDATEMUSICSTREAM", cmd_updatemusicstream},
+  {"UPDATEMUSICSTREAM", cmd_updatemusicstream},
   // {"UPDATESOUND", cmd_updatesound},
   // {"UPDATETEXTURE", cmd_updatetexture},
   // {"UPDATETEXTUREREC", cmd_updatetexturerec},

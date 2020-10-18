@@ -5,7 +5,7 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 # 
 
-AM_CPPFLAGS = -I../include -Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter -fno-rtti -fno-exceptions -std=c++14 -fPIC
+AM_CPPFLAGS = -I../include -Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter -std=c++14 -fPIC
 lib_LTLIBRARIES = libraylib.la
 libraylib_la_SOURCES = main.cpp ../include/param.cpp
 libraylib_la_LDFLAGS = -module -rpath '$(libdir)' -lraylib -lGL -lm -lpthread -ldl -lrt -lX11

@@ -30,14 +30,15 @@ for fun in skelton("func")
   funcs += NL + "  if (result) {"
   i = 0
   args = ""
+  commented = iff(lower(left(fun.name, 2)) == "is", "", "// ")
   for a in fun.args
-    funcs += NL + "    // auto " + a + " = get_param_str(argc, params, " + i + ", NULL);"
+    funcs += NL + "    " + commented + "auto " + a + " = get_param_str(argc, params, " + i + ", NULL);"
     if (i > 0) then args += ", "
     args += a
     i++
   next a
-  funcs += NL + "    // auto fnResult = " + fun.name + "(" + args + ");"
-  funcs += NL + "    // v_setint(retval, fnResult);"
+  funcs += NL + "    " + commented + "auto fnResult = " + fun.name + "(" + args + ");"
+  funcs += NL + "    " + commented + "v_setint(retval, fnResult);"
   funcs += NL + "  }"
   funcs += NL + "  else {"
   funcs += NL + "    v_setstr(retval, \"Invalid input: " + fun.name + "\");"
