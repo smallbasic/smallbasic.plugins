@@ -5,7 +5,7 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 #
 
-AM_CPPFLAGS = -I../include -Wall
+AM_CPPFLAGS = -I../include -Wall -I./libclipboard/include
 lib_LTLIBRARIES = libclipboard.la
 libclipboard_la_SOURCES = main.cpp clipboard.c ../include/param.cpp
 libclipboard_la_LDFLAGS = -module -rpath '$(libdir)' @CLIPBOARD_LDFLAGS@

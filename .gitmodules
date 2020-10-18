@@ -10,3 +10,6 @@
 [submodule "websocket/mongoose"]
 	path = websocket/mongoose
 	url = https://github.com/cesanta/mongoose.git
+[submodule "raylib/raylib"]
+	path = raylib/raylib
+	url = https://github.com/raysan5/raylib.git

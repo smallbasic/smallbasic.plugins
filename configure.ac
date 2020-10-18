@@ -53,9 +53,6 @@ fi
 # checks for glfw
 AC_CHECK_HEADERS([GL/gl.h], [], [AC_MSG_ERROR([GL/gl.h not found])])
 
-# checks for clipboard
-AC_CHECK_HEADERS([libclipboard.h], [], [AC_MSG_ERROR([libclipboard.h not found])])
-
 dnl change default aru setting to avoid warning
 ARFLAGS=cr
 AC_SUBST(ARFLAGS)
@@ -65,7 +62,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CXX
 LT_PREREQ([2.2])
 
-BUILD_SUBDIRS="mysql nuklear glfw clipboard websocket"
+BUILD_SUBDIRS="mysql nuklear glfw clipboard websocket raylib"
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
 
@@ -77,6 +74,10 @@ mysql/Makefile
 nuklear/Makefile
 glfw/Makefile
 clipboard/Makefile
-websocket/Makefile])
+websocket/Makefile
+raylib/Makefile])
 
 AC_OUTPUT
+
+# create config to libclipboard
+cp config.h clipboard/libclipboard-config.h
