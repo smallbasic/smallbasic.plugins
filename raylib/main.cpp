@@ -22,6 +22,42 @@ std::map<int, Music> _musicMap;
 std::map<int, Sound> _soundMap;
 int _nextId = 1;
 
+const Color _colors[] = {
+  {0  ,0  ,0  ,255}, // 0 black
+  {0  ,0  ,128,255}, // 1 blue
+  {0  ,128,0  ,255}, // 2 green
+  {0  ,128,128,255}, // 3 cyan
+  {128,0  ,0  ,255}, // 4 red
+  {128,0  ,128,255}, // 5 magenta
+  {128,128,0  ,255}, // 6 yellow
+  {192,192,192,255}, // 7 white
+  {128,128,128,255}, // 8 gray
+  {0  ,0  ,255,255}, // 9 light blue
+  {0  ,255,0  ,255}, // 10 light green
+  {0  ,255,255,255}, // 11 light cyan
+  {255,0  ,0  ,255}, // 12 light red
+  {255,0  ,255,255}, // 13 light magenta
+  {255,255,0  ,255}, // 14 light yellow
+  {255,255,255,255}  // 15 bright white
+};
+
+struct Color get_color(long c) {
+  Color result;
+  if (c >= 0 && c < 16) {
+    result = _colors[c];
+  } else {
+    if (c < 0) {
+      c = -c;
+    }
+    uint8_t r = (c & 0xff0000) >> 16;
+    uint8_t g = (c & 0xff00) >> 8;
+    uint8_t b = (c & 0xff);
+    uint8_t a = 255;
+    result = {r, g, b, a};
+  }
+  return result;
+}
+
 int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
@@ -1399,7 +1435,7 @@ int cmd_getmousey(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_getmusictimelength(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     auto fnResult = GetMusicTimeLength(music);
     v_setint(retval, fnResult);
@@ -1412,7 +1448,7 @@ int cmd_getmusictimelength(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_getmusictimeplayed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     auto fnResult = GetMusicTimePlayed(music);
     v_setint(retval, fnResult);
@@ -2176,7 +2212,7 @@ int cmd_ismousebuttonup(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_ismusicplaying(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     auto fnResult = IsMusicPlaying(music);
     v_setint(retval, fnResult);
@@ -2189,7 +2225,7 @@ int cmd_ismusicplaying(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_issoundplaying(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     auto fnResult = IsSoundPlaying(sound);
     v_setint(retval, fnResult);
@@ -2547,7 +2583,7 @@ int cmd_loadmusicstream(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     auto fileName = get_param_str(argc, params, 0, NULL);
     int fnResult = ++_nextId;
-    _musicMap[result] = LoadMusicStream(fileName);
+    _musicMap[fnResult] = LoadMusicStream(fileName);
     v_setint(retval, fnResult);
   }
   else {
@@ -2603,7 +2639,7 @@ int cmd_loadsound(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     auto fileName = get_param_str(argc, params, 0, NULL);
     int fnResult = ++_nextId;
-    _soundMap[result] = LoadSound(fileName);
+    _soundMap[fnResult] = LoadSound(fileName);
     v_setint(retval, fnResult);
   }
   else {
@@ -3083,8 +3119,8 @@ int cmd_beginvrdrawing(int argc, slib_par_t *params, var_t *retval) {
 int cmd_clearbackground(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto color = get_param_str(argc, params, 0, NULL);
-    // ClearBackground(color);
+    auto color = get_color(get_param_int(argc, params, 0, 0));
+    ClearBackground(color);
   }
   else {
     v_setstr(retval, "Invalid input: ClearBackground");
@@ -5064,10 +5100,10 @@ int cmd_initvrsimulator(int argc, slib_par_t *params, var_t *retval) {
 int cmd_initwindow(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // auto title = get_param_str(argc, params, 2, NULL);
-    // InitWindow(width, height, title);
+    auto width = get_param_int(argc, params, 0, 640);
+    auto height = get_param_int(argc, params, 1, 480);
+    auto title = get_param_str(argc, params, 2, NULL);
+    InitWindow(width, height, title);
   }
   else {
     v_setstr(retval, "Invalid input: InitWindow");
@@ -5148,7 +5184,7 @@ int cmd_pauseaudiostream(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_pausemusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     PauseMusicStream(music);
   }
@@ -5160,7 +5196,7 @@ int cmd_pausemusicstream(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_pausesound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     PauseSound(sound);
   }
@@ -5184,7 +5220,7 @@ int cmd_playaudiostream(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_playmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     PlayMusicStream(music);
   }
@@ -5196,7 +5232,7 @@ int cmd_playmusicstream(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_playsound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     PlaySound(sound);
   }
@@ -5208,7 +5244,7 @@ int cmd_playsound(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_playsoundmulti(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     PlaySoundMulti(sound);
   }
@@ -5243,7 +5279,7 @@ int cmd_resumeaudiostream(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_resumemusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     ResumeMusicStream(music);
   }
@@ -5255,7 +5291,7 @@ int cmd_resumemusicstream(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_resumesound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     ResumeSound(sound);
   }
@@ -5562,7 +5598,7 @@ int cmd_setmousescale(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_setmusicpitch(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     auto pitch = get_param_int(argc, params, 1, 0);
     SetMusicPitch(music, pitch);
@@ -5575,7 +5611,7 @@ int cmd_setmusicpitch(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_setmusicvolume(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     auto volume = get_param_int(argc, params, 1, 0);
     SetMusicVolume(music, volume);
@@ -5674,7 +5710,7 @@ int cmd_setshapestexture(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_setsoundpitch(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
-  if (result) {
+  if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     auto pitch = get_param_int(argc, params, 1, 0);
     SetSoundPitch(sound, pitch);
@@ -5687,7 +5723,7 @@ int cmd_setsoundpitch(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_setsoundvolume(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
-  if (result) {
+  if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     auto volume = get_param_int(argc, params, 1, 0);
     SetSoundVolume(sound, volume);
@@ -5838,9 +5874,9 @@ int cmd_setwindowposition(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setwindowsize(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // SetWindowSize(width, height);
+    auto width = get_param_int(argc, params, 0, 640);
+    auto height = get_param_int(argc, params, 1, 480);
+    SetWindowSize(width, height);
   }
   else {
     v_setstr(retval, "Invalid input: SetWindowSize");
@@ -5851,8 +5887,8 @@ int cmd_setwindowsize(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setwindowtitle(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto title = get_param_str(argc, params, 0, NULL);
-    // SetWindowTitle(title);
+    auto title = get_param_str(argc, params, 0, NULL);
+    SetWindowTitle(title);
   }
   else {
     v_setstr(retval, "Invalid input: SetWindowTitle");
@@ -5885,7 +5921,7 @@ int cmd_stopaudiostream(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_stopmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     StopMusicStream(music);
   }
@@ -5897,7 +5933,7 @@ int cmd_stopmusicstream(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_stopsound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     StopSound(sound);
   }
@@ -6075,7 +6111,7 @@ int cmd_unloadmodelanimation(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_unloadmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     UnloadMusicStream(music);
   }
@@ -6111,7 +6147,8 @@ int cmd_unloadshader(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_unloadsound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
+    fprintf(stderr, "soundid = %d\n", get_param_int(argc, params, 0, 0));
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     UnloadSound(sound);
   }
@@ -6187,7 +6224,7 @@ int cmd_updatemodelanimation(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_updatemusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
-  if (result) {
+  if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     UpdateMusicStream(music);
   }
@@ -6199,7 +6236,7 @@ int cmd_updatemusicstream(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_updatesound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
-  if (result) {
+  if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
     //auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     //auto data = get_param_int(argc, params, 1, 0);
     //auto samplesCount = get_param_int(argc, params, 2, 0);
@@ -6508,7 +6545,7 @@ API lib_proc[] = {
   // {"BEGINSHADERMODE", cmd_beginshadermode},
   // {"BEGINTEXTUREMODE", cmd_begintexturemode},
   {"BEGINVRDRAWING", cmd_beginvrdrawing},
-  // {"CLEARBACKGROUND", cmd_clearbackground},
+  {"CLEARBACKGROUND", cmd_clearbackground},
   {"CLEARDIRECTORYFILES", cmd_cleardirectoryfiles},
   {"CLEARDROPPEDFILES", cmd_cleardroppedfiles},
   {"CLOSEAUDIODEVICE", cmd_closeaudiodevice},
@@ -6647,7 +6684,7 @@ API lib_proc[] = {
   // {"IMAGETOPOT", cmd_imagetopot},
   {"INITAUDIODEVICE", cmd_initaudiodevice},
   {"INITVRSIMULATOR", cmd_initvrsimulator},
-  // {"INITWINDOW", cmd_initwindow},
+  {"INITWINDOW", cmd_initwindow},
   {"MAXIMIZEWINDOW", cmd_maximizewindow},
   // {"MESHBINORMALS", cmd_meshbinormals},
   // {"MESHNORMALSSMOOTH", cmd_meshnormalssmooth},
@@ -6708,8 +6745,8 @@ API lib_proc[] = {
   // {"SETWINDOWMINSIZE", cmd_setwindowminsize},
   // {"SETWINDOWMONITOR", cmd_setwindowmonitor},
   // {"SETWINDOWPOSITION", cmd_setwindowposition},
-  // {"SETWINDOWSIZE", cmd_setwindowsize},
-  // {"SETWINDOWTITLE", cmd_setwindowtitle},
+  {"SETWINDOWSIZE", cmd_setwindowsize},
+  {"SETWINDOWTITLE", cmd_setwindowtitle},
   {"SHOWCURSOR", cmd_showcursor},
   // {"STOPAUDIOSTREAM", cmd_stopaudiostream},
    {"STOPMUSICSTREAM", cmd_stopmusicstream},
