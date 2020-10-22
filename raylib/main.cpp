@@ -1544,8 +1544,8 @@ int cmd_getscreendata(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getscreenheight(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetScreenHeight();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetScreenHeight();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: GetScreenHeight");
@@ -1570,8 +1570,8 @@ int cmd_getscreentoworld2d(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getscreenwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetScreenWidth();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetScreenWidth();
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: GetScreenWidth");
@@ -2745,10 +2745,10 @@ int cmd_loadwavefrommemory(int argc, slib_par_t *params, var_t *retval) {
 int cmd_measuretext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto text = get_param_str(argc, params, 0, NULL);
-    // auto fontSize = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = MeasureText(text, fontSize);
-    // v_setint(retval, fnResult);
+    auto text = get_param_str(argc, params, 0, NULL);
+    auto fontSize = get_param_int(argc, params, 1, 0);
+    auto fnResult = MeasureText(text, fontSize);
+    v_setint(retval, fnResult);
   }
   else {
     v_setstr(retval, "Invalid input: MeasureText");
@@ -3808,12 +3808,12 @@ int cmd_drawray(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawrectangle(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 5);
   if (result) {
-    // auto posX = get_param_str(argc, params, 0, NULL);
-    // auto posY = get_param_str(argc, params, 1, NULL);
-    // auto width = get_param_str(argc, params, 2, NULL);
-    // auto height = get_param_str(argc, params, 3, NULL);
-    // auto color = get_param_str(argc, params, 4, NULL);
-    // DrawRectangle(posX, posY, width, height, color);
+    auto posX = get_param_int(argc, params, 0, 0);
+    auto posY = get_param_int(argc, params, 1, 0);
+    auto width = get_param_int(argc, params, 2, 0);
+    auto height = get_param_int(argc, params, 3, 0);
+    auto color = get_color(get_param_int(argc, params, 4, 0));
+    DrawRectangle(posX, posY, width, height, color);
   }
   else {
     v_setstr(retval, "Invalid input: DrawRectangle");
@@ -4059,12 +4059,12 @@ int cmd_drawspherewires(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 5);
   if (result) {
-    // auto text = get_param_str(argc, params, 0, NULL);
-    // auto posX = get_param_str(argc, params, 1, NULL);
-    // auto posY = get_param_str(argc, params, 2, NULL);
-    // auto fontSize = get_param_str(argc, params, 3, NULL);
-    // auto color = get_param_str(argc, params, 4, NULL);
-    // DrawText(text, posX, posY, fontSize, color);
+    auto text = get_param_str(argc, params, 0, NULL);
+    auto posX = get_param_int(argc, params, 1, 0);
+    auto posY = get_param_int(argc, params, 2, 0);
+    auto fontSize = get_param_int(argc, params, 3, 0);
+    auto color = get_color(get_param_int(argc, params, 4, 0));
+    DrawText(text, posX, posY, fontSize, color);
   }
   else {
     v_setstr(retval, "Invalid input: DrawText");
@@ -5799,8 +5799,8 @@ int cmd_settracelogexit(int argc, slib_par_t *params, var_t *retval) {
 int cmd_settraceloglevel(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto logType = get_param_str(argc, params, 0, NULL);
-    // SetTraceLogLevel(logType);
+    auto logType = get_param_int(argc, params, 0, 0);
+    SetTraceLogLevel(logType);
   }
   else {
     v_setstr(retval, "Invalid input: SetTraceLogLevel");
@@ -6148,7 +6148,6 @@ int cmd_unloadshader(int argc, slib_par_t *params, var_t *retval) {
 int cmd_unloadsound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
-    fprintf(stderr, "soundid = %d\n", get_param_int(argc, params, 0, 0));
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     UnloadSound(sound);
   }
@@ -6424,9 +6423,9 @@ API lib_func[] = {
   // {"GETPREVDIRECTORYPATH", cmd_getprevdirectorypath},
   // {"GETRANDOMVALUE", cmd_getrandomvalue},
   // {"GETSCREENDATA", cmd_getscreendata},
-  // {"GETSCREENHEIGHT", cmd_getscreenheight},
+  {"GETSCREENHEIGHT", cmd_getscreenheight},
   // {"GETSCREENTOWORLD2D", cmd_getscreentoworld2d},
-  // {"GETSCREENWIDTH", cmd_getscreenwidth},
+  {"GETSCREENWIDTH", cmd_getscreenwidth},
   // {"GETSHADERDEFAULT", cmd_getshaderdefault},
   // {"GETSHADERLOCATION", cmd_getshaderlocation},
   // {"GETSHADERLOCATIONATTRIB", cmd_getshaderlocationattrib},
@@ -6514,7 +6513,7 @@ API lib_func[] = {
   // {"LOADTEXTUREFROMIMAGE", cmd_loadtexturefromimage},
   // {"LOADWAVE", cmd_loadwave},
   // {"LOADWAVEFROMMEMORY", cmd_loadwavefrommemory},
-  // {"MEASURETEXT", cmd_measuretext},
+  {"MEASURETEXT", cmd_measuretext},
   // {"MEASURETEXTEX", cmd_measuretextex},
   // {"MESHBOUNDINGBOX", cmd_meshboundingbox},
   // {"TEXTCOPY", cmd_textcopy},
@@ -6593,7 +6592,7 @@ API lib_proc[] = {
   // {"DRAWPOLY", cmd_drawpoly},
   // {"DRAWPOLYLINES", cmd_drawpolylines},
   // {"DRAWRAY", cmd_drawray},
-  // {"DRAWRECTANGLE", cmd_drawrectangle},
+  {"DRAWRECTANGLE", cmd_drawrectangle},
   // {"DRAWRECTANGLEGRADIENTEX", cmd_drawrectanglegradientex},
   // {"DRAWRECTANGLEGRADIENTH", cmd_drawrectanglegradienth},
   // {"DRAWRECTANGLEGRADIENTV", cmd_drawrectanglegradientv},
@@ -6609,7 +6608,7 @@ API lib_proc[] = {
   // {"DRAWSPHERE", cmd_drawsphere},
   // {"DRAWSPHEREEX", cmd_drawsphereex},
   // {"DRAWSPHEREWIRES", cmd_drawspherewires},
-  // {"DRAWTEXT", cmd_drawtext},
+  {"DRAWTEXT", cmd_drawtext},
   // {"DRAWTEXTCODEPOINT", cmd_drawtextcodepoint},
   // {"DRAWTEXTEX", cmd_drawtextex},
   // {"DRAWTEXTREC", cmd_drawtextrec},
@@ -6739,7 +6738,7 @@ API lib_proc[] = {
   // {"SETTEXTUREWRAP", cmd_settexturewrap},
   // {"SETTRACELOGCALLBACK", cmd_settracelogcallback},
   // {"SETTRACELOGEXIT", cmd_settracelogexit},
-  // {"SETTRACELOGLEVEL", cmd_settraceloglevel},
+  {"SETTRACELOGLEVEL", cmd_settraceloglevel},
   // {"SETVRCONFIGURATION", cmd_setvrconfiguration},
   // {"SETWINDOWICON", cmd_setwindowicon},
   // {"SETWINDOWMINSIZE", cmd_setwindowminsize},
@@ -6815,9 +6814,12 @@ int sblib_func_getname(int index, char *proc_name) {
 
 int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   int result;
-  if (index < sblib_proc_count()) {
+  if (index >= 0 && index < sblib_proc_count()) {
     result = lib_proc[index].command(argc, params, retval);
   } else {
+    char message[50];
+    sprintf(message, "Invalid proc index [%d]", index);
+    v_setstr(retval, message);
     result = 0;
   }
   return result;
@@ -6825,9 +6827,12 @@ int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
 
 int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   int result;
-  if (index < sblib_func_count()) {
+  if (index >= 0 && index < sblib_func_count()) {
     result = lib_func[index].command(argc, params, retval);
   } else {
+    char message[50];
+    sprintf(message, "Invalid func index [%d]", index);
+    v_setstr(retval, message);
     result = 0;
   }
   return result;

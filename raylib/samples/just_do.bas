@@ -1,4 +1,5 @@
 import raylib
+import logo
 
 const screenWidth = 1280
 const screenHeight = 720
@@ -19,12 +20,17 @@ currentScreen = 0
 
 rem Set our game to run at 60 frames-per-second
 raylib.SetTargetFPS(60)  
-    
+
+rem logo.init()
+
 rem  Main game loop
 while (!raylib.WindowShouldClose()) 
-  rem UpdateDrawFrame()
   raylib.BeginDrawing()
-  raylib.ClearBackground(2)
+  raylib.ClearBackground(0)
+
+  logo.update()
+  logo.drawScreen()
+
   raylib.EndDrawing()
 wend
 
