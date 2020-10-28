@@ -58,6 +58,46 @@ struct Color get_color(long c) {
   return result;
 }
 
+char *escape_str(const char *str) {
+  char *result;
+  if (str && str[0]) {
+    result = new char[strlen(str) + 1];
+    const char *src = str;
+    char *dest = result;
+    while (src && src[0] != '\0') {
+      if (src[0] == '\\') {
+        switch (src[1]) {
+        case 'n':
+          *(dest++) = '\n';
+          src += 2;
+          break;
+        case 'r':
+          *(dest++) = '\r';
+          src += 2;
+          break;
+        case 't':
+          *(dest++) = '\t';
+          src += 2;
+          break;
+        case '\0':
+          src++;
+          break;
+        default:
+          *(dest++) = '\\';
+          src++;
+          break;
+        }
+      } else {
+        *(dest++) = *(src++);
+      }
+    }
+    *dest = '\0';
+  } else {
+    result = nullptr;
+  }
+  return result;
+}
+
 int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
@@ -4059,12 +4099,13 @@ int cmd_drawspherewires(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 5);
   if (result) {
-    auto text = get_param_str(argc, params, 0, NULL);
+    auto text = escape_str(get_param_str(argc, params, 0, NULL));
     auto posX = get_param_int(argc, params, 1, 0);
     auto posY = get_param_int(argc, params, 2, 0);
     auto fontSize = get_param_int(argc, params, 3, 0);
     auto color = get_color(get_param_int(argc, params, 4, 0));
     DrawText(text, posX, posY, fontSize, color);
+    delete [] text;
   }
   else {
     v_setstr(retval, "Invalid input: DrawText");
