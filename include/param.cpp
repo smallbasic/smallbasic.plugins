@@ -160,3 +160,21 @@ const char *get_param_str_field(int argc, slib_par_t *params, int n, const char 
   return result;
 }
 
+float get_array_elem_num(var_p_t array, int index) {
+  float result = 0.0;
+  int size = v_asize(array);
+  if (index >= 0 && index < size) {
+    var_p_t elem = v_elem(array, index);
+    switch (elem->type) {
+    case V_INT:
+      result = elem->v.i;
+      break;
+    case V_NUM:
+      result = elem->v.n;
+      break;
+    default:
+      break;
+    }
+  }
+  return result;
+}

@@ -17,16 +17,19 @@ local MIN_FRAME_SPEED = 1
 local screenWidth = 800
 local screenHeight = 450
 local position = [350.0, 280.0]
-local frameRec = {x:0, y:0, width:scarfy.width/6, height:scarfy.height}
+local frameRec = {x:0, y:0, width:0, height:0}
 local currentFrame = 0
 local framesCounter = 0
 local framesSpeed = 8
 
 rl.InitWindow(screenWidth, screenHeight, "raylib [texture] example - texture rectangle")
-REM  NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
-local scarfy = rl.LoadTexture("../raylib/examples/textures/resources/scarfy.png")
-
 rl.SetTargetFPS(60)
+
+REM  NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
+local scarfy = rl.LoadTexture(CWD + "raylib/examples/textures/resources/scarfy.png")
+
+frameRec.width = scarfy.width / 6
+frameRec.height = scarfy.height
 
 REM  Main game loop
 while (!rl.WindowShouldClose())

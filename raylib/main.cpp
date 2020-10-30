@@ -73,12 +73,9 @@ Rectangle get_param_rect(int argc, slib_par_t *params, int n) {
 
 Vector2 get_param_vec2(int argc, slib_par_t *params, int n) {
   Vector2 result;
-  if (is_param_array(argc, params, n) && v_asize(params[n].var_p) == 2) {
-    var_p_t elem = v_elem(params[n].var_p, 0);
-    result.x = (elem && v_is_type(elem, V_NUM)) ? elem->v.n : 0;
-
-    elem = v_elem(params[n].var_p, 1);
-    result.y = (elem && v_is_type(elem, V_NUM)) ? elem->v.n : 0;
+  if (is_param_array(argc, params, n)) {
+    result.x = get_array_elem_num(params[n].var_p, 0);
+    result.y = get_array_elem_num(params[n].var_p, 1);
   }
   return result;
 }
@@ -5707,8 +5704,10 @@ int cmd_unloadmodelanimation(int argc, slib_par_t *params, var_t *retval) {
 int cmd_unloadmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result && _musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
-    auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
+    auto id = get_param_int(argc, params, 0, 0);
+    auto music = _musicMap.at(id);
     UnloadMusicStream(music);
+    _musicMap.erase(id);
   } else {
     v_setstr(retval, "Invalid input: UnloadMusicStream");
   }
@@ -5740,8 +5739,10 @@ int cmd_unloadshader(int argc, slib_par_t *params, var_t *retval) {
 int cmd_unloadsound(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result && _soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
-    auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
+    auto id = get_param_int(argc, params, 0, 0);
+    auto sound = _soundMap.at(id);
     UnloadSound(sound);
+    _soundMap.erase(id);
   } else {
     v_setstr(retval, "Invalid input: UnloadSound");
   }
@@ -5755,6 +5756,7 @@ int cmd_unloadtexture(int argc, slib_par_t *params, var_t *retval) {
     if (id != -1 && _textureMap.find(id) != _textureMap.end()) {
       auto texture = _textureMap.at(id);
       UnloadTexture(texture);
+      _textureMap.erase(id);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
     }
@@ -6431,4 +6433,7 @@ int sblib_init(void) {
 }
 
 void sblib_close(void) {
+  _musicMap.clear();
+  _soundMap.clear();
+  _textureMap.clear();
 }
