@@ -1,4 +1,4 @@
-unit raylib_const
+unit raylibc
 
 export const LIGHTGRAY  = rgb(200, 200, 200)
 export const GRAY       = rgb(130, 130, 130)

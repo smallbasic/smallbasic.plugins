@@ -12,6 +12,16 @@
 #include "param.h"
 #include "var_map.h"
 
+int is_param_array(int argc, slib_par_t *params, int n) {
+  int result;
+  if (n >= 0 && n < argc) {
+    result = (params[n].var_p->type == V_ARRAY);
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
 int is_param_num(int argc, slib_par_t *params, int n) {
   int result;
   if (n >= 0 && n < argc) {

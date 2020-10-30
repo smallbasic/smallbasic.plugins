@@ -39,8 +39,7 @@ for fun in skelton("func")
   next a
   funcs += NL + "    " + commented + "auto fnResult = " + fun.name + "(" + args + ");"
   funcs += NL + "    " + commented + "v_setint(retval, fnResult);"
-  funcs += NL + "  }"
-  funcs += NL + "  else {"
+  funcs += NL + "  } else {"
   funcs += NL + "    v_setstr(retval, \"Invalid input: " + fun.name + "\");"
   funcs += NL + "  }"
   funcs += NL + "  return result;"
@@ -69,8 +68,7 @@ for proc in skelton("sub")
     funcs += NL + "    // " + proc.name + "(" + args + ");"
     proc_api += NL + "  // {\"" + upper(proc.name) + "\", cmd_" + lower(proc.name) + "},"
   endif
-  funcs += NL + "  }"
-  funcs += NL + "  else {"
+  funcs += NL + "  } else {"
   funcs += NL + "    v_setstr(retval, \"Invalid input: " + proc.name + "\");"
   funcs += NL + "  }"
   funcs += NL + "  return result;"

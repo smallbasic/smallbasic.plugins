@@ -13,7 +13,7 @@ REM  Initialization
 REM ----------------------------------------------------------------------------------------
 
 import raylib as rl
-import raylib_const as c
+import raylibc as c
 
 local screenWidth = 800
 local screenHeight = 450

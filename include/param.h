@@ -15,6 +15,7 @@ typedef struct API {
   int (*command)(int, slib_par_t *, var_t *retval);
 } API;
 
+int is_param_array(int argc, slib_par_t *params, int n);
 int is_param_num(int argc, slib_par_t *params, int n);
 int is_param_str(int argc, slib_par_t *params, int n);
 int is_param_map(int argc, slib_par_t *params, int n);
