@@ -2,10 +2,10 @@ REM ----------------------------------------------------------------------------
 REM
 REM   raylib [textures] example - Texture loading and drawing a part defined by a rectangle
 REM
-REM   This example has been created using raylib 1.6 (www.raylib.com)
+REM   This example has been created using raylib 1.7 (www.raylib.com)
 REM   raylib is licensed under an unmodified zlib/libpng license (View raylib.h for details)
 REM
-REM   Copyright (c) 2014-2016 Ramon Santamaria (@raysan5)
+REM   Copyright (c) 2017 Ramon Santamaria (@raysan5)
 REM
 REM ----------------------------------------------------------------------------------------
 
@@ -25,13 +25,13 @@ local framesSpeed = 8
 rl.InitWindow(screenWidth, screenHeight, "raylib [texture] example - texture rectangle")
 rl.SetTargetFPS(60)
 
-REM  NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
+REM NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
 local scarfy = rl.LoadTexture(CWD + "raylib/examples/textures/resources/scarfy.png")
 
 frameRec.width = scarfy.width / 6
 frameRec.height = scarfy.height
 
-REM  Main game loop
+REM Main game loop
 while (!rl.WindowShouldClose())
   framesCounter = framesCounter + 1
 

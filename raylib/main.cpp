@@ -1327,8 +1327,10 @@ int cmd_getmonitorwidth(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmouseposition(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetMousePosition();
-    // v_setint(retval, fnResult);
+    auto position = GetMousePosition();
+    map_init(retval);
+    v_setint(map_add_var(retval, "x", 0), position.x);
+    v_setint(map_add_var(retval, "y", 0), position.y);
   } else {
     v_setstr(retval, "Invalid input: GetMousePosition");
   }
@@ -6026,7 +6028,7 @@ API lib_func[] = {
   // {"GETMONITORPHYSICALWIDTH", cmd_getmonitorphysicalwidth},
   // {"GETMONITORREFRESHRATE", cmd_getmonitorrefreshrate},
   // {"GETMONITORWIDTH", cmd_getmonitorwidth},
-  // {"GETMOUSEPOSITION", cmd_getmouseposition},
+  {"GETMOUSEPOSITION", cmd_getmouseposition},
   // {"GETMOUSERAY", cmd_getmouseray},
   // {"GETMOUSEWHEELMOVE", cmd_getmousewheelmove},
   // {"GETMOUSEX", cmd_getmousex},
