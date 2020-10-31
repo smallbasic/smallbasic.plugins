@@ -21,6 +21,7 @@
 std::map<int, Music> _musicMap;
 std::map<int, Sound> _soundMap;
 std::map<int, Texture2D> _textureMap;
+std::map<int, Image> _imageMap;
 int _nextId = 1;
 const char *mapID = "_ID";
 
@@ -92,6 +93,19 @@ Vector2 get_param_vec2(int argc, slib_par_t *params, int n) {
   return result;
 }
 
+int get_image_id(int argc, slib_par_t *params, int n) {
+  int result = -1;
+  if (is_param_map(argc, params, n)) {
+    // the passed in variable is a map
+    int id = map_get_int(params[n].var_p, mapID, -1);
+    if (id != -1 && _imageMap.find(id) != _imageMap.end()) {
+      // the map contained an ID field with a live value
+      result = id;
+    }
+  }
+  return result;
+}
+
 int get_texture_id(int argc, slib_par_t *params, int n) {
   int result = -1;
   if (is_param_map(argc, params, n)) {
@@ -103,6 +117,13 @@ int get_texture_id(int argc, slib_par_t *params, int n) {
     }
   }
   return result;
+}
+
+void set_vector(var_t *var, int width, int height, int id) {
+  map_init(var);
+  v_setint(map_add_var(var, "width", 0), width);
+  v_setint(map_add_var(var, "height", 0), height);
+  v_setint(map_add_var(var, mapID, 0), id);
 }
 
 int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
@@ -1173,9 +1194,15 @@ int cmd_getimagealphaborder(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getimagedata(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetImageData(image);
-    // v_setint(retval, fnResult);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      auto fnResult = GetImageData(image);
+      v_setint(retval, (var_int_t)fnResult);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: GetImageData");
   }
@@ -2316,9 +2343,11 @@ int cmd_loadfontfrommemory(int argc, slib_par_t *params, var_t *retval) {
 int cmd_loadimage(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto fileName = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = LoadImage(fileName);
-    // v_setint(retval, fnResult);
+    auto fileName = get_param_str(argc, params, 0, NULL);
+    auto image = LoadImage(fileName);
+    auto id = ++_nextId;
+    _imageMap[id] = image;
+    set_vector(retval, image.width, image.height, id);
   } else {
     v_setstr(retval, "Invalid input: LoadImage");
   }
@@ -2538,10 +2567,7 @@ int cmd_loadtexture(int argc, slib_par_t *params, var_t *retval) {
      Texture2D texture = LoadTexture(fileName);
      int id = ++_nextId;
      _textureMap[id] = texture;
-     map_init(retval);
-     v_setint(map_add_var(retval, "width", 0), texture.width);
-     v_setint(map_add_var(retval, "height", 0), texture.height);
-     v_setint(map_add_var(retval, mapID, 0), id);
+     set_vector(retval, texture.width, texture.height, id);
   } else {
     v_setstr(retval, "Invalid input: LoadTexture");
   }
@@ -2564,9 +2590,17 @@ int cmd_loadtexturecubemap(int argc, slib_par_t *params, var_t *retval) {
 int cmd_loadtexturefromimage(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = LoadTextureFromImage(image);
-    // v_setint(retval, fnResult);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      auto texture = LoadTextureFromImage(image);
+      id = ++_nextId;
+      _textureMap[id] = texture;
+      set_vector(retval, texture.width, texture.height, id);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: LoadTextureFromImage");
   }
@@ -3693,9 +3727,9 @@ int cmd_drawrectanglepro(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawrectanglerec(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto rec = get_param_str(argc, params, 0, NULL);
-    // auto color = get_param_str(argc, params, 1, NULL);
-    // DrawRectangleRec(rec, color);
+    auto rec = get_param_rect(argc, params, 0);
+    auto color = get_color(get_param_int(argc, params, 1, 0));
+    DrawRectangleRec(rec, color);
   } else {
     v_setstr(retval, "Invalid input: DrawRectangleRec");
   }
@@ -3917,6 +3951,7 @@ int cmd_drawtexture(int argc, slib_par_t *params, var_t *retval) {
       DrawTexture(texture, posX, posY, tint);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
+      result = 0;
     }
   } else {
     v_setstr(retval, "Invalid input: DrawTexture");
@@ -3969,6 +4004,7 @@ int cmd_drawtexturepro(int argc, slib_par_t *params, var_t *retval) {
       DrawTexturePro(texture, sourceRec, destRec, origin, rotation, tint);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
+      result = 0;
     }
   } else {
     v_setstr(retval, "Invalid input: DrawTexturePro");
@@ -4003,6 +4039,7 @@ int cmd_drawtexturerec(int argc, slib_par_t *params, var_t *retval) {
       DrawTextureRec(texture, sourceRec, position, tint);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
+      result = 0;
     }
   } else {
     v_setstr(retval, "Invalid input: DrawTextureRec");
@@ -4353,7 +4390,7 @@ int cmd_imagealphapremultiply(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     // auto image = get_param_str(argc, params, 0, NULL);
-    // ImageAlphaPremultiply(image);
+    // ImageAlphaPremultiply(&image);
   } else {
     v_setstr(retval, "Invalid input: ImageAlphaPremultiply");
   }
@@ -4375,9 +4412,15 @@ int cmd_imageclearbackground(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imagecolorbrightness(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // auto brightness = get_param_str(argc, params, 1, NULL);
-    // ImageColorBrightness(image, brightness);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      auto brightness = get_param_int(argc, params, 1, 0);
+      ImageColorBrightness(&image, brightness);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: ImageColorBrightness");
   }
@@ -4387,9 +4430,15 @@ int cmd_imagecolorbrightness(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imagecolorcontrast(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // auto contrast = get_param_str(argc, params, 1, NULL);
-    // ImageColorContrast(image, contrast);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      auto contrast = get_param_int(argc, params, 1, 0);
+      ImageColorContrast(&image, contrast);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: ImageColorContrast");
   }
@@ -4399,8 +4448,14 @@ int cmd_imagecolorcontrast(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imagecolorgrayscale(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // ImageColorGrayscale(image);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      ImageColorGrayscale(&image);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: ImageColorGrayscale");
   }
@@ -4410,8 +4465,14 @@ int cmd_imagecolorgrayscale(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imagecolorinvert(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // ImageColorInvert(image);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      ImageColorInvert(&image);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: ImageColorInvert");
   }
@@ -4434,9 +4495,15 @@ int cmd_imagecolorreplace(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imagecolortint(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // auto color = get_param_str(argc, params, 1, NULL);
-    // ImageColorTint(image, color);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      auto color = get_color(get_param_int(argc, params, 1, 0));
+      ImageColorTint(&image, color);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: ImageColorTint");
   }
@@ -4448,7 +4515,7 @@ int cmd_imagecrop(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     // auto image = get_param_str(argc, params, 0, NULL);
     // auto crop = get_param_str(argc, params, 1, NULL);
-    // ImageCrop(image, crop);
+    // ImageCrop(&image, crop);
   } else {
     v_setstr(retval, "Invalid input: ImageCrop");
   }
@@ -4604,10 +4671,16 @@ int cmd_imagedrawrectanglelines(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imagedrawrectanglerec(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto dst = get_param_str(argc, params, 0, NULL);
-    // auto rec = get_param_str(argc, params, 1, NULL);
-    // auto color = get_param_str(argc, params, 2, NULL);
-    // ImageDrawRectangleRec(dst, rec, color);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      auto rec = get_param_rect(argc, params, 1);
+      auto color = get_color(get_param_int(argc, params, 2, 0));
+      ImageDrawRectangleRec(&image, rec, color);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: ImageDrawRectangleRec");
   }
@@ -4664,8 +4737,14 @@ int cmd_imagedrawtextex(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imagefliphorizontal(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // ImageFlipHorizontal(image);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      ImageFlipHorizontal(&image);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: ImageFlipHorizontal");
   }
@@ -4675,8 +4754,14 @@ int cmd_imagefliphorizontal(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imageflipvertical(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // ImageFlipVertical(image);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      ImageFlipVertical(&image);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: ImageFlipVertical");
   }
@@ -4686,9 +4771,15 @@ int cmd_imageflipvertical(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imageformat(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // auto newFormat = get_param_str(argc, params, 1, NULL);
-    // ImageFormat(image, newFormat);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto image = _imageMap.at(id);
+      auto newFormat = get_param_int(argc, params, 1, 0);
+      ImageFormat(&image, newFormat);
+    } else {
+      v_setstr(retval, "Invalid input: Image not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: ImageFormat");
   }
@@ -5791,6 +5882,7 @@ int cmd_unloadtexture(int argc, slib_par_t *params, var_t *retval) {
       _textureMap.erase(id);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
+      result = 0;
     }
   } else {
     v_setstr(retval, "Invalid input: UnloadTexture");
@@ -5873,9 +5965,15 @@ int cmd_updatesound(int argc, slib_par_t *params, var_t *retval) {
 int cmd_updatetexture(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto texture = get_param_str(argc, params, 0, NULL);
-    // auto pixels = get_param_str(argc, params, 1, NULL);
-    // UpdateTexture(texture, pixels);
+    int id = get_texture_id(argc, params, 0);
+    if (id != -1 && params[1].var_p->type == V_INT) {
+      auto texture = _textureMap.at(id);
+      Color *pixels = (Color *)params[1].var_p->v.i;
+      UpdateTexture(texture, pixels);
+    } else {
+      v_setstr(retval, "Invalid input: Texture not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: UpdateTexture");
   }
@@ -6015,7 +6113,7 @@ API lib_func[] = {
   // {"GETGESTUREPINCHVECTOR", cmd_getgesturepinchvector},
   // {"GETGLYPHINDEX", cmd_getglyphindex},
   // {"GETIMAGEALPHABORDER", cmd_getimagealphaborder},
-  // {"GETIMAGEDATA", cmd_getimagedata},
+  {"GETIMAGEDATA", cmd_getimagedata},
   // {"GETIMAGEDATANORMALIZED", cmd_getimagedatanormalized},
   // {"GETIMAGEPALETTE", cmd_getimagepalette},
   // {"GETKEYPRESSED", cmd_getkeypressed},
@@ -6109,7 +6207,7 @@ API lib_func[] = {
   // {"LOADFONTEX", cmd_loadfontex},
   // {"LOADFONTFROMIMAGE", cmd_loadfontfromimage},
   // {"LOADFONTFROMMEMORY", cmd_loadfontfrommemory},
-  // {"LOADIMAGE", cmd_loadimage},
+  {"LOADIMAGE", cmd_loadimage},
   // {"LOADIMAGEANIM", cmd_loadimageanim},
   // {"LOADIMAGEFROMMEMORY", cmd_loadimagefrommemory},
   // {"LOADIMAGERAW", cmd_loadimageraw},
@@ -6128,7 +6226,7 @@ API lib_func[] = {
   // {"LOADSTORAGEVALUE", cmd_loadstoragevalue},
   {"LOADTEXTURE", cmd_loadtexture},
   // {"LOADTEXTURECUBEMAP", cmd_loadtexturecubemap},
-  // {"LOADTEXTUREFROMIMAGE", cmd_loadtexturefromimage},
+  {"LOADTEXTUREFROMIMAGE", cmd_loadtexturefromimage},
   // {"LOADWAVE", cmd_loadwave},
   // {"LOADWAVEFROMMEMORY", cmd_loadwavefrommemory},
   {"MEASURETEXT", cmd_measuretext},
@@ -6217,7 +6315,7 @@ API lib_proc[] = {
   {"DRAWRECTANGLELINES", cmd_drawrectanglelines},
   // {"DRAWRECTANGLELINESEX", cmd_drawrectanglelinesex},
   // {"DRAWRECTANGLEPRO", cmd_drawrectanglepro},
-  // {"DRAWRECTANGLEREC", cmd_drawrectanglerec},
+  {"DRAWRECTANGLEREC", cmd_drawrectanglerec},
   // {"DRAWRECTANGLEROUNDED", cmd_drawrectanglerounded},
   // {"DRAWRECTANGLEROUNDEDLINES", cmd_drawrectangleroundedlines},
   // {"DRAWRECTANGLEV", cmd_drawrectanglev},
@@ -6268,12 +6366,12 @@ API lib_proc[] = {
   // {"IMAGEALPHAMASK", cmd_imagealphamask},
   // {"IMAGEALPHAPREMULTIPLY", cmd_imagealphapremultiply},
   // {"IMAGECLEARBACKGROUND", cmd_imageclearbackground},
-  // {"IMAGECOLORBRIGHTNESS", cmd_imagecolorbrightness},
-  // {"IMAGECOLORCONTRAST", cmd_imagecolorcontrast},
-  // {"IMAGECOLORGRAYSCALE", cmd_imagecolorgrayscale},
-  // {"IMAGECOLORINVERT", cmd_imagecolorinvert},
+  {"IMAGECOLORBRIGHTNESS", cmd_imagecolorbrightness},
+  {"IMAGECOLORCONTRAST", cmd_imagecolorcontrast},
+  {"IMAGECOLORGRAYSCALE", cmd_imagecolorgrayscale},
+  {"IMAGECOLORINVERT", cmd_imagecolorinvert},
   // {"IMAGECOLORREPLACE", cmd_imagecolorreplace},
-  // {"IMAGECOLORTINT", cmd_imagecolortint},
+  {"IMAGECOLORTINT", cmd_imagecolortint},
   // {"IMAGECROP", cmd_imagecrop},
   // {"IMAGEDITHER", cmd_imagedither},
   // {"IMAGEDRAW", cmd_imagedraw},
@@ -6285,13 +6383,13 @@ API lib_proc[] = {
   // {"IMAGEDRAWPIXELV", cmd_imagedrawpixelv},
   // {"IMAGEDRAWRECTANGLE", cmd_imagedrawrectangle},
   // {"IMAGEDRAWRECTANGLELINES", cmd_imagedrawrectanglelines},
-  // {"IMAGEDRAWRECTANGLEREC", cmd_imagedrawrectanglerec},
+  {"IMAGEDRAWRECTANGLEREC", cmd_imagedrawrectanglerec},
   // {"IMAGEDRAWRECTANGLEV", cmd_imagedrawrectanglev},
   // {"IMAGEDRAWTEXT", cmd_imagedrawtext},
   // {"IMAGEDRAWTEXTEX", cmd_imagedrawtextex},
-  // {"IMAGEFLIPHORIZONTAL", cmd_imagefliphorizontal},
-  // {"IMAGEFLIPVERTICAL", cmd_imageflipvertical},
-  // {"IMAGEFORMAT", cmd_imageformat},
+  {"IMAGEFLIPHORIZONTAL", cmd_imagefliphorizontal},
+  {"IMAGEFLIPVERTICAL", cmd_imageflipvertical},
+  {"IMAGEFORMAT", cmd_imageformat},
   // {"IMAGEMIPMAPS", cmd_imagemipmaps},
   // {"IMAGERESIZE", cmd_imageresize},
   // {"IMAGERESIZECANVAS", cmd_imageresizecanvas},
@@ -6377,7 +6475,7 @@ API lib_proc[] = {
   {"UNDECORATEWINDOW", cmd_undecoratewindow},
   {"UNHIDEWINDOW", cmd_unhidewindow},
   // {"UNLOADFONT", cmd_unloadfont},
-  // {"UNLOADIMAGE", cmd_unloadimage},
+  {"UNLOADIMAGE", cmd_unloadimage},
   // {"UNLOADMATERIAL", cmd_unloadmaterial},
   // {"UNLOADMESH", cmd_unloadmesh},
   // {"UNLOADMODEL", cmd_unloadmodel},
@@ -6393,7 +6491,7 @@ API lib_proc[] = {
   // {"UPDATEMODELANIMATION", cmd_updatemodelanimation},
   {"UPDATEMUSICSTREAM", cmd_updatemusicstream},
   // {"UPDATESOUND", cmd_updatesound},
-  // {"UPDATETEXTURE", cmd_updatetexture},
+  {"UPDATETEXTURE", cmd_updatetexture},
   // {"UPDATETEXTUREREC", cmd_updatetexturerec},
   // {"UPDATEVRTRACKING", cmd_updatevrtracking},
   // {"WAVECROP", cmd_wavecrop},
@@ -6468,4 +6566,5 @@ void sblib_close(void) {
   _musicMap.clear();
   _soundMap.clear();
   _textureMap.clear();
+  _imageMap.clear();
 }

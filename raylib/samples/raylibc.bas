@@ -7,6 +7,17 @@ export const BLEND_ADD_COLORS = 3
 export const BLEND_SUBTRACT_COLORS = 4
 export const BLEND_CUSTOM = 5
 
+export const UNCOMPRESSED_GRAYSCALE = 1
+export const UNCOMPRESSED_GRAY_ALPHA = 2
+export const UNCOMPRESSED_R5G6B5 = 3
+export const UNCOMPRESSED_R8G8B8 = 4
+export const UNCOMPRESSED_R5G5B5A1 = 5
+export const UNCOMPRESSED_R4G4B4A4 = 6
+export const UNCOMPRESSED_R8G8B8A8 = 7
+export const UNCOMPRESSED_R32 = 8
+export const UNCOMPRESSED_R32G32B32 = 9
+export const UNCOMPRESSED_R32G32B32A32 = 10
+
 export const LIGHTGRAY  = rgb(200, 200, 200)
 export const GRAY       = rgb(130, 130, 130)
 export const DARKGRAY   = rgb(80, 80, 80)
