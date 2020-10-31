@@ -1,5 +1,12 @@
 unit raylibc
 
+export const BLEND_ALPHA = 0
+export const BLEND_ADDITIVE = 1
+export const BLEND_MULTIPLIED = 2
+export const BLEND_ADD_COLORS = 3
+export const BLEND_SUBTRACT_COLORS = 4
+export const BLEND_CUSTOM = 5
+
 export const LIGHTGRAY  = rgb(200, 200, 200)
 export const GRAY       = rgb(130, 130, 130)
 export const DARKGRAY   = rgb(80, 80, 80)

@@ -60,6 +60,10 @@ struct Color get_color(long c) {
   return result;
 }
 
+var_int_t get_color_int(Color c) {
+  return ((0x00000000) | (c.r << 24) | (c.g << 16) | (c.b << 8) | (c.a));
+}
+
 Rectangle get_param_rect(int argc, slib_par_t *params, int n) {
   Rectangle result;
   if (is_param_map(argc, params, n)) {
@@ -67,6 +71,11 @@ Rectangle get_param_rect(int argc, slib_par_t *params, int n) {
     result.y = map_get_int(params[n].var_p, "y", -1);
     result.width = map_get_int(params[n].var_p, "width", -1);
     result.height = map_get_int(params[n].var_p, "height", -1);
+  } else if (is_param_array(argc, params, n)) {
+    result.x = get_array_elem_num(params[n].var_p, 0);
+    result.y = get_array_elem_num(params[n].var_p, 1);
+    result.width = get_array_elem_num(params[n].var_p, 2);
+    result.height = get_array_elem_num(params[n].var_p, 3);
   }
   return result;
 }
@@ -76,6 +85,22 @@ Vector2 get_param_vec2(int argc, slib_par_t *params, int n) {
   if (is_param_array(argc, params, n)) {
     result.x = get_array_elem_num(params[n].var_p, 0);
     result.y = get_array_elem_num(params[n].var_p, 1);
+  } else {
+    result.x = 0;
+    result.y = 0;
+  }
+  return result;
+}
+
+int get_texture_id(int argc, slib_par_t *params, int n) {
+  int result = -1;
+  if (is_param_map(argc, params, n)) {
+    // the passed in variable is a map
+    int id = map_get_int(params[n].var_p, mapID, -1);
+    if (id != -1 && _textureMap.find(id) != _textureMap.end()) {
+      // the map contained an ID field with a live value
+      result = id;
+    }
   }
   return result;
 }
@@ -405,10 +430,10 @@ int cmd_directoryexists(int argc, slib_par_t *params, var_t *retval) {
 int cmd_fade(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto color = get_param_str(argc, params, 0, NULL);
-    // auto alpha = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = Fade(color, alpha);
-    // v_setint(retval, fnResult);
+    auto color = get_color(get_param_int(argc, params, 0, 0));
+    auto alpha = get_param_int(argc, params, 1, 0);
+    auto fnResult = Fade(color, alpha);
+    v_setint(retval, get_color_int(fnResult));
   } else {
     v_setstr(retval, "Invalid input: Fade");
   }
@@ -2832,8 +2857,8 @@ int cmd_windowshouldclose(int argc, slib_par_t *params, var_t *retval) {
 int cmd_beginblendmode(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto mode = get_param_str(argc, params, 0, NULL);
-    // BeginBlendMode(mode);
+    auto mode = get_param_int(argc, params, 0, 0);
+    BeginBlendMode(mode);
   } else {
     v_setstr(retval, "Invalid input: BeginBlendMode");
   }
@@ -3880,9 +3905,9 @@ int cmd_drawtextrecex(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_drawtexture(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
-  if (result && is_param_map(argc, params, 0)) {
-    int id = map_get_int(params[0].var_p, mapID, -1);
-    if (id != -1 && _textureMap.find(id) != _textureMap.end()) {
+  if (result) {
+    int id = get_texture_id(argc, params, 0);
+    if (id != -1) {
       auto texture = _textureMap.at(id);
       auto posX = get_param_int(argc, params, 1, 0);
       auto posY = get_param_int(argc, params, 2, 0);
@@ -3931,13 +3956,18 @@ int cmd_drawtexturenpatch(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtexturepro(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 6);
   if (result) {
-    // auto texture = get_param_str(argc, params, 0, NULL);
-    // auto sourceRec = get_param_str(argc, params, 1, NULL);
-    // auto destRec = get_param_str(argc, params, 2, NULL);
-    // auto origin = get_param_str(argc, params, 3, NULL);
-    // auto rotation = get_param_str(argc, params, 4, NULL);
-    // auto tint = get_param_str(argc, params, 5, NULL);
-    // DrawTexturePro(texture, sourceRec, destRec, origin, rotation, tint);
+    int id = get_texture_id(argc, params, 0);
+    if (id != -1) {
+      auto texture = _textureMap.at(id);
+      auto sourceRec = get_param_rect(argc, params, 1);
+      auto destRec = get_param_rect(argc, params, 2);
+      auto origin = get_param_vec2(argc, params, 3);
+      auto rotation = get_param_num(argc, params, 4, 0);
+      auto tint = get_color(get_param_int(argc, params, 5, 0));
+      DrawTexturePro(texture, sourceRec, destRec, origin, rotation, tint);
+    } else {
+      v_setstr(retval, "Invalid input: Texture not found");
+    }
   } else {
     v_setstr(retval, "Invalid input: DrawTexturePro");
   }
@@ -5926,7 +5956,7 @@ API lib_func[] = {
   // {"COMPRESSDATA", cmd_compressdata},
   // {"DECOMPRESSDATA", cmd_decompressdata},
   // {"DIRECTORYEXISTS", cmd_directoryexists},
-  // {"FADE", cmd_fade},
+  {"FADE", cmd_fade},
   // {"FILEEXISTS", cmd_fileexists},
   // {"GENIMAGECELLULAR", cmd_genimagecellular},
   // {"GENIMAGECHECKED", cmd_genimagechecked},
@@ -6122,7 +6152,7 @@ API lib_func[] = {
 };
 
 API lib_proc[] = {
-  // {"BEGINBLENDMODE", cmd_beginblendmode},
+  {"BEGINBLENDMODE", cmd_beginblendmode},
   {"BEGINDRAWING", cmd_begindrawing},
   // {"BEGINMODE2D", cmd_beginmode2d},
   // {"BEGINMODE3D", cmd_beginmode3d},
@@ -6202,7 +6232,7 @@ API lib_proc[] = {
   {"DRAWTEXTURE", cmd_drawtexture},
   // {"DRAWTEXTUREEX", cmd_drawtextureex},
   // {"DRAWTEXTURENPATCH", cmd_drawtexturenpatch},
-  // {"DRAWTEXTUREPRO", cmd_drawtexturepro},
+  {"DRAWTEXTUREPRO", cmd_drawtexturepro},
   // {"DRAWTEXTUREQUAD", cmd_drawtexturequad},
   {"DRAWTEXTUREREC", cmd_drawtexturerec},
   // {"DRAWTEXTURETILED", cmd_drawtexturetiled},
