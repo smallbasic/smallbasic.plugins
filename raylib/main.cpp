@@ -3352,9 +3352,9 @@ int cmd_drawellipselines(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawfps(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto posX = get_param_str(argc, params, 0, NULL);
-    // auto posY = get_param_str(argc, params, 1, NULL);
-    // DrawFPS(posX, posY);
+    auto posX = get_param_int(argc, params, 0, 0);
+    auto posY = get_param_int(argc, params, 1, 0);
+    DrawFPS(posX, posY);
   } else {
     v_setstr(retval, "Invalid input: DrawFPS");
   }
@@ -6280,7 +6280,7 @@ API lib_proc[] = {
   // {"DRAWCYLINDERWIRES", cmd_drawcylinderwires},
   // {"DRAWELLIPSE", cmd_drawellipse},
   // {"DRAWELLIPSELINES", cmd_drawellipselines},
-  // {"DRAWFPS", cmd_drawfps},
+  {"DRAWFPS", cmd_drawfps},
   // {"DRAWGIZMO", cmd_drawgizmo},
   // {"DRAWGRID", cmd_drawgrid},
   // {"DRAWLINE", cmd_drawline},

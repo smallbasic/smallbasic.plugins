@@ -1,5 +1,9 @@
 unit raylibc
 
+export const MOUSE_LEFT_BUTTON   = 0
+export const MOUSE_RIGHT_BUTTON  = 1
+export const MOUSE_MIDDLE_BUTTON = 2
+
 export const BLEND_ALPHA = 0
 export const BLEND_ADDITIVE = 1
 export const BLEND_MULTIPLIED = 2
