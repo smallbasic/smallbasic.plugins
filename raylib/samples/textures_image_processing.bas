@@ -28,12 +28,13 @@ const processText = ["NO PROCESSING", "COLOR GRAYSCALE","COLOR TINT", "COLOR INV
 const screenWidth = 800
 const screenHeight = 450
 
+sub loadImage
+  img = rl.LoadImage(CWD + "raylib/examples/textures/resources/parrots.png") 
+end
+
 rl.InitWindow(screenWidth, screenHeight, "raylib [textures] example - image processing")
 REM NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
 
-img = rl.LoadImage(CWD + "raylib/examples/textures/resources/parrots.png") ' Loaded in CPU memory (RAM)
-rl.ImageFormat(img, c.UNCOMPRESSED_R8G8B8A8)    ' Format image to RGBA 32bit (required for texture update)
-texture = rl.LoadTextureFromImage(img)               ' Image converted to texture, GPU memory (VRAM)
 currentProcess = COLOR_NONE
 textureReload = false
 dim selectRecs(NUM_PROCESSES)
@@ -43,6 +44,10 @@ for i = 0 to NUM_PROCESSES - 1
 next i
 
 rl.SetTargetFPS(60)
+
+loadImage()                                   ' Loaded in CPU memory (RAM)
+rl.ImageFormat(img, c.UNCOMPRESSED_R8G8B8A8)  ' Format image to RGBA 32bit (required for texture update)
+texture = rl.LoadTextureFromImage(img)        ' Image converted to texture, GPU memory (VRAM)
 
 REM Main game loop
 while (!rl.WindowShouldClose())
@@ -60,7 +65,7 @@ while (!rl.WindowShouldClose())
 
   if (textureReload) then
     rl.UnloadImage(img)
-    img = rl.LoadImage(CWD + "raylib/examples/textures/resources/parrots.png") ' Re-load image data
+    loadImage()
     
     rem NOTE: Image processing is a costly CPU process to be done every frame,
     rem If image processing is required in a frame-basis, it should be done
@@ -82,10 +87,8 @@ while (!rl.WindowShouldClose())
       rl.ImageFlipHorizontal(img)
     end select
 
-    if (currentProcess  > 0) then 
-      pixels = rl.GetImageData(img)
-      rl.UpdateTexture(texture, pixels)
-    endif
+    pixels = rl.GetImageData(img)
+    rl.UpdateTexture(texture, pixels)
     textureReload = false
   endif
 

@@ -1196,8 +1196,7 @@ int cmd_getimagedata(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
-      auto fnResult = GetImageData(image);
+      auto fnResult = GetImageData(_imageMap.at(id));
       v_setint(retval, (var_int_t)fnResult);
     } else {
       v_setstr(retval, "Invalid input: Image not found");
@@ -2592,8 +2591,7 @@ int cmd_loadtexturefromimage(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
-      auto texture = LoadTextureFromImage(image);
+      auto texture = LoadTextureFromImage(_imageMap.at(id));
       id = ++_nextId;
       _textureMap[id] = texture;
       set_vector(retval, texture.width, texture.height, id);
@@ -4414,9 +4412,8 @@ int cmd_imagecolorbrightness(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
       auto brightness = get_param_int(argc, params, 1, 0);
-      ImageColorBrightness(&image, brightness);
+      ImageColorBrightness(&_imageMap.at(id), brightness);
     } else {
       v_setstr(retval, "Invalid input: Image not found");
       result = 0;
@@ -4432,9 +4429,8 @@ int cmd_imagecolorcontrast(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
       auto contrast = get_param_int(argc, params, 1, 0);
-      ImageColorContrast(&image, contrast);
+      ImageColorContrast(&_imageMap.at(id), contrast);
     } else {
       v_setstr(retval, "Invalid input: Image not found");
       result = 0;
@@ -4450,8 +4446,7 @@ int cmd_imagecolorgrayscale(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
-      ImageColorGrayscale(&image);
+      ImageColorGrayscale(&_imageMap.at(id));
     } else {
       v_setstr(retval, "Invalid input: Image not found");
       result = 0;
@@ -4467,8 +4462,7 @@ int cmd_imagecolorinvert(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
-      ImageColorInvert(&image);
+      ImageColorInvert(&_imageMap.at(id));
     } else {
       v_setstr(retval, "Invalid input: Image not found");
       result = 0;
@@ -4497,9 +4491,8 @@ int cmd_imagecolortint(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
       auto color = get_color(get_param_int(argc, params, 1, 0));
-      ImageColorTint(&image, color);
+      ImageColorTint(&_imageMap.at(id), color);
     } else {
       v_setstr(retval, "Invalid input: Image not found");
       result = 0;
@@ -4673,10 +4666,9 @@ int cmd_imagedrawrectanglerec(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
       auto rec = get_param_rect(argc, params, 1);
       auto color = get_color(get_param_int(argc, params, 2, 0));
-      ImageDrawRectangleRec(&image, rec, color);
+      ImageDrawRectangleRec(&_imageMap.at(id), rec, color);
     } else {
       v_setstr(retval, "Invalid input: Image not found");
       result = 0;
@@ -4739,8 +4731,7 @@ int cmd_imagefliphorizontal(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
-      ImageFlipHorizontal(&image);
+      ImageFlipHorizontal(&_imageMap.at(id));
     } else {
       v_setstr(retval, "Invalid input: Image not found");
       result = 0;
@@ -4756,8 +4747,7 @@ int cmd_imageflipvertical(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
-      ImageFlipVertical(&image);
+      ImageFlipVertical(&_imageMap.at(id));
     } else {
       v_setstr(retval, "Invalid input: Image not found");
       result = 0;
@@ -4773,9 +4763,8 @@ int cmd_imageformat(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto image = _imageMap.at(id);
       auto newFormat = get_param_int(argc, params, 1, 0);
-      ImageFormat(&image, newFormat);
+      ImageFormat(&_imageMap.at(id), newFormat);
     } else {
       v_setstr(retval, "Invalid input: Image not found");
       result = 0;
@@ -5970,6 +5959,9 @@ int cmd_updatetexture(int argc, slib_par_t *params, var_t *retval) {
       auto texture = _textureMap.at(id);
       Color *pixels = (Color *)params[1].var_p->v.i;
       UpdateTexture(texture, pixels);
+
+      // cleanup for rl.GetImageData(img)
+      free(pixels);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
       result = 0;
