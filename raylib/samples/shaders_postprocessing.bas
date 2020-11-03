@@ -58,8 +58,9 @@ const resources = CWD + "raylib/examples/shaders/resources/"
 const camera = [[2.0, 3.0, 2.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], 45.0, 0]
 const dwarf = rl.LoadModel(resources + "models/church.obj")              ' Load OBJ model
 const texture = rl.LoadTexture(resources + "models/church_diffuse.png")  ' Load model texture (diffuse map)
-dwarf.material.texDiffuse = texture                                    ' Set dwarf model diffuse texture
-const position = [0.0, 0.0, 0.0]                                       ' Set model position
+const position = [0.0, 0.0, 0.0]                                         ' Set model position
+
+rl.SetModelDiffuseTexture(dwarf, texture)                                ' Set dwarf model diffuse texture
 
 REM  Load all postpro shaders
 REM  NOTE 1: All postpro shader use the base vertex shader
@@ -84,11 +85,8 @@ currentShader = FX_GRAYSCALE
 REM  Create a RenderTexture2D to be used for render to texture
 const target = rl.LoadRenderTexture(screenWidth, screenHeight)
 
-REM  Setup orbital camera
-rl.SetCameraMode(camera, CAMERA_ORBITAL)   ' Set an orbital camera mode
-
-rl.SetTargetFPS(60)                            ' Set our game to run at 60 frames-per-second
-REM ----------------------------------------------------------------------------------------
+rl.SetCameraMode(camera, c.CAMERA_ORBITAL)  ' Set an orbital camera mode
+rl.SetTargetFPS(60)                        ' Set our game to run at 60 frames-per-second
 
 REM  Main game loop
 while (!rl.WindowShouldClose())

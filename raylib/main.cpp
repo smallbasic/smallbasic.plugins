@@ -5397,6 +5397,23 @@ int cmd_setmatrixprojection(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
+int cmd_setmodeldiffusetexture(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 2);
+  if (result) {
+    int modelId = get_model_id(argc, params, 0);
+    int textureId = get_texture_id(argc, params, 1);
+    if (modelId != -1 && textureId != -1) {
+      _modelMap.at(modelId).materials[0].maps[MAP_DIFFUSE].texture = _textureMap.at(textureId);
+    } else {
+      v_setstr(retval, "Invalid input: Model not found");
+      result = 0;
+    }
+  } else {
+    v_setstr(retval, "Invalid input: SetModelDiffuseTexture");
+  }
+  return result;
+}
+
 int cmd_setmodelmeshmaterial(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
@@ -6023,6 +6040,21 @@ int cmd_updatecamera(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     auto camera = get_camera_3d(argc, params, 0);
     UpdateCamera(&camera);
+
+    var_p_t array = params[0].var_p;
+    var_p_t v_position = v_elem(array, 0);
+    var_p_t v_target = v_elem(array, 1);
+    var_p_t v_up = v_elem(array, 1);
+
+    v_setreal(v_elem(v_position, 0), camera.position.x);
+    v_setreal(v_elem(v_position, 1), camera.position.y);
+    v_setreal(v_elem(v_position, 2), camera.position.z);
+    v_setreal(v_elem(v_target, 0), camera.target.x);
+    v_setreal(v_elem(v_target, 1), camera.target.y);
+    v_setreal(v_elem(v_target, 2), camera.target.z);
+    v_setreal(v_elem(v_up, 0), camera.up.x);
+    v_setreal(v_elem(v_up, 1), camera.up.y);
+    v_setreal(v_elem(v_up, 2), camera.up.z);
   } else {
     v_setstr(retval, "Invalid input: UpdateCamera");
   }
@@ -6541,6 +6573,7 @@ API lib_proc[] = {
   // {"SETMATERIALTEXTURE", cmd_setmaterialtexture},
   // {"SETMATRIXMODELVIEW", cmd_setmatrixmodelview},
   // {"SETMATRIXPROJECTION", cmd_setmatrixprojection},
+  {"SETMODELDIFFUSETEXTURE", cmd_setmodeldiffusetexture},
   // {"SETMODELMESHMATERIAL", cmd_setmodelmeshmaterial},
   // {"SETMOUSEOFFSET", cmd_setmouseoffset},
   // {"SETMOUSEPOSITION", cmd_setmouseposition},
