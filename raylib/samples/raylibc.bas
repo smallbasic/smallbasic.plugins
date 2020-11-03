@@ -1,5 +1,16 @@
 unit raylibc
 
+export FLAG_RESERVED           = 1
+export FLAG_FULLSCREEN_MODE    = 2
+export FLAG_WINDOW_RESIZABLE   = 4
+export FLAG_WINDOW_UNDECORATED = 8
+export FLAG_WINDOW_TRANSPARENT = 16
+export FLAG_WINDOW_HIDDEN      = 128
+export FLAG_WINDOW_ALWAYS_RUN  = 256
+export FLAG_MSAA_4X_HINT       = 32
+export FLAG_VSYNC_HINT         = 64
+export FLAG_INTERLACED_HINT    = 512
+
 export const MOUSE_LEFT_BUTTON   = 0
 export const MOUSE_RIGHT_BUTTON  = 1
 export const MOUSE_MIDDLE_BUTTON = 2

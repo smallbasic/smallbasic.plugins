@@ -18,10 +18,12 @@
 #include "module.h"
 #include "param.h"
 
+std::map<int, Image> _imageMap;
+std::map<int, Model> _modelMap;
 std::map<int, Music> _musicMap;
+std::map<int, RenderTexture2D> _renderMap;
 std::map<int, Sound> _soundMap;
 std::map<int, Texture2D> _textureMap;
-std::map<int, Image> _imageMap;
 int _nextId = 1;
 const char *mapID = "_ID";
 
@@ -93,6 +95,60 @@ Vector2 get_param_vec2(int argc, slib_par_t *params, int n) {
   return result;
 }
 
+Vector3 get_param_vec3(int argc, slib_par_t *params, int n) {
+  Vector3 result;
+  if (is_param_array(argc, params, n)) {
+    result.x = get_array_elem_num(params[n].var_p, 0);
+    result.y = get_array_elem_num(params[n].var_p, 1);
+    result.z = get_array_elem_num(params[n].var_p, 2);
+  } else {
+    result.x = 0;
+    result.y = 0;
+  }
+  return result;
+}
+
+Vector3 get_array_elem_vector(var_p_t array, int index) {
+  Vector3 result;
+  int size = v_asize(array);
+  if (index >= 0 && index < size) {
+    var_p_t elem = v_elem(array, index);
+    if (elem->type == V_ARRAY) {
+      result.x = get_array_elem_num(elem, 0);
+      result.y = get_array_elem_num(elem, 1);
+      result.z = get_array_elem_num(elem, 2);
+    }
+  }
+  return result;
+}
+
+Camera3D get_camera_3d(int argc, slib_par_t *params, int n) {
+  Camera3D result;
+  if (is_param_array(argc, params, n)) {
+    var_p_t array = params[n].var_p;
+    result.position = get_array_elem_vector(array, 0);
+    result.up = get_array_elem_vector(array, 1);
+    result.fovy = get_array_elem_num(array, 2);
+    result.type = get_array_elem_num(array, 3);
+  }
+  return result;
+}
+
+Shader get_param_shader(int argc, slib_par_t *params, int n) {
+  Shader result;
+  if (is_param_map(argc, params, n)) {
+    var_p_t var = map_get(params[n].var_p, "locs");
+    if (v_is_type(var, V_INT)) {
+      result.locs = (int *)(var->v.i);
+    } else {
+      result.locs = nullptr;
+    }
+    result.id = map_get_int(params[n].var_p, mapID, -1);
+  }
+
+  return result;
+}
+
 int get_image_id(int argc, slib_par_t *params, int n) {
   int result = -1;
   if (is_param_map(argc, params, n)) {
@@ -119,7 +175,33 @@ int get_texture_id(int argc, slib_par_t *params, int n) {
   return result;
 }
 
-void set_vector(var_t *var, int width, int height, int id) {
+int get_model_id(int argc, slib_par_t *params, int n) {
+  int result = -1;
+  if (is_param_map(argc, params, n)) {
+    // the passed in variable is a map
+    int id = map_get_int(params[n].var_p, mapID, -1);
+    if (id != -1 && _modelMap.find(id) != _modelMap.end()) {
+      // the map contained an ID field with a live value
+      result = id;
+    }
+  }
+  return result;
+}
+
+int get_render_texture_id(int argc, slib_par_t *params, int n) {
+  int result = -1;
+  if (is_param_map(argc, params, n)) {
+    // the passed in variable is a map
+    int id = map_get_int(params[n].var_p, mapID, -1);
+    if (id != -1 && _renderMap.find(id) != _renderMap.end()) {
+      // the map contained an ID field with a live value
+      result = id;
+    }
+  }
+  return result;
+}
+
+void create_rectangle(var_t *var, int width, int height, int id) {
   map_init(var);
   v_setint(map_add_var(var, "width", 0), width);
   v_setint(map_add_var(var, "height", 0), height);
@@ -2346,7 +2428,7 @@ int cmd_loadimage(int argc, slib_par_t *params, var_t *retval) {
     auto image = LoadImage(fileName);
     auto id = ++_nextId;
     _imageMap[id] = image;
-    set_vector(retval, image.width, image.height, id);
+    create_rectangle(retval, image.width, image.height, id);
   } else {
     v_setstr(retval, "Invalid input: LoadImage");
   }
@@ -2436,9 +2518,16 @@ int cmd_loadmeshes(int argc, slib_par_t *params, var_t *retval) {
 int cmd_loadmodel(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto fileName = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = LoadModel(fileName);
-    // v_setint(retval, fnResult);
+    auto fileName = get_param_str(argc, params, 0, NULL);
+    auto model = LoadModel(fileName);
+    auto id = ++_nextId;
+    _modelMap[id] = model;
+
+    map_init(retval);
+    v_setint(map_add_var(retval, "meshCount", 0), model.meshCount);
+    v_setint(map_add_var(retval, "materialCount", 0), model.materialCount);
+    v_setint(map_add_var(retval, "boneCount", 0), model.boneCount);
+    v_setint(map_add_var(retval, mapID, 0), id);
   } else {
     v_setstr(retval, "Invalid input: LoadModel");
   }
@@ -2486,10 +2575,20 @@ int cmd_loadmusicstream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_loadrendertexture(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = LoadRenderTexture(width, height);
-    // v_setint(retval, fnResult);
+    auto width = get_param_int(argc, params, 0, 0);
+    auto height = get_param_int(argc, params, 1, 0);
+    auto renderId = ++_nextId;
+    auto renderTexture = LoadRenderTexture(width, height);
+    _renderMap[renderId] = renderTexture;
+
+    map_init(retval);
+    map_add_var(retval, mapID, renderId);
+
+    auto textureId = ++_nextId;
+    _textureMap[textureId] = renderTexture.texture;
+    var_p_t texture = map_add_var(retval, "texture", 0);
+    map_init(texture);
+    create_rectangle(texture, renderTexture.texture.width, renderTexture.texture.height, textureId);
   } else {
     v_setstr(retval, "Invalid input: LoadRenderTexture");
   }
@@ -2499,10 +2598,12 @@ int cmd_loadrendertexture(int argc, slib_par_t *params, var_t *retval) {
 int cmd_loadshader(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto vsFileName = get_param_str(argc, params, 0, NULL);
-    // auto fsFileName = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = LoadShader(vsFileName, fsFileName);
-    // v_setint(retval, fnResult);
+    auto vsFileName = get_param_str(argc, params, 0, NULL);
+    auto fsFileName = get_param_str(argc, params, 1, NULL);
+    auto shader = LoadShader(vsFileName, fsFileName);
+    map_init(retval);
+    v_setint(map_add_var(retval, "locs", 0), (var_int_t)shader.locs);
+    v_setint(map_add_var(retval, mapID, 0), shader.id);
   } else {
     v_setstr(retval, "Invalid input: LoadShader");
   }
@@ -2566,7 +2667,7 @@ int cmd_loadtexture(int argc, slib_par_t *params, var_t *retval) {
      Texture2D texture = LoadTexture(fileName);
      int id = ++_nextId;
      _textureMap[id] = texture;
-     set_vector(retval, texture.width, texture.height, id);
+     create_rectangle(retval, texture.width, texture.height, id);
   } else {
     v_setstr(retval, "Invalid input: LoadTexture");
   }
@@ -2594,7 +2695,7 @@ int cmd_loadtexturefromimage(int argc, slib_par_t *params, var_t *retval) {
       auto texture = LoadTextureFromImage(_imageMap.at(id));
       id = ++_nextId;
       _textureMap[id] = texture;
-      set_vector(retval, texture.width, texture.height, id);
+      create_rectangle(retval, texture.width, texture.height, id);
     } else {
       v_setstr(retval, "Invalid input: Image not found");
       result = 0;
@@ -2923,8 +3024,7 @@ int cmd_beginmode2d(int argc, slib_par_t *params, var_t *retval) {
 int cmd_beginmode3d(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto camera = get_param_str(argc, params, 0, NULL);
-    // BeginMode3D(camera);
+    BeginMode3D(get_camera_3d(argc, params, 0));
   } else {
     v_setstr(retval, "Invalid input: BeginMode3D");
   }
@@ -2948,8 +3048,7 @@ int cmd_beginscissormode(int argc, slib_par_t *params, var_t *retval) {
 int cmd_beginshadermode(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto shader = get_param_str(argc, params, 0, NULL);
-    // BeginShaderMode(shader);
+    BeginShaderMode(get_param_shader(argc, params, 0));
   } else {
     v_setstr(retval, "Invalid input: BeginShaderMode");
   }
@@ -2959,8 +3058,13 @@ int cmd_beginshadermode(int argc, slib_par_t *params, var_t *retval) {
 int cmd_begintexturemode(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto target = get_param_str(argc, params, 0, NULL);
-    // BeginTextureMode(target);
+    int id = get_render_texture_id(argc, params, 0);
+    if (id != -1) {
+      BeginTextureMode(_renderMap.at(id));
+    } else {
+      v_setstr(retval, "Invalid input: RenderTexture not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: BeginTextureMode");
   }
@@ -3375,9 +3479,9 @@ int cmd_drawgizmo(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawgrid(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto slices = get_param_str(argc, params, 0, NULL);
-    // auto spacing = get_param_str(argc, params, 1, NULL);
-    // DrawGrid(slices, spacing);
+    auto slices = get_param_int(argc, params, 0, 0);
+    auto spacing = get_param_num(argc, params, 1, 0);
+    DrawGrid(slices, spacing);
   } else {
     v_setstr(retval, "Invalid input: DrawGrid");
   }
@@ -3469,11 +3573,16 @@ int cmd_drawlinev(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawmodel(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto model = get_param_str(argc, params, 0, NULL);
-    // auto position = get_param_str(argc, params, 1, NULL);
-    // auto scale = get_param_str(argc, params, 2, NULL);
-    // auto tint = get_param_str(argc, params, 3, NULL);
-    // DrawModel(model, position, scale, tint);
+    int id = get_model_id(argc, params, 0);
+    if (id != -1) {
+      auto position = get_param_vec3(argc, params, 1);
+      auto scale = get_param_num(argc, params, 2, 0);
+      auto tint = get_color(get_param_int(argc, params, 3, 0));
+      DrawModel(_modelMap.at(id), position, scale, tint);
+    } else {
+      v_setstr(retval, "Invalid input: Model not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: DrawModel");
   }
@@ -3942,11 +4051,10 @@ int cmd_drawtexture(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_texture_id(argc, params, 0);
     if (id != -1) {
-      auto texture = _textureMap.at(id);
       auto posX = get_param_int(argc, params, 1, 0);
       auto posY = get_param_int(argc, params, 2, 0);
       auto tint = get_color(get_param_int(argc, params, 3, 0));
-      DrawTexture(texture, posX, posY, tint);
+      DrawTexture(_textureMap.at(id), posX, posY, tint);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
       result = 0;
@@ -3993,13 +4101,12 @@ int cmd_drawtexturepro(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_texture_id(argc, params, 0);
     if (id != -1) {
-      auto texture = _textureMap.at(id);
       auto sourceRec = get_param_rect(argc, params, 1);
       auto destRec = get_param_rect(argc, params, 2);
       auto origin = get_param_vec2(argc, params, 3);
       auto rotation = get_param_num(argc, params, 4, 0);
       auto tint = get_color(get_param_int(argc, params, 5, 0));
-      DrawTexturePro(texture, sourceRec, destRec, origin, rotation, tint);
+      DrawTexturePro(_textureMap.at(id), sourceRec, destRec, origin, rotation, tint);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
       result = 0;
@@ -4030,11 +4137,10 @@ int cmd_drawtexturerec(int argc, slib_par_t *params, var_t *retval) {
   if (result && is_param_map(argc, params, 0)) {
     int id = map_get_int(params[0].var_p, mapID, -1);
     if (id != -1 && _textureMap.find(id) != _textureMap.end()) {
-      auto texture = _textureMap.at(id);
       auto sourceRec = get_param_rect(argc, params, 1);
       auto position = get_param_vec2(argc, params, 2);
       auto tint = get_color(get_param_int(argc, params, 3, 0));
-      DrawTextureRec(texture, sourceRec, position, tint);
+      DrawTextureRec(_textureMap.at(id), sourceRec, position, tint);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
       result = 0;
@@ -5155,9 +5261,8 @@ int cmd_setcameraaltcontrol(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setcameramode(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto camera = get_param_str(argc, params, 0, NULL);
-    // auto mode = get_param_str(argc, params, 1, NULL);
-    // SetCameraMode(camera, mode);
+    auto mode = get_param_int(argc, params, 1, 0);
+    SetCameraMode(get_camera_3d(argc, params, 0), mode);
   } else {
     v_setstr(retval, "Invalid input: SetCameraMode");
   }
@@ -5216,8 +5321,8 @@ int cmd_setclipboardtext(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setconfigflags(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto flags = get_param_str(argc, params, 0, NULL);
-    // SetConfigFlags(flags);
+    auto flags = get_param_int(argc, params, 0, 0);
+    SetConfigFlags(flags);
   } else {
     v_setstr(retval, "Invalid input: SetConfigFlags");
   }
@@ -5794,8 +5899,14 @@ int cmd_unloadmesh(int argc, slib_par_t *params, var_t *retval) {
 int cmd_unloadmodel(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto model = get_param_str(argc, params, 0, NULL);
-    // UnloadModel(model);
+    int id = get_model_id(argc, params, 0);
+    if (id != -1) {
+      UnloadModel(_modelMap.at(id));
+      _modelMap.erase(id);
+    } else {
+      v_setstr(retval, "Invalid input: Model not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: UnloadModel");
   }
@@ -5829,8 +5940,14 @@ int cmd_unloadmusicstream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_unloadrendertexture(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto target = get_param_str(argc, params, 0, NULL);
-    // UnloadRenderTexture(target);
+    int id = get_render_texture_id(argc, params, 0);
+    if (id != -1) {
+      UnloadRenderTexture(_renderMap.at(id));
+      _renderMap.erase(id);
+    } else {
+      v_setstr(retval, "Invalid input: RenderTexture not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: UnloadRenderTexture");
   }
@@ -5840,8 +5957,7 @@ int cmd_unloadrendertexture(int argc, slib_par_t *params, var_t *retval) {
 int cmd_unloadshader(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto shader = get_param_str(argc, params, 0, NULL);
-    // UnloadShader(shader);
+    UnloadShader(get_param_shader(argc, params, 0));
   } else {
     v_setstr(retval, "Invalid input: UnloadShader");
   }
@@ -5866,8 +5982,7 @@ int cmd_unloadtexture(int argc, slib_par_t *params, var_t *retval) {
   if (result && is_param_map(argc, params, 0)) {
     int id = map_get_int(params[0].var_p, mapID, -1);
     if (id != -1 && _textureMap.find(id) != _textureMap.end()) {
-      auto texture = _textureMap.at(id);
-      UnloadTexture(texture);
+      UnloadTexture(_textureMap.at(id));
       _textureMap.erase(id);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
@@ -5906,8 +6021,8 @@ int cmd_updateaudiostream(int argc, slib_par_t *params, var_t *retval) {
 int cmd_updatecamera(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto camera = get_param_str(argc, params, 0, NULL);
-    // UpdateCamera(camera);
+    auto camera = get_camera_3d(argc, params, 0);
+    UpdateCamera(&camera);
   } else {
     v_setstr(retval, "Invalid input: UpdateCamera");
   }
@@ -5956,9 +6071,8 @@ int cmd_updatetexture(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_texture_id(argc, params, 0);
     if (id != -1 && params[1].var_p->type == V_INT) {
-      auto texture = _textureMap.at(id);
       Color *pixels = (Color *)params[1].var_p->v.i;
-      UpdateTexture(texture, pixels);
+      UpdateTexture(_textureMap.at(id), pixels);
 
       // cleanup for rl.GetImageData(img)
       free(pixels);
@@ -6206,12 +6320,12 @@ API lib_func[] = {
   // {"LOADMATERIALDEFAULT", cmd_loadmaterialdefault},
   // {"LOADMATERIALS", cmd_loadmaterials},
   // {"LOADMESHES", cmd_loadmeshes},
-  // {"LOADMODEL", cmd_loadmodel},
+  {"LOADMODEL", cmd_loadmodel},
   // {"LOADMODELANIMATIONS", cmd_loadmodelanimations},
   // {"LOADMODELFROMMESH", cmd_loadmodelfrommesh},
   {"LOADMUSICSTREAM", cmd_loadmusicstream},
-  // {"LOADRENDERTEXTURE", cmd_loadrendertexture},
-  // {"LOADSHADER", cmd_loadshader},
+  {"LOADRENDERTEXTURE", cmd_loadrendertexture},
+  {"LOADSHADER", cmd_loadshader},
   // {"LOADSHADERCODE", cmd_loadshadercode},
   {"LOADSOUND", cmd_loadsound},
   {"LOADSOUNDFROMWAVE", cmd_loadsoundfromwave},
@@ -6247,10 +6361,10 @@ API lib_proc[] = {
   {"BEGINBLENDMODE", cmd_beginblendmode},
   {"BEGINDRAWING", cmd_begindrawing},
   // {"BEGINMODE2D", cmd_beginmode2d},
-  // {"BEGINMODE3D", cmd_beginmode3d},
+  {"BEGINMODE3D", cmd_beginmode3d},
   // {"BEGINSCISSORMODE", cmd_beginscissormode},
-  // {"BEGINSHADERMODE", cmd_beginshadermode},
-  // {"BEGINTEXTUREMODE", cmd_begintexturemode},
+  {"BEGINSHADERMODE", cmd_beginshadermode},
+  {"BEGINTEXTUREMODE", cmd_begintexturemode},
   {"BEGINVRDRAWING", cmd_beginvrdrawing},
   {"CLEARBACKGROUND", cmd_clearbackground},
   {"CLEARDIRECTORYFILES", cmd_cleardirectoryfiles},
@@ -6282,14 +6396,14 @@ API lib_proc[] = {
   // {"DRAWELLIPSELINES", cmd_drawellipselines},
   {"DRAWFPS", cmd_drawfps},
   // {"DRAWGIZMO", cmd_drawgizmo},
-  // {"DRAWGRID", cmd_drawgrid},
+  {"DRAWGRID", cmd_drawgrid},
   // {"DRAWLINE", cmd_drawline},
   // {"DRAWLINE3D", cmd_drawline3d},
   // {"DRAWLINEBEZIER", cmd_drawlinebezier},
   // {"DRAWLINEEX", cmd_drawlineex},
   // {"DRAWLINESTRIP", cmd_drawlinestrip},
   // {"DRAWLINEV", cmd_drawlinev},
-  // {"DRAWMODEL", cmd_drawmodel},
+  {"DRAWMODEL", cmd_drawmodel},
   // {"DRAWMODELEX", cmd_drawmodelex},
   // {"DRAWMODELWIRES", cmd_drawmodelwires},
   // {"DRAWMODELWIRESEX", cmd_drawmodelwiresex},
@@ -6415,12 +6529,12 @@ API lib_proc[] = {
   // {"SETAUDIOSTREAMPITCH", cmd_setaudiostreampitch},
   // {"SETAUDIOSTREAMVOLUME", cmd_setaudiostreamvolume},
   // {"SETCAMERAALTCONTROL", cmd_setcameraaltcontrol},
-  // {"SETCAMERAMODE", cmd_setcameramode},
+  {"SETCAMERAMODE", cmd_setcameramode},
   // {"SETCAMERAMOVECONTROLS", cmd_setcameramovecontrols},
   // {"SETCAMERAPANCONTROL", cmd_setcamerapancontrol},
   // {"SETCAMERASMOOTHZOOMCONTROL", cmd_setcamerasmoothzoomcontrol},
   // {"SETCLIPBOARDTEXT", cmd_setclipboardtext},
-  // {"SETCONFIGFLAGS", cmd_setconfigflags},
+  {"SETCONFIGFLAGS", cmd_setconfigflags},
   // {"SETEXITKEY", cmd_setexitkey},
   // {"SETGESTURESENABLED", cmd_setgesturesenabled},
   // {"SETMASTERVOLUME", cmd_setmastervolume},
@@ -6456,7 +6570,7 @@ API lib_proc[] = {
   {"SETWINDOWTITLE", cmd_setwindowtitle},
   {"SHOWCURSOR", cmd_showcursor},
   // {"STOPAUDIOSTREAM", cmd_stopaudiostream},
-   {"STOPMUSICSTREAM", cmd_stopmusicstream},
+  {"STOPMUSICSTREAM", cmd_stopmusicstream},
   // {"STOPSOUND", cmd_stopsound},
   {"STOPSOUNDMULTI", cmd_stopsoundmulti},
   // {"TAKESCREENSHOT", cmd_takescreenshot},
@@ -6470,16 +6584,16 @@ API lib_proc[] = {
   {"UNLOADIMAGE", cmd_unloadimage},
   // {"UNLOADMATERIAL", cmd_unloadmaterial},
   // {"UNLOADMESH", cmd_unloadmesh},
-  // {"UNLOADMODEL", cmd_unloadmodel},
+  {"UNLOADMODEL", cmd_unloadmodel},
   // {"UNLOADMODELANIMATION", cmd_unloadmodelanimation},
   {"UNLOADMUSICSTREAM", cmd_unloadmusicstream},
-  // {"UNLOADRENDERTEXTURE", cmd_unloadrendertexture},
-  // {"UNLOADSHADER", cmd_unloadshader},
+  {"UNLOADRENDERTEXTURE", cmd_unloadrendertexture},
+  {"UNLOADSHADER", cmd_unloadshader},
   {"UNLOADSOUND", cmd_unloadsound},
   {"UNLOADTEXTURE", cmd_unloadtexture},
   // {"UNLOADWAVE", cmd_unloadwave},
   // {"UPDATEAUDIOSTREAM", cmd_updateaudiostream},
-  // {"UPDATECAMERA", cmd_updatecamera},
+  {"UPDATECAMERA", cmd_updatecamera},
   // {"UPDATEMODELANIMATION", cmd_updatemodelanimation},
   {"UPDATEMUSICSTREAM", cmd_updatemusicstream},
   // {"UPDATESOUND", cmd_updatesound},
@@ -6546,17 +6660,15 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int sblib_events(int wait_flag, int *w, int *h) {
-  return 0;
-}
-
 int sblib_init(void) {
   return 1;
 }
 
 void sblib_close(void) {
+  _imageMap.clear();
+  _modelMap.clear();
   _musicMap.clear();
+  _renderMap.clear();
   _soundMap.clear();
   _textureMap.clear();
-  _imageMap.clear();
 }
