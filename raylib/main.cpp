@@ -27,53 +27,39 @@ std::map<int, Texture2D> _textureMap;
 int _nextId = 1;
 const char *mapID = "_ID";
 
-const Color _colors[] = {
-  {0  ,0  ,0  ,255}, // 0 black
-  {0  ,0  ,128,255}, // 1 blue
-  {0  ,128,0  ,255}, // 2 green
-  {0  ,128,128,255}, // 3 cyan
-  {128,0  ,0  ,255}, // 4 red
-  {128,0  ,128,255}, // 5 magenta
-  {128,128,0  ,255}, // 6 yellow
-  {192,192,192,255}, // 7 white
-  {128,128,128,255}, // 8 gray
-  {0  ,0  ,255,255}, // 9 light blue
-  {0  ,255,0  ,255}, // 10 light green
-  {0  ,255,255,255}, // 11 light cyan
-  {255,0  ,0  ,255}, // 12 light red
-  {255,0  ,255,255}, // 13 light magenta
-  {255,255,0  ,255}, // 14 light yellow
-  {255,255,255,255}  // 15 bright white
-};
-
-struct Color get_color(long c) {
-  Color result;
-  if (c >= 0 && c < 16) {
-    result = _colors[c];
-  } else {
-    if (c < 0) {
-      c = -c;
-    }
-    uint8_t r = (c & 0xff0000) >> 16;
-    uint8_t g = (c & 0xff00) >> 8;
-    uint8_t b = (c & 0xff);
-    uint8_t a = 255;
-    result = {r, g, b, a};
-  }
-  return result;
+bool is_array(var_p_t var, uint32_t size) {
+  return v_is_type(var, V_ARRAY) && v_asize(var) == size;
 }
 
 var_int_t get_color_int(Color c) {
   return ((0x00000000) | (c.r << 24) | (c.g << 16) | (c.b << 8) | (c.a));
 }
 
+Color get_param_color(int argc, slib_par_t *params, int n) {
+  Color result;
+  if (n >= 0 && n < argc && params[n].var_p->type == V_INT) {
+    var_int_t c = params[n].var_p->v.i;
+    uint8_t r = (c & 0xff000000) >> 24;
+    uint8_t g = (c & 0xff0000) >> 16;
+    uint8_t b = (c & 0xff00) >> 8;
+    uint8_t a = (c & 0xff);
+    result = {r, g, b, a};
+  } else if (is_param_array(argc, params, n)) {
+    result.r = get_array_elem_num(params[n].var_p, 0);
+    result.g = get_array_elem_num(params[n].var_p, 1);
+    result.b = get_array_elem_num(params[n].var_p, 2);
+    result.a = 255;
+  }
+  return result;
+}
+
 Rectangle get_param_rect(int argc, slib_par_t *params, int n) {
   Rectangle result;
   if (is_param_map(argc, params, n)) {
-    result.x = map_get_int(params[n].var_p, "x", -1);
-    result.y = map_get_int(params[n].var_p, "y", -1);
-    result.width = map_get_int(params[n].var_p, "width", -1);
-    result.height = map_get_int(params[n].var_p, "height", -1);
+    result.x = get_map_num(params[n].var_p, "x");
+    result.y = get_map_num(params[n].var_p, "y");
+    result.width = get_map_num(params[n].var_p, "width");
+    result.height = get_map_num(params[n].var_p, "height");
   } else if (is_param_array(argc, params, n)) {
     result.x = get_array_elem_num(params[n].var_p, 0);
     result.y = get_array_elem_num(params[n].var_p, 1);
@@ -89,8 +75,8 @@ Vector2 get_param_vec2(int argc, slib_par_t *params, int n) {
     result.x = get_array_elem_num(params[n].var_p, 0);
     result.y = get_array_elem_num(params[n].var_p, 1);
   } else {
-    result.x = 0;
-    result.y = 0;
+    result.x = 0.0;
+    result.y = 0.0;
   }
   return result;
 }
@@ -127,9 +113,10 @@ Camera3D get_camera_3d(int argc, slib_par_t *params, int n) {
   if (is_param_array(argc, params, n)) {
     var_p_t array = params[n].var_p;
     result.position = get_array_elem_vector(array, 0);
-    result.up = get_array_elem_vector(array, 1);
-    result.fovy = get_array_elem_num(array, 2);
-    result.type = get_array_elem_num(array, 3);
+    result.target = get_array_elem_vector(array, 1);
+    result.up = get_array_elem_vector(array, 2);
+    result.fovy = get_array_elem_num(array, 3);
+    result.type = get_array_elem_num(array, 4);
   }
   return result;
 }
@@ -533,10 +520,9 @@ int cmd_directoryexists(int argc, slib_par_t *params, var_t *retval) {
 int cmd_fade(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    auto color = get_color(get_param_int(argc, params, 0, 0));
-    auto alpha = get_param_int(argc, params, 1, 0);
-    auto fnResult = Fade(color, alpha);
-    v_setint(retval, get_color_int(fnResult));
+    auto color = get_param_color(argc, params, 0);
+    auto alpha = get_param_num(argc, params, 1, 0);
+    v_setint(retval, get_color_int(Fade(color, alpha)));
   } else {
     v_setstr(retval, "Invalid input: Fade");
   }
@@ -2600,7 +2586,12 @@ int cmd_loadshader(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     auto vsFileName = get_param_str(argc, params, 0, NULL);
     auto fsFileName = get_param_str(argc, params, 1, NULL);
-    auto shader = LoadShader(vsFileName, fsFileName);
+    Shader shader;
+    if (vsFileName[0] == '0' && vsFileName[1] == '\0') {
+      shader = LoadShader(0, fsFileName);
+    } else {
+      shader = LoadShader(vsFileName, fsFileName);
+    }
     map_init(retval);
     v_setint(map_add_var(retval, "locs", 0), (var_int_t)shader.locs);
     v_setint(map_add_var(retval, mapID, 0), shader.id);
@@ -3084,7 +3075,7 @@ int cmd_beginvrdrawing(int argc, slib_par_t *params, var_t *retval) {
 int cmd_clearbackground(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    auto color = get_color(get_param_int(argc, params, 0, 0));
+    auto color = get_param_color(argc, params, 0);
     ClearBackground(color);
   } else {
     v_setstr(retval, "Invalid input: ClearBackground");
@@ -3468,8 +3459,7 @@ int cmd_drawfps(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawgizmo(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto position = get_param_str(argc, params, 0, NULL);
-    // DrawGizmo(position);
+    DrawGizmo(get_param_vec3(argc, params, 0));
   } else {
     v_setstr(retval, "Invalid input: DrawGizmo");
   }
@@ -3577,7 +3567,7 @@ int cmd_drawmodel(int argc, slib_par_t *params, var_t *retval) {
     if (id != -1) {
       auto position = get_param_vec3(argc, params, 1);
       auto scale = get_param_num(argc, params, 2, 0);
-      auto tint = get_color(get_param_int(argc, params, 3, 0));
+      auto tint = get_param_color(argc, params, 3);
       DrawModel(_modelMap.at(id), position, scale, tint);
     } else {
       v_setstr(retval, "Invalid input: Model not found");
@@ -3734,7 +3724,7 @@ int cmd_drawrectangle(int argc, slib_par_t *params, var_t *retval) {
     auto posY = get_param_int(argc, params, 1, 0);
     auto width = get_param_int(argc, params, 2, 0);
     auto height = get_param_int(argc, params, 3, 0);
-    auto color = get_color(get_param_int(argc, params, 4, 0));
+    auto color = get_param_color(argc, params, 4);
     DrawRectangle(posX, posY, width, height, color);
   } else {
     v_setstr(retval, "Invalid input: DrawRectangle");
@@ -3796,7 +3786,7 @@ int cmd_drawrectanglelines(int argc, slib_par_t *params, var_t *retval) {
     auto posY = get_param_int(argc, params, 1, 0);
     auto width = get_param_int(argc, params, 2, 0);
     auto height = get_param_int(argc, params, 3, 0);
-    auto color = get_color(get_param_int(argc, params, 4, 0));
+    auto color = get_param_color(argc, params, 4);
     DrawRectangleLines(posX, posY, width, height, color);
   } else {
     v_setstr(retval, "Invalid input: DrawRectangleLines");
@@ -3835,7 +3825,7 @@ int cmd_drawrectanglerec(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
     auto rec = get_param_rect(argc, params, 0);
-    auto color = get_color(get_param_int(argc, params, 1, 0));
+    auto color = get_param_color(argc, params, 1);
     DrawRectangleRec(rec, color);
   } else {
     v_setstr(retval, "Invalid input: DrawRectangleRec");
@@ -3969,7 +3959,7 @@ int cmd_drawtext(int argc, slib_par_t *params, var_t *retval) {
     auto posX = get_param_int(argc, params, 1, 0);
     auto posY = get_param_int(argc, params, 2, 0);
     auto fontSize = get_param_int(argc, params, 3, 0);
-    auto color = get_color(get_param_int(argc, params, 4, 0));
+    auto color = get_param_color(argc, params, 4);
     DrawText(text, posX, posY, fontSize, color);
   } else {
     v_setstr(retval, "Invalid input: DrawText");
@@ -4053,7 +4043,7 @@ int cmd_drawtexture(int argc, slib_par_t *params, var_t *retval) {
     if (id != -1) {
       auto posX = get_param_int(argc, params, 1, 0);
       auto posY = get_param_int(argc, params, 2, 0);
-      auto tint = get_color(get_param_int(argc, params, 3, 0));
+      auto tint = get_param_color(argc, params, 3);
       DrawTexture(_textureMap.at(id), posX, posY, tint);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
@@ -4105,7 +4095,7 @@ int cmd_drawtexturepro(int argc, slib_par_t *params, var_t *retval) {
       auto destRec = get_param_rect(argc, params, 2);
       auto origin = get_param_vec2(argc, params, 3);
       auto rotation = get_param_num(argc, params, 4, 0);
-      auto tint = get_color(get_param_int(argc, params, 5, 0));
+      auto tint = get_param_color(argc, params, 5);
       DrawTexturePro(_textureMap.at(id), sourceRec, destRec, origin, rotation, tint);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
@@ -4139,7 +4129,7 @@ int cmd_drawtexturerec(int argc, slib_par_t *params, var_t *retval) {
     if (id != -1 && _textureMap.find(id) != _textureMap.end()) {
       auto sourceRec = get_param_rect(argc, params, 1);
       auto position = get_param_vec2(argc, params, 2);
-      auto tint = get_color(get_param_int(argc, params, 3, 0));
+      auto tint = get_param_color(argc, params, 3);
       DrawTextureRec(_textureMap.at(id), sourceRec, position, tint);
     } else {
       v_setstr(retval, "Invalid input: Texture not found");
@@ -4597,7 +4587,7 @@ int cmd_imagecolortint(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
-      auto color = get_color(get_param_int(argc, params, 1, 0));
+      auto color = get_param_color(argc, params, 1);
       ImageColorTint(&_imageMap.at(id), color);
     } else {
       v_setstr(retval, "Invalid input: Image not found");
@@ -4773,7 +4763,7 @@ int cmd_imagedrawrectanglerec(int argc, slib_par_t *params, var_t *retval) {
     int id = get_image_id(argc, params, 0);
     if (id != -1) {
       auto rec = get_param_rect(argc, params, 1);
-      auto color = get_color(get_param_int(argc, params, 2, 0));
+      auto color = get_param_color(argc, params, 2);
       ImageDrawRectangleRec(&_imageMap.at(id), rec, color);
     } else {
       v_setstr(retval, "Invalid input: Image not found");
@@ -6040,21 +6030,27 @@ int cmd_updatecamera(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     auto camera = get_camera_3d(argc, params, 0);
     UpdateCamera(&camera);
-
     var_p_t array = params[0].var_p;
-    var_p_t v_position = v_elem(array, 0);
-    var_p_t v_target = v_elem(array, 1);
-    var_p_t v_up = v_elem(array, 1);
-
-    v_setreal(v_elem(v_position, 0), camera.position.x);
-    v_setreal(v_elem(v_position, 1), camera.position.y);
-    v_setreal(v_elem(v_position, 2), camera.position.z);
-    v_setreal(v_elem(v_target, 0), camera.target.x);
-    v_setreal(v_elem(v_target, 1), camera.target.y);
-    v_setreal(v_elem(v_target, 2), camera.target.z);
-    v_setreal(v_elem(v_up, 0), camera.up.x);
-    v_setreal(v_elem(v_up, 1), camera.up.y);
-    v_setreal(v_elem(v_up, 2), camera.up.z);
+    if (is_array(array, 5)) {
+      var_p_t v_position = v_elem(array, 0);
+      if (is_array(v_position, 3)) {
+        v_setreal(v_elem(v_position, 0), camera.position.x);
+        v_setreal(v_elem(v_position, 1), camera.position.y);
+        v_setreal(v_elem(v_position, 2), camera.position.z);
+      }
+      var_p_t v_target = v_elem(array, 1);
+      if (is_array(v_target, 3)) {
+        v_setreal(v_elem(v_target, 0), camera.target.x);
+        v_setreal(v_elem(v_target, 1), camera.target.y);
+        v_setreal(v_elem(v_target, 2), camera.target.z);
+      }
+      var_p_t v_up = v_elem(array, 2);
+      if (is_array(v_up, 3)) {
+        v_setreal(v_elem(v_up, 0), camera.up.x);
+        v_setreal(v_elem(v_up, 1), camera.up.y);
+        v_setreal(v_elem(v_up, 2), camera.up.z);
+      }
+    }
   } else {
     v_setstr(retval, "Invalid input: UpdateCamera");
   }
@@ -6427,7 +6423,7 @@ API lib_proc[] = {
   // {"DRAWELLIPSE", cmd_drawellipse},
   // {"DRAWELLIPSELINES", cmd_drawellipselines},
   {"DRAWFPS", cmd_drawfps},
-  // {"DRAWGIZMO", cmd_drawgizmo},
+  {"DRAWGIZMO", cmd_drawgizmo},
   {"DRAWGRID", cmd_drawgrid},
   // {"DRAWLINE", cmd_drawline},
   // {"DRAWLINE3D", cmd_drawline3d},

@@ -160,21 +160,34 @@ const char *get_param_str_field(int argc, slib_par_t *params, int n, const char 
   return result;
 }
 
+float get_num(var_p_t var) {
+  float result;
+  switch (var->type) {
+  case V_INT:
+    result = var->v.i;
+    break;
+  case V_NUM:
+    result = var->v.n;
+    break;
+  default:
+    result = 0.0;
+    break;
+  }
+  return result;
+}
+
+float get_map_num(var_p_t map, const char *name) {
+  var_p_t var = map_get(map, name);
+  return var != nullptr ? get_num(var) : 0;
+}
+
 float get_array_elem_num(var_p_t array, int index) {
-  float result = 0.0;
+  float result;
   int size = v_asize(array);
   if (index >= 0 && index < size) {
-    var_p_t elem = v_elem(array, index);
-    switch (elem->type) {
-    case V_INT:
-      result = elem->v.i;
-      break;
-    case V_NUM:
-      result = elem->v.n;
-      break;
-    default:
-      break;
-    }
+    result = get_num(v_elem(array, index));
+  } else {
+    result = 0.0;
   }
   return result;
 }

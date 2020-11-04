@@ -52,7 +52,7 @@ const screenWidth = 800
 const screenHeight = 450
 
 rl.SetConfigFlags(c.FLAG_MSAA_4X_HINT)      ' Enable Multi Sampling Anti Aliasing 4x (if available)
-rl.InitWindow(screenWidth, screenHeight, "raylib [shaders] example - postprocessing shaders")
+rl.InitWindow(screenWidth, screenHeight, "SmallBASIC raylib [shaders] example - postprocessing shaders")
 
 const resources = CWD + "raylib/examples/shaders/resources/"
 const camera = [[2.0, 3.0, 2.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], 45.0, 0]
@@ -67,23 +67,25 @@ REM  NOTE 1: All postpro shader use the base vertex shader
 REM  NOTE 2: We load the correct shader depending on GLSL version
 dim shaders(12)
 
-shaders[FX_GRAYSCALE] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/grayscale.fs")
-shaders[FX_POSTERIZATION] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/posterization.fs")
-shaders[FX_DREAM_VISION] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/dream_vision.fs")
-shaders[FX_PIXELIZER] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/pixelizer.fs")
-shaders[FX_CROSS_HATCHING] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/cross_hatching.fs")
-shaders[FX_CROSS_STITCHING] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/cross_stitching.fs")
-shaders[FX_PREDATOR_VIEW] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/predator.fs")
-shaders[FX_SCANLINES] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/scanlines.fs")
-shaders[FX_FISHEYE] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/fisheye.fs")
-shaders[FX_SOBEL] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/sobel.fs")
-shaders[FX_BLOOM] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/bloom.fs")
-shaders[FX_BLUR] = rl.LoadShader(resources + "shaders/glsl330/base.vs", resources + "shaders/glsl330/blur.fs")
+REM NOTE: Defining 0 (NULL) for vertex shader forces usage of internal default vertex shader
+shaders[FX_GRAYSCALE] = rl.LoadShader(0, resources + "shaders/glsl330/grayscale.fs")
+shaders[FX_POSTERIZATION] = rl.LoadShader(0, resources + "shaders/glsl330/posterization.fs")
+shaders[FX_DREAM_VISION] = rl.LoadShader(0, resources + "shaders/glsl330/dream_vision.fs")
+shaders[FX_PIXELIZER] = rl.LoadShader(0, resources + "shaders/glsl330/pixelizer.fs")
+shaders[FX_CROSS_HATCHING] = rl.LoadShader(0, resources + "shaders/glsl330/cross_hatching.fs")
+shaders[FX_CROSS_STITCHING] = rl.LoadShader(0, resources + "shaders/glsl330/cross_stitching.fs")
+shaders[FX_PREDATOR_VIEW] = rl.LoadShader(0, resources + "shaders/glsl330/predator.fs")
+shaders[FX_SCANLINES] = rl.LoadShader(0, resources + "shaders/glsl330/scanlines.fs")
+shaders[FX_FISHEYE] = rl.LoadShader(0, resources + "shaders/glsl330/fisheye.fs")
+shaders[FX_SOBEL] = rl.LoadShader(0, resources + "shaders/glsl330/sobel.fs")
+shaders[FX_BLOOM] = rl.LoadShader(0, resources + "shaders/glsl330/bloom.fs")
+shaders[FX_BLUR] = rl.LoadShader(0, resources + "shaders/glsl330/blur.fs")
 
 currentShader = FX_GRAYSCALE
 
 REM  Create a RenderTexture2D to be used for render to texture
 const target = rl.LoadRenderTexture(screenWidth, screenHeight)
+const boxBackground = rl.Fade(c.LIGHTGRAY, 0.7)
 
 rl.SetCameraMode(camera, c.CAMERA_ORBITAL)  ' Set an orbital camera mode
 rl.SetTargetFPS(60)                        ' Set our game to run at 60 frames-per-second
@@ -91,7 +93,6 @@ rl.SetTargetFPS(60)                        ' Set our game to run at 60 frames-pe
 REM  Main game loop
 while (!rl.WindowShouldClose())
   rl.UpdateCamera(camera)           ' Update camera
-
   if (rl.IsKeyPressed(c.KEY_RIGHT)) then 
     currentShader++
   elseif (rl.IsKeyPressed(c.KEY_LEFT)) then 
@@ -107,6 +108,7 @@ while (!rl.WindowShouldClose())
   rl.BeginDrawing()
   rl.ClearBackground(c.RAYWHITE)
   rl.BeginTextureMode(target)                   ' Enable drawing to texture
+  rl.ClearBackground(c.RAYWHITE)
   rl.BeginMode3D(camera)
   rl.DrawModel(dwarf, position, 2.0, c.WHITE)   ' Draw 3d model with texture
   rl.DrawGrid(10, 1.0)                          ' Draw a grid
@@ -118,8 +120,8 @@ while (!rl.WindowShouldClose())
   rl.DrawTextureRec(target.texture, [0, 0, target.texture.width, -target.texture.height], [0, 0], c.WHITE)
   rl.EndShaderMode()
 
-  rl.DrawRectangle(0, 9, 580, 30, rl.Fade(c.LIGHTGRAY, 0.7))
-  rl.DrawText("(c) Dwarf 3D model by David Moreno", screenWidth - 200, screenHeight - 20, 10, c.DARKGRAY)
+  rl.DrawRectangle(0, 9, 580, 30, boxBackground)
+  rl.DrawText("(c) Church 3D model by Alberto Cano", screenWidth - 200, screenHeight - 20, 10, c.DARKGRAY)
   rl.DrawText("CURRENT POSTPRO SHADER:", 10, 15, 20, c.BLACK)
   rl.DrawText(postproShaderText[currentShader], 330, 15, 20, c.RED)
   rl.DrawText("< >", 540, 10, 30, c.DARKBLUE)
