@@ -195,6 +195,14 @@ void create_rectangle(var_t *var, int width, int height, int id) {
   v_setint(map_add_var(var, mapID, 0), id);
 }
 
+void create_rectangle(var_t *var, Rectangle &rect) {
+  map_init(var);
+  v_setreal(map_add_var(var, "x", 0), rect.x);
+  v_setreal(map_add_var(var, "y", 0), rect.y);
+  v_setreal(map_add_var(var, "width", 0), rect.width);
+  v_setreal(map_add_var(var, "height", 0), rect.height);
+}
+
 int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
@@ -350,10 +358,10 @@ int cmd_checkcollisionraysphereex(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisionrecs(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto rec1 = get_param_str(argc, params, 0, NULL);
-    // auto rec2 = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = CheckCollisionRecs(rec1, rec2);
-    // v_setint(retval, fnResult);
+    auto rec1 = get_param_rect(argc, params, 0);
+    auto rec2 = get_param_rect(argc, params, 1);
+    auto fnResult = CheckCollisionRecs(rec1, rec2);
+    v_setint(retval, fnResult);
   } else {
     v_setstr(retval, "Invalid input: CheckCollisionRecs");
   }
@@ -979,10 +987,10 @@ int cmd_getcollisionraytriangle(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getcollisionrec(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto rec1 = get_param_str(argc, params, 0, NULL);
-    // auto rec2 = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = GetCollisionRec(rec1, rec2);
-    // v_setint(retval, fnResult);
+    auto rec1 = get_param_rect(argc, params, 0);
+    auto rec2 = get_param_rect(argc, params, 1);
+    Rectangle rect = GetCollisionRec(rec1, rec2);
+    create_rectangle(retval, rect);
   } else {
     v_setstr(retval, "Invalid input: GetCollisionRec");
   }
@@ -1458,8 +1466,7 @@ int cmd_getmousewheelmove(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmousex(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetMouseX();
-    // v_setint(retval, fnResult);
+    v_setint(retval, GetMouseX());
   } else {
     v_setstr(retval, "Invalid input: GetMouseX");
   }
@@ -1469,8 +1476,7 @@ int cmd_getmousex(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmousey(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetMouseY();
-    // v_setint(retval, fnResult);
+    v_setint(retval, GetMouseY());
   } else {
     v_setstr(retval, "Invalid input: GetMouseY");
   }
@@ -6177,7 +6183,7 @@ API lib_func[] = {
   // {"CHECKCOLLISIONRAYBOX", cmd_checkcollisionraybox},
   // {"CHECKCOLLISIONRAYSPHERE", cmd_checkcollisionraysphere},
   // {"CHECKCOLLISIONRAYSPHEREEX", cmd_checkcollisionraysphereex},
-  // {"CHECKCOLLISIONRECS", cmd_checkcollisionrecs},
+  {"CHECKCOLLISIONRECS", cmd_checkcollisionrecs},
   // {"CHECKCOLLISIONSPHERES", cmd_checkcollisionspheres},
   // {"CODEPOINTTOUTF8", cmd_codepointtoutf8},
   // {"COLORALPHA", cmd_coloralpha},
@@ -6223,7 +6229,7 @@ API lib_func[] = {
   // {"GETCOLLISIONRAYGROUND", cmd_getcollisionrayground},
   // {"GETCOLLISIONRAYMODEL", cmd_getcollisionraymodel},
   // {"GETCOLLISIONRAYTRIANGLE", cmd_getcollisionraytriangle},
-  // {"GETCOLLISIONREC", cmd_getcollisionrec},
+  {"GETCOLLISIONREC", cmd_getcollisionrec},
   // {"GETCOLOR", cmd_getcolor},
   // {"GETDIRECTORYFILES", cmd_getdirectoryfiles},
   // {"GETDIRECTORYPATH", cmd_getdirectorypath},
@@ -6263,8 +6269,8 @@ API lib_func[] = {
   {"GETMOUSEPOSITION", cmd_getmouseposition},
   // {"GETMOUSERAY", cmd_getmouseray},
   // {"GETMOUSEWHEELMOVE", cmd_getmousewheelmove},
-  // {"GETMOUSEX", cmd_getmousex},
-  // {"GETMOUSEY", cmd_getmousey},
+  {"GETMOUSEX", cmd_getmousex},
+  {"GETMOUSEY", cmd_getmousey},
   {"GETMUSICTIMELENGTH", cmd_getmusictimelength},
   {"GETMUSICTIMEPLAYED", cmd_getmusictimeplayed},
   // {"GETNEXTCODEPOINT", cmd_getnextcodepoint},
