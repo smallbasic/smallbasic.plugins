@@ -110,7 +110,7 @@ while (!rl.WindowShouldClose())
   rl.BeginTextureMode(target)                   ' Enable drawing to texture
   rl.ClearBackground(c.RAYWHITE)
   rl.BeginMode3D(camera)
-  rl.DrawModel(dwarf, position, 2.0, c.WHITE)   ' Draw 3d model with texture
+  rl.DrawModel(dwarf, position, 0.1, c.WHITE)   ' Draw 3d model with texture
   rl.DrawGrid(10, 1.0)                          ' Draw a grid
   rl.EndMode3D()
   rl.EndTextureMode()                           ' End drawing to texture (now we have a texture available for next passes)
