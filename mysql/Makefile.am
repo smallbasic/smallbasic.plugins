@@ -7,5 +7,5 @@
 
 AM_CPPFLAGS = -I../include
 lib_LTLIBRARIES = libmysql.la
-libmysql_la_SOURCES = mysql.c mod_utils.c
-libmysql_la_LDFLAGS = -module -rpath '$(libdir)' -lmysqlclient
+libmysql_la_SOURCES = ../include/hashmap.cpp ../include/param.cpp mysql.c mod_utils.c
+libmysql_la_LDFLAGS = -module -rpath '$(libdir)' -lmysqlclient @PLATFORM_LDFLAGS@

@@ -7,6 +7,6 @@
 
 AM_CPPFLAGS = -I../include `sdl2-config --cflags` -fno-exceptions -pedantic -O2
 lib_LTLIBRARIES = libnuklear.la
-libnuklear_la_SOURCES = main.cpp ../include/param.cpp
-libnuklear_la_LDFLAGS = -module -rpath '$(libdir)' `sdl2-config --libs` -lGL
+libnuklear_la_SOURCES =  ../include/param.cpp ../include/hashmap.cpp main.cpp
+libnuklear_la_LDFLAGS = -module -rpath '$(libdir)' `sdl2-config --libs` -lGL @PLATFORM_LDFLAGS@
 

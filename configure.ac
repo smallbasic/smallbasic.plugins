@@ -1,4 +1,4 @@
-dnl 
+dnl
 dnl Configure script for SmallBASIC plugins
 dnl
 dnl Copyright(C) 2001-2020 Chris Warren-Smith.
@@ -10,7 +10,7 @@ dnl
 AC_INIT([smallbasic], [20.0])
 AC_CONFIG_AUX_DIR(aux-dist)
 AC_CONFIG_MACRO_DIRS([m4])
-AC_CONFIG_SRCDIR([mysql/mysql.c])
+AC_CONFIG_SRCDIR([include/param.cpp])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([subdir-objects])
 LT_INIT([win32-dll])
@@ -34,11 +34,16 @@ function checkDebugMode() {
 case "${host_os}" in
   *mingw* | pw32* | cygwin*)
     AC_DEFINE(WIN32, 1, [building for win32])
+    PLATFORM_LDFLAGS="-no-undefined"
+    AC_SUBST(PLATFORM_LDFLAGS)
+
     ;;
 
   *)
-    CLIPBOARD_LDFLAGS=`pkg-config xcb --libs`
+    CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
     AC_SUBST(CLIPBOARD_LDFLAGS)
+    PLATFORM_LDFLAGS="-Wl,--no-undefined"
+    AC_SUBST(PLATFORM_LDFLAGS)
 esac
 
 # checks for mysql

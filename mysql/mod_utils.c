@@ -17,11 +17,6 @@
 
 #include "mod_utils.h"
 
-// for windows linking, see;
-// https://stackoverflow.com/questions/15454968/dll-plugin-that-uses-functions-defined-in-the-main-executable
-// https://nachtimwald.com/2012/07/15/calling-functions-in-exe-from-plugins-in-windows/
-// https://gcc.gnu.org/ml/gcc/2010-07/msg00003.html
-
 var_int_t v_igetval(var_t *v) {
   var_int_t result;
   switch (v ? v->type : -1) {
@@ -50,10 +45,11 @@ int mod_parstr_ptr(int n, slib_par_t *params, int param_count, char **ptr) {
   }
   var_t *param = params[n].var_p;
 
-  if (param->type != V_STR) {
-    v_tostr(param);
+  if (param->type == V_STR) {
+    *ptr = param->v.p.ptr;
+  } else {
+    *ptr = '\0';
   }
-  *ptr = param->v.p.ptr;
 
   return 1;
 }
@@ -66,12 +62,12 @@ int mod_opt_parstr_ptr(int n, slib_par_t *params, int param_count, char **ptr, c
   if (n < param_count) {
     var_t *param = params[n].var_p;
 
-    if (param->type != V_STR) {
-      v_tostr(param);
+    if (param->type == V_STR) {
+      *ptr = param->v.p.ptr;
+    } else {
+      *ptr = '\0';
     }
-    *ptr = param->v.p.ptr;
-  }
-  else {
+  } else {
     *ptr = (char *)def_val;
   }
 

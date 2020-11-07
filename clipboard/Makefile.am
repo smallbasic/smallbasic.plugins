@@ -7,6 +7,6 @@
 
 AM_CPPFLAGS = -I../include -Wall -I./libclipboard/include
 lib_LTLIBRARIES = libclipboard.la
-libclipboard_la_SOURCES = main.cpp clipboard.c ../include/param.cpp
-libclipboard_la_LDFLAGS = -module -rpath '$(libdir)' @CLIPBOARD_LDFLAGS@
+libclipboard_la_SOURCES = ../include/param.cpp ../include/hashmap.cpp clipboard.c main.cpp
+libclipboard_la_LDFLAGS = -module -rpath '$(libdir)' @CLIPBOARD_LDFLAGS@ @PLATFORM_LDFLAGS@
 

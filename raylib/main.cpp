@@ -2579,7 +2579,6 @@ int cmd_loadrendertexture(int argc, slib_par_t *params, var_t *retval) {
     auto textureId = ++_nextId;
     _textureMap[textureId] = renderTexture.texture;
     var_p_t texture = map_add_var(retval, "texture", 0);
-    map_init(texture);
     create_rectangle(texture, renderTexture.texture.width, renderTexture.texture.height, textureId);
   } else {
     v_setstr(retval, "Invalid input: LoadRenderTexture");
