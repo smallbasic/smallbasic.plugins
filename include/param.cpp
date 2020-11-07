@@ -32,22 +32,6 @@ float get_num(var_p_t var) {
   return result;
 }
 
-float get_map_num(var_p_t map, const char *name) {
-  var_p_t var = map_get(map, name);
-  return var != nullptr ? get_num(var) : 0;
-}
-
-float get_array_elem_num(var_p_t array, int index) {
-  float result;
-  int size = v_asize(array);
-  if (index >= 0 && index < size) {
-    result = get_num(v_elem(array, index));
-  } else {
-    result = 0.0;
-  }
-  return result;
-}
-
 bool get_bool(var_p_t var) {
   bool result;
   switch (var->type) {
@@ -152,13 +136,12 @@ int v_strlen(const var_t *v) {
 }
 
 void v_new_array(var_t *var, uint32_t size) {
+  assert(var->type == V_INT);
   var->type = V_ARRAY;
   v_alloc_capacity(var, size);
 }
 
 void v_toarray1(var_t *v, uint32_t r) {
-  assert(v->type == V_INT);
-
   v_new_array(v, r);
   v_maxdim(v) = 1;
   v_lbound(v, 0) = 0;
@@ -166,8 +149,6 @@ void v_toarray1(var_t *v, uint32_t r) {
 }
 
 void v_tomatrix(var_t *v, int r, int c) {
-  assert(v->type == V_INT);
-
   v_new_array(v, r * c);
   v_maxdim(v) = 2;
   v_lbound(v, 0) = v_lbound(v, 1) = 0;
@@ -363,3 +344,18 @@ const char *get_param_str_field(int argc, slib_par_t *params, int n, const char 
   return result;
 }
 
+float get_map_num(var_p_t map, const char *name) {
+  var_p_t var = map_get(map, name);
+  return var != nullptr ? get_num(var) : 0;
+}
+
+float get_array_elem_num(var_p_t array, int index) {
+  float result;
+  int size = v_asize(array);
+  if (index >= 0 && index < size) {
+    result = get_num(v_elem(array, index));
+  } else {
+    result = 0.0;
+  }
+  return result;
+}
