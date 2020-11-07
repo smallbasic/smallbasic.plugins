@@ -1000,9 +1000,8 @@ int cmd_getcollisionrec(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getcolor(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto hexValue = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetColor(hexValue);
-    // v_setint(retval, fnResult);
+    auto hexValue = get_param_int(argc, params, 0, 0);
+    v_setint(retval, get_color_int(GetColor(hexValue)));
   } else {
     v_setstr(retval, "Invalid input: GetColor");
   }
@@ -4063,12 +4062,17 @@ int cmd_drawtexture(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtextureex(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 5);
   if (result) {
-    // auto texture = get_param_str(argc, params, 0, NULL);
-    // auto position = get_param_str(argc, params, 1, NULL);
-    // auto rotation = get_param_str(argc, params, 2, NULL);
-    // auto scale = get_param_str(argc, params, 3, NULL);
-    // auto tint = get_param_str(argc, params, 4, NULL);
-    // DrawTextureEx(texture, position, rotation, scale, tint);
+    int id = get_texture_id(argc, params, 0);
+    if (id != -1) {
+      auto position = get_param_vec2(argc, params, 1);
+      auto rotation = get_param_num(argc, params, 2, 0);
+      auto scale = get_param_num(argc, params, 3, 0);
+      auto tint = get_param_color(argc, params, 4);
+      DrawTextureEx(_textureMap.at(id), position, rotation, scale, tint);
+    } else {
+      v_setstr(retval, "Invalid input: Texture not found");
+      result = 0;
+    }
   } else {
     v_setstr(retval, "Invalid input: DrawTextureEx");
   }
@@ -6229,7 +6233,7 @@ API lib_func[] = {
   // {"GETCOLLISIONRAYMODEL", cmd_getcollisionraymodel},
   // {"GETCOLLISIONRAYTRIANGLE", cmd_getcollisionraytriangle},
   {"GETCOLLISIONREC", cmd_getcollisionrec},
-  // {"GETCOLOR", cmd_getcolor},
+  {"GETCOLOR", cmd_getcolor},
   // {"GETDIRECTORYFILES", cmd_getdirectoryfiles},
   // {"GETDIRECTORYPATH", cmd_getdirectorypath},
   // {"GETDROPPEDFILES", cmd_getdroppedfiles},
@@ -6469,7 +6473,7 @@ API lib_proc[] = {
   // {"DRAWTEXTREC", cmd_drawtextrec},
   // {"DRAWTEXTRECEX", cmd_drawtextrecex},
   {"DRAWTEXTURE", cmd_drawtexture},
-  // {"DRAWTEXTUREEX", cmd_drawtextureex},
+  {"DRAWTEXTUREEX", cmd_drawtextureex},
   // {"DRAWTEXTURENPATCH", cmd_drawtexturenpatch},
   {"DRAWTEXTUREPRO", cmd_drawtexturepro},
   // {"DRAWTEXTUREQUAD", cmd_drawtexturequad},
