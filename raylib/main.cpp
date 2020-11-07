@@ -27,6 +27,30 @@ std::map<int, Texture2D> _textureMap;
 int _nextId = 1;
 const char *mapID = "_ID";
 
+void error(var_p_t var, const char *field, int n) {
+  char message[256];
+  snprintf(message, sizeof(message), "Invalid Input: [%s] - expected [%d] arguments", field, n);
+  v_setstr(var, message);
+}
+
+void error(var_p_t var, const char *text) {
+  char message[256];
+  snprintf(message, sizeof(message), "Error: [%s]", text);
+  v_setstr(var, message);
+}
+
+void error_image(var_p_t var) {
+  error(var, "Image not found");
+}
+
+void error_texture(var_p_t var) {
+  error(var, "Texture not found");
+}
+
+void error_model(var_p_t var) {
+  error(var, "Model not found");
+}
+
 bool is_array(var_p_t var, uint32_t size) {
   return v_is_type(var, V_ARRAY) && v_asize(var) == size;
 }
@@ -210,7 +234,7 @@ int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
      auto fnResult = ChangeDirectory(dir);
      v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ChangeDirectory");
+    error(retval, "ChangeDirectory", 1);
   }
   return result;
 }
@@ -223,7 +247,7 @@ int cmd_checkcollisionboxes(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CheckCollisionBoxes(box1, box2);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionBoxes");
+    error(retval, "CheckCollisionBoxes", 2);
   }
   return result;
 }
@@ -237,7 +261,7 @@ int cmd_checkcollisionboxsphere(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CheckCollisionBoxSphere(box, center, radius);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionBoxSphere");
+    error(retval, "CheckCollisionBoxSphere");
   }
   return result;
 }
@@ -251,7 +275,7 @@ int cmd_checkcollisioncirclerec(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CheckCollisionCircleRec(center, radius, rec);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionCircleRec");
+    error(retval, "CheckCollisionCircleRec", 3);
   }
   return result;
 }
@@ -266,7 +290,7 @@ int cmd_checkcollisioncircles(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CheckCollisionCircles(center1, radius1, center2, radius2);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionCircles");
+    error(retval, "CheckCollisionCircles", 4);
   }
   return result;
 }
@@ -280,7 +304,7 @@ int cmd_checkcollisionpointcircle(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CheckCollisionPointCircle(point, center, radius);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionPointCircle");
+    error(retval, "CheckCollisionPointCircle", 3);
   }
   return result;
 }
@@ -293,7 +317,7 @@ int cmd_checkcollisionpointrec(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CheckCollisionPointRec(point, rec);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionPointRec");
+    error(retval, "CheckCollisionPointRec", 2);
   }
   return result;
 }
@@ -308,7 +332,7 @@ int cmd_checkcollisionpointtriangle(int argc, slib_par_t *params, var_t *retval)
     // auto fnResult = CheckCollisionPointTriangle(point, p1, p2, p3);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionPointTriangle");
+    error(retval, "CheckCollisionPointTriangle", 4);
   }
   return result;
 }
@@ -321,7 +345,7 @@ int cmd_checkcollisionraybox(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CheckCollisionRayBox(ray, box);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionRayBox");
+    error(retval, "CheckCollisionRayBox", 2);
   }
   return result;
 }
@@ -335,7 +359,7 @@ int cmd_checkcollisionraysphere(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CheckCollisionRaySphere(ray, center, radius);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionRaySphere");
+    error(retval, "CheckCollisionRaySphere", 2);
   }
   return result;
 }
@@ -350,7 +374,7 @@ int cmd_checkcollisionraysphereex(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CheckCollisionRaySphereEx(ray, center, radius, collisionPoint);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionRaySphereEx");
+    error(retval, "CheckCollisionRaySphereEx", 4);
   }
   return result;
 }
@@ -363,7 +387,7 @@ int cmd_checkcollisionrecs(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = CheckCollisionRecs(rec1, rec2);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionRecs");
+    error(retval, "CheckCollisionRecs", 2);
   }
   return result;
 }
@@ -378,7 +402,7 @@ int cmd_checkcollisionspheres(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CheckCollisionSpheres(centerA, radiusA, centerB, radiusB);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CheckCollisionSpheres");
+    error(retval, "CheckCollisionSpheres", 4);
   }
   return result;
 }
@@ -391,7 +415,7 @@ int cmd_codepointtoutf8(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CodepointToUtf8(codepoint, byteLength);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CodepointToUtf8");
+    error(retval, "CodepointToUtf8", 2);
   }
   return result;
 }
@@ -404,7 +428,7 @@ int cmd_coloralpha(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ColorAlpha(color, alpha);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ColorAlpha");
+    error(retval, "ColorAlpha", 2);
   }
   return result;
 }
@@ -418,7 +442,7 @@ int cmd_coloralphablend(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ColorAlphaBlend(dst, src, tint);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ColorAlphaBlend");
+    error(retval, "ColorAlphaBlend", 3);
   }
   return result;
 }
@@ -432,7 +456,7 @@ int cmd_colorfromhsv(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ColorFromHSV(hue, saturation, value);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ColorFromHSV");
+    error(retval, "ColorFromHSV", 3);
   }
   return result;
 }
@@ -444,7 +468,7 @@ int cmd_colorfromnormalized(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ColorFromNormalized(normalized);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ColorFromNormalized");
+    error(retval, "ColorFromNormalized", 1);
   }
   return result;
 }
@@ -456,7 +480,7 @@ int cmd_colornormalize(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ColorNormalize(color);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ColorNormalize");
+    error(retval, "ColorNormalize", 1);
   }
   return result;
 }
@@ -468,7 +492,7 @@ int cmd_colortohsv(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ColorToHSV(color);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ColorToHSV");
+    error(retval, "ColorToHSV", 1);
   }
   return result;
 }
@@ -480,7 +504,7 @@ int cmd_colortoint(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ColorToInt(color);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ColorToInt");
+    error(retval, "ColorToInt", 1);
   }
   return result;
 }
@@ -494,7 +518,7 @@ int cmd_compressdata(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = CompressData(data, dataLength, compDataLength);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: CompressData");
+    error(retval, "CompressData", 3);
   }
   return result;
 }
@@ -508,7 +532,7 @@ int cmd_decompressdata(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = DecompressData(compData, compDataLength, dataLength);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: DecompressData");
+    error(retval, "DecompressData", 3);
   }
   return result;
 }
@@ -520,7 +544,7 @@ int cmd_directoryexists(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = DirectoryExists(dirPath);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: DirectoryExists");
+    error(retval, "DirectoryExists", 1);
   }
   return result;
 }
@@ -532,7 +556,7 @@ int cmd_fade(int argc, slib_par_t *params, var_t *retval) {
     auto alpha = get_param_num(argc, params, 1, 0);
     v_setint(retval, get_color_int(Fade(color, alpha)));
   } else {
-    v_setstr(retval, "Invalid input: Fade");
+    error(retval, "Fade", 1);
   }
   return result;
 }
@@ -544,7 +568,7 @@ int cmd_fileexists(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = FileExists(fileName);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: FileExists");
+    error(retval, "FileExists", 1);
   }
   return result;
 }
@@ -552,13 +576,15 @@ int cmd_fileexists(int argc, slib_par_t *params, var_t *retval) {
 int cmd_genimagecellular(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // auto tileSize = get_param_str(argc, params, 2, NULL);
-    // auto fnResult = GenImageCellular(width, height, tileSize);
-    // v_setint(retval, fnResult);
+    auto width = get_param_int(argc, params, 0, 0);
+    auto height = get_param_int(argc, params, 1, 0);
+    auto tileSize = get_param_int(argc, params, 2, 0);
+    auto image = GenImageCellular(width, height, tileSize);
+    auto id = ++_nextId;
+    _imageMap[id] = image;
+    create_rectangle(retval, image.width, image.height, id);
   } else {
-    v_setstr(retval, "Invalid input: GenImageCellular");
+    error(retval, "GenImageCellular", 3);
   }
   return result;
 }
@@ -566,16 +592,18 @@ int cmd_genimagecellular(int argc, slib_par_t *params, var_t *retval) {
 int cmd_genimagechecked(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 6);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // auto checksX = get_param_str(argc, params, 2, NULL);
-    // auto checksY = get_param_str(argc, params, 3, NULL);
-    // auto col1 = get_param_str(argc, params, 4, NULL);
-    // auto col2 = get_param_str(argc, params, 5, NULL);
-    // auto fnResult = GenImageChecked(width, height, checksX, checksY, col1, col2);
-    // v_setint(retval, fnResult);
+    auto width = get_param_int(argc, params, 0, 0);
+    auto height = get_param_int(argc, params, 1, 0);
+    auto checksX = get_param_int(argc, params, 2, 0);
+    auto checksY = get_param_int(argc, params, 3, 0);
+    auto col1 = get_param_color(argc, params, 4);
+    auto col2 = get_param_color(argc, params, 5);
+    auto image = GenImageChecked(width, height, checksX, checksY, col1, col2);
+    auto id = ++_nextId;
+    _imageMap[id] = image;
+    create_rectangle(retval, image.width, image.height, id);
   } else {
-    v_setstr(retval, "Invalid input: GenImageChecked");
+    error(retval, "GenImageChecked", 6);
   }
   return result;
 }
@@ -583,13 +611,15 @@ int cmd_genimagechecked(int argc, slib_par_t *params, var_t *retval) {
 int cmd_genimagecolor(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // auto color = get_param_str(argc, params, 2, NULL);
-    // auto fnResult = GenImageColor(width, height, color);
-    // v_setint(retval, fnResult);
+    auto width = get_param_int(argc, params, 0, 0);
+    auto height = get_param_int(argc, params, 1, 0);
+    auto color = get_param_color(argc, params, 2);
+    auto image = GenImageColor(width, height, color);
+    auto id = ++_nextId;
+    _imageMap[id] = image;
+    create_rectangle(retval, image.width, image.height, id);
   } else {
-    v_setstr(retval, "Invalid input: GenImageColor");
+    error(retval, "GenImageColor", 3);
   }
   return result;
 }
@@ -606,7 +636,7 @@ int cmd_genimagefontatlas(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenImageFontAtlas(chars, recs, charsCount, fontSize, padding, packMethod);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenImageFontAtlas");
+    error(retval, "GenImageFontAtlas", 6);
   }
   return result;
 }
@@ -614,14 +644,16 @@ int cmd_genimagefontatlas(int argc, slib_par_t *params, var_t *retval) {
 int cmd_genimagegradienth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // auto left = get_param_str(argc, params, 2, NULL);
-    // auto right = get_param_str(argc, params, 3, NULL);
-    // auto fnResult = GenImageGradientH(width, height, left, right);
-    // v_setint(retval, fnResult);
+    auto width = get_param_int(argc, params, 0, 0);
+    auto height = get_param_int(argc, params, 1, 0);
+    auto left = get_param_color(argc, params, 2);
+    auto right = get_param_color(argc, params, 3);
+    auto image = GenImageGradientH(width, height, left, right);
+    auto id = ++_nextId;
+    _imageMap[id] = image;
+    create_rectangle(retval, image.width, image.height, id);
   } else {
-    v_setstr(retval, "Invalid input: GenImageGradientH");
+    error(retval, "GenImageGradientH", 4);
   }
   return result;
 }
@@ -629,15 +661,17 @@ int cmd_genimagegradienth(int argc, slib_par_t *params, var_t *retval) {
 int cmd_genimagegradientradial(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 5);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // auto density = get_param_str(argc, params, 2, NULL);
-    // auto inner = get_param_str(argc, params, 3, NULL);
-    // auto outer = get_param_str(argc, params, 4, NULL);
-    // auto fnResult = GenImageGradientRadial(width, height, density, inner, outer);
-    // v_setint(retval, fnResult);
+    auto width = get_param_int(argc, params, 0, 0);
+    auto height = get_param_int(argc, params, 1, 0);
+    auto density = get_param_int(argc, params, 2, 0);
+    auto inner = get_param_color(argc, params, 3);
+    auto outer = get_param_color(argc, params, 4);
+    auto image = GenImageGradientRadial(width, height, density, inner, outer);
+    auto id = ++_nextId;
+    _imageMap[id] = image;
+    create_rectangle(retval, image.width, image.height, id);
   } else {
-    v_setstr(retval, "Invalid input: GenImageGradientRadial");
+    error(retval, "GenImageGradientRadial", 5);
   }
   return result;
 }
@@ -645,14 +679,16 @@ int cmd_genimagegradientradial(int argc, slib_par_t *params, var_t *retval) {
 int cmd_genimagegradientv(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // auto top = get_param_str(argc, params, 2, NULL);
-    // auto bottom = get_param_str(argc, params, 3, NULL);
-    // auto fnResult = GenImageGradientV(width, height, top, bottom);
-    // v_setint(retval, fnResult);
+    auto width = get_param_int(argc, params, 0, 0);
+    auto height = get_param_int(argc, params, 1, 0);
+    auto top = get_param_color(argc, params, 2);
+    auto bottom = get_param_color(argc, params, 3);
+    auto image = GenImageGradientV(width, height, top, bottom);
+    auto id = ++_nextId;
+    _imageMap[id] = image;
+    create_rectangle(retval, image.width, image.height, id);
   } else {
-    v_setstr(retval, "Invalid input: GenImageGradientV");
+    error(retval, "GenImageGradientV", 4);
   }
   return result;
 }
@@ -660,15 +696,17 @@ int cmd_genimagegradientv(int argc, slib_par_t *params, var_t *retval) {
 int cmd_genimageperlinnoise(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 5);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // auto offsetX = get_param_str(argc, params, 2, NULL);
-    // auto offsetY = get_param_str(argc, params, 3, NULL);
-    // auto scale = get_param_str(argc, params, 4, NULL);
-    // auto fnResult = GenImagePerlinNoise(width, height, offsetX, offsetY, scale);
-    // v_setint(retval, fnResult);
+    auto width = get_param_int(argc, params, 0, 0);
+    auto height = get_param_int(argc, params, 1, 0);
+    auto offsetX = get_param_int(argc, params, 2, 0);
+    auto offsetY = get_param_int(argc, params, 3, 0);
+    auto scale = get_param_num(argc, params, 4, 0);
+    auto image = GenImagePerlinNoise(width, height, offsetX, offsetY, scale);
+    auto id = ++_nextId;
+    _imageMap[id] = image;
+    create_rectangle(retval, image.width, image.height, id);
   } else {
-    v_setstr(retval, "Invalid input: GenImagePerlinNoise");
+    error(retval, "GenImagePerlinNoise", 5);
   }
   return result;
 }
@@ -676,13 +714,15 @@ int cmd_genimageperlinnoise(int argc, slib_par_t *params, var_t *retval) {
 int cmd_genimagewhitenoise(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // auto factor = get_param_str(argc, params, 2, NULL);
-    // auto fnResult = GenImageWhiteNoise(width, height, factor);
-    // v_setint(retval, fnResult);
+    auto width = get_param_int(argc, params, 0, 0);
+    auto height = get_param_int(argc, params, 1, 0);
+    auto factor = get_param_int(argc, params, 2, 0);
+    auto image = GenImageWhiteNoise(width, height, factor);
+    auto id = ++_nextId;
+    _imageMap[id] = image;
+    create_rectangle(retval, image.width, image.height, id);
   } else {
-    v_setstr(retval, "Invalid input: GenImageWhiteNoise");
+    error(retval, "GenImageWhiteNoise", 3);
   }
   return result;
 }
@@ -696,7 +736,7 @@ int cmd_genmeshcube(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenMeshCube(width, height, length);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenMeshCube");
+    error(retval, "GenMeshCube", 3);
   }
   return result;
 }
@@ -709,7 +749,7 @@ int cmd_genmeshcubicmap(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenMeshCubicmap(cubicmap, cubeSize);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenMeshCubicmap");
+    error(retval, "GenMeshCubicmap", 2);
   }
   return result;
 }
@@ -723,7 +763,7 @@ int cmd_genmeshcylinder(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenMeshCylinder(radius, height, slices);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenMeshCylinder");
+    error(retval, "GenMeshCylinder", 3);
   }
   return result;
 }
@@ -736,7 +776,7 @@ int cmd_genmeshheightmap(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenMeshHeightmap(heightmap, size);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenMeshHeightmap");
+    error(retval, "GenMeshHeightmap", 3);
   }
   return result;
 }
@@ -750,7 +790,7 @@ int cmd_genmeshhemisphere(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenMeshHemiSphere(radius, rings, slices);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenMeshHemiSphere");
+    error(retval, "GenMeshHemiSphere", 3);
   }
   return result;
 }
@@ -765,7 +805,7 @@ int cmd_genmeshknot(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenMeshKnot(radius, size, radSeg, sides);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenMeshKnot");
+    error(retval, "GenMeshKnot", 4);
   }
   return result;
 }
@@ -780,7 +820,7 @@ int cmd_genmeshplane(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenMeshPlane(width, length, resX, resZ);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenMeshPlane");
+    error(retval, "GenMeshPlane", 4);
   }
   return result;
 }
@@ -793,7 +833,7 @@ int cmd_genmeshpoly(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenMeshPoly(sides, radius);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenMeshPoly");
+    error(retval, "GenMeshPoly", 2);
   }
   return result;
 }
@@ -807,7 +847,7 @@ int cmd_genmeshsphere(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenMeshSphere(radius, rings, slices);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenMeshSphere");
+    error(retval, "GenMeshSphere", 3);
   }
   return result;
 }
@@ -822,7 +862,7 @@ int cmd_genmeshtorus(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenMeshTorus(radius, size, radSeg, sides);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenMeshTorus");
+    error(retval, "GenMeshTorus", 4);
   }
   return result;
 }
@@ -835,7 +875,7 @@ int cmd_gentexturebrdf(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenTextureBRDF(shader, size);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenTextureBRDF");
+    error(retval, "GenTextureBRDF", 2);
   }
   return result;
 }
@@ -850,7 +890,7 @@ int cmd_gentexturecubemap(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenTextureCubemap(shader, panorama, size, format);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenTextureCubemap");
+    error(retval, "GenTextureCubemap", 4);
   }
   return result;
 }
@@ -864,7 +904,7 @@ int cmd_gentextureirradiance(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenTextureIrradiance(shader, cubemap, size);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenTextureIrradiance");
+    error(retval, "GenTextureIrradiance", 3);
   }
   return result;
 }
@@ -878,7 +918,7 @@ int cmd_gentextureprefilter(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GenTexturePrefilter(shader, cubemap, size);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GenTexturePrefilter");
+    error(retval, "GenTexturePrefilter", 3);
   }
   return result;
 }
@@ -890,7 +930,7 @@ int cmd_getcameramatrix(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetCameraMatrix(camera);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetCameraMatrix");
+    error(retval, "GetCameraMatrix", 1);
   }
   return result;
 }
@@ -902,7 +942,7 @@ int cmd_getcameramatrix2d(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetCameraMatrix2D(camera);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetCameraMatrix2D");
+    error(retval, "GetCameraMatrix2D", 1);
   }
   return result;
 }
@@ -913,7 +953,7 @@ int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetClipboardText();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetClipboardText");
+    error(retval, "GetClipboardText", 0);
   }
   return result;
 }
@@ -926,7 +966,7 @@ int cmd_getcodepoints(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetCodepoints(text, count);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetCodepoints");
+    error(retval, "GetCodepoints", 2);
   }
   return result;
 }
@@ -938,7 +978,7 @@ int cmd_getcodepointscount(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetCodepointsCount(text);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetCodepointsCount");
+    error(retval, "GetCodepointsCount", 1);
   }
   return result;
 }
@@ -951,7 +991,7 @@ int cmd_getcollisionrayground(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetCollisionRayGround(ray, groundHeight);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetCollisionRayGround");
+    error(retval, "GetCollisionRayGround", 2);
   }
   return result;
 }
@@ -964,7 +1004,7 @@ int cmd_getcollisionraymodel(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetCollisionRayModel(ray, model);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetCollisionRayModel");
+    error(retval, "GetCollisionRayModel", 2);
   }
   return result;
 }
@@ -979,7 +1019,7 @@ int cmd_getcollisionraytriangle(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetCollisionRayTriangle(ray, p1, p2, p3);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetCollisionRayTriangle");
+    error(retval, "GetCollisionRayTriangle", 4);
   }
   return result;
 }
@@ -992,7 +1032,7 @@ int cmd_getcollisionrec(int argc, slib_par_t *params, var_t *retval) {
     Rectangle rect = GetCollisionRec(rec1, rec2);
     create_rectangle(retval, rect);
   } else {
-    v_setstr(retval, "Invalid input: GetCollisionRec");
+    error(retval, "GetCollisionRec", 2);
   }
   return result;
 }
@@ -1003,7 +1043,7 @@ int cmd_getcolor(int argc, slib_par_t *params, var_t *retval) {
     auto hexValue = get_param_int(argc, params, 0, 0);
     v_setint(retval, get_color_int(GetColor(hexValue)));
   } else {
-    v_setstr(retval, "Invalid input: GetColor");
+    error(retval, "GetColor", 1);
   }
   return result;
 }
@@ -1016,7 +1056,7 @@ int cmd_getdirectoryfiles(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetDirectoryFiles(dirPath, count);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetDirectoryFiles");
+    error(retval, "GetDirectoryFiles", 2);
   }
   return result;
 }
@@ -1028,7 +1068,7 @@ int cmd_getdirectorypath(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetDirectoryPath(filePath);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetDirectoryPath");
+    error(retval, "GetDirectoryPath", 1);
   }
   return result;
 }
@@ -1040,7 +1080,7 @@ int cmd_getdroppedfiles(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetDroppedFiles(count);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetDroppedFiles");
+    error(retval, "GetDroppedFiles", 1);
   }
   return result;
 }
@@ -1052,7 +1092,7 @@ int cmd_getfileextension(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetFileExtension(fileName);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetFileExtension");
+    error(retval, "GetFileExtension", 1);
   }
   return result;
 }
@@ -1064,7 +1104,7 @@ int cmd_getfilemodtime(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetFileModTime(fileName);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetFileModTime");
+    error(retval, "GetFileModTime", 1);
   }
   return result;
 }
@@ -1076,7 +1116,7 @@ int cmd_getfilename(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetFileName(filePath);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetFileName");
+    error(retval, "GetFileName", 1);
   }
   return result;
 }
@@ -1088,7 +1128,7 @@ int cmd_getfilenamewithoutext(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetFileNameWithoutExt(filePath);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetFileNameWithoutExt");
+    error(retval, "GetFileNameWithoutExt", 1);
   }
   return result;
 }
@@ -1099,7 +1139,7 @@ int cmd_getfontdefault(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetFontDefault();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetFontDefault");
+    error(retval, "GetFontDefault", 0);
   }
   return result;
 }
@@ -1110,7 +1150,7 @@ int cmd_getfps(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetFPS();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetFPS");
+    error(retval, "GetFPS", 0);
   }
   return result;
 }
@@ -1121,7 +1161,7 @@ int cmd_getframetime(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetFrameTime();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetFrameTime");
+    error(retval, "GetFrameTime", 0);
   }
   return result;
 }
@@ -1133,7 +1173,7 @@ int cmd_getgamepadaxiscount(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGamepadAxisCount(gamepad);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGamepadAxisCount");
+    error(retval, "GetGamepadAxisCount", 1);
   }
   return result;
 }
@@ -1146,7 +1186,7 @@ int cmd_getgamepadaxismovement(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGamepadAxisMovement(gamepad, axis);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGamepadAxisMovement");
+    error(retval, "GetGamepadAxisMovement", 2);
   }
   return result;
 }
@@ -1157,7 +1197,7 @@ int cmd_getgamepadbuttonpressed(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGamepadButtonPressed();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGamepadButtonPressed");
+    error(retval, "GetGamepadButtonPressed", 0);
   }
   return result;
 }
@@ -1169,7 +1209,7 @@ int cmd_getgamepadname(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGamepadName(gamepad);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGamepadName");
+    error(retval, "GetGamepadName", 1);
   }
   return result;
 }
@@ -1180,7 +1220,7 @@ int cmd_getgesturedetected(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGestureDetected();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGestureDetected");
+    error(retval, "GetGestureDetected", 0);
   }
   return result;
 }
@@ -1191,7 +1231,7 @@ int cmd_getgesturedragangle(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGestureDragAngle();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGestureDragAngle");
+    error(retval, "GetGestureDragAngle", 0);
   }
   return result;
 }
@@ -1202,7 +1242,7 @@ int cmd_getgesturedragvector(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGestureDragVector();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGestureDragVector");
+    error(retval, "GetGestureDragVector", 0);
   }
   return result;
 }
@@ -1213,7 +1253,7 @@ int cmd_getgestureholdduration(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGestureHoldDuration();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGestureHoldDuration");
+    error(retval, "GetGestureHoldDuration", 0);
   }
   return result;
 }
@@ -1224,7 +1264,7 @@ int cmd_getgesturepinchangle(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGesturePinchAngle();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGesturePinchAngle");
+    error(retval, "GetGesturePinchAngle", 0);
   }
   return result;
 }
@@ -1235,7 +1275,7 @@ int cmd_getgesturepinchvector(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGesturePinchVector();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGesturePinchVector");
+    error(retval, "GetGesturePinchVector", 0);
   }
   return result;
 }
@@ -1248,7 +1288,7 @@ int cmd_getglyphindex(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetGlyphIndex(font, codepoint);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetGlyphIndex");
+    error(retval, "GetGlyphIndex", 2);
   }
   return result;
 }
@@ -1261,7 +1301,7 @@ int cmd_getimagealphaborder(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetImageAlphaBorder(image, threshold);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetImageAlphaBorder");
+    error(retval, "GetImageAlphaBorder", 2);
   }
   return result;
 }
@@ -1274,11 +1314,11 @@ int cmd_getimagedata(int argc, slib_par_t *params, var_t *retval) {
       auto fnResult = GetImageData(_imageMap.at(id));
       v_setint(retval, (var_int_t)fnResult);
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: GetImageData");
+    error(retval, "GetImageData", 1);
   }
   return result;
 }
@@ -1290,7 +1330,7 @@ int cmd_getimagedatanormalized(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetImageDataNormalized(image);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetImageDataNormalized");
+    error(retval, "GetImageDataNormalized", 1);
   }
   return result;
 }
@@ -1304,7 +1344,7 @@ int cmd_getimagepalette(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetImagePalette(image, maxPaletteSize, extractCount);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetImagePalette");
+    error(retval, "GetImagePalette", 3);
   }
   return result;
 }
@@ -1315,7 +1355,7 @@ int cmd_getkeypressed(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetKeyPressed();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetKeyPressed");
+    error(retval, "GetKeyPressed", 0);
   }
   return result;
 }
@@ -1326,7 +1366,7 @@ int cmd_getmatrixmodelview(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMatrixModelview();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMatrixModelview");
+    error(retval, "GetMatrixModelview", 0);
   }
   return result;
 }
@@ -1337,7 +1377,7 @@ int cmd_getmatrixprojection(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMatrixProjection();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMatrixProjection");
+    error(retval, "GetMatrixProjection", 0);
   }
   return result;
 }
@@ -1348,7 +1388,7 @@ int cmd_getmonitorcount(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMonitorCount();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMonitorCount");
+    error(retval, "GetMonitorCount", 0);
   }
   return result;
 }
@@ -1360,7 +1400,7 @@ int cmd_getmonitorheight(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMonitorHeight(monitor);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMonitorHeight");
+    error(retval, "GetMonitorHeight", 1);
   }
   return result;
 }
@@ -1372,7 +1412,7 @@ int cmd_getmonitorname(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMonitorName(monitor);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMonitorName");
+    error(retval, "GetMonitorName", 1);
   }
   return result;
 }
@@ -1384,7 +1424,7 @@ int cmd_getmonitorphysicalheight(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMonitorPhysicalHeight(monitor);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMonitorPhysicalHeight");
+    error(retval, "GetMonitorPhysicalHeight", 1);
   }
   return result;
 }
@@ -1396,7 +1436,7 @@ int cmd_getmonitorphysicalwidth(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMonitorPhysicalWidth(monitor);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMonitorPhysicalWidth");
+    error(retval, "GetMonitorPhysicalWidth", 1);
   }
   return result;
 }
@@ -1408,7 +1448,7 @@ int cmd_getmonitorrefreshrate(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMonitorRefreshRate(monitor);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMonitorRefreshRate");
+    error(retval, "GetMonitorRefreshRate", 1);
   }
   return result;
 }
@@ -1420,7 +1460,7 @@ int cmd_getmonitorwidth(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMonitorWidth(monitor);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMonitorWidth");
+    error(retval, "GetMonitorWidth", 1);
   }
   return result;
 }
@@ -1433,7 +1473,7 @@ int cmd_getmouseposition(int argc, slib_par_t *params, var_t *retval) {
     v_setint(map_add_var(retval, "x", 0), position.x);
     v_setint(map_add_var(retval, "y", 0), position.y);
   } else {
-    v_setstr(retval, "Invalid input: GetMousePosition");
+    error(retval, "GetMousePosition", 0);
   }
   return result;
 }
@@ -1446,7 +1486,7 @@ int cmd_getmouseray(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMouseRay(mousePosition, camera);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMouseRay");
+    error(retval, "GetMouseRay", 2);
   }
   return result;
 }
@@ -1457,7 +1497,7 @@ int cmd_getmousewheelmove(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetMouseWheelMove();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMouseWheelMove");
+    error(retval, "GetMouseWheelMove", 0);
   }
   return result;
 }
@@ -1467,7 +1507,7 @@ int cmd_getmousex(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     v_setint(retval, GetMouseX());
   } else {
-    v_setstr(retval, "Invalid input: GetMouseX");
+    error(retval, "GetMouseX", 0);
   }
   return result;
 }
@@ -1477,7 +1517,7 @@ int cmd_getmousey(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     v_setint(retval, GetMouseY());
   } else {
-    v_setstr(retval, "Invalid input: GetMouseY");
+    error(retval, "GetMouseY", 0);
   }
   return result;
 }
@@ -1489,7 +1529,7 @@ int cmd_getmusictimelength(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = GetMusicTimeLength(music);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMusicTimeLength");
+    error(retval, "GetMusicTimeLength", 1);
   }
   return result;
 }
@@ -1501,7 +1541,7 @@ int cmd_getmusictimeplayed(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = GetMusicTimePlayed(music);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetMusicTimePlayed");
+    error(retval, "GetMusicTimePlayed", 1);
   }
   return result;
 }
@@ -1514,7 +1554,7 @@ int cmd_getnextcodepoint(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetNextCodepoint(text, bytesProcessed);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetNextCodepoint");
+    error(retval, "GetNextCodepoint", 2);
   }
   return result;
 }
@@ -1527,7 +1567,7 @@ int cmd_getpixelcolor(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetPixelColor(srcPtr, format);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetPixelColor");
+    error(retval, "GetPixelColor", 2);
   }
   return result;
 }
@@ -1541,7 +1581,7 @@ int cmd_getpixeldatasize(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetPixelDataSize(width, height, format);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetPixelDataSize");
+    error(retval, "GetPixelDataSize", 3);
   }
   return result;
 }
@@ -1553,7 +1593,7 @@ int cmd_getprevdirectorypath(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetPrevDirectoryPath(dirPath);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetPrevDirectoryPath");
+    error(retval, "GetPrevDirectoryPath", 1);
   }
   return result;
 }
@@ -1566,7 +1606,7 @@ int cmd_getrandomvalue(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetRandomValue(min, max);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetRandomValue");
+    error(retval, "GetRandomValue", 2);
   }
   return result;
 }
@@ -1577,7 +1617,7 @@ int cmd_getscreendata(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetScreenData();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetScreenData");
+    error(retval, "GetScreenData", 0);
   }
   return result;
 }
@@ -1588,7 +1628,7 @@ int cmd_getscreenheight(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = GetScreenHeight();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetScreenHeight");
+    error(retval, "GetScreenHeight", 0);
   }
   return result;
 }
@@ -1601,7 +1641,7 @@ int cmd_getscreentoworld2d(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetScreenToWorld2D(position, camera);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetScreenToWorld2D");
+    error(retval, "GetScreenToWorld2D", 2);
   }
   return result;
 }
@@ -1612,7 +1652,7 @@ int cmd_getscreenwidth(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = GetScreenWidth();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetScreenWidth");
+    error(retval, "GetScreenWidth", 0);
   }
   return result;
 }
@@ -1623,7 +1663,7 @@ int cmd_getshaderdefault(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetShaderDefault();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetShaderDefault");
+    error(retval, "GetShaderDefault", 0);
   }
   return result;
 }
@@ -1636,7 +1676,7 @@ int cmd_getshaderlocation(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetShaderLocation(shader, uniformName);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetShaderLocation");
+    error(retval, "GetShaderLocation", 2);
   }
   return result;
 }
@@ -1649,7 +1689,7 @@ int cmd_getshaderlocationattrib(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetShaderLocationAttrib(shader, attribName);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetShaderLocationAttrib");
+    error(retval, "GetShaderLocationAttrib", 2);
   }
   return result;
 }
@@ -1660,7 +1700,7 @@ int cmd_getshapestexture(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetShapesTexture();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetShapesTexture");
+    error(retval, "GetShapesTexture", 0);
   }
   return result;
 }
@@ -1671,7 +1711,7 @@ int cmd_getshapestexturerec(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetShapesTextureRec();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetShapesTextureRec");
+    error(retval, "GetShapesTextureRec", 0);
   }
   return result;
 }
@@ -1682,7 +1722,7 @@ int cmd_getsoundsplaying(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetSoundsPlaying();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetSoundsPlaying");
+    error(retval, "GetSoundsPlaying", 0);
   }
   return result;
 }
@@ -1694,7 +1734,7 @@ int cmd_gettexturedata(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetTextureData(texture);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetTextureData");
+    error(retval, "GetTextureData", 1);
   }
   return result;
 }
@@ -1705,7 +1745,7 @@ int cmd_gettexturedefault(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetTextureDefault();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetTextureDefault");
+    error(retval, "GetTextureDefault", 0);
   }
   return result;
 }
@@ -1716,7 +1756,7 @@ int cmd_gettime(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetTime();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetTime");
+    error(retval, "GetTime", 0);
   }
   return result;
 }
@@ -1727,7 +1767,7 @@ int cmd_gettouchpointscount(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetTouchPointsCount();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetTouchPointsCount");
+    error(retval, "GetTouchPointsCount", 0);
   }
   return result;
 }
@@ -1739,7 +1779,7 @@ int cmd_gettouchposition(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetTouchPosition(index);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetTouchPosition");
+    error(retval, "GetTouchPosition", 1);
   }
   return result;
 }
@@ -1750,7 +1790,7 @@ int cmd_gettouchx(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetTouchX();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetTouchX");
+    error(retval, "GetTouchX", 0);
   }
   return result;
 }
@@ -1761,7 +1801,7 @@ int cmd_gettouchy(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetTouchY();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetTouchY");
+    error(retval, "GetTouchY", 0);
   }
   return result;
 }
@@ -1773,7 +1813,7 @@ int cmd_getwavedata(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetWaveData(wave);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetWaveData");
+    error(retval, "GetWaveData", 1);
   }
   return result;
 }
@@ -1784,7 +1824,7 @@ int cmd_getwindowposition(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetWindowPosition();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetWindowPosition");
+    error(retval, "GetWindowPosition", 0);
   }
   return result;
 }
@@ -1795,7 +1835,7 @@ int cmd_getwindowscaledpi(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetWindowScaleDPI();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetWindowScaleDPI");
+    error(retval, "GetWindowScaleDPI", 0);
   }
   return result;
 }
@@ -1806,7 +1846,7 @@ int cmd_getworkingdirectory(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetWorkingDirectory();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetWorkingDirectory");
+    error(retval, "GetWorkingDirectory", 0);
   }
   return result;
 }
@@ -1819,7 +1859,7 @@ int cmd_getworldtoscreen(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetWorldToScreen(position, camera);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetWorldToScreen");
+    error(retval, "GetWorldToScreen", 2);
   }
   return result;
 }
@@ -1832,7 +1872,7 @@ int cmd_getworldtoscreen2d(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetWorldToScreen2D(position, camera);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetWorldToScreen2D");
+    error(retval, "GetWorldToScreen2D", 2);
   }
   return result;
 }
@@ -1847,7 +1887,7 @@ int cmd_getworldtoscreenex(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = GetWorldToScreenEx(position, camera, width, height);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: GetWorldToScreenEx");
+    error(retval, "GetWorldToScreenEx", 4);
   }
   return result;
 }
@@ -1859,7 +1899,7 @@ int cmd_imagecopy(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ImageCopy(image);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ImageCopy");
+    error(retval, "ImageCopy", 1);
   }
   return result;
 }
@@ -1872,7 +1912,7 @@ int cmd_imagefromimage(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ImageFromImage(image, rec);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ImageFromImage");
+    error(retval, "ImageFromImage", 2);
   }
   return result;
 }
@@ -1886,7 +1926,7 @@ int cmd_imagetext(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ImageText(text, fontSize, color);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ImageText");
+    error(retval, "ImageText", 3);
   }
   return result;
 }
@@ -1902,7 +1942,7 @@ int cmd_imagetextex(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = ImageTextEx(font, text, fontSize, spacing, tint);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: ImageTextEx");
+    error(retval, "ImageTextEx", 5);
   }
   return result;
 }
@@ -1916,7 +1956,7 @@ int cmd_initaudiostream(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = InitAudioStream(sampleRate, sampleSize, channels);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: InitAudioStream");
+    error(retval, "InitAudioStream", 3);
   }
   return result;
 }
@@ -1927,7 +1967,7 @@ int cmd_isaudiodeviceready(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsAudioDeviceReady();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsAudioDeviceReady");
+    error(retval, "IsAudioDeviceReady", 0);
   }
   return result;
 }
@@ -1939,7 +1979,7 @@ int cmd_isaudiostreamplaying(int argc, slib_par_t *params, var_t *retval) {
     //auto fnResult = IsAudioStreamPlaying(stream);
     //v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsAudioStreamPlaying");
+    error(retval, "IsAudioStreamPlaying", 1);
   }
   return result;
 }
@@ -1951,7 +1991,7 @@ int cmd_isaudiostreamprocessed(int argc, slib_par_t *params, var_t *retval) {
     //auto fnResult = IsAudioStreamProcessed(stream);
     //v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsAudioStreamProcessed");
+    error(retval, "IsAudioStreamProcessed", 1);
   }
   return result;
 }
@@ -1962,7 +2002,7 @@ int cmd_iscursorhidden(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsCursorHidden();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsCursorHidden");
+    error(retval, "IsCursorHidden", 0);
   }
   return result;
 }
@@ -1973,7 +2013,7 @@ int cmd_iscursoronscreen(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsCursorOnScreen();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsCursorOnScreen");
+    error(retval, "IsCursorOnScreen", 0);
   }
   return result;
 }
@@ -1984,7 +2024,7 @@ int cmd_isfiledropped(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsFileDropped();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsFileDropped");
+    error(retval, "IsFileDropped", 0);
   }
   return result;
 }
@@ -1997,7 +2037,7 @@ int cmd_isfileextension(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsFileExtension(fileName, ext);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsFileExtension");
+    error(retval, "IsFileExtension", 2);
   }
   return result;
 }
@@ -2009,7 +2049,7 @@ int cmd_isgamepadavailable(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsGamepadAvailable(gamepad);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsGamepadAvailable");
+    error(retval, "IsGamepadAvailable", 1);
   }
   return result;
 }
@@ -2022,7 +2062,7 @@ int cmd_isgamepadbuttondown(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsGamepadButtonDown(gamepad, button);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsGamepadButtonDown");
+    error(retval, "IsGamepadButtonDown", 2);
   }
   return result;
 }
@@ -2035,7 +2075,7 @@ int cmd_isgamepadbuttonpressed(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsGamepadButtonPressed(gamepad, button);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsGamepadButtonPressed");
+    error(retval, "IsGamepadButtonPressed", 2);
   }
   return result;
 }
@@ -2048,7 +2088,7 @@ int cmd_isgamepadbuttonreleased(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsGamepadButtonReleased(gamepad, button);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsGamepadButtonReleased");
+    error(retval, "IsGamepadButtonReleased", 2);
   }
   return result;
 }
@@ -2061,7 +2101,7 @@ int cmd_isgamepadbuttonup(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsGamepadButtonUp(gamepad, button);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsGamepadButtonUp");
+    error(retval, "IsGamepadButtonUp", 2);
   }
   return result;
 }
@@ -2074,7 +2114,7 @@ int cmd_isgamepadname(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsGamepadName(gamepad, name);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsGamepadName");
+    error(retval, "IsGamepadName", 2);
   }
   return result;
 }
@@ -2086,7 +2126,7 @@ int cmd_isgesturedetected(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsGestureDetected(gesture);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsGestureDetected");
+    error(retval, "IsGestureDetected", 1);
   }
   return result;
 }
@@ -2098,7 +2138,7 @@ int cmd_iskeydown(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsKeyDown(key);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsKeyDown");
+    error(retval, "IsKeyDown", 1);
   }
   return result;
 }
@@ -2110,7 +2150,7 @@ int cmd_iskeypressed(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsKeyPressed(key);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsKeyPressed");
+    error(retval, "IsKeyPressed", 1);
   }
   return result;
 }
@@ -2122,7 +2162,7 @@ int cmd_iskeyreleased(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsKeyReleased(key);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsKeyReleased");
+    error(retval, "IsKeyReleased", 1);
   }
   return result;
 }
@@ -2134,7 +2174,7 @@ int cmd_iskeyup(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsKeyUp(key);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsKeyUp");
+    error(retval, "IsKeyUp", 1);
   }
   return result;
 }
@@ -2147,7 +2187,7 @@ int cmd_ismodelanimationvalid(int argc, slib_par_t *params, var_t *retval) {
     //auto fnResult = IsModelAnimationValid(model, anim);
     //v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsModelAnimationValid");
+    error(retval, "IsModelAnimationValid", 2);
   }
   return result;
 }
@@ -2159,7 +2199,7 @@ int cmd_ismousebuttondown(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsMouseButtonDown(button);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsMouseButtonDown");
+    error(retval, "IsMouseButtonDown", 1);
   }
   return result;
 }
@@ -2171,7 +2211,7 @@ int cmd_ismousebuttonpressed(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsMouseButtonPressed(button);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsMouseButtonPressed");
+    error(retval, "IsMouseButtonPressed", 1);
   }
   return result;
 }
@@ -2183,7 +2223,7 @@ int cmd_ismousebuttonreleased(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsMouseButtonReleased(button);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsMouseButtonReleased");
+    error(retval, "IsMouseButtonReleased", 1);
   }
   return result;
 }
@@ -2195,7 +2235,7 @@ int cmd_ismousebuttonup(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsMouseButtonUp(button);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsMouseButtonUp");
+    error(retval, "IsMouseButtonUp", 1);
   }
   return result;
 }
@@ -2207,7 +2247,7 @@ int cmd_ismusicplaying(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsMusicPlaying(music);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsMusicPlaying");
+    error(retval, "IsMusicPlaying", 1);
   }
   return result;
 }
@@ -2219,7 +2259,7 @@ int cmd_issoundplaying(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsSoundPlaying(sound);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsSoundPlaying");
+    error(retval, "IsSoundPlaying", 1);
   }
   return result;
 }
@@ -2230,7 +2270,7 @@ int cmd_isvrsimulatorready(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsVrSimulatorReady();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsVrSimulatorReady");
+    error(retval, "IsVrSimulatorReady", 0);
   }
   return result;
 }
@@ -2241,7 +2281,7 @@ int cmd_iswindowfocused(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsWindowFocused();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsWindowFocused");
+    error(retval, "IsWindowFocused", 0);
   }
   return result;
 }
@@ -2252,7 +2292,7 @@ int cmd_iswindowfullscreen(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsWindowFullscreen();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsWindowFullscreen");
+    error(retval, "IsWindowFullscreen", 0);
   }
   return result;
 }
@@ -2263,7 +2303,7 @@ int cmd_iswindowhidden(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsWindowHidden();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsWindowHidden");
+    error(retval, "IsWindowHidden", 0);
   }
   return result;
 }
@@ -2274,7 +2314,7 @@ int cmd_iswindowmaximized(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsWindowMaximized();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsWindowMaximized");
+    error(retval, "IsWindowMaximized", 0);
   }
   return result;
 }
@@ -2285,7 +2325,7 @@ int cmd_iswindowminimized(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsWindowMinimized();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsWindowMinimized");
+    error(retval, "IsWindowMinimized", 0);
   }
   return result;
 }
@@ -2296,7 +2336,7 @@ int cmd_iswindowready(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsWindowReady();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsWindowReady");
+    error(retval, "IsWindowReady", 0);
   }
   return result;
 }
@@ -2307,7 +2347,7 @@ int cmd_iswindowresized(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = IsWindowResized();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: IsWindowResized");
+    error(retval, "IsWindowResized", 0);
   }
   return result;
 }
@@ -2320,7 +2360,7 @@ int cmd_loadfiledata(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadFileData(fileName, bytesRead);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadFileData");
+    error(retval, "LoadFileData", 2);
   }
   return result;
 }
@@ -2332,7 +2372,7 @@ int cmd_loadfiletext(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadFileText(fileName);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadFileText");
+    error(retval, "LoadFileText", 1);
   }
   return result;
 }
@@ -2344,7 +2384,7 @@ int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadFont(fileName);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadFont");
+    error(retval, "LoadFont", 1);
   }
   return result;
 }
@@ -2361,7 +2401,7 @@ int cmd_loadfontdata(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadFontData(fileData, dataSize, fontSize, fontChars, charsCount, type);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadFontData");
+    error(retval, "LoadFontData", 6);
   }
   return result;
 }
@@ -2376,7 +2416,7 @@ int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadFontEx(fileName, fontSize, fontChars, charsCount);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadFontEx");
+    error(retval, "LoadFontEx", 4);
   }
   return result;
 }
@@ -2390,7 +2430,7 @@ int cmd_loadfontfromimage(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadFontFromImage(image, key, firstChar);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadFontFromImage");
+    error(retval, "LoadFontFromImage", 3);
   }
   return result;
 }
@@ -2407,7 +2447,7 @@ int cmd_loadfontfrommemory(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadFontFromMemory(fileType, fileData, dataSize, fontSize, fontChars, charsCount);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadFontFromMemory");
+    error(retval, "LoadFontFromMemory", 6);
   }
   return result;
 }
@@ -2421,7 +2461,7 @@ int cmd_loadimage(int argc, slib_par_t *params, var_t *retval) {
     _imageMap[id] = image;
     create_rectangle(retval, image.width, image.height, id);
   } else {
-    v_setstr(retval, "Invalid input: LoadImage");
+    error(retval, "LoadImage", 1);
   }
   return result;
 }
@@ -2434,7 +2474,7 @@ int cmd_loadimageanim(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadImageAnim(fileName, frames);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadImageAnim");
+    error(retval, "LoadImageAnim", 2);
   }
   return result;
 }
@@ -2448,7 +2488,7 @@ int cmd_loadimagefrommemory(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadImageFromMemory(fileType, fileData, dataSize);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadImageFromMemory");
+    error(retval, "LoadImageFromMemory", 3);
   }
   return result;
 }
@@ -2464,7 +2504,7 @@ int cmd_loadimageraw(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadImageRaw(fileName, width, height, format, headerSize);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadImageRaw");
+    error(retval, "LoadImageRaw", 5);
   }
   return result;
 }
@@ -2475,7 +2515,7 @@ int cmd_loadmaterialdefault(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadMaterialDefault();
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadMaterialDefault");
+    error(retval, "LoadMaterialDefault", 0);
   }
   return result;
 }
@@ -2488,7 +2528,7 @@ int cmd_loadmaterials(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadMaterials(fileName, materialCount);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadMaterials");
+    error(retval, "LoadMaterials", 2);
   }
   return result;
 }
@@ -2501,7 +2541,7 @@ int cmd_loadmeshes(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadMeshes(fileName, meshCount);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadMeshes");
+    error(retval, "LoadMeshes", 2);
   }
   return result;
 }
@@ -2520,7 +2560,7 @@ int cmd_loadmodel(int argc, slib_par_t *params, var_t *retval) {
     v_setint(map_add_var(retval, "boneCount", 0), model.boneCount);
     v_setint(map_add_var(retval, mapID, 0), id);
   } else {
-    v_setstr(retval, "Invalid input: LoadModel");
+    error(retval, "LoadModel", 1);
   }
   return result;
 }
@@ -2533,7 +2573,7 @@ int cmd_loadmodelanimations(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadModelAnimations(fileName, animsCount);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadModelAnimations");
+    error(retval, "LoadModelAnimations", 2);
   }
   return result;
 }
@@ -2545,7 +2585,7 @@ int cmd_loadmodelfrommesh(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadModelFromMesh(mesh);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadModelFromMesh");
+    error(retval, "LoadModelFromMesh", 1);
   }
   return result;
 }
@@ -2558,7 +2598,7 @@ int cmd_loadmusicstream(int argc, slib_par_t *params, var_t *retval) {
     _musicMap[fnResult] = LoadMusicStream(fileName);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadMusicStream");
+    error(retval, "LoadMusicStream", 1);
   }
   return result;
 }
@@ -2580,7 +2620,7 @@ int cmd_loadrendertexture(int argc, slib_par_t *params, var_t *retval) {
     var_p_t texture = map_add_var(retval, "texture", 0);
     create_rectangle(texture, renderTexture.texture.width, renderTexture.texture.height, textureId);
   } else {
-    v_setstr(retval, "Invalid input: LoadRenderTexture");
+    error(retval, "LoadRenderTexture", 2);
   }
   return result;
 }
@@ -2600,7 +2640,7 @@ int cmd_loadshader(int argc, slib_par_t *params, var_t *retval) {
     v_setint(map_add_var(retval, "locs", 0), (var_int_t)shader.locs);
     v_setint(map_add_var(retval, mapID, 0), shader.id);
   } else {
-    v_setstr(retval, "Invalid input: LoadShader");
+    error(retval, "LoadShader", 2);
   }
   return result;
 }
@@ -2613,7 +2653,7 @@ int cmd_loadshadercode(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadShaderCode(vsCode, fsCode);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadShaderCode");
+    error(retval, "LoadShaderCode", 2);
   }
   return result;
 }
@@ -2626,7 +2666,7 @@ int cmd_loadsound(int argc, slib_par_t *params, var_t *retval) {
     _soundMap[fnResult] = LoadSound(fileName);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input:L oadSound");
+    error(retval, "LoadSound", 1);
   }
   return result;
 }
@@ -2638,7 +2678,7 @@ int cmd_loadsoundfromwave(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadSoundFromWave(wave);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadSoundFromWave");
+    error(retval, "LoadSoundFromWave", 1);
   }
   return result;
 }
@@ -2650,7 +2690,7 @@ int cmd_loadstoragevalue(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadStorageValue(position);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadStorageValue");
+    error(retval, "LoadStorageValue", 1);
   }
   return result;
 }
@@ -2664,7 +2704,7 @@ int cmd_loadtexture(int argc, slib_par_t *params, var_t *retval) {
      _textureMap[id] = texture;
      create_rectangle(retval, texture.width, texture.height, id);
   } else {
-    v_setstr(retval, "Invalid input: LoadTexture");
+    error(retval, "LoadTexture", 1);
   }
   return result;
 }
@@ -2677,7 +2717,7 @@ int cmd_loadtexturecubemap(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadTextureCubemap(image, layoutType);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadTextureCubemap");
+    error(retval, "LoadTextureCubemap", 2);
   }
   return result;
 }
@@ -2692,11 +2732,11 @@ int cmd_loadtexturefromimage(int argc, slib_par_t *params, var_t *retval) {
       _textureMap[id] = texture;
       create_rectangle(retval, texture.width, texture.height, id);
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: LoadTextureFromImage");
+    error(retval, "LoadTextureFromImage", 1);
   }
   return result;
 }
@@ -2708,7 +2748,7 @@ int cmd_loadwave(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadWave(fileName);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadWave");
+    error(retval, "LoadWave", 1);
   }
   return result;
 }
@@ -2722,7 +2762,7 @@ int cmd_loadwavefrommemory(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = LoadWaveFromMemory(fileType, fileData, dataSize);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: LoadWaveFromMemory");
+    error(retval, "LoadWaveFromMemory", 3);
   }
   return result;
 }
@@ -2735,7 +2775,7 @@ int cmd_measuretext(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = MeasureText(text, fontSize);
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: MeasureText");
+    error(retval, "MeasureText", 2);
   }
   return result;
 }
@@ -2750,7 +2790,7 @@ int cmd_measuretextex(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = MeasureTextEx(font, text, fontSize, spacing);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: MeasureTextEx");
+    error(retval, "MeasureTextEx", 4);
   }
   return result;
 }
@@ -2762,7 +2802,7 @@ int cmd_meshboundingbox(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = MeshBoundingBox(mesh);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: MeshBoundingBox");
+    error(retval, "MeshBoundingBox", 1);
   }
   return result;
 }
@@ -2775,7 +2815,7 @@ int cmd_textcopy(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextCopy(dst, src);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextCopy");
+    error(retval, "TextCopy", 2);
   }
   return result;
 }
@@ -2788,7 +2828,7 @@ int cmd_textfindindex(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextFindIndex(text, find);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextFindIndex");
+    error(retval, "TextFindIndex", 2);
   }
   return result;
 }
@@ -2800,7 +2840,7 @@ int cmd_textformat(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextFormat(text);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextFormat");
+    error(retval, "TextFormat", 1);
   }
   return result;
 }
@@ -2814,7 +2854,7 @@ int cmd_textinsert(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextInsert(text, insert, position);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextInsert");
+    error(retval, "TextInsert", 3);
   }
   return result;
 }
@@ -2827,7 +2867,7 @@ int cmd_textisequal(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextIsEqual(text1, text2);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextIsEqual");
+    error(retval, "TextIsEqual", 2);
   }
   return result;
 }
@@ -2841,7 +2881,7 @@ int cmd_textjoin(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextJoin(textList, count, delimiter);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextJoin");
+    error(retval, "TextJoin", 3);
   }
   return result;
 }
@@ -2853,7 +2893,7 @@ int cmd_textlength(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextLength(text);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextLength");
+    error(retval, "TextLength", 1);
   }
   return result;
 }
@@ -2867,7 +2907,7 @@ int cmd_textreplace(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextReplace(text, replace, by);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextReplace");
+    error(retval, "TextReplace", 3);
   }
   return result;
 }
@@ -2881,7 +2921,7 @@ int cmd_textsplit(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextSplit(text, delimiter, count);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextSplit");
+    error(retval, "TextSplit", 3);
   }
   return result;
 }
@@ -2895,7 +2935,7 @@ int cmd_textsubtext(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextSubtext(text, position, length);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextSubtext");
+    error(retval, "TextSubtext", 3);
   }
   return result;
 }
@@ -2907,7 +2947,7 @@ int cmd_texttointeger(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextToInteger(text);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextToInteger");
+    error(retval, "TextToInteger", 1);
   }
   return result;
 }
@@ -2919,7 +2959,7 @@ int cmd_texttolower(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextToLower(text);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextToLower");
+    error(retval, "TextToLower", 1);
   }
   return result;
 }
@@ -2931,7 +2971,7 @@ int cmd_texttopascal(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextToPascal(text);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextToPascal");
+    error(retval, "TextToPascal", 1);
   }
   return result;
 }
@@ -2943,7 +2983,7 @@ int cmd_texttoupper(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextToUpper(text);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextToUpper");
+    error(retval, "TextToUpper", 1);
   }
   return result;
 }
@@ -2956,7 +2996,7 @@ int cmd_texttoutf8(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = TextToUtf8(codepoints, length);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: TextToUtf8");
+    error(retval, "TextToUtf8", 2);
   }
   return result;
 }
@@ -2968,7 +3008,7 @@ int cmd_wavecopy(int argc, slib_par_t *params, var_t *retval) {
     // auto fnResult = WaveCopy(wave);
     // v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: WaveCopy");
+    error(retval, "WaveCopy", 1);
   }
   return result;
 }
@@ -2979,7 +3019,7 @@ int cmd_windowshouldclose(int argc, slib_par_t *params, var_t *retval) {
     auto fnResult = WindowShouldClose();
     v_setint(retval, fnResult);
   } else {
-    v_setstr(retval, "Invalid input: WindowShouldClose");
+    error(retval, "WindowShouldClose", 0);
   }
   return result;
 }
@@ -2990,7 +3030,7 @@ int cmd_beginblendmode(int argc, slib_par_t *params, var_t *retval) {
     auto mode = get_param_int(argc, params, 0, 0);
     BeginBlendMode(mode);
   } else {
-    v_setstr(retval, "Invalid input: BeginBlendMode");
+    error(retval, "BeginBlendMode", 1);
   }
   return result;
 }
@@ -3000,7 +3040,7 @@ int cmd_begindrawing(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     BeginDrawing();
   } else {
-    v_setstr(retval, "Invalid input: BeginDrawing");
+    error(retval, "BeginDrawing", 0);
   }
   return result;
 }
@@ -3011,7 +3051,7 @@ int cmd_beginmode2d(int argc, slib_par_t *params, var_t *retval) {
     // auto camera = get_param_str(argc, params, 0, NULL);
     // BeginMode2D(camera);
   } else {
-    v_setstr(retval, "Invalid input: BeginMode2D");
+    error(retval, "BeginMode2D", 1);
   }
   return result;
 }
@@ -3021,7 +3061,7 @@ int cmd_beginmode3d(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     BeginMode3D(get_camera_3d(argc, params, 0));
   } else {
-    v_setstr(retval, "Invalid input: BeginMode3D");
+    error(retval, "BeginMode3D", 1);
   }
   return result;
 }
@@ -3035,7 +3075,7 @@ int cmd_beginscissormode(int argc, slib_par_t *params, var_t *retval) {
     // auto height = get_param_str(argc, params, 3, NULL);
     // BeginScissorMode(x, y, width, height);
   } else {
-    v_setstr(retval, "Invalid input: BeginScissorMode");
+    error(retval, "BeginScissorMode", 4);
   }
   return result;
 }
@@ -3045,7 +3085,7 @@ int cmd_beginshadermode(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     BeginShaderMode(get_param_shader(argc, params, 0));
   } else {
-    v_setstr(retval, "Invalid input: BeginShaderMode");
+    error(retval, "BeginShaderMode", 1);
   }
   return result;
 }
@@ -3057,11 +3097,11 @@ int cmd_begintexturemode(int argc, slib_par_t *params, var_t *retval) {
     if (id != -1) {
       BeginTextureMode(_renderMap.at(id));
     } else {
-      v_setstr(retval, "Invalid input: RenderTexture not found");
+      error_texture(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: BeginTextureMode");
+    error(retval, "BeginTextureMode", 1);
   }
   return result;
 }
@@ -3071,7 +3111,7 @@ int cmd_beginvrdrawing(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     BeginVrDrawing();
   } else {
-    v_setstr(retval, "Invalid input: BeginVrDrawing");
+    error(retval, "BeginVrDrawing", 0);
   }
   return result;
 }
@@ -3082,7 +3122,7 @@ int cmd_clearbackground(int argc, slib_par_t *params, var_t *retval) {
     auto color = get_param_color(argc, params, 0);
     ClearBackground(color);
   } else {
-    v_setstr(retval, "Invalid input: ClearBackground");
+    error(retval, "ClearBackground", 1);
   }
   return result;
 }
@@ -3092,7 +3132,7 @@ int cmd_cleardirectoryfiles(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     ClearDirectoryFiles();
   } else {
-    v_setstr(retval, "Invalid input: ClearDirectoryFiles");
+    error(retval, "ClearDirectoryFiles", 0);
   }
   return result;
 }
@@ -3102,7 +3142,7 @@ int cmd_cleardroppedfiles(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     ClearDroppedFiles();
   } else {
-    v_setstr(retval, "Invalid input: ClearDroppedFiles");
+    error(retval, "ClearDroppedFiles", 0);
   }
   return result;
 }
@@ -3112,7 +3152,7 @@ int cmd_closeaudiodevice(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     CloseAudioDevice();
   } else {
-    v_setstr(retval, "Invalid input: CloseAudioDevice");
+    error(retval, "CloseAudioDevice", 0);
   }
   return result;
 }
@@ -3123,7 +3163,7 @@ int cmd_closeaudiostream(int argc, slib_par_t *params, var_t *retval) {
     // auto stream = get_param_str(argc, params, 0, NULL);
     // CloseAudioStream(stream);
   } else {
-    v_setstr(retval, "Invalid input: CloseAudioStream");
+    error(retval, "CloseAudioStream", 1);
   }
   return result;
 }
@@ -3133,7 +3173,7 @@ int cmd_closevrsimulator(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     CloseVrSimulator();
   } else {
-    v_setstr(retval, "Invalid input: CloseVrSimulator");
+    error(retval, "CloseVrSimulator", 0);
   }
   return result;
 }
@@ -3143,7 +3183,7 @@ int cmd_closewindow(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     CloseWindow();
   } else {
-    v_setstr(retval, "Invalid input: CloseWindow");
+    error(retval, "CloseWindow", 0);
   }
   return result;
 }
@@ -3153,7 +3193,7 @@ int cmd_decoratewindow(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     DecorateWindow();
   } else {
-    v_setstr(retval, "Invalid input: DecorateWindow");
+    error(retval, "DecorateWindow", 0);
   }
   return result;
 }
@@ -3163,7 +3203,7 @@ int cmd_disablecursor(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     DisableCursor();
   } else {
-    v_setstr(retval, "Invalid input: DisableCursor");
+    error(retval, "DisableCursor", 0);
   }
   return result;
 }
@@ -3178,7 +3218,7 @@ int cmd_drawbillboard(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 4, NULL);
     // DrawBillboard(camera, texture, center, size, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawBillboard");
+    error(retval, "DrawBillboard", 5);
   }
   return result;
 }
@@ -3194,7 +3234,7 @@ int cmd_drawbillboardrec(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 5, NULL);
     // DrawBillboardRec(camera, texture, sourceRec, center, size, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawBillboardRec");
+    error(retval, "DrawBillboardRec", 6);
   }
   return result;
 }
@@ -3206,7 +3246,7 @@ int cmd_drawboundingbox(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 1, NULL);
     // DrawBoundingBox(box, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawBoundingBox");
+    error(retval, "DrawBoundingBox", 2);
   }
   return result;
 }
@@ -3220,7 +3260,7 @@ int cmd_drawcircle(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // DrawCircle(centerX, centerY, radius, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCircle");
+    error(retval, "DrawCircle", 4);
   }
   return result;
 }
@@ -3235,7 +3275,7 @@ int cmd_drawcircle3d(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawCircle3D(center, radius, rotationAxis, rotationAngle, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCircle3D");
+    error(retval, "DrawCircle3D", 5);
   }
   return result;
 }
@@ -3250,7 +3290,7 @@ int cmd_drawcirclegradient(int argc, slib_par_t *params, var_t *retval) {
     // auto color2 = get_param_str(argc, params, 4, NULL);
     // DrawCircleGradient(centerX, centerY, radius, color1, color2);
   } else {
-    v_setstr(retval, "Invalid input: DrawCircleGradient");
+    error(retval, "DrawCircleGradient", 5);
   }
   return result;
 }
@@ -3264,7 +3304,7 @@ int cmd_drawcirclelines(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // DrawCircleLines(centerX, centerY, radius, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCircleLines");
+    error(retval, "DrawCircleLines", 4);
   }
   return result;
 }
@@ -3280,7 +3320,7 @@ int cmd_drawcirclesector(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 5, NULL);
     // DrawCircleSector(center, radius, startAngle, endAngle, segments, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCircleSector");
+    error(retval, "DrawCircleSector", 6);
   }
   return result;
 }
@@ -3296,7 +3336,7 @@ int cmd_drawcirclesectorlines(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 5, NULL);
     // DrawCircleSectorLines(center, radius, startAngle, endAngle, segments, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCircleSectorLines");
+    error(retval, "DrawCircleSectorLines", 6);
   }
   return result;
 }
@@ -3309,7 +3349,7 @@ int cmd_drawcirclev(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawCircleV(center, radius, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCircleV");
+    error(retval, "DrawCircleV", 3);
   }
   return result;
 }
@@ -3324,7 +3364,7 @@ int cmd_drawcube(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawCube(position, width, height, length, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCube");
+    error(retval, "DrawCube", 5);
   }
   return result;
 }
@@ -3340,7 +3380,7 @@ int cmd_drawcubetexture(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 5, NULL);
     // DrawCubeTexture(texture, position, width, height, length, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCubeTexture");
+    error(retval, "DrawCubeTexture", 6);
   }
   return result;
 }
@@ -3353,7 +3393,7 @@ int cmd_drawcubev(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawCubeV(position, size, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCubeV");
+    error(retval, "DrawCubeV", 3);
   }
   return result;
 }
@@ -3368,7 +3408,7 @@ int cmd_drawcubewires(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawCubeWires(position, width, height, length, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCubeWires");
+    error(retval, "DrawCubeWires", 5);
   }
   return result;
 }
@@ -3381,7 +3421,7 @@ int cmd_drawcubewiresv(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawCubeWiresV(position, size, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCubeWiresV");
+    error(retval, "DrawCubeWiresV", 3);
   }
   return result;
 }
@@ -3397,7 +3437,7 @@ int cmd_drawcylinder(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 5, NULL);
     // DrawCylinder(position, radiusTop, radiusBottom, height, slices, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCylinder");
+    error(retval, "DrawCylinder", 6);
   }
   return result;
 }
@@ -3413,7 +3453,7 @@ int cmd_drawcylinderwires(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 5, NULL);
     // DrawCylinderWires(position, radiusTop, radiusBottom, height, slices, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawCylinderWires");
+    error(retval, "DrawCylinderWires", 6);
   }
   return result;
 }
@@ -3428,7 +3468,7 @@ int cmd_drawellipse(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawEllipse(centerX, centerY, radiusH, radiusV, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawEllipse");
+    error(retval, "DrawEllipse", 5);
   }
   return result;
 }
@@ -3443,7 +3483,7 @@ int cmd_drawellipselines(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawEllipseLines(centerX, centerY, radiusH, radiusV, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawEllipseLines");
+    error(retval, "DrawEllipseLines", 5);
   }
   return result;
 }
@@ -3455,7 +3495,7 @@ int cmd_drawfps(int argc, slib_par_t *params, var_t *retval) {
     auto posY = get_param_int(argc, params, 1, 0);
     DrawFPS(posX, posY);
   } else {
-    v_setstr(retval, "Invalid input: DrawFPS");
+    error(retval, "DrawFPS", 2);
   }
   return result;
 }
@@ -3465,7 +3505,7 @@ int cmd_drawgizmo(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     DrawGizmo(get_param_vec3(argc, params, 0));
   } else {
-    v_setstr(retval, "Invalid input: DrawGizmo");
+    error(retval, "DrawGizmo", 1);
   }
   return result;
 }
@@ -3477,7 +3517,7 @@ int cmd_drawgrid(int argc, slib_par_t *params, var_t *retval) {
     auto spacing = get_param_num(argc, params, 1, 0);
     DrawGrid(slices, spacing);
   } else {
-    v_setstr(retval, "Invalid input: DrawGrid");
+    error(retval, "DrawGrid", 2);
   }
   return result;
 }
@@ -3492,7 +3532,7 @@ int cmd_drawline(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawLine(startPosX, startPosY, endPosX, endPosY, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawLine");
+    error(retval, "DrawLine", 5);
   }
   return result;
 }
@@ -3505,7 +3545,7 @@ int cmd_drawline3d(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawLine3D(startPos, endPos, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawLine3D");
+    error(retval, "DrawLine3D", 3);
   }
   return result;
 }
@@ -3519,7 +3559,7 @@ int cmd_drawlinebezier(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // DrawLineBezier(startPos, endPos, thick, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawLineBezier");
+    error(retval, "DrawLineBezier", 4);
   }
   return result;
 }
@@ -3533,7 +3573,7 @@ int cmd_drawlineex(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // DrawLineEx(startPos, endPos, thick, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawLineEx");
+    error(retval, "DrawLineEx", 4);
   }
   return result;
 }
@@ -3546,7 +3586,7 @@ int cmd_drawlinestrip(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawLineStrip(points, numPoints, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawLineStrip");
+    error(retval, "DrawLineStrip", 3);
   }
   return result;
 }
@@ -3559,7 +3599,7 @@ int cmd_drawlinev(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawLineV(startPos, endPos, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawLineV");
+    error(retval, "DrawLineV", 3);
   }
   return result;
 }
@@ -3574,11 +3614,11 @@ int cmd_drawmodel(int argc, slib_par_t *params, var_t *retval) {
       auto tint = get_param_color(argc, params, 3);
       DrawModel(_modelMap.at(id), position, scale, tint);
     } else {
-      v_setstr(retval, "Invalid input: Model not found");
+      error_model(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: DrawModel");
+    error(retval, "DrawModel", 4);
   }
   return result;
 }
@@ -3594,7 +3634,7 @@ int cmd_drawmodelex(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 5, NULL);
     // DrawModelEx(model, position, rotationAxis, rotationAngle, scale, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawModelEx");
+    error(retval, "DrawModelEx", 6);
   }
   return result;
 }
@@ -3608,7 +3648,7 @@ int cmd_drawmodelwires(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 3, NULL);
     // DrawModelWires(model, position, scale, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawModelWires");
+    error(retval, "DrawModelWires", 4);
   }
   return result;
 }
@@ -3624,7 +3664,7 @@ int cmd_drawmodelwiresex(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 5, NULL);
     // DrawModelWiresEx(model, position, rotationAxis, rotationAngle, scale, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawModelWiresEx");
+    error(retval, "DrawModelWiresEx", 6);
   }
   return result;
 }
@@ -3637,7 +3677,7 @@ int cmd_drawpixel(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawPixel(posX, posY, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawPixel");
+    error(retval, "DrawPixel", 3);
   }
   return result;
 }
@@ -3649,7 +3689,7 @@ int cmd_drawpixelv(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 1, NULL);
     // DrawPixelV(position, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawPixelV");
+    error(retval, "DrawPixelV", 2);
   }
   return result;
 }
@@ -3662,7 +3702,7 @@ int cmd_drawplane(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawPlane(centerPos, size, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawPlane");
+    error(retval, "DrawPlane", 3);
   }
   return result;
 }
@@ -3674,7 +3714,7 @@ int cmd_drawpoint3d(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 1, NULL);
     // DrawPoint3D(position, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawPoint3D");
+    error(retval, "DrawPoint3D", 2);
   }
   return result;
 }
@@ -3689,7 +3729,7 @@ int cmd_drawpoly(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawPoly(center, sides, radius, rotation, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawPoly");
+    error(retval, "DrawPoly", 5);
   }
   return result;
 }
@@ -3704,7 +3744,7 @@ int cmd_drawpolylines(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawPolyLines(center, sides, radius, rotation, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawPolyLines");
+    error(retval, "DrawPolyLines", 5);
   }
   return result;
 }
@@ -3716,7 +3756,7 @@ int cmd_drawray(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 1, NULL);
     // DrawRay(ray, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRay");
+    error(retval, "DrawRay", 2);
   }
   return result;
 }
@@ -3731,7 +3771,7 @@ int cmd_drawrectangle(int argc, slib_par_t *params, var_t *retval) {
     auto color = get_param_color(argc, params, 4);
     DrawRectangle(posX, posY, width, height, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectangle");
+    error(retval, "DrawRectangle", 5);
   }
   return result;
 }
@@ -3746,7 +3786,7 @@ int cmd_drawrectanglegradientex(int argc, slib_par_t *params, var_t *retval) {
     // auto col4 = get_param_str(argc, params, 4, NULL);
     // DrawRectangleGradientEx(rec, col1, col2, col3, col4);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectangleGradientEx");
+    error(retval, "DrawRectangleGradientEx", 5);
   }
   return result;
 }
@@ -3762,7 +3802,7 @@ int cmd_drawrectanglegradienth(int argc, slib_par_t *params, var_t *retval) {
     // auto color2 = get_param_str(argc, params, 5, NULL);
     // DrawRectangleGradientH(posX, posY, width, height, color1, color2);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectangleGradientH");
+    error(retval, "DrawRectangleGradientH", 6);
   }
   return result;
 }
@@ -3778,7 +3818,7 @@ int cmd_drawrectanglegradientv(int argc, slib_par_t *params, var_t *retval) {
     // auto color2 = get_param_str(argc, params, 5, NULL);
     // DrawRectangleGradientV(posX, posY, width, height, color1, color2);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectangleGradientV");
+    error(retval, "DrawRectangleGradientV", 6);
   }
   return result;
 }
@@ -3793,7 +3833,7 @@ int cmd_drawrectanglelines(int argc, slib_par_t *params, var_t *retval) {
     auto color = get_param_color(argc, params, 4);
     DrawRectangleLines(posX, posY, width, height, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectangleLines");
+    error(retval, "DrawRectangleLines", 5);
   }
   return result;
 }
@@ -3806,7 +3846,7 @@ int cmd_drawrectanglelinesex(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawRectangleLinesEx(rec, lineThick, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectangleLinesEx");
+    error(retval, "DrawRectangleLinesEx", 3);
   }
   return result;
 }
@@ -3820,7 +3860,7 @@ int cmd_drawrectanglepro(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // DrawRectanglePro(rec, origin, rotation, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectanglePro");
+    error(retval, "DrawRectanglePro", 4);
   }
   return result;
 }
@@ -3832,7 +3872,7 @@ int cmd_drawrectanglerec(int argc, slib_par_t *params, var_t *retval) {
     auto color = get_param_color(argc, params, 1);
     DrawRectangleRec(rec, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectangleRec");
+    error(retval, "DrawRectangleRec", 2);
   }
   return result;
 }
@@ -3846,7 +3886,7 @@ int cmd_drawrectanglerounded(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // DrawRectangleRounded(rec, roundness, segments, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectangleRounded");
+    error(retval, "DrawRectangleRounded", 4);
   }
   return result;
 }
@@ -3861,7 +3901,7 @@ int cmd_drawrectangleroundedlines(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawRectangleRoundedLines(rec, roundness, segments, lineThick, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectangleRoundedLines");
+    error(retval, "DrawRectangleRoundedLines", 5);
   }
   return result;
 }
@@ -3874,7 +3914,7 @@ int cmd_drawrectanglev(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawRectangleV(position, size, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRectangleV");
+    error(retval, "DrawRectangleV", 3);
   }
   return result;
 }
@@ -3891,7 +3931,7 @@ int cmd_drawring(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 6, NULL);
     // DrawRing(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRing");
+    error(retval, "DrawRing", 7);
   }
   return result;
 }
@@ -3908,7 +3948,7 @@ int cmd_drawringlines(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 6, NULL);
     // DrawRingLines(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawRingLines");
+    error(retval, "DrawRingLines", 7);
   }
   return result;
 }
@@ -3921,7 +3961,7 @@ int cmd_drawsphere(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawSphere(centerPos, radius, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawSphere");
+    error(retval, "DrawSphere", 3);
   }
   return result;
 }
@@ -3936,7 +3976,7 @@ int cmd_drawsphereex(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawSphereEx(centerPos, radius, rings, slices, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawSphereEx");
+    error(retval, "DrawSphereEx", 5);
   }
   return result;
 }
@@ -3951,7 +3991,7 @@ int cmd_drawspherewires(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // DrawSphereWires(centerPos, radius, rings, slices, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawSphereWires");
+    error(retval, "DrawSphereWires", 5);
   }
   return result;
 }
@@ -3966,7 +4006,7 @@ int cmd_drawtext(int argc, slib_par_t *params, var_t *retval) {
     auto color = get_param_color(argc, params, 4);
     DrawText(text, posX, posY, fontSize, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawText");
+    error(retval, "DrawText", 5);
   }
   return result;
 }
@@ -3981,7 +4021,7 @@ int cmd_drawtextcodepoint(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 4, NULL);
     // DrawTextCodepoint(font, codepoint, position, scale, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawTextCodepoint");
+    error(retval, "DrawTextCodepoint", 5);
   }
   return result;
 }
@@ -3997,7 +4037,7 @@ int cmd_drawtextex(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 5, NULL);
     // DrawTextEx(font, text, position, fontSize, spacing, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawTextEx");
+    error(retval, "DrawTextEx", 6);
   }
   return result;
 }
@@ -4014,7 +4054,7 @@ int cmd_drawtextrec(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 6, NULL);
     // DrawTextRec(font, text, rec, fontSize, spacing, wordWrap, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawTextRec");
+    error(retval, "DrawTextRec", 7);
   }
   return result;
 }
@@ -4035,7 +4075,7 @@ int cmd_drawtextrecex(int argc, slib_par_t *params, var_t *retval) {
     // auto selectBackTint = get_param_str(argc, params, 10, NULL);
     // DrawTextRecEx(font, text, rec, fontSize, spacing, wordWrap, tint, selectStart, selectLength, selectTint, selectBackTint);
   } else {
-    v_setstr(retval, "Invalid input: DrawTextRecEx");
+    error(retval, "DrawTextRecEx", 11);
   }
   return result;
 }
@@ -4050,11 +4090,11 @@ int cmd_drawtexture(int argc, slib_par_t *params, var_t *retval) {
       auto tint = get_param_color(argc, params, 3);
       DrawTexture(_textureMap.at(id), posX, posY, tint);
     } else {
-      v_setstr(retval, "Invalid input: Texture not found");
+      error_texture(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: DrawTexture");
+    error(retval, "DrawTexture", 4);
   }
   return result;
 }
@@ -4070,11 +4110,11 @@ int cmd_drawtextureex(int argc, slib_par_t *params, var_t *retval) {
       auto tint = get_param_color(argc, params, 4);
       DrawTextureEx(_textureMap.at(id), position, rotation, scale, tint);
     } else {
-      v_setstr(retval, "Invalid input: Texture not found");
+      error_texture(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: DrawTextureEx");
+    error(retval, "DrawTextureEx", 5);
   }
   return result;
 }
@@ -4090,7 +4130,7 @@ int cmd_drawtexturenpatch(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 5, NULL);
     // DrawTextureNPatch(texture, nPatchInfo, destRec, origin, rotation, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawTextureNPatch");
+    error(retval, "DrawTextureNPatch", 6);
   }
   return result;
 }
@@ -4107,11 +4147,11 @@ int cmd_drawtexturepro(int argc, slib_par_t *params, var_t *retval) {
       auto tint = get_param_color(argc, params, 5);
       DrawTexturePro(_textureMap.at(id), sourceRec, destRec, origin, rotation, tint);
     } else {
-      v_setstr(retval, "Invalid input: Texture not found");
+      error_texture(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: DrawTexturePro");
+    error(retval, "DrawTexturePro", 6);
   }
   return result;
 }
@@ -4126,7 +4166,7 @@ int cmd_drawtexturequad(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 4, NULL);
     // DrawTextureQuad(texture, tiling, offset, quad, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawTextureQuad");
+    error(retval, "DrawTextureQuad", 5);
   }
   return result;
 }
@@ -4141,11 +4181,11 @@ int cmd_drawtexturerec(int argc, slib_par_t *params, var_t *retval) {
       auto tint = get_param_color(argc, params, 3);
       DrawTextureRec(_textureMap.at(id), sourceRec, position, tint);
     } else {
-      v_setstr(retval, "Invalid input: Texture not found");
+      error_texture(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: DrawTextureRec");
+    error(retval, "DrawTextureRec", 4);
   }
   return result;
 }
@@ -4162,7 +4202,7 @@ int cmd_drawtexturetiled(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 6, NULL);
     // DrawTextureTiled(texture, sourceRec, destRec, origin, rotation, scale, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawTextureTiled");
+    error(retval, "DrawTextureTiled", 7);
   }
   return result;
 }
@@ -4175,7 +4215,7 @@ int cmd_drawtexturev(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 2, NULL);
     // DrawTextureV(texture, position, tint);
   } else {
-    v_setstr(retval, "Invalid input: DrawTextureV");
+    error(retval, "DrawTextureV", 3);
   }
   return result;
 }
@@ -4189,7 +4229,7 @@ int cmd_drawtriangle(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // DrawTriangle(v1, v2, v3, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawTriangle");
+    error(retval, "DrawTriangle", 4);
   }
   return result;
 }
@@ -4203,7 +4243,7 @@ int cmd_drawtriangle3d(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // DrawTriangle3D(v1, v2, v3, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawTriangle3D");
+    error(retval, "DrawTriangle3D", 4);
   }
   return result;
 }
@@ -4216,7 +4256,7 @@ int cmd_drawtrianglefan(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawTriangleFan(points, numPoints, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawTriangleFan");
+    error(retval, "DrawTriangleFan", 3);
   }
   return result;
 }
@@ -4230,7 +4270,7 @@ int cmd_drawtrianglelines(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // DrawTriangleLines(v1, v2, v3, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawTriangleLines");
+    error(retval, "DrawTriangleLines", 4);
   }
   return result;
 }
@@ -4243,7 +4283,7 @@ int cmd_drawtrianglestrip(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawTriangleStrip(points, pointsCount, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawTriangleStrip");
+    error(retval, "DrawTriangleStrip", 3);
   }
   return result;
 }
@@ -4256,7 +4296,7 @@ int cmd_drawtrianglestrip3d(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // DrawTriangleStrip3D(points, pointsCount, color);
   } else {
-    v_setstr(retval, "Invalid input: DrawTriangleStrip3D");
+    error(retval, "DrawTriangleStrip3D", 3);
   }
   return result;
 }
@@ -4266,7 +4306,7 @@ int cmd_enablecursor(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     EnableCursor();
   } else {
-    v_setstr(retval, "Invalid input: EnableCursor");
+    error(retval, "EnableCursor", 0);
   }
   return result;
 }
@@ -4276,7 +4316,7 @@ int cmd_endblendmode(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     EndBlendMode();
   } else {
-    v_setstr(retval, "Invalid input: EndBlendMode");
+    error(retval, "EndBlendMode", 0);
   }
   return result;
 }
@@ -4286,7 +4326,7 @@ int cmd_enddrawing(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     EndDrawing();
   } else {
-    v_setstr(retval, "Invalid input: EndDrawing");
+    error(retval, "EndDrawing", 0);
   }
   return result;
 }
@@ -4296,7 +4336,7 @@ int cmd_endmode2d(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     EndMode2D();
   } else {
-    v_setstr(retval, "Invalid input: EndMode2D");
+    error(retval, "EndMode2D", 0);
   }
   return result;
 }
@@ -4306,7 +4346,7 @@ int cmd_endmode3d(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     EndMode3D();
   } else {
-    v_setstr(retval, "Invalid input: EndMode3D");
+    error(retval, "EndMode3D", 0);
   }
   return result;
 }
@@ -4316,7 +4356,7 @@ int cmd_endscissormode(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     EndScissorMode();
   } else {
-    v_setstr(retval, "Invalid input: EndScissorMode");
+    error(retval, "EndScissorMode", 0);
   }
   return result;
 }
@@ -4326,7 +4366,7 @@ int cmd_endshadermode(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     EndShaderMode();
   } else {
-    v_setstr(retval, "Invalid input: EndShaderMode");
+    error(retval, "EndShaderMode", 0);
   }
   return result;
 }
@@ -4336,7 +4376,7 @@ int cmd_endtexturemode(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     EndTextureMode();
   } else {
-    v_setstr(retval, "Invalid input: EndTextureMode");
+    error(retval, "EndTextureMode", 0);
   }
   return result;
 }
@@ -4346,7 +4386,7 @@ int cmd_endvrdrawing(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     EndVrDrawing();
   } else {
-    v_setstr(retval, "Invalid input: EndVrDrawing");
+    error(retval, "EndVrDrawing", 0);
   }
   return result;
 }
@@ -4358,7 +4398,7 @@ int cmd_exportimage(int argc, slib_par_t *params, var_t *retval) {
     // auto fileName = get_param_str(argc, params, 1, NULL);
     // ExportImage(image, fileName);
   } else {
-    v_setstr(retval, "Invalid input: ExportImage");
+    error(retval, "ExportImage", 2);
   }
   return result;
 }
@@ -4370,7 +4410,7 @@ int cmd_exportimageascode(int argc, slib_par_t *params, var_t *retval) {
     // auto fileName = get_param_str(argc, params, 1, NULL);
     // ExportImageAsCode(image, fileName);
   } else {
-    v_setstr(retval, "Invalid input: ExportImageAsCode");
+    error(retval, "ExportImageAsCode", 2);
   }
   return result;
 }
@@ -4382,7 +4422,7 @@ int cmd_exportmesh(int argc, slib_par_t *params, var_t *retval) {
     // auto fileName = get_param_str(argc, params, 1, NULL);
     // ExportMesh(mesh, fileName);
   } else {
-    v_setstr(retval, "Invalid input: ExportMesh");
+    error(retval, "ExportMesh", 2);
   }
   return result;
 }
@@ -4394,7 +4434,7 @@ int cmd_exportwave(int argc, slib_par_t *params, var_t *retval) {
     // auto fileName = get_param_str(argc, params, 1, NULL);
     // ExportWave(wave, fileName);
   } else {
-    v_setstr(retval, "Invalid input: ExportWave");
+    error(retval, "ExportWave", 2);
   }
   return result;
 }
@@ -4406,7 +4446,7 @@ int cmd_exportwaveascode(int argc, slib_par_t *params, var_t *retval) {
     // auto fileName = get_param_str(argc, params, 1, NULL);
     // ExportWaveAsCode(wave, fileName);
   } else {
-    v_setstr(retval, "Invalid input: ExportWaveAsCode");
+    error(retval, "ExportWaveAsCode", 2);
   }
   return result;
 }
@@ -4417,7 +4457,7 @@ int cmd_gentexturemipmaps(int argc, slib_par_t *params, var_t *retval) {
     // auto texture = get_param_str(argc, params, 0, NULL);
     // GenTextureMipmaps(texture);
   } else {
-    v_setstr(retval, "Invalid input: GenTextureMipmaps");
+    error(retval, "GenTextureMipmaps", 1);
   }
   return result;
 }
@@ -4427,7 +4467,7 @@ int cmd_getwindowhandle(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     GetWindowHandle();
   } else {
-    v_setstr(retval, "Invalid input: GetWindowHandle");
+    error(retval, "GetWindowHandle", 0);
   }
   return result;
 }
@@ -4437,7 +4477,7 @@ int cmd_hidecursor(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     HideCursor();
   } else {
-    v_setstr(retval, "Invalid input: HideCursor");
+    error(retval, "HideCursor", 0);
   }
   return result;
 }
@@ -4447,7 +4487,7 @@ int cmd_hidewindow(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     HideWindow();
   } else {
-    v_setstr(retval, "Invalid input: HideWindow");
+    error(retval, "HideWindow", 0);
   }
   return result;
 }
@@ -4460,7 +4500,7 @@ int cmd_imagealphaclear(int argc, slib_par_t *params, var_t *retval) {
     // auto threshold = get_param_str(argc, params, 2, NULL);
     // ImageAlphaClear(image, color, threshold);
   } else {
-    v_setstr(retval, "Invalid input: ImageAlphaClear");
+    error(retval, "ImageAlphaClear", 3);
   }
   return result;
 }
@@ -4472,7 +4512,7 @@ int cmd_imagealphacrop(int argc, slib_par_t *params, var_t *retval) {
     // auto threshold = get_param_str(argc, params, 1, NULL);
     // ImageAlphaCrop(image, threshold);
   } else {
-    v_setstr(retval, "Invalid input: ImageAlphaCrop");
+    error(retval, "ImageAlphaCrop", 2);
   }
   return result;
 }
@@ -4484,7 +4524,7 @@ int cmd_imagealphamask(int argc, slib_par_t *params, var_t *retval) {
     // auto alphaMask = get_param_str(argc, params, 1, NULL);
     // ImageAlphaMask(image, alphaMask);
   } else {
-    v_setstr(retval, "Invalid input: ImageAlphaMask");
+    error(retval, "ImageAlphaMask", 2);
   }
   return result;
 }
@@ -4495,7 +4535,7 @@ int cmd_imagealphapremultiply(int argc, slib_par_t *params, var_t *retval) {
     // auto image = get_param_str(argc, params, 0, NULL);
     // ImageAlphaPremultiply(&image);
   } else {
-    v_setstr(retval, "Invalid input: ImageAlphaPremultiply");
+    error(retval, "ImageAlphaPremultiply", 1);
   }
   return result;
 }
@@ -4507,7 +4547,7 @@ int cmd_imageclearbackground(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 1, NULL);
     // ImageClearBackground(dst, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageClearBackground");
+    error(retval, "ImageClearBackground", 2);
   }
   return result;
 }
@@ -4520,11 +4560,11 @@ int cmd_imagecolorbrightness(int argc, slib_par_t *params, var_t *retval) {
       auto brightness = get_param_int(argc, params, 1, 0);
       ImageColorBrightness(&_imageMap.at(id), brightness);
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: ImageColorBrightness");
+    error(retval, "ImageColorBrightness", 2);
   }
   return result;
 }
@@ -4537,11 +4577,11 @@ int cmd_imagecolorcontrast(int argc, slib_par_t *params, var_t *retval) {
       auto contrast = get_param_int(argc, params, 1, 0);
       ImageColorContrast(&_imageMap.at(id), contrast);
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: ImageColorContrast");
+    error(retval, "ImageColorContrast", 2);
   }
   return result;
 }
@@ -4553,11 +4593,11 @@ int cmd_imagecolorgrayscale(int argc, slib_par_t *params, var_t *retval) {
     if (id != -1) {
       ImageColorGrayscale(&_imageMap.at(id));
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: ImageColorGrayscale");
+    error(retval, "ImageColorGrayscale", 1);
   }
   return result;
 }
@@ -4569,11 +4609,11 @@ int cmd_imagecolorinvert(int argc, slib_par_t *params, var_t *retval) {
     if (id != -1) {
       ImageColorInvert(&_imageMap.at(id));
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: ImageColorInvert");
+    error(retval, "ImageColorInvert", 1);
   }
   return result;
 }
@@ -4586,7 +4626,7 @@ int cmd_imagecolorreplace(int argc, slib_par_t *params, var_t *retval) {
     // auto replace = get_param_str(argc, params, 2, NULL);
     // ImageColorReplace(image, color, replace);
   } else {
-    v_setstr(retval, "Invalid input: ImageColorReplace");
+    error(retval, "ImageColorReplace", 3);
   }
   return result;
 }
@@ -4599,11 +4639,11 @@ int cmd_imagecolortint(int argc, slib_par_t *params, var_t *retval) {
       auto color = get_param_color(argc, params, 1);
       ImageColorTint(&_imageMap.at(id), color);
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: ImageColorTint");
+    error(retval, "ImageColorTint", 2);
   }
   return result;
 }
@@ -4615,7 +4655,7 @@ int cmd_imagecrop(int argc, slib_par_t *params, var_t *retval) {
     // auto crop = get_param_str(argc, params, 1, NULL);
     // ImageCrop(&image, crop);
   } else {
-    v_setstr(retval, "Invalid input: ImageCrop");
+    error(retval, "ImageCrop", 2);
   }
   return result;
 }
@@ -4630,7 +4670,7 @@ int cmd_imagedither(int argc, slib_par_t *params, var_t *retval) {
     // auto aBpp = get_param_str(argc, params, 4, NULL);
     // ImageDither(image, rBpp, gBpp, bBpp, aBpp);
   } else {
-    v_setstr(retval, "Invalid input: ImageDither");
+    error(retval, "ImageDither", 5);
   }
   return result;
 }
@@ -4645,7 +4685,7 @@ int cmd_imagedraw(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 4, NULL);
     // ImageDraw(dst, src, srcRec, dstRec, tint);
   } else {
-    v_setstr(retval, "Invalid input: ImageDraw");
+    error(retval, "ImageDraw", 5);
   }
   return result;
 }
@@ -4660,7 +4700,7 @@ int cmd_imagedrawcircle(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 4, NULL);
     // ImageDrawCircle(dst, centerX, centerY, radius, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawCircle");
+    error(retval, "ImageDrawCircle", 5);
   }
   return result;
 }
@@ -4674,7 +4714,7 @@ int cmd_imagedrawcirclev(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // ImageDrawCircleV(dst, center, radius, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawCircleV");
+    error(retval, "ImageDrawCircleV", 4);
   }
   return result;
 }
@@ -4690,7 +4730,7 @@ int cmd_imagedrawline(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 5, NULL);
     // ImageDrawLine(dst, startPosX, startPosY, endPosX, endPosY, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawLine");
+    error(retval, "ImageDrawLine", 6);
   }
   return result;
 }
@@ -4704,7 +4744,7 @@ int cmd_imagedrawlinev(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // ImageDrawLineV(dst, start, end, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawLineV");
+    error(retval, "ImageDrawLineV", 4);
   }
   return result;
 }
@@ -4718,7 +4758,7 @@ int cmd_imagedrawpixel(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // ImageDrawPixel(dst, posX, posY, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawPixel");
+    error(retval, "ImageDrawPixel", 4);
   }
   return result;
 }
@@ -4731,7 +4771,7 @@ int cmd_imagedrawpixelv(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 2, NULL);
     // ImageDrawPixelV(dst, position, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawPixelV");
+    error(retval, "ImageDrawPixelV", 3);
   }
   return result;
 }
@@ -4747,7 +4787,7 @@ int cmd_imagedrawrectangle(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 5, NULL);
     // ImageDrawRectangle(dst, posX, posY, width, height, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawRectangle");
+    error(retval, "ImageDrawRectangle", 6);
   }
   return result;
 }
@@ -4761,7 +4801,7 @@ int cmd_imagedrawrectanglelines(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // ImageDrawRectangleLines(dst, rec, thick, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawRectangleLines");
+    error(retval, "ImageDrawRectangleLines", 4);
   }
   return result;
 }
@@ -4775,11 +4815,11 @@ int cmd_imagedrawrectanglerec(int argc, slib_par_t *params, var_t *retval) {
       auto color = get_param_color(argc, params, 2);
       ImageDrawRectangleRec(&_imageMap.at(id), rec, color);
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawRectangleRec");
+    error(retval, "ImageDrawRectangleRec", 3);
   }
   return result;
 }
@@ -4793,7 +4833,7 @@ int cmd_imagedrawrectanglev(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 3, NULL);
     // ImageDrawRectangleV(dst, position, size, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawRectangleV");
+    error(retval, "ImageDrawRectangleV", 4);
   }
   return result;
 }
@@ -4809,7 +4849,7 @@ int cmd_imagedrawtext(int argc, slib_par_t *params, var_t *retval) {
     // auto color = get_param_str(argc, params, 5, NULL);
     // ImageDrawText(dst, text, posX, posY, fontSize, color);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawText");
+    error(retval, "ImageDrawText", 6);
   }
   return result;
 }
@@ -4826,7 +4866,7 @@ int cmd_imagedrawtextex(int argc, slib_par_t *params, var_t *retval) {
     // auto tint = get_param_str(argc, params, 6, NULL);
     // ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint);
   } else {
-    v_setstr(retval, "Invalid input: ImageDrawTextEx");
+    error(retval, "ImageDrawTextEx", 7);
   }
   return result;
 }
@@ -4838,11 +4878,11 @@ int cmd_imagefliphorizontal(int argc, slib_par_t *params, var_t *retval) {
     if (id != -1) {
       ImageFlipHorizontal(&_imageMap.at(id));
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: ImageFlipHorizontal");
+    error(retval, "ImageFlipHorizontal", 1);
   }
   return result;
 }
@@ -4854,11 +4894,11 @@ int cmd_imageflipvertical(int argc, slib_par_t *params, var_t *retval) {
     if (id != -1) {
       ImageFlipVertical(&_imageMap.at(id));
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: ImageFlipVertical");
+    error(retval, "ImageFlipVertical", 1);
   }
   return result;
 }
@@ -4871,11 +4911,11 @@ int cmd_imageformat(int argc, slib_par_t *params, var_t *retval) {
       auto newFormat = get_param_int(argc, params, 1, 0);
       ImageFormat(&_imageMap.at(id), newFormat);
     } else {
-      v_setstr(retval, "Invalid input: Image not found");
+      error_image(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: ImageFormat");
+    error(retval, "ImageFormat", 2);
   }
   return result;
 }
@@ -4886,7 +4926,7 @@ int cmd_imagemipmaps(int argc, slib_par_t *params, var_t *retval) {
     // auto image = get_param_str(argc, params, 0, NULL);
     // ImageMipmaps(image);
   } else {
-    v_setstr(retval, "Invalid input: ImageMipmaps");
+    error(retval, "ImageMipmaps", 1);
   }
   return result;
 }
@@ -4899,7 +4939,7 @@ int cmd_imageresize(int argc, slib_par_t *params, var_t *retval) {
     // auto newHeight = get_param_str(argc, params, 2, NULL);
     // ImageResize(image, newWidth, newHeight);
   } else {
-    v_setstr(retval, "Invalid input: ImageResize");
+    error(retval, "ImageResize", 3);
   }
   return result;
 }
@@ -4915,7 +4955,7 @@ int cmd_imageresizecanvas(int argc, slib_par_t *params, var_t *retval) {
     // auto fill = get_param_str(argc, params, 5, NULL);
     // ImageResizeCanvas(image, newWidth, newHeight, offsetX, offsetY, fill);
   } else {
-    v_setstr(retval, "Invalid input: ImageResizeCanvas");
+    error(retval, "ImageResizeCanvas", 6);
   }
   return result;
 }
@@ -4928,7 +4968,7 @@ int cmd_imageresizenn(int argc, slib_par_t *params, var_t *retval) {
     // auto newHeight = get_param_str(argc, params, 2, NULL);
     // ImageResizeNN(image, newWidth, newHeight);
   } else {
-    v_setstr(retval, "Invalid input: ImageResizeNN");
+    error(retval, "ImageResizeNN", 3);
   }
   return result;
 }
@@ -4939,7 +4979,7 @@ int cmd_imagerotateccw(int argc, slib_par_t *params, var_t *retval) {
     // auto image = get_param_str(argc, params, 0, NULL);
     // ImageRotateCCW(image);
   } else {
-    v_setstr(retval, "Invalid input: ImageRotateCCW");
+    error(retval, "ImageRotateCCW", 1);
   }
   return result;
 }
@@ -4950,7 +4990,7 @@ int cmd_imagerotatecw(int argc, slib_par_t *params, var_t *retval) {
     // auto image = get_param_str(argc, params, 0, NULL);
     // ImageRotateCW(image);
   } else {
-    v_setstr(retval, "Invalid input: ImageRotateCW");
+    error(retval, "ImageRotateCW", 1);
   }
   return result;
 }
@@ -4962,7 +5002,7 @@ int cmd_imagetopot(int argc, slib_par_t *params, var_t *retval) {
     // auto fill = get_param_str(argc, params, 1, NULL);
     // ImageToPOT(image, fill);
   } else {
-    v_setstr(retval, "Invalid input: ImageToPOT");
+    error(retval, "ImageToPOT", 2);
   }
   return result;
 }
@@ -4972,7 +5012,7 @@ int cmd_initaudiodevice(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     InitAudioDevice();
   } else {
-    v_setstr(retval, "Invalid input: InitAudioDevice");
+    error(retval, "InitAudioDevice", 0);
   }
   return result;
 }
@@ -4982,7 +5022,7 @@ int cmd_initvrsimulator(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     InitVrSimulator();
   } else {
-    v_setstr(retval, "Invalid input: InitVrSimulator");
+    error(retval, "InitVrSimulator", 0);
   }
   return result;
 }
@@ -4995,7 +5035,7 @@ int cmd_initwindow(int argc, slib_par_t *params, var_t *retval) {
     auto title = get_param_str(argc, params, 2, NULL);
     InitWindow(width, height, title);
   } else {
-    v_setstr(retval, "Invalid input: InitWindow");
+    error(retval, "InitWindow", 3);
   }
   return result;
 }
@@ -5005,7 +5045,7 @@ int cmd_maximizewindow(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     MaximizeWindow();
   } else {
-    v_setstr(retval, "Invalid input: MaximizeWindow");
+    error(retval, "MaximizeWindow", 0);
   }
   return result;
 }
@@ -5016,7 +5056,7 @@ int cmd_meshbinormals(int argc, slib_par_t *params, var_t *retval) {
     // auto mesh = get_param_str(argc, params, 0, NULL);
     // MeshBinormals(mesh);
   } else {
-    v_setstr(retval, "Invalid input: MeshBinormals");
+    error(retval, "MeshBinormals", 1);
   }
   return result;
 }
@@ -5027,7 +5067,7 @@ int cmd_meshnormalssmooth(int argc, slib_par_t *params, var_t *retval) {
     // auto mesh = get_param_str(argc, params, 0, NULL);
     // MeshNormalsSmooth(mesh);
   } else {
-    v_setstr(retval, "Invalid input: MeshNormalsSmooth");
+    error(retval, "MeshNormalsSmooth", 1);
   }
   return result;
 }
@@ -5038,7 +5078,7 @@ int cmd_meshtangents(int argc, slib_par_t *params, var_t *retval) {
     // auto mesh = get_param_str(argc, params, 0, NULL);
     // MeshTangents(mesh);
   } else {
-    v_setstr(retval, "Invalid input: MeshTangents");
+    error(retval, "MeshTangents", 1);
   }
   return result;
 }
@@ -5049,7 +5089,7 @@ int cmd_openurl(int argc, slib_par_t *params, var_t *retval) {
     // auto url = get_param_str(argc, params, 0, NULL);
     // OpenURL(url);
   } else {
-    v_setstr(retval, "Invalid input: OpenURL");
+    error(retval, "OpenURL", 1);
   }
   return result;
 }
@@ -5060,7 +5100,7 @@ int cmd_pauseaudiostream(int argc, slib_par_t *params, var_t *retval) {
     // auto stream = get_param_str(argc, params, 0, NULL);
     // PauseAudioStream(stream);
   } else {
-    v_setstr(retval, "Invalid input: PauseAudioStream");
+    error(retval, "PauseAudioStream", 1);
   }
   return result;
 }
@@ -5071,7 +5111,7 @@ int cmd_pausemusicstream(int argc, slib_par_t *params, var_t *retval) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     PauseMusicStream(music);
   } else {
-    v_setstr(retval, "Invalid input: PauseMusicStream");
+    error(retval, "PauseMusicStream", 1);
   }
   return result;
 }
@@ -5082,7 +5122,7 @@ int cmd_pausesound(int argc, slib_par_t *params, var_t *retval) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     PauseSound(sound);
   } else {
-    v_setstr(retval, "Invalid input: PauseSound");
+    error(retval, "PauseSound", 1);
   }
   return result;
 }
@@ -5093,7 +5133,7 @@ int cmd_playaudiostream(int argc, slib_par_t *params, var_t *retval) {
     // auto stream = get_param_str(argc, params, 0, NULL);
     // PlayAudioStream(stream);
   } else {
-    v_setstr(retval, "Invalid input: PlayAudioStream");
+    error(retval, "PlayAudioStream", 1);
   }
   return result;
 }
@@ -5104,7 +5144,7 @@ int cmd_playmusicstream(int argc, slib_par_t *params, var_t *retval) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     PlayMusicStream(music);
   } else {
-    v_setstr(retval, "Invalid input: PlayMusicStream");
+    error(retval, "PlayMusicStream", 1);
   }
   return result;
 }
@@ -5115,7 +5155,7 @@ int cmd_playsound(int argc, slib_par_t *params, var_t *retval) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     PlaySound(sound);
   } else {
-    v_setstr(retval, "Invalid input: PlaySound");
+    error(retval, "PlaySound", 1);
   }
   return result;
 }
@@ -5126,7 +5166,7 @@ int cmd_playsoundmulti(int argc, slib_par_t *params, var_t *retval) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     PlaySoundMulti(sound);
   } else {
-    v_setstr(retval, "Invalid input: PlaySoundMulti");
+    error(retval, "PlaySoundMulti", 1);
   }
   return result;
 }
@@ -5136,7 +5176,7 @@ int cmd_restorewindow(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     RestoreWindow();
   } else {
-    v_setstr(retval, "Invalid input: RestoreWindow");
+    error(retval, "RestoreWindow", 0);
   }
   return result;
 }
@@ -5147,7 +5187,7 @@ int cmd_resumeaudiostream(int argc, slib_par_t *params, var_t *retval) {
     // auto stream = get_param_str(argc, params, 0, NULL);
     // ResumeAudioStream(stream);
   } else {
-    v_setstr(retval, "Invalid input: ResumeAudioStream");
+    error(retval, "ResumeAudioStream", 1);
   }
   return result;
 }
@@ -5158,7 +5198,7 @@ int cmd_resumemusicstream(int argc, slib_par_t *params, var_t *retval) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     ResumeMusicStream(music);
   } else {
-    v_setstr(retval, "Invalid input: ResumeMusicStream");
+    error(retval, "ResumeMusicStream", 1);
   }
   return result;
 }
@@ -5169,7 +5209,7 @@ int cmd_resumesound(int argc, slib_par_t *params, var_t *retval) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     ResumeSound(sound);
   } else {
-    v_setstr(retval, "Invalid input: ResumeSound");
+    error(retval, "ResumeSound", 1);
   }
   return result;
 }
@@ -5182,7 +5222,7 @@ int cmd_savefiledata(int argc, slib_par_t *params, var_t *retval) {
     // auto bytesToWrite = get_param_str(argc, params, 2, NULL);
     // SaveFileData(fileName, data, bytesToWrite);
   } else {
-    v_setstr(retval, "Invalid input: SaveFileData");
+    error(retval, "SaveFileData", 3);
   }
   return result;
 }
@@ -5194,7 +5234,7 @@ int cmd_savefiletext(int argc, slib_par_t *params, var_t *retval) {
     // auto text = get_param_str(argc, params, 1, NULL);
     // SaveFileText(fileName, text);
   } else {
-    v_setstr(retval, "Invalid input: SaveFileText");
+    error(retval, "SaveFileText", 2);
   }
   return result;
 }
@@ -5206,7 +5246,7 @@ int cmd_savestoragevalue(int argc, slib_par_t *params, var_t *retval) {
     // auto value = get_param_str(argc, params, 1, NULL);
     // SaveStorageValue(position, value);
   } else {
-    v_setstr(retval, "Invalid input: SaveStorageValue");
+    error(retval, "SaveStorageValue", 2);
   }
   return result;
 }
@@ -5217,7 +5257,7 @@ int cmd_setaudiostreambuffersizedefault(int argc, slib_par_t *params, var_t *ret
     // auto size = get_param_str(argc, params, 0, NULL);
     // SetAudioStreamBufferSizeDefault(size);
   } else {
-    v_setstr(retval, "Invalid input: SetAudioStreamBufferSizeDefault");
+    error(retval, "SetAudioStreamBufferSizeDefault", 1);
   }
   return result;
 }
@@ -5229,7 +5269,7 @@ int cmd_setaudiostreampitch(int argc, slib_par_t *params, var_t *retval) {
     // auto pitch = get_param_str(argc, params, 1, NULL);
     // SetAudioStreamPitch(stream, pitch);
   } else {
-    v_setstr(retval, "Invalid input: SetAudioStreamPitch");
+    error(retval, "SetAudioStreamPitch", 2);
   }
   return result;
 }
@@ -5241,7 +5281,7 @@ int cmd_setaudiostreamvolume(int argc, slib_par_t *params, var_t *retval) {
     // auto volume = get_param_str(argc, params, 1, NULL);
     // SetAudioStreamVolume(stream, volume);
   } else {
-    v_setstr(retval, "Invalid input: SetAudioStreamVolume");
+    error(retval, "SetAudioStreamVolume", 2);
   }
   return result;
 }
@@ -5252,7 +5292,7 @@ int cmd_setcameraaltcontrol(int argc, slib_par_t *params, var_t *retval) {
     // auto altKey = get_param_str(argc, params, 0, NULL);
     // SetCameraAltControl(altKey);
   } else {
-    v_setstr(retval, "Invalid input: SetCameraAltControl");
+    error(retval, "SetCameraAltControl", 1);
   }
   return result;
 }
@@ -5263,7 +5303,7 @@ int cmd_setcameramode(int argc, slib_par_t *params, var_t *retval) {
     auto mode = get_param_int(argc, params, 1, 0);
     SetCameraMode(get_camera_3d(argc, params, 0), mode);
   } else {
-    v_setstr(retval, "Invalid input: SetCameraMode");
+    error(retval, "SetCameraMode", 2);
   }
   return result;
 }
@@ -5279,7 +5319,7 @@ int cmd_setcameramovecontrols(int argc, slib_par_t *params, var_t *retval) {
     // auto downKey = get_param_str(argc, params, 5, NULL);
     // SetCameraMoveControls(frontKey, backKey, rightKey, leftKey, upKey, downKey);
   } else {
-    v_setstr(retval, "Invalid input: SetCameraMoveControls");
+    error(retval, "SetCameraMoveControls", 6);
   }
   return result;
 }
@@ -5290,7 +5330,7 @@ int cmd_setcamerapancontrol(int argc, slib_par_t *params, var_t *retval) {
     // auto panKey = get_param_str(argc, params, 0, NULL);
     // SetCameraPanControl(panKey);
   } else {
-    v_setstr(retval, "Invalid input: SetCameraPanControl");
+    error(retval, "SetCameraPanControl", 1);
   }
   return result;
 }
@@ -5301,7 +5341,7 @@ int cmd_setcamerasmoothzoomcontrol(int argc, slib_par_t *params, var_t *retval) 
     // auto szKey = get_param_str(argc, params, 0, NULL);
     // SetCameraSmoothZoomControl(szKey);
   } else {
-    v_setstr(retval, "Invalid input: SetCameraSmoothZoomControl");
+    error(retval, "SetCameraSmoothZoomControl", 1);
   }
   return result;
 }
@@ -5312,7 +5352,7 @@ int cmd_setclipboardtext(int argc, slib_par_t *params, var_t *retval) {
     // auto text = get_param_str(argc, params, 0, NULL);
     // SetClipboardText(text);
   } else {
-    v_setstr(retval, "Invalid input: SetClipboardText");
+    error(retval, "SetClipboardText", 1);
   }
   return result;
 }
@@ -5323,7 +5363,7 @@ int cmd_setconfigflags(int argc, slib_par_t *params, var_t *retval) {
     auto flags = get_param_int(argc, params, 0, 0);
     SetConfigFlags(flags);
   } else {
-    v_setstr(retval, "Invalid input: SetConfigFlags");
+    error(retval, "SetConfigFlags", 1);
   }
   return result;
 }
@@ -5334,7 +5374,7 @@ int cmd_setexitkey(int argc, slib_par_t *params, var_t *retval) {
     // auto key = get_param_str(argc, params, 0, NULL);
     // SetExitKey(key);
   } else {
-    v_setstr(retval, "Invalid input: SetExitKey");
+    error(retval, "SetExitKey", 1);
   }
   return result;
 }
@@ -5345,7 +5385,7 @@ int cmd_setgesturesenabled(int argc, slib_par_t *params, var_t *retval) {
     // auto gestureFlags = get_param_str(argc, params, 0, NULL);
     // SetGesturesEnabled(gestureFlags);
   } else {
-    v_setstr(retval, "Invalid input: SetGesturesEnabled");
+    error(retval, "SetGesturesEnabled", 1);
   }
   return result;
 }
@@ -5356,7 +5396,7 @@ int cmd_setmastervolume(int argc, slib_par_t *params, var_t *retval) {
     // auto volume = get_param_str(argc, params, 0, NULL);
     // SetMasterVolume(volume);
   } else {
-    v_setstr(retval, "Invalid input: SetMasterVolume");
+    error(retval, "SetMasterVolume", 1);
   }
   return result;
 }
@@ -5369,7 +5409,7 @@ int cmd_setmaterialtexture(int argc, slib_par_t *params, var_t *retval) {
     // auto texture = get_param_str(argc, params, 2, NULL);
     // SetMaterialTexture(material, mapType, texture);
   } else {
-    v_setstr(retval, "Invalid input: SetMaterialTexture");
+    error(retval, "SetMaterialTexture", 3);
   }
   return result;
 }
@@ -5380,7 +5420,7 @@ int cmd_setmatrixmodelview(int argc, slib_par_t *params, var_t *retval) {
     // auto view = get_param_str(argc, params, 0, NULL);
     // SetMatrixModelview(view);
   } else {
-    v_setstr(retval, "Invalid input: SetMatrixModelview");
+    error(retval, "SetMatrixModelview", 1);
   }
   return result;
 }
@@ -5391,7 +5431,7 @@ int cmd_setmatrixprojection(int argc, slib_par_t *params, var_t *retval) {
     // auto proj = get_param_str(argc, params, 0, NULL);
     // SetMatrixProjection(proj);
   } else {
-    v_setstr(retval, "Invalid input: SetMatrixProjection");
+    error(retval, "SetMatrixProjection", 1);
   }
   return result;
 }
@@ -5404,11 +5444,11 @@ int cmd_setmodeldiffusetexture(int argc, slib_par_t *params, var_t *retval) {
     if (modelId != -1 && textureId != -1) {
       _modelMap.at(modelId).materials[0].maps[MAP_DIFFUSE].texture = _textureMap.at(textureId);
     } else {
-      v_setstr(retval, "Invalid input: Model not found");
+      error_model(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: SetModelDiffuseTexture");
+    error(retval, "SetModelDiffuseTexture", 2);
   }
   return result;
 }
@@ -5421,7 +5461,7 @@ int cmd_setmodelmeshmaterial(int argc, slib_par_t *params, var_t *retval) {
     // auto materialId = get_param_str(argc, params, 2, NULL);
     // SetModelMeshMaterial(model, meshId, materialId);
   } else {
-    v_setstr(retval, "Invalid input: SetModelMeshMaterial");
+    error(retval, "SetModelMeshMaterial", 3);
   }
   return result;
 }
@@ -5433,7 +5473,7 @@ int cmd_setmouseoffset(int argc, slib_par_t *params, var_t *retval) {
     // auto offsetY = get_param_str(argc, params, 1, NULL);
     // SetMouseOffset(offsetX, offsetY);
   } else {
-    v_setstr(retval, "Invalid input: SetMouseOffset");
+    error(retval, "SetMouseOffset", 2);
   }
   return result;
 }
@@ -5445,7 +5485,7 @@ int cmd_setmouseposition(int argc, slib_par_t *params, var_t *retval) {
     // auto y = get_param_str(argc, params, 1, NULL);
     // SetMousePosition(x, y);
   } else {
-    v_setstr(retval, "Invalid input: SetMousePosition");
+    error(retval, "SetMousePosition", 2);
   }
   return result;
 }
@@ -5457,7 +5497,7 @@ int cmd_setmousescale(int argc, slib_par_t *params, var_t *retval) {
     // auto scaleY = get_param_str(argc, params, 1, NULL);
     // SetMouseScale(scaleX, scaleY);
   } else {
-    v_setstr(retval, "Invalid input: SetMouseScale");
+    error(retval, "SetMouseScale", 2);
   }
   return result;
 }
@@ -5469,7 +5509,7 @@ int cmd_setmusicpitch(int argc, slib_par_t *params, var_t *retval) {
     auto pitch = get_param_int(argc, params, 1, 0);
     SetMusicPitch(music, pitch);
   } else {
-    v_setstr(retval, "Invalid input: SetMusicPitch");
+    error(retval, "SetMusicPitch", 2);
   }
   return result;
 }
@@ -5481,7 +5521,7 @@ int cmd_setmusicvolume(int argc, slib_par_t *params, var_t *retval) {
     auto volume = get_param_int(argc, params, 1, 0);
     SetMusicVolume(music, volume);
   } else {
-    v_setstr(retval, "Invalid input: SetMusicVolume");
+    error(retval, "SetMusicVolume", 2);
   }
   return result;
 }
@@ -5494,7 +5534,7 @@ int cmd_setpixelcolor(int argc, slib_par_t *params, var_t *retval) {
     // auto format = get_param_str(argc, params, 2, NULL);
     // SetPixelColor(dstPtr, color, format);
   } else {
-    v_setstr(retval, "Invalid input: SetPixelColor");
+    error(retval, "SetPixelColor", 3);
   }
   return result;
 }
@@ -5508,7 +5548,7 @@ int cmd_setshadervalue(int argc, slib_par_t *params, var_t *retval) {
     // auto uniformType = get_param_str(argc, params, 3, NULL);
     // SetShaderValue(shader, uniformLoc, value, uniformType);
   } else {
-    v_setstr(retval, "Invalid input: SetShaderValue");
+    error(retval, "SetShaderValue", 4);
   }
   return result;
 }
@@ -5521,7 +5561,7 @@ int cmd_setshadervaluematrix(int argc, slib_par_t *params, var_t *retval) {
     // auto mat = get_param_str(argc, params, 2, NULL);
     // SetShaderValueMatrix(shader, uniformLoc, mat);
   } else {
-    v_setstr(retval, "Invalid input: SetShaderValueMatrix");
+    error(retval, "SetShaderValueMatrix", 3);
   }
   return result;
 }
@@ -5534,7 +5574,7 @@ int cmd_setshadervaluetexture(int argc, slib_par_t *params, var_t *retval) {
     // auto texture = get_param_str(argc, params, 2, NULL);
     // SetShaderValueTexture(shader, uniformLoc, texture);
   } else {
-    v_setstr(retval, "Invalid input: SetShaderValueTexture");
+    error(retval, "SetShaderValueTexture", 3);
   }
   return result;
 }
@@ -5549,7 +5589,7 @@ int cmd_setshadervaluev(int argc, slib_par_t *params, var_t *retval) {
     // auto count = get_param_str(argc, params, 4, NULL);
     // SetShaderValueV(shader, uniformLoc, value, uniformType, count);
   } else {
-    v_setstr(retval, "Invalid input: SetShaderValueV");
+    error(retval, "SetShaderValueV", 5);
   }
   return result;
 }
@@ -5561,7 +5601,7 @@ int cmd_setshapestexture(int argc, slib_par_t *params, var_t *retval) {
     // auto source = get_param_str(argc, params, 1, NULL);
     // SetShapesTexture(texture, source);
   } else {
-    v_setstr(retval, "Invalid input: SetShapesTexture");
+    error(retval, "SetShapesTexture", 2);
   }
   return result;
 }
@@ -5573,7 +5613,7 @@ int cmd_setsoundpitch(int argc, slib_par_t *params, var_t *retval) {
     auto pitch = get_param_int(argc, params, 1, 0);
     SetSoundPitch(sound, pitch);
   } else {
-    v_setstr(retval, "Invalid input: SetSoundPitch");
+    error(retval, "SetSoundPitch", 2);
   }
   return result;
 }
@@ -5585,7 +5625,7 @@ int cmd_setsoundvolume(int argc, slib_par_t *params, var_t *retval) {
     auto volume = get_param_int(argc, params, 1, 0);
     SetSoundVolume(sound, volume);
   } else {
-    v_setstr(retval, "Invalid input: SetSoundVolume");
+    error(retval, "SetSoundVolume", 2);
   }
   return result;
 }
@@ -5596,7 +5636,7 @@ int cmd_settargetfps(int argc, slib_par_t *params, var_t *retval) {
     auto fps = get_param_int(argc, params, 0, 50);
     SetTargetFPS(fps);
   } else {
-    v_setstr(retval, "Invalid input: SetTargetFPS");
+    error(retval, "SetTargetFPS", 1);
   }
   return result;
 }
@@ -5608,7 +5648,7 @@ int cmd_settexturefilter(int argc, slib_par_t *params, var_t *retval) {
     // auto filterMode = get_param_str(argc, params, 1, NULL);
     // SetTextureFilter(texture, filterMode);
   } else {
-    v_setstr(retval, "Invalid input: SetTextureFilter");
+    error(retval, "SetTextureFilter", 2);
   }
   return result;
 }
@@ -5620,7 +5660,7 @@ int cmd_settexturewrap(int argc, slib_par_t *params, var_t *retval) {
     // auto wrapMode = get_param_str(argc, params, 1, NULL);
     // SetTextureWrap(texture, wrapMode);
   } else {
-    v_setstr(retval, "Invalid input: SetTextureWrap");
+    error(retval, "SetTextureWrap", 2);
   }
   return result;
 }
@@ -5631,7 +5671,7 @@ int cmd_settracelogcallback(int argc, slib_par_t *params, var_t *retval) {
     // auto callback = get_param_str(argc, params, 0, NULL);
     // SetTraceLogCallback(callback);
   } else {
-    v_setstr(retval, "Invalid input: SetTraceLogCallback");
+    error(retval, "SetTraceLogCallback", 1);
   }
   return result;
 }
@@ -5642,7 +5682,7 @@ int cmd_settracelogexit(int argc, slib_par_t *params, var_t *retval) {
     // auto logType = get_param_str(argc, params, 0, NULL);
     // SetTraceLogExit(logType);
   } else {
-    v_setstr(retval, "Invalid input: SetTraceLogExit");
+    error(retval, "SetTraceLogExit", 1);
   }
   return result;
 }
@@ -5653,7 +5693,7 @@ int cmd_settraceloglevel(int argc, slib_par_t *params, var_t *retval) {
     auto logType = get_param_int(argc, params, 0, 0);
     SetTraceLogLevel(logType);
   } else {
-    v_setstr(retval, "Invalid input: SetTraceLogLevel");
+    error(retval, "SetTraceLogLevel", 1);
   }
   return result;
 }
@@ -5665,7 +5705,7 @@ int cmd_setvrconfiguration(int argc, slib_par_t *params, var_t *retval) {
     // auto distortion = get_param_str(argc, params, 1, NULL);
     // SetVrConfiguration(info, distortion);
   } else {
-    v_setstr(retval, "Invalid input: SetVrConfiguration");
+    error(retval, "SetVrConfiguration", 2);
   }
   return result;
 }
@@ -5676,7 +5716,7 @@ int cmd_setwindowicon(int argc, slib_par_t *params, var_t *retval) {
     // auto image = get_param_str(argc, params, 0, NULL);
     // SetWindowIcon(image);
   } else {
-    v_setstr(retval, "Invalid input: SetWindowIcon");
+    error(retval, "SetWindowIcon", 1);
   }
   return result;
 }
@@ -5688,7 +5728,7 @@ int cmd_setwindowminsize(int argc, slib_par_t *params, var_t *retval) {
     // auto height = get_param_str(argc, params, 1, NULL);
     // SetWindowMinSize(width, height);
   } else {
-    v_setstr(retval, "Invalid input: SetWindowMinSize");
+    error(retval, "SetWindowMinSize", 2);
   }
   return result;
 }
@@ -5699,7 +5739,7 @@ int cmd_setwindowmonitor(int argc, slib_par_t *params, var_t *retval) {
     // auto monitor = get_param_str(argc, params, 0, NULL);
     // SetWindowMonitor(monitor);
   } else {
-    v_setstr(retval, "Invalid input: SetWindowMonitor");
+    error(retval, "SetWindowMonitor", 1);
   }
   return result;
 }
@@ -5711,7 +5751,7 @@ int cmd_setwindowposition(int argc, slib_par_t *params, var_t *retval) {
     // auto y = get_param_str(argc, params, 1, NULL);
     // SetWindowPosition(x, y);
   } else {
-    v_setstr(retval, "Invalid input: SetWindowPosition");
+    error(retval, "SetWindowPosition", 2);
   }
   return result;
 }
@@ -5723,7 +5763,7 @@ int cmd_setwindowsize(int argc, slib_par_t *params, var_t *retval) {
     auto height = get_param_int(argc, params, 1, 480);
     SetWindowSize(width, height);
   } else {
-    v_setstr(retval, "Invalid input: SetWindowSize");
+    error(retval, "SetWindowSize", 2);
   }
   return result;
 }
@@ -5734,7 +5774,7 @@ int cmd_setwindowtitle(int argc, slib_par_t *params, var_t *retval) {
     auto title = get_param_str(argc, params, 0, NULL);
     SetWindowTitle(title);
   } else {
-    v_setstr(retval, "Invalid input: SetWindowTitle");
+    error(retval, "SetWindowTitle", 1);
   }
   return result;
 }
@@ -5744,7 +5784,7 @@ int cmd_showcursor(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     ShowCursor();
   } else {
-    v_setstr(retval, "Invalid input: ShowCursor");
+    error(retval, "ShowCursor", 0);
   }
   return result;
 }
@@ -5755,7 +5795,7 @@ int cmd_stopaudiostream(int argc, slib_par_t *params, var_t *retval) {
     // auto stream = get_param_str(argc, params, 0, NULL);
     // StopAudioStream(stream);
   } else {
-    v_setstr(retval, "Invalid input: StopAudioStream");
+    error(retval, "StopAudioStream", 1);
   }
   return result;
 }
@@ -5766,7 +5806,7 @@ int cmd_stopmusicstream(int argc, slib_par_t *params, var_t *retval) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     StopMusicStream(music);
   } else {
-    v_setstr(retval, "Invalid input: StopMusicStream");
+    error(retval, "StopMusicStream", 1);
   }
   return result;
 }
@@ -5777,7 +5817,7 @@ int cmd_stopsound(int argc, slib_par_t *params, var_t *retval) {
     auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
     StopSound(sound);
   } else {
-    v_setstr(retval, "Invalid input: StopSound");
+    error(retval, "StopSound", 1);
   }
   return result;
 }
@@ -5787,7 +5827,7 @@ int cmd_stopsoundmulti(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     StopSoundMulti();
   } else {
-    v_setstr(retval, "Invalid input: StopSoundMulti");
+    error(retval, "StopSoundMulti", 0);
   }
   return result;
 }
@@ -5798,7 +5838,7 @@ int cmd_takescreenshot(int argc, slib_par_t *params, var_t *retval) {
     // auto fileName = get_param_str(argc, params, 0, NULL);
     // TakeScreenshot(fileName);
   } else {
-    v_setstr(retval, "Invalid input: TakeScreenshot");
+    error(retval, "TakeScreenshot", 1);
   }
   return result;
 }
@@ -5811,7 +5851,7 @@ int cmd_textappend(int argc, slib_par_t *params, var_t *retval) {
     // auto position = get_param_str(argc, params, 2, NULL);
     // TextAppend(text, append, position);
   } else {
-    v_setstr(retval, "Invalid input: TextAppend");
+    error(retval, "TextAppend", 3);
   }
   return result;
 }
@@ -5821,7 +5861,7 @@ int cmd_togglefullscreen(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     ToggleFullscreen();
   } else {
-    v_setstr(retval, "Invalid input: ToggleFullscreen");
+    error(retval, "ToggleFullscreen", 0);
   }
   return result;
 }
@@ -5831,7 +5871,7 @@ int cmd_togglevrmode(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     ToggleVrMode();
   } else {
-    v_setstr(retval, "Invalid input: ToggleVrMode");
+    error(retval, "ToggleVrMode", 0);
   }
   return result;
 }
@@ -5843,7 +5883,7 @@ int cmd_tracelog(int argc, slib_par_t *params, var_t *retval) {
     // auto text = get_param_str(argc, params, 1, NULL);
     // TraceLog(logType, text);
   } else {
-    v_setstr(retval, "Invalid input: TraceLog");
+    error(retval, "TraceLog", 2);
   }
   return result;
 }
@@ -5853,7 +5893,7 @@ int cmd_undecoratewindow(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     UndecorateWindow();
   } else {
-    v_setstr(retval, "Invalid input: UndecorateWindow");
+    error(retval, "UndecorateWindow", 0);
   }
   return result;
 }
@@ -5863,7 +5903,7 @@ int cmd_unhidewindow(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     UnhideWindow();
   } else {
-    v_setstr(retval, "Invalid input: UnhideWindow");
+    error(retval, "UnhideWindow", 0);
   }
   return result;
 }
@@ -5874,7 +5914,7 @@ int cmd_unloadfont(int argc, slib_par_t *params, var_t *retval) {
     // auto font = get_param_str(argc, params, 0, NULL);
     // UnloadFont(font);
   } else {
-    v_setstr(retval, "Invalid input: UnloadFont");
+    error(retval, "UnloadFont", 1);
   }
   return result;
 }
@@ -5885,7 +5925,7 @@ int cmd_unloadimage(int argc, slib_par_t *params, var_t *retval) {
     // auto image = get_param_str(argc, params, 0, NULL);
     // UnloadImage(image);
   } else {
-    v_setstr(retval, "Invalid input: UnloadImage");
+    error(retval, "UnloadImage", 1);
   }
   return result;
 }
@@ -5896,7 +5936,7 @@ int cmd_unloadmaterial(int argc, slib_par_t *params, var_t *retval) {
     // auto material = get_param_str(argc, params, 0, NULL);
     // UnloadMaterial(material);
   } else {
-    v_setstr(retval, "Invalid input: UnloadMaterial");
+    error(retval, "UnloadMaterial", 1);
   }
   return result;
 }
@@ -5907,7 +5947,7 @@ int cmd_unloadmesh(int argc, slib_par_t *params, var_t *retval) {
     // auto mesh = get_param_str(argc, params, 0, NULL);
     // UnloadMesh(mesh);
   } else {
-    v_setstr(retval, "Invalid input: UnloadMesh");
+    error(retval, "UnloadMesh", 1);
   }
   return result;
 }
@@ -5920,11 +5960,11 @@ int cmd_unloadmodel(int argc, slib_par_t *params, var_t *retval) {
       UnloadModel(_modelMap.at(id));
       _modelMap.erase(id);
     } else {
-      v_setstr(retval, "Invalid input: Model not found");
+      error_model(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: UnloadModel");
+    error(retval, "UnloadModel", 1);
   }
   return result;
 }
@@ -5935,7 +5975,7 @@ int cmd_unloadmodelanimation(int argc, slib_par_t *params, var_t *retval) {
     // auto anim = get_param_str(argc, params, 0, NULL);
     // UnloadModelAnimation(anim);
   } else {
-    v_setstr(retval, "Invalid input: UnloadModelAnimation");
+    error(retval, "UnloadModelAnimation", 1);
   }
   return result;
 }
@@ -5948,7 +5988,7 @@ int cmd_unloadmusicstream(int argc, slib_par_t *params, var_t *retval) {
     UnloadMusicStream(music);
     _musicMap.erase(id);
   } else {
-    v_setstr(retval, "Invalid input: UnloadMusicStream");
+    error(retval, "UnloadMusicStream", 1);
   }
   return result;
 }
@@ -5961,11 +6001,11 @@ int cmd_unloadrendertexture(int argc, slib_par_t *params, var_t *retval) {
       UnloadRenderTexture(_renderMap.at(id));
       _renderMap.erase(id);
     } else {
-      v_setstr(retval, "Invalid input: RenderTexture not found");
+      error_texture(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: UnloadRenderTexture");
+    error(retval, "UnloadRenderTexture", 1);
   }
   return result;
 }
@@ -5975,7 +6015,7 @@ int cmd_unloadshader(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     UnloadShader(get_param_shader(argc, params, 0));
   } else {
-    v_setstr(retval, "Invalid input: UnloadShader");
+    error(retval, "UnloadShader", 1);
   }
   return result;
 }
@@ -5988,7 +6028,7 @@ int cmd_unloadsound(int argc, slib_par_t *params, var_t *retval) {
     UnloadSound(sound);
     _soundMap.erase(id);
   } else {
-    v_setstr(retval, "Invalid input: UnloadSound");
+    error(retval, "UnloadSound", 1);
   }
   return result;
 }
@@ -6001,11 +6041,11 @@ int cmd_unloadtexture(int argc, slib_par_t *params, var_t *retval) {
       UnloadTexture(_textureMap.at(id));
       _textureMap.erase(id);
     } else {
-      v_setstr(retval, "Invalid input: Texture not found");
+      error_texture(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: UnloadTexture");
+    error(retval, "UnloadTexture", 1);
   }
   return result;
 }
@@ -6016,7 +6056,7 @@ int cmd_unloadwave(int argc, slib_par_t *params, var_t *retval) {
     // auto wave = get_param_str(argc, params, 0, NULL);
     // UnloadWave(wave);
   } else {
-    v_setstr(retval, "Invalid input: UnloadWave");
+    error(retval, "UnloadWave", 1);
   }
   return result;
 }
@@ -6029,7 +6069,7 @@ int cmd_updateaudiostream(int argc, slib_par_t *params, var_t *retval) {
     // auto samplesCount = get_param_str(argc, params, 2, NULL);
     // UpdateAudioStream(stream, data, samplesCount);
   } else {
-    v_setstr(retval, "Invalid input: UpdateAudioStream");
+    error(retval, "UpdateAudioStream", 3);
   }
   return result;
 }
@@ -6061,7 +6101,7 @@ int cmd_updatecamera(int argc, slib_par_t *params, var_t *retval) {
       }
     }
   } else {
-    v_setstr(retval, "Invalid input: UpdateCamera");
+    error(retval, "UpdateCamera", 1);
   }
   return result;
 }
@@ -6074,7 +6114,7 @@ int cmd_updatemodelanimation(int argc, slib_par_t *params, var_t *retval) {
     // auto frame = get_param_str(argc, params, 2, NULL);
     // UpdateModelAnimation(model, anim, frame);
   } else {
-    v_setstr(retval, "Invalid input: UpdateModelAnimation");
+    error(retval, "UpdateModelAnimation", 3);
   }
   return result;
 }
@@ -6085,7 +6125,7 @@ int cmd_updatemusicstream(int argc, slib_par_t *params, var_t *retval) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
     UpdateMusicStream(music);
   } else {
-    v_setstr(retval, "Invalid input: UpdateMusicStream");
+    error(retval, "UpdateMusicStream", 1);
   }
   return result;
 }
@@ -6098,7 +6138,7 @@ int cmd_updatesound(int argc, slib_par_t *params, var_t *retval) {
     //auto samplesCount = get_param_int(argc, params, 2, 0);
     //UpdateSound(sound, data, samplesCount);
   } else {
-    v_setstr(retval, "Invalid input: UpdateSound");
+    error(retval, "UpdateSound", 3);
   }
   return result;
 }
@@ -6114,11 +6154,11 @@ int cmd_updatetexture(int argc, slib_par_t *params, var_t *retval) {
       // cleanup for rl.GetImageData(img)
       free(pixels);
     } else {
-      v_setstr(retval, "Invalid input: Texture not found");
+      error_texture(retval);
       result = 0;
     }
   } else {
-    v_setstr(retval, "Invalid input: UpdateTexture");
+    error(retval, "UpdateTexture", 2);
   }
   return result;
 }
@@ -6131,7 +6171,7 @@ int cmd_updatetexturerec(int argc, slib_par_t *params, var_t *retval) {
     // auto pixels = get_param_str(argc, params, 2, NULL);
     // UpdateTextureRec(texture, rec, pixels);
   } else {
-    v_setstr(retval, "Invalid input: UpdateTextureRec");
+    error(retval, "UpdateTextureRec", 3);
   }
   return result;
 }
@@ -6142,7 +6182,7 @@ int cmd_updatevrtracking(int argc, slib_par_t *params, var_t *retval) {
     // auto camera = get_param_str(argc, params, 0, NULL);
     // UpdateVrTracking(camera);
   } else {
-    v_setstr(retval, "Invalid input: UpdateVrTracking");
+    error(retval, "UpdateVrTracking", 1);
   }
   return result;
 }
@@ -6155,7 +6195,7 @@ int cmd_wavecrop(int argc, slib_par_t *params, var_t *retval) {
     // auto finalSample = get_param_str(argc, params, 2, NULL);
     // WaveCrop(wave, initSample, finalSample);
   } else {
-    v_setstr(retval, "Invalid input: WaveCrop");
+    error(retval, "WaveCrop", 3);
   }
   return result;
 }
@@ -6169,7 +6209,7 @@ int cmd_waveformat(int argc, slib_par_t *params, var_t *retval) {
     // auto channels = get_param_str(argc, params, 3, NULL);
     // WaveFormat(wave, sampleRate, sampleSize, channels);
   } else {
-    v_setstr(retval, "Invalid input: WaveFormat");
+    error(retval, "WaveFormat", 4);
   }
   return result;
 }
@@ -6201,15 +6241,15 @@ API lib_func[] = {
   // {"DIRECTORYEXISTS", cmd_directoryexists},
   {"FADE", cmd_fade},
   // {"FILEEXISTS", cmd_fileexists},
-  // {"GENIMAGECELLULAR", cmd_genimagecellular},
-  // {"GENIMAGECHECKED", cmd_genimagechecked},
-  // {"GENIMAGECOLOR", cmd_genimagecolor},
+  {"GENIMAGECELLULAR", cmd_genimagecellular},
+  {"GENIMAGECHECKED", cmd_genimagechecked},
+  {"GENIMAGECOLOR", cmd_genimagecolor},
   // {"GENIMAGEFONTATLAS", cmd_genimagefontatlas},
-  // {"GENIMAGEGRADIENTH", cmd_genimagegradienth},
-  // {"GENIMAGEGRADIENTRADIAL", cmd_genimagegradientradial},
-  // {"GENIMAGEGRADIENTV", cmd_genimagegradientv},
-  // {"GENIMAGEPERLINNOISE", cmd_genimageperlinnoise},
-  // {"GENIMAGEWHITENOISE", cmd_genimagewhitenoise},
+  {"GENIMAGEGRADIENTH", cmd_genimagegradienth},
+  {"GENIMAGEGRADIENTRADIAL", cmd_genimagegradientradial},
+  {"GENIMAGEGRADIENTV", cmd_genimagegradientv},
+  {"GENIMAGEPERLINNOISE", cmd_genimageperlinnoise},
+  {"GENIMAGEWHITENOISE", cmd_genimagewhitenoise},
   // {"GENMESHCUBE", cmd_genmeshcube},
   // {"GENMESHCUBICMAP", cmd_genmeshcubicmap},
   // {"GENMESHCYLINDER", cmd_genmeshcylinder},
