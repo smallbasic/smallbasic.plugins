@@ -53,7 +53,7 @@ while (!rl.WindowShouldClose())
   endif
 
   rl.BeginDrawing()
-  rl.ClearBackground(RAYWHITE)
+  rl.ClearBackground(c.RAYWHITE)
   rl.DrawTexture(textures[currentTexture], 0, 0, c.WHITE)
   rl.DrawRectangle(30, 400, 325, 30, rl.Fade(c.SKYBLUE, 0.5))
   rl.DrawRectangleLines(30, 400, 325, 30, rl.Fade(c.WHITE, 0.5))

@@ -1,5 +1,17 @@
 unit raylibc
 
+export const GESTURE_NONE        = 0
+export const GESTURE_TAP         = 1
+export const GESTURE_DOUBLETAP   = 2
+export const GESTURE_HOLD        = 4
+export const GESTURE_DRAG        = 8
+export const GESTURE_SWIPE_RIGHT = 16
+export const GESTURE_SWIPE_LEFT  = 32
+export const GESTURE_SWIPE_UP    = 64
+export const GESTURE_SWIPE_DOWN  = 128
+export const GESTURE_PINCH_IN    = 256
+export const GESTURE_PINCH_OUT   = 51
+
 export const CAMERA_CUSTOM = 0
 export const CAMERA_FREE = 1
 export const CAMERA_ORBITAL = 2

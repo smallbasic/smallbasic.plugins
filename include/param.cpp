@@ -175,6 +175,7 @@ var_p_t map_get(var_p_t base, const char *name) {
 }
 
 void map_init(var_p_t map) {
+  assert(map->type == V_INT);
   v_init(map);
   hashmap_create(map, 0);
 }

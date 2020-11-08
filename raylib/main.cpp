@@ -95,7 +95,10 @@ Rectangle get_param_rect(int argc, slib_par_t *params, int n) {
 
 Vector2 get_param_vec2(int argc, slib_par_t *params, int n) {
   Vector2 result;
-  if (is_param_array(argc, params, n)) {
+  if (is_param_map(argc, params, n)) {
+    result.x = get_map_num(params[n].var_p, "x");
+    result.y = get_map_num(params[n].var_p, "y");
+  } else if (is_param_array(argc, params, n)) {
     result.x = get_array_elem_num(params[n].var_p, 0);
     result.y = get_array_elem_num(params[n].var_p, 1);
   } else {
@@ -107,18 +110,23 @@ Vector2 get_param_vec2(int argc, slib_par_t *params, int n) {
 
 Vector3 get_param_vec3(int argc, slib_par_t *params, int n) {
   Vector3 result;
-  if (is_param_array(argc, params, n)) {
+  if (is_param_map(argc, params, n)) {
+    result.x = get_map_num(params[n].var_p, "x");
+    result.y = get_map_num(params[n].var_p, "y");
+    result.z = get_map_num(params[n].var_p, "z");
+  } else if (is_param_array(argc, params, n)) {
     result.x = get_array_elem_num(params[n].var_p, 0);
     result.y = get_array_elem_num(params[n].var_p, 1);
     result.z = get_array_elem_num(params[n].var_p, 2);
   } else {
     result.x = 0;
     result.y = 0;
+    result.z = 0;
   }
   return result;
 }
 
-Vector3 get_array_elem_vector(var_p_t array, int index) {
+Vector3 get_array_elem_vec3(var_p_t array, int index) {
   Vector3 result;
   int size = v_asize(array);
   if (index >= 0 && index < size) {
@@ -136,9 +144,9 @@ Camera3D get_camera_3d(int argc, slib_par_t *params, int n) {
   Camera3D result;
   if (is_param_array(argc, params, n)) {
     var_p_t array = params[n].var_p;
-    result.position = get_array_elem_vector(array, 0);
-    result.target = get_array_elem_vector(array, 1);
-    result.up = get_array_elem_vector(array, 2);
+    result.position = get_array_elem_vec3(array, 0);
+    result.target = get_array_elem_vec3(array, 1);
+    result.up = get_array_elem_vec3(array, 2);
     result.fovy = get_array_elem_num(array, 3);
     result.type = get_array_elem_num(array, 4);
   }
@@ -157,6 +165,23 @@ Shader get_param_shader(int argc, slib_par_t *params, int n) {
     result.id = map_get_int(params[n].var_p, mapID, -1);
   }
 
+  return result;
+}
+
+BoundingBox get_param_bounding_box(int argc, slib_par_t *params, int n) {
+  BoundingBox result;
+  if (is_param_array(argc, params, n)) {
+    var_p_t array = params[n].var_p;
+    result.min = get_array_elem_vec3(array, 0);
+    result.max = get_array_elem_vec3(array, 1);
+  } else {
+    result.min.x = 0;
+    result.min.y = 0;
+    result.min.z = 0;
+    result.max.x = 0;
+    result.max.y = 0;
+    result.max.z = 0;
+  }
   return result;
 }
 
@@ -242,10 +267,10 @@ int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisionboxes(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto box1 = get_param_str(argc, params, 0, NULL);
-    // auto box2 = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = CheckCollisionBoxes(box1, box2);
-    // v_setint(retval, fnResult);
+    auto box1 = get_param_bounding_box(argc, params, 0);
+    auto box2 = get_param_bounding_box(argc, params, 1);
+    auto fnResult = CheckCollisionBoxes(box1, box2);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionBoxes", 2);
   }
@@ -255,11 +280,11 @@ int cmd_checkcollisionboxes(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisionboxsphere(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto box = get_param_str(argc, params, 0, NULL);
-    // auto center = get_param_str(argc, params, 1, NULL);
-    // auto radius = get_param_str(argc, params, 2, NULL);
-    // auto fnResult = CheckCollisionBoxSphere(box, center, radius);
-    // v_setint(retval, fnResult);
+    auto box = get_param_bounding_box(argc, params, 0);
+    auto center = get_param_vec3(argc, params, 1);
+    auto radius = get_param_num(argc, params, 2, 0);
+    auto fnResult = CheckCollisionBoxSphere(box, center, radius);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionBoxSphere");
   }
@@ -269,11 +294,11 @@ int cmd_checkcollisionboxsphere(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisioncirclerec(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto center = get_param_str(argc, params, 0, NULL);
-    // auto radius = get_param_str(argc, params, 1, NULL);
-    // auto rec = get_param_str(argc, params, 2, NULL);
-    // auto fnResult = CheckCollisionCircleRec(center, radius, rec);
-    // v_setint(retval, fnResult);
+    auto center = get_param_vec2(argc, params, 0);
+    auto radius = get_param_num(argc, params, 1, 0);
+    auto rec = get_param_rect(argc, params, 2);
+    auto fnResult = CheckCollisionCircleRec(center, radius, rec);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionCircleRec", 3);
   }
@@ -283,12 +308,12 @@ int cmd_checkcollisioncirclerec(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisioncircles(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto center1 = get_param_str(argc, params, 0, NULL);
-    // auto radius1 = get_param_str(argc, params, 1, NULL);
-    // auto center2 = get_param_str(argc, params, 2, NULL);
-    // auto radius2 = get_param_str(argc, params, 3, NULL);
-    // auto fnResult = CheckCollisionCircles(center1, radius1, center2, radius2);
-    // v_setint(retval, fnResult);
+    auto center1 = get_param_vec2(argc, params, 0);
+    auto radius1 = get_param_num(argc, params, 1, 0);
+    auto center2 = get_param_vec2(argc, params, 2);
+    auto radius2 = get_param_num(argc, params, 3, 0);
+    auto fnResult = CheckCollisionCircles(center1, radius1, center2, radius2);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionCircles", 4);
   }
@@ -298,11 +323,11 @@ int cmd_checkcollisioncircles(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisionpointcircle(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto point = get_param_str(argc, params, 0, NULL);
-    // auto center = get_param_str(argc, params, 1, NULL);
-    // auto radius = get_param_str(argc, params, 2, NULL);
-    // auto fnResult = CheckCollisionPointCircle(point, center, radius);
-    // v_setint(retval, fnResult);
+    auto point = get_param_vec2(argc, params, 0);
+    auto center = get_param_vec2(argc, params, 1);
+    auto radius = get_param_num(argc, params, 2, 0);
+    auto fnResult = CheckCollisionPointCircle(point, center, radius);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionPointCircle", 3);
   }
@@ -312,10 +337,10 @@ int cmd_checkcollisionpointcircle(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisionpointrec(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto point = get_param_str(argc, params, 0, NULL);
-    // auto rec = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = CheckCollisionPointRec(point, rec);
-    // v_setint(retval, fnResult);
+    auto point = get_param_vec2(argc, params, 0);
+    auto rec = get_param_rect(argc, params, 1);
+    auto fnResult = CheckCollisionPointRec(point, rec);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionPointRec", 2);
   }
@@ -325,12 +350,12 @@ int cmd_checkcollisionpointrec(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisionpointtriangle(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto point = get_param_str(argc, params, 0, NULL);
-    // auto p1 = get_param_str(argc, params, 1, NULL);
-    // auto p2 = get_param_str(argc, params, 2, NULL);
-    // auto p3 = get_param_str(argc, params, 3, NULL);
-    // auto fnResult = CheckCollisionPointTriangle(point, p1, p2, p3);
-    // v_setint(retval, fnResult);
+    auto point = get_param_vec2(argc, params, 0);
+    auto p1 = get_param_vec2(argc, params, 1);
+    auto p2 = get_param_vec2(argc, params, 2);
+    auto p3 = get_param_vec2(argc, params, 3);
+    auto fnResult = CheckCollisionPointTriangle(point, p1, p2, p3);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionPointTriangle", 4);
   }
@@ -340,10 +365,10 @@ int cmd_checkcollisionpointtriangle(int argc, slib_par_t *params, var_t *retval)
 int cmd_checkcollisionraybox(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto ray = get_param_str(argc, params, 0, NULL);
-    // auto box = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = CheckCollisionRayBox(ray, box);
-    // v_setint(retval, fnResult);
+    //auto ray = get_param_int(argc, params, 0, 0);
+    //auto box = get_param_int(argc, params, 1, 0);
+    //auto fnResult = CheckCollisionRayBox(ray, box);
+    //v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionRayBox", 2);
   }
@@ -353,11 +378,11 @@ int cmd_checkcollisionraybox(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisionraysphere(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto ray = get_param_str(argc, params, 0, NULL);
-    // auto center = get_param_str(argc, params, 1, NULL);
-    // auto radius = get_param_str(argc, params, 2, NULL);
-    // auto fnResult = CheckCollisionRaySphere(ray, center, radius);
-    // v_setint(retval, fnResult);
+    //auto ray = get_param_int(argc, params, 0, 0);
+    //auto center = get_param_int(argc, params, 1, 0);
+    //auto radius = get_param_int(argc, params, 2, 0);
+    //auto fnResult = CheckCollisionRaySphere(ray, center, radius);
+    //v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionRaySphere", 2);
   }
@@ -367,12 +392,12 @@ int cmd_checkcollisionraysphere(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisionraysphereex(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto ray = get_param_str(argc, params, 0, NULL);
-    // auto center = get_param_str(argc, params, 1, NULL);
-    // auto radius = get_param_str(argc, params, 2, NULL);
-    // auto collisionPoint = get_param_str(argc, params, 3, NULL);
-    // auto fnResult = CheckCollisionRaySphereEx(ray, center, radius, collisionPoint);
-    // v_setint(retval, fnResult);
+    //auto ray = get_param_int(argc, params, 0, 0);
+    //auto center = get_param_int(argc, params, 1, 0);
+    //auto radius = get_param_int(argc, params, 2, 0);
+    //auto collisionPoint = get_param_int(argc, params, 3, 0);
+    //auto fnResult = CheckCollisionRaySphereEx(ray, center, radius, collisionPoint);
+    //v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionRaySphereEx", 4);
   }
@@ -395,12 +420,12 @@ int cmd_checkcollisionrecs(int argc, slib_par_t *params, var_t *retval) {
 int cmd_checkcollisionspheres(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto centerA = get_param_str(argc, params, 0, NULL);
-    // auto radiusA = get_param_str(argc, params, 1, NULL);
-    // auto centerB = get_param_str(argc, params, 2, NULL);
-    // auto radiusB = get_param_str(argc, params, 3, NULL);
-    // auto fnResult = CheckCollisionSpheres(centerA, radiusA, centerB, radiusB);
-    // v_setint(retval, fnResult);
+    auto centerA = get_param_vec3(argc, params, 0);
+    auto radiusA = get_param_num(argc, params, 1, 0);
+    auto centerB = get_param_vec3(argc, params, 2);
+    auto radiusB = get_param_num(argc, params, 3, 0);
+    auto fnResult = CheckCollisionSpheres(centerA, radiusA, centerB, radiusB);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "CheckCollisionSpheres", 4);
   }
@@ -1217,8 +1242,7 @@ int cmd_getgamepadname(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getgesturedetected(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetGestureDetected();
-    // v_setint(retval, fnResult);
+    v_setint(retval, GetGestureDetected());
   } else {
     error(retval, "GetGestureDetected", 0);
   }
@@ -1228,8 +1252,7 @@ int cmd_getgesturedetected(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getgesturedragangle(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetGestureDragAngle();
-    // v_setint(retval, fnResult);
+    v_setreal(retval, GetGestureDragAngle());
   } else {
     error(retval, "GetGestureDragAngle", 0);
   }
@@ -1494,8 +1517,7 @@ int cmd_getmouseray(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmousewheelmove(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetMouseWheelMove();
-    // v_setint(retval, fnResult);
+    v_setreal(retval, GetMouseWheelMove());
   } else {
     error(retval, "GetMouseWheelMove", 0);
   }
@@ -1730,9 +1752,16 @@ int cmd_getsoundsplaying(int argc, slib_par_t *params, var_t *retval) {
 int cmd_gettexturedata(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto texture = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetTextureData(texture);
-    // v_setint(retval, fnResult);
+    int id = get_texture_id(argc, params, 0);
+    if (id != -1) {
+      Image image = GetTextureData(_textureMap.at(id));
+      id = ++_nextId;
+      _imageMap[id] = image;
+      create_rectangle(retval, image.width, image.height, id);
+    } else {
+      error_texture(retval);
+      result = 0;
+    }
   } else {
     error(retval, "GetTextureData", 1);
   }
@@ -3254,11 +3283,11 @@ int cmd_drawboundingbox(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawcircle(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto centerX = get_param_str(argc, params, 0, NULL);
-    // auto centerY = get_param_str(argc, params, 1, NULL);
-    // auto radius = get_param_str(argc, params, 2, NULL);
-    // auto color = get_param_str(argc, params, 3, NULL);
-    // DrawCircle(centerX, centerY, radius, color);
+    auto centerX = get_param_int(argc, params, 0, 0);
+    auto centerY = get_param_int(argc, params, 1, 0);
+    auto radius = get_param_num(argc, params, 2, 0);
+    auto color = get_param_color(argc, params, 3);
+    DrawCircle(centerX, centerY, radius, color);
   } else {
     error(retval, "DrawCircle", 4);
   }
@@ -3298,11 +3327,11 @@ int cmd_drawcirclegradient(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawcirclelines(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto centerX = get_param_str(argc, params, 0, NULL);
-    // auto centerY = get_param_str(argc, params, 1, NULL);
-    // auto radius = get_param_str(argc, params, 2, NULL);
-    // auto color = get_param_str(argc, params, 3, NULL);
-    // DrawCircleLines(centerX, centerY, radius, color);
+    auto centerX = get_param_int(argc, params, 0, 0);
+    auto centerY = get_param_int(argc, params, 1, 0);
+    auto radius = get_param_num(argc, params, 2, 0);
+    auto color = get_param_color(argc, params, 3);
+    DrawCircleLines(centerX, centerY, radius, color);
   } else {
     error(retval, "DrawCircleLines", 4);
   }
@@ -3525,12 +3554,12 @@ int cmd_drawgrid(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawline(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 5);
   if (result) {
-    // auto startPosX = get_param_str(argc, params, 0, NULL);
-    // auto startPosY = get_param_str(argc, params, 1, NULL);
-    // auto endPosX = get_param_str(argc, params, 2, NULL);
-    // auto endPosY = get_param_str(argc, params, 3, NULL);
-    // auto color = get_param_str(argc, params, 4, NULL);
-    // DrawLine(startPosX, startPosY, endPosX, endPosY, color);
+    auto startPosX = get_param_int(argc, params, 0, 0);
+    auto startPosY = get_param_int(argc, params, 1, 0);
+    auto endPosX = get_param_int(argc, params, 2, 0);
+    auto endPosY = get_param_int(argc, params, 3, 0);
+    auto color = get_param_color(argc, params, 4);
+    DrawLine(startPosX, startPosY, endPosX, endPosY, color);
   } else {
     error(retval, "DrawLine", 5);
   }
@@ -3841,10 +3870,10 @@ int cmd_drawrectanglelines(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawrectanglelinesex(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto rec = get_param_str(argc, params, 0, NULL);
-    // auto lineThick = get_param_str(argc, params, 1, NULL);
-    // auto color = get_param_str(argc, params, 2, NULL);
-    // DrawRectangleLinesEx(rec, lineThick, color);
+    auto rec = get_param_rect(argc, params, 0);
+    auto lineThick = get_param_int(argc, params, 1, 0);
+    auto color = get_param_color(argc, params, 2);
+    DrawRectangleLinesEx(rec, lineThick, color);
   } else {
     error(retval, "DrawRectangleLinesEx", 3);
   }
@@ -4394,9 +4423,14 @@ int cmd_endvrdrawing(int argc, slib_par_t *params, var_t *retval) {
 int cmd_exportimage(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto image = get_param_str(argc, params, 0, NULL);
-    // auto fileName = get_param_str(argc, params, 1, NULL);
-    // ExportImage(image, fileName);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto fileName = get_param_str(argc, params, 1, NULL);
+      ExportImage(_imageMap.at(id), fileName);
+    } else {
+      error_image(retval);
+      result = 0;
+    }
   } else {
     error(retval, "ExportImage", 2);
   }
@@ -4693,12 +4727,17 @@ int cmd_imagedraw(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imagedrawcircle(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 5);
   if (result) {
-    // auto dst = get_param_str(argc, params, 0, NULL);
-    // auto centerX = get_param_str(argc, params, 1, NULL);
-    // auto centerY = get_param_str(argc, params, 2, NULL);
-    // auto radius = get_param_str(argc, params, 3, NULL);
-    // auto color = get_param_str(argc, params, 4, NULL);
-    // ImageDrawCircle(dst, centerX, centerY, radius, color);
+    int id = get_image_id(argc, params, 0);
+    if (id != -1) {
+      auto centerX = get_param_int(argc, params, 1, 0);
+      auto centerY = get_param_int(argc, params, 2, 0);
+      auto radius = get_param_int(argc, params, 3, 0);
+      auto color = get_param_color(argc, params, 4);
+      ImageDrawCircle(&_imageMap.at(id), centerX, centerY, radius, color);
+    } else {
+      error_image(retval);
+      result = 0;
+    }
   } else {
     error(retval, "ImageDrawCircle", 5);
   }
@@ -6216,18 +6255,18 @@ int cmd_waveformat(int argc, slib_par_t *params, var_t *retval) {
 
 API lib_func[] = {
   {"CHANGEDIRECTORY", cmd_changedirectory},
-  // {"CHECKCOLLISIONBOXES", cmd_checkcollisionboxes},
-  // {"CHECKCOLLISIONBOXSPHERE", cmd_checkcollisionboxsphere},
-  // {"CHECKCOLLISIONCIRCLEREC", cmd_checkcollisioncirclerec},
-  // {"CHECKCOLLISIONCIRCLES", cmd_checkcollisioncircles},
-  // {"CHECKCOLLISIONPOINTCIRCLE", cmd_checkcollisionpointcircle},
-  // {"CHECKCOLLISIONPOINTREC", cmd_checkcollisionpointrec},
-  // {"CHECKCOLLISIONPOINTTRIANGLE", cmd_checkcollisionpointtriangle},
+  {"CHECKCOLLISIONBOXES", cmd_checkcollisionboxes},
+  {"CHECKCOLLISIONBOXSPHERE", cmd_checkcollisionboxsphere},
+  {"CHECKCOLLISIONCIRCLEREC", cmd_checkcollisioncirclerec},
+  {"CHECKCOLLISIONCIRCLES", cmd_checkcollisioncircles},
+  {"CHECKCOLLISIONPOINTCIRCLE", cmd_checkcollisionpointcircle},
+  {"CHECKCOLLISIONPOINTREC", cmd_checkcollisionpointrec},
+  {"CHECKCOLLISIONPOINTTRIANGLE", cmd_checkcollisionpointtriangle},
   // {"CHECKCOLLISIONRAYBOX", cmd_checkcollisionraybox},
   // {"CHECKCOLLISIONRAYSPHERE", cmd_checkcollisionraysphere},
   // {"CHECKCOLLISIONRAYSPHEREEX", cmd_checkcollisionraysphereex},
   {"CHECKCOLLISIONRECS", cmd_checkcollisionrecs},
-  // {"CHECKCOLLISIONSPHERES", cmd_checkcollisionspheres},
+  {"CHECKCOLLISIONSPHERES", cmd_checkcollisionspheres},
   // {"CODEPOINTTOUTF8", cmd_codepointtoutf8},
   // {"COLORALPHA", cmd_coloralpha},
   // {"COLORALPHABLEND", cmd_coloralphablend},
@@ -6288,8 +6327,8 @@ API lib_func[] = {
   // {"GETGAMEPADAXISMOVEMENT", cmd_getgamepadaxismovement},
   // {"GETGAMEPADBUTTONPRESSED", cmd_getgamepadbuttonpressed},
   // {"GETGAMEPADNAME", cmd_getgamepadname},
-  // {"GETGESTUREDETECTED", cmd_getgesturedetected},
-  // {"GETGESTUREDRAGANGLE", cmd_getgesturedragangle},
+  {"GETGESTUREDETECTED", cmd_getgesturedetected},
+  {"GETGESTUREDRAGANGLE", cmd_getgesturedragangle},
   // {"GETGESTUREDRAGVECTOR", cmd_getgesturedragvector},
   // {"GETGESTUREHOLDDURATION", cmd_getgestureholdduration},
   // {"GETGESTUREPINCHANGLE", cmd_getgesturepinchangle},
@@ -6311,7 +6350,7 @@ API lib_func[] = {
   // {"GETMONITORWIDTH", cmd_getmonitorwidth},
   {"GETMOUSEPOSITION", cmd_getmouseposition},
   // {"GETMOUSERAY", cmd_getmouseray},
-  // {"GETMOUSEWHEELMOVE", cmd_getmousewheelmove},
+  {"GETMOUSEWHEELMOVE", cmd_getmousewheelmove},
   {"GETMOUSEX", cmd_getmousex},
   {"GETMOUSEY", cmd_getmousey},
   {"GETMUSICTIMELENGTH", cmd_getmusictimelength},
@@ -6331,7 +6370,7 @@ API lib_func[] = {
   // {"GETSHAPESTEXTURE", cmd_getshapestexture},
   // {"GETSHAPESTEXTUREREC", cmd_getshapestexturerec},
   {"GETSOUNDSPLAYING", cmd_getsoundsplaying},
-  // {"GETTEXTUREDATA", cmd_gettexturedata},
+  {"GETTEXTUREDATA", cmd_gettexturedata},
   // {"GETTEXTUREDEFAULT", cmd_gettexturedefault},
   // {"GETTIME", cmd_gettime},
   // {"GETTOUCHPOINTSCOUNT", cmd_gettouchpointscount},
@@ -6455,10 +6494,10 @@ API lib_proc[] = {
   // {"DRAWBILLBOARD", cmd_drawbillboard},
   // {"DRAWBILLBOARDREC", cmd_drawbillboardrec},
   // {"DRAWBOUNDINGBOX", cmd_drawboundingbox},
-  // {"DRAWCIRCLE", cmd_drawcircle},
+  {"DRAWCIRCLE", cmd_drawcircle},
   // {"DRAWCIRCLE3D", cmd_drawcircle3d},
   // {"DRAWCIRCLEGRADIENT", cmd_drawcirclegradient},
-  // {"DRAWCIRCLELINES", cmd_drawcirclelines},
+  {"DRAWCIRCLELINES", cmd_drawcirclelines},
   // {"DRAWCIRCLESECTOR", cmd_drawcirclesector},
   // {"DRAWCIRCLESECTORLINES", cmd_drawcirclesectorlines},
   // {"DRAWCIRCLEV", cmd_drawcirclev},
@@ -6474,7 +6513,7 @@ API lib_proc[] = {
   {"DRAWFPS", cmd_drawfps},
   {"DRAWGIZMO", cmd_drawgizmo},
   {"DRAWGRID", cmd_drawgrid},
-  // {"DRAWLINE", cmd_drawline},
+  {"DRAWLINE", cmd_drawline},
   // {"DRAWLINE3D", cmd_drawline3d},
   // {"DRAWLINEBEZIER", cmd_drawlinebezier},
   // {"DRAWLINEEX", cmd_drawlineex},
@@ -6496,7 +6535,7 @@ API lib_proc[] = {
   // {"DRAWRECTANGLEGRADIENTH", cmd_drawrectanglegradienth},
   // {"DRAWRECTANGLEGRADIENTV", cmd_drawrectanglegradientv},
   {"DRAWRECTANGLELINES", cmd_drawrectanglelines},
-  // {"DRAWRECTANGLELINESEX", cmd_drawrectanglelinesex},
+  {"DRAWRECTANGLELINESEX", cmd_drawrectanglelinesex},
   // {"DRAWRECTANGLEPRO", cmd_drawrectanglepro},
   {"DRAWRECTANGLEREC", cmd_drawrectanglerec},
   // {"DRAWRECTANGLEROUNDED", cmd_drawrectanglerounded},
@@ -6535,7 +6574,7 @@ API lib_proc[] = {
   {"ENDSHADERMODE", cmd_endshadermode},
   {"ENDTEXTUREMODE", cmd_endtexturemode},
   {"ENDVRDRAWING", cmd_endvrdrawing},
-  // {"EXPORTIMAGE", cmd_exportimage},
+  {"EXPORTIMAGE", cmd_exportimage},
   // {"EXPORTIMAGEASCODE", cmd_exportimageascode},
   // {"EXPORTMESH", cmd_exportmesh},
   // {"EXPORTWAVE", cmd_exportwave},
@@ -6558,7 +6597,7 @@ API lib_proc[] = {
   // {"IMAGECROP", cmd_imagecrop},
   // {"IMAGEDITHER", cmd_imagedither},
   // {"IMAGEDRAW", cmd_imagedraw},
-  // {"IMAGEDRAWCIRCLE", cmd_imagedrawcircle},
+  {"IMAGEDRAWCIRCLE", cmd_imagedrawcircle},
   // {"IMAGEDRAWCIRCLEV", cmd_imagedrawcirclev},
   // {"IMAGEDRAWLINE", cmd_imagedrawline},
   // {"IMAGEDRAWLINEV", cmd_imagedrawlinev},
