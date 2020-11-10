@@ -31,23 +31,26 @@ function checkDebugMode() {
   AC_SUBST(CFLAGS)
 }
 
+win32=no
 case "${host_os}" in
   *mingw* | pw32* | cygwin*)
     AC_DEFINE(WIN32, 1, [building for win32])
+    CLIPBOARD_LDFLAGS=""
+    RAYLIB_LDFLAGS="-pthread -lopengl32 -lgdi32 -lwinmm -mwindows"
     PLATFORM_LDFLAGS="-no-undefined"
-    AC_SUBST(PLATFORM_LDFLAGS)
-
+    win32="yes"
     ;;
 
   *)
     CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
-    AC_SUBST(CLIPBOARD_LDFLAGS)
+    RAYLIB_LDFLAGS="-lraylib -lGL -lm -lpthread -ldl -lrt -lX11"
     PLATFORM_LDFLAGS="-Wl,--no-undefined"
-    AC_SUBST(PLATFORM_LDFLAGS)
 esac
 
-# checks for mysql
-AC_CHECK_HEADER(mysql/mysql.h, [], [AC_MSG_ERROR("install mysql")])
+AM_CONDITIONAL(WITH_STATIC_INCLUDE, test x"$win32" = "xyes")
+AC_SUBST(CLIPBOARD_LDFLAGS)
+AC_SUBST(RAYLIB_LDFLAGS)
+AC_SUBST(PLATFORM_LDFLAGS)
 
 # checks for nuklear
 AC_CHECK_PROG(have_sdl, sdl2-config, [yes], [no])
@@ -67,7 +70,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CXX
 LT_PREREQ([2.2])
 
-BUILD_SUBDIRS="mysql nuklear glfw clipboard websocket raylib"
+BUILD_SUBDIRS="nuklear glfw clipboard websocket raylib"
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
 
@@ -75,7 +78,6 @@ libdir=${libdir}/smallbasic
 
 AC_CONFIG_FILES([
 Makefile
-mysql/Makefile
 nuklear/Makefile
 glfw/Makefile
 clipboard/Makefile

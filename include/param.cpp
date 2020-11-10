@@ -313,7 +313,7 @@ const char *get_param_str(int argc, slib_par_t *params, int n, const char *def) 
       result = params[n].var_p->v.p.ptr;
       break;
     case V_INT:
-      sprintf(buf, "%ld", params[n].var_p->v.i);
+      sprintf(buf, "%lld", params[n].var_p->v.i);
       result = buf;
       break;
     case V_NUM:

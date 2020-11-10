@@ -5,7 +5,32 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 #
 
-AM_CPPFLAGS = -I../include -Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter -fno-rtti -fno-exceptions -std=c++14 -fPIC
+LIB_VERSION=1:0:0
+
+AM_CXXFLAGS=-fno-rtti -fno-exceptions -std=c++14
+AM_CPPFLAGS = -I../include -Iraylib/src -Iraylib/src/external/glfw/include -Iraylib/src/external/glfw/deps/mingw\
+  -DPLATFORM_DESKTOP=1 -Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter -fPIC
+
 lib_LTLIBRARIES = libraylib.la
-libraylib_la_SOURCES = ../include/param.cpp ../include/hashmap.cpp main.cpp
-libraylib_la_LDFLAGS = -module -rpath '$(libdir)' -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 @PLATFORM_LDFLAGS@
+
+if WITH_STATIC_INCLUDE
+  libraylib_la_SOURCES = \
+   raylib/src/rglfw.c \
+   raylib/src/models.c \
+   raylib/src/raudio.c \
+   raylib/src/core.c \
+   raylib/src/shapes.c \
+   raylib/src/textures.c \
+   raylib/src/text.c \
+   raylib/src/utils.c \
+   ../include/param.cpp \
+   ../include/hashmap.cpp \
+   main.cpp
+else
+  libraylib_la_SOURCES = \
+   ../include/param.cpp \
+   ../include/hashmap.cpp \
+   main.cpp
+endif
+
+libraylib_la_LDFLAGS = -version-info ${LIB_VERSION} -module -rpath '$(libdir)' @RAYLIB_LDFLAGS@ @PLATFORM_LDFLAGS@
