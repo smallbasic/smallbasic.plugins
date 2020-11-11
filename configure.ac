@@ -18,7 +18,7 @@ LT_INIT([win32-dll])
 function checkDebugMode() {
   AC_MSG_CHECKING([if debug mode is enabled])
   AC_ARG_WITH(debug,
-  [  --with-debug            Build the debug version default=no],
+  [  --with-debug Build the debug version default=no],
       [with_debug=$withval],
       [with_debug=no])
   AC_MSG_RESULT([$with_debug])
@@ -31,23 +31,32 @@ function checkDebugMode() {
   AC_SUBST(CFLAGS)
 }
 
-win32=no
+AC_ARG_WITH(static-include,
+  [AS_HELP_STRING([--with-static-include], [Include module sources])],
+  [STATIC_INCLUDE="yes"],
+  [STATIC_INCLUDE="no"])
+
 case "${host_os}" in
-  *mingw* | pw32* | cygwin*)
+  *mingw*)
     AC_DEFINE(WIN32, 1, [building for win32])
-    CLIPBOARD_LDFLAGS=""
-    RAYLIB_LDFLAGS="-pthread -lopengl32 -lgdi32 -lwinmm -mwindows"
     PLATFORM_LDFLAGS="-no-undefined"
-    win32="yes"
+    RAYLIB_LDFLAGS="-pthread -lgdi32 -mwindows"
+    CLIPBOARD_LDFLAGS=""
+    STATIC_INCLUDE="yes"
     ;;
 
   *)
-    CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
-    RAYLIB_LDFLAGS="-lraylib -lGL -lm -lpthread -ldl -lrt -lX11"
     PLATFORM_LDFLAGS="-Wl,--no-undefined"
+    CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
+    if test "${STATIC_INCLUDE}" = "yes"
+    then
+      RAYLIB_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
+    else
+      RAYLIB_LDFLAGS="-lraylib -lGL -lm -lpthread -ldl -lrt -lX11"
+    fi
 esac
 
-AM_CONDITIONAL(WITH_STATIC_INCLUDE, test x"$win32" = "xyes")
+AM_CONDITIONAL(WITH_STATIC_INCLUDE, test "${STATIC_INCLUDE}" = "yes")
 AC_SUBST(CLIPBOARD_LDFLAGS)
 AC_SUBST(RAYLIB_LDFLAGS)
 AC_SUBST(PLATFORM_LDFLAGS)
