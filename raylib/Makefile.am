@@ -27,11 +27,13 @@ if WITH_STATIC_INCLUDE
    raylib/src/utils.c \
    ../include/param.cpp \
    ../include/hashmap.cpp \
+   raygui.cpp \
    main.cpp
 else
   libraylib_la_SOURCES = \
    ../include/param.cpp \
    ../include/hashmap.cpp \
+   raygui.cpp \
    main.cpp
 endif
 

@@ -2,7 +2,7 @@ rem
 rem generate functions.json for mkskeleton.bas
 rem 
 rem from input generated with:
-rem clang -Xclang -dump-tokens raylib/src/raylib.h 2>&1 | awk -F"'" '/identifier|l_paren|r_paren/ {print $2}' > functions.tokens
+rem clang -Xclang -dump-tokens raylib/src/raylib.h 2>&1 | awk -F"'" '/identifier|l_paren|r_paren|semi|void/ {print $2}' > functions.tokens
 rem
 
 tload "functions.tokens", s

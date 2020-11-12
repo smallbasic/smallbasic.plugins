@@ -22,6 +22,20 @@ keywords = []
 map = {}
 const NL = chr(10)
 
+func get_param_name(a) 
+  local result
+  select case a
+  case "alpha": result = "get_param_num"
+  case "color": result = "get_param_color"
+  case "text": result = "get_param_str"
+  case "alpha": result = "get_param_num"
+  case "bounds": result = "get_param_rect"
+  case else
+   result = "get_param_int"    
+  end select   
+  return result
+end
+
 func_api = "API lib_func[] = {"
 funcs = ""
 for fun in skelton("func")
@@ -31,8 +45,9 @@ for fun in skelton("func")
   i = 0
   args = ""
   commented = iff(lower(left(fun.name, 2)) == "is", "", "// ")
+  if (len(fun.args) < 4) then commented = ""
   for a in fun.args
-    funcs += NL + "    " + commented + "auto " + a + " = get_param_str(argc, params, " + i + ", NULL);"
+    funcs += NL + "    " + commented + "auto " + a + " = " + get_param_name(a) + "(argc, params, " + i + ", 0);"
     if (i > 0) then args += ", "
     args += a
     i++
@@ -40,11 +55,11 @@ for fun in skelton("func")
   funcs += NL + "    " + commented + "auto fnResult = " + fun.name + "(" + args + ");"
   funcs += NL + "    " + commented + "v_setint(retval, fnResult);"
   funcs += NL + "  } else {"
-  funcs += NL + "    v_setstr(retval, \"Invalid input: " + fun.name + "\");"
+  funcs += NL + "    error(retval, \"" + fun.name + "\");"
   funcs += NL + "  }"
   funcs += NL + "  return result;"
   funcs += NL + "}" + NL
-  func_api += NL + "  // {\"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + "},"
+  func_api += NL + "  " + commented + " {\"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + "},"
 next fun
 func_api += NL + "};" + NL
 
@@ -55,8 +70,9 @@ for proc in skelton("sub")
   funcs += NL + "  if (result) {"  
   i = 0
   args = ""
+  commented = iff(len(fun.args) < 4, "", "//")
   for a in proc.args
-    funcs += NL + "    // auto " + a + " = get_param_str(argc, params, " + i + ", NULL);"
+    funcs += NL + "    " + commented + " auto " + a + " = " + get_param_name(a) + "(argc, params, " + i + ", 0);"
     if (i > 0) then args += ", "
     args += a
     i++
@@ -65,11 +81,11 @@ for proc in skelton("sub")
     funcs += NL + "    " + proc.name + "(" + args + ");"
     proc_api += NL + "  {\"" + upper(proc.name) + "\", cmd_" + lower(proc.name) + "},"
   else
-    funcs += NL + "    // " + proc.name + "(" + args + ");"
-    proc_api += NL + "  // {\"" + upper(proc.name) + "\", cmd_" + lower(proc.name) + "},"
+    funcs += NL + "    " + commented + " " + proc.name + "(" + args + ");"
+    proc_api += NL + "  " + commented + " {\"" + upper(proc.name) + "\", cmd_" + lower(proc.name) + "},"
   endif
   funcs += NL + "  } else {"
-  funcs += NL + "    v_setstr(retval, \"Invalid input: " + proc.name + "\");"
+  funcs += NL + "    error(retval, \"" + fun.name + "\");"  
   funcs += NL + "  }"
   funcs += NL + "  return result;"
   funcs += NL + "}" + NL
