@@ -13,3 +13,6 @@
 [submodule "raylib/raylib"]
 	path = raylib/raylib
 	url = https://github.com/raysan5/raylib.git
+[submodule "raylib/raygui"]
+	path = raylib/raygui
+	url = https://github.com/raysan5/raygui.git
