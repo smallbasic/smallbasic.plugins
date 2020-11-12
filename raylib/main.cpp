@@ -6287,7 +6287,7 @@ int cmd_guicolorbaralpha(int argc, slib_par_t *params, var_t *retval) {
     auto bounds = get_param_rect(argc, params, 0);
     auto alpha = get_param_num(argc, params, 1, 0);
     auto fnResult = GuiColorBarAlpha(bounds, alpha);
-    v_setint(retval, fnResult);
+    v_setreal(retval, fnResult);
   } else {
     error(retval, "GuiColorBarAlpha", 2);
   }
@@ -6300,7 +6300,7 @@ int cmd_guicolorbarhue(int argc, slib_par_t *params, var_t *retval) {
     auto bounds = get_param_rect(argc, params, 0);
     auto value = get_param_int(argc, params, 1, 0);
     auto fnResult = GuiColorBarHue(bounds, value);
-    v_setint(retval, fnResult);
+    v_setreal(retval, fnResult);
   } else {
     error(retval, "GuiColorBarHue", 2);
   }
@@ -6507,11 +6507,11 @@ int cmd_guiprogressbar(int argc, slib_par_t *params, var_t *retval) {
     // auto bounds = get_param_rect(argc, params, 0);
     // auto textLeft = get_param_int(argc, params, 1, 0);
     // auto textRight = get_param_int(argc, params, 2, 0);
-    // auto value = get_param_int(argc, params, 3, 0);
-    // auto minValue = get_param_int(argc, params, 4, 0);
-    // auto maxValue = get_param_int(argc, params, 5, 0);
+    // auto value = get_param_num(argc, params, 3, 0);
+    // auto minValue = get_param_num(argc, params, 4, 0);
+    // auto maxValue = get_param_num(argc, params, 5, 0);
     // auto fnResult = GuiProgressBar(bounds, textLeft, textRight, value, minValue, maxValue);
-    // v_setint(retval, fnResult);
+    // v_setreal(retval, fnResult);
   } else {
     error(retval, "GuiProgressBar", 6);
   }
@@ -6522,9 +6522,9 @@ int cmd_guiscrollbar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
     // auto bounds = get_param_rect(argc, params, 0);
-    // auto value = get_param_int(argc, params, 1, 0);
-    // auto minValue = get_param_int(argc, params, 2, 0);
-    // auto maxValue = get_param_int(argc, params, 3, 0);
+    // auto value = get_param_num(argc, params, 1, 0);
+    // auto minValue = get_param_num(argc, params, 2, 0);
+    // auto maxValue = get_param_num(argc, params, 3, 0);
     // auto fnResult = GuiScrollBar(bounds, value, minValue, maxValue);
     // v_setint(retval, fnResult);
   } else {
@@ -6553,11 +6553,11 @@ int cmd_guislider(int argc, slib_par_t *params, var_t *retval) {
     auto bounds = get_param_rect(argc, params, 0);
     auto textLeft = get_param_str(argc, params, 1, 0);
     auto textRight = get_param_str(argc, params, 2, 0);
-    auto value = get_param_int(argc, params, 3, 0);
-    auto minValue = get_param_int(argc, params, 4, 0);
-    auto maxValue = get_param_int(argc, params, 5, 0);
+    auto value = get_param_num(argc, params, 3, 0);
+    auto minValue = get_param_num(argc, params, 4, 0);
+    auto maxValue = get_param_num(argc, params, 5, 0);
     auto fnResult = GuiSlider(bounds, textLeft, textRight, value, minValue, maxValue);
-    v_setint(retval, fnResult);
+    v_setreal(retval, fnResult);
   } else {
     error(retval, "GuiSlider", 6);
   }
@@ -6570,11 +6570,11 @@ int cmd_guisliderbar(int argc, slib_par_t *params, var_t *retval) {
     auto bounds = get_param_rect(argc, params, 0);
     auto textLeft = get_param_str(argc, params, 1, 0);
     auto textRight = get_param_str(argc, params, 2, 0);
-    auto value = get_param_int(argc, params, 3, 0);
-    auto minValue = get_param_int(argc, params, 4, 0);
-    auto maxValue = get_param_int(argc, params, 5, 0);
+    auto value = get_param_num(argc, params, 3, 0);
+    auto minValue = get_param_num(argc, params, 4, 0);
+    auto maxValue = get_param_num(argc, params, 5, 0);
     auto fnResult = GuiSliderBar(bounds, textLeft, textRight, value, minValue, maxValue);
-    v_setint(retval, fnResult);
+    v_setreal(retval, fnResult);
   } else {
     error(retval, "GuiSliderBar", 6);
   }
@@ -6586,9 +6586,9 @@ int cmd_guispinner(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     // auto bounds = get_param_rect(argc, params, 0);
     // auto text = get_param_str(argc, params, 1, 0);
-    // auto value = get_param_int(argc, params, 2, 0);
-    // auto minValue = get_param_int(argc, params, 3, 0);
-    // auto maxValue = get_param_int(argc, params, 4, 0);
+    // auto value = get_param_num(argc, params, 2, 0);
+    // auto minValue = get_param_num(argc, params, 3, 0);
+    // auto maxValue = get_param_num(argc, params, 4, 0);
     // auto bool = get_param_int(argc, params, 5, 0);
     // auto editMode = get_param_int(argc, params, 6, 0);
     // auto fnResult = GuiSpinner(bounds, text, value, minValue, maxValue, bool, editMode);
@@ -6681,9 +6681,9 @@ int cmd_guivaluebox(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     // auto bounds = get_param_rect(argc, params, 0);
     // auto text = get_param_str(argc, params, 1, 0);
-    // auto value = get_param_int(argc, params, 2, 0);
-    // auto minValue = get_param_int(argc, params, 3, 0);
-    // auto maxValue = get_param_int(argc, params, 4, 0);
+    // auto value = get_param_num(argc, params, 2, 0);
+    // auto minValue = get_param_num(argc, params, 3, 0);
+    // auto maxValue = get_param_num(argc, params, 4, 0);
     // auto bool = get_param_int(argc, params, 5, 0);
     // auto editMode = get_param_int(argc, params, 6, 0);
     // auto fnResult = GuiValueBox(bounds, text, value, minValue, maxValue, bool, editMode);
