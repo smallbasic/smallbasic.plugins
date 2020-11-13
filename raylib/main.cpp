@@ -976,8 +976,8 @@ int cmd_getcameramatrix2d(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetClipboardText();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetClipboardText();
+    v_setstr(retval, fnResult);
   } else {
     error(retval, "GetClipboardText", 0);
   }
@@ -1173,8 +1173,8 @@ int cmd_getfontdefault(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getfps(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetFPS();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetFPS();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetFPS", 0);
   }
@@ -1184,8 +1184,8 @@ int cmd_getfps(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getframetime(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetFrameTime();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetFrameTime();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetFrameTime", 0);
   }
@@ -1220,8 +1220,8 @@ int cmd_getgamepadaxismovement(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getgamepadbuttonpressed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetGamepadButtonPressed();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetGamepadButtonPressed();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetGamepadButtonPressed", 0);
   }
@@ -1274,8 +1274,8 @@ int cmd_getgesturedragvector(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getgestureholdduration(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetGestureHoldDuration();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetGestureHoldDuration();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetGestureHoldDuration", 0);
   }
@@ -1285,8 +1285,8 @@ int cmd_getgestureholdduration(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getgesturepinchangle(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetGesturePinchAngle();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetGesturePinchAngle();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetGesturePinchAngle", 0);
   }
@@ -1376,8 +1376,8 @@ int cmd_getimagepalette(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getkeypressed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetKeyPressed();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetKeyPressed();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetKeyPressed", 0);
   }
@@ -1409,8 +1409,8 @@ int cmd_getmatrixprojection(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmonitorcount(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetMonitorCount();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetMonitorCount();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetMonitorCount", 0);
   }
@@ -1742,8 +1742,8 @@ int cmd_getshapestexturerec(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getsoundsplaying(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetSoundsPlaying();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetSoundsPlaying();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetSoundsPlaying", 0);
   }
@@ -1783,8 +1783,8 @@ int cmd_gettexturedefault(int argc, slib_par_t *params, var_t *retval) {
 int cmd_gettime(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetTime();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetTime();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetTime", 0);
   }
@@ -1794,8 +1794,8 @@ int cmd_gettime(int argc, slib_par_t *params, var_t *retval) {
 int cmd_gettouchpointscount(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetTouchPointsCount();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetTouchPointsCount();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetTouchPointsCount", 0);
   }
@@ -1817,8 +1817,8 @@ int cmd_gettouchposition(int argc, slib_par_t *params, var_t *retval) {
 int cmd_gettouchx(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetTouchX();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetTouchX();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetTouchX", 0);
   }
@@ -1828,8 +1828,8 @@ int cmd_gettouchx(int argc, slib_par_t *params, var_t *retval) {
 int cmd_gettouchy(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetTouchY();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetTouchY();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetTouchY", 0);
   }
@@ -1873,8 +1873,8 @@ int cmd_getwindowscaledpi(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getworkingdirectory(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    // auto fnResult = GetWorkingDirectory();
-    // v_setint(retval, fnResult);
+    auto fnResult = GetWorkingDirectory();
+    v_setstr(retval, fnResult);
   } else {
     error(retval, "GetWorkingDirectory", 0);
   }
@@ -6978,7 +6978,7 @@ API lib_func[] = {
   // {"GENTEXTUREPREFILTER", cmd_gentextureprefilter},
   // {"GETCAMERAMATRIX", cmd_getcameramatrix},
   // {"GETCAMERAMATRIX2D", cmd_getcameramatrix2d},
-  // {"GETCLIPBOARDTEXT", cmd_getclipboardtext},
+  {"GETCLIPBOARDTEXT", cmd_getclipboardtext},
   // {"GETCODEPOINTS", cmd_getcodepoints},
   // {"GETCODEPOINTSCOUNT", cmd_getcodepointscount},
   // {"GETCOLLISIONRAYGROUND", cmd_getcollisionrayground},
@@ -6994,27 +6994,27 @@ API lib_func[] = {
   // {"GETFILENAME", cmd_getfilename},
   // {"GETFILENAMEWITHOUTEXT", cmd_getfilenamewithoutext},
   // {"GETFONTDEFAULT", cmd_getfontdefault},
-  // {"GETFPS", cmd_getfps},
-  // {"GETFRAMETIME", cmd_getframetime},
+  {"GETFPS", cmd_getfps},
+  {"GETFRAMETIME", cmd_getframetime},
   // {"GETGAMEPADAXISCOUNT", cmd_getgamepadaxiscount},
   // {"GETGAMEPADAXISMOVEMENT", cmd_getgamepadaxismovement},
-  // {"GETGAMEPADBUTTONPRESSED", cmd_getgamepadbuttonpressed},
+  {"GETGAMEPADBUTTONPRESSED", cmd_getgamepadbuttonpressed},
   // {"GETGAMEPADNAME", cmd_getgamepadname},
   {"GETGESTUREDETECTED", cmd_getgesturedetected},
   {"GETGESTUREDRAGANGLE", cmd_getgesturedragangle},
   // {"GETGESTUREDRAGVECTOR", cmd_getgesturedragvector},
-  // {"GETGESTUREHOLDDURATION", cmd_getgestureholdduration},
-  // {"GETGESTUREPINCHANGLE", cmd_getgesturepinchangle},
+  {"GETGESTUREHOLDDURATION", cmd_getgestureholdduration},
+  {"GETGESTUREPINCHANGLE", cmd_getgesturepinchangle},
   // {"GETGESTUREPINCHVECTOR", cmd_getgesturepinchvector},
   // {"GETGLYPHINDEX", cmd_getglyphindex},
   // {"GETIMAGEALPHABORDER", cmd_getimagealphaborder},
   {"GETIMAGEDATA", cmd_getimagedata},
   // {"GETIMAGEDATANORMALIZED", cmd_getimagedatanormalized},
   // {"GETIMAGEPALETTE", cmd_getimagepalette},
-  // {"GETKEYPRESSED", cmd_getkeypressed},
+  {"GETKEYPRESSED", cmd_getkeypressed},
   // {"GETMATRIXMODELVIEW", cmd_getmatrixmodelview},
   // {"GETMATRIXPROJECTION", cmd_getmatrixprojection},
-  // {"GETMONITORCOUNT", cmd_getmonitorcount},
+  {"GETMONITORCOUNT", cmd_getmonitorcount},
   // {"GETMONITORHEIGHT", cmd_getmonitorheight},
   // {"GETMONITORNAME", cmd_getmonitorname},
   // {"GETMONITORPHYSICALHEIGHT", cmd_getmonitorphysicalheight},
@@ -7045,15 +7045,15 @@ API lib_func[] = {
   {"GETSOUNDSPLAYING", cmd_getsoundsplaying},
   {"GETTEXTUREDATA", cmd_gettexturedata},
   // {"GETTEXTUREDEFAULT", cmd_gettexturedefault},
-  // {"GETTIME", cmd_gettime},
-  // {"GETTOUCHPOINTSCOUNT", cmd_gettouchpointscount},
+  {"GETTIME", cmd_gettime},
+  {"GETTOUCHPOINTSCOUNT", cmd_gettouchpointscount},
   // {"GETTOUCHPOSITION", cmd_gettouchposition},
-  // {"GETTOUCHX", cmd_gettouchx},
-  // {"GETTOUCHY", cmd_gettouchy},
+  {"GETTOUCHX", cmd_gettouchx},
+  {"GETTOUCHY", cmd_gettouchy},
   // {"GETWAVEDATA", cmd_getwavedata},
   // {"GETWINDOWPOSITION", cmd_getwindowposition},
   // {"GETWINDOWSCALEDPI", cmd_getwindowscaledpi},
-  // {"GETWORKINGDIRECTORY", cmd_getworkingdirectory},
+  {"GETWORKINGDIRECTORY", cmd_getworkingdirectory},
   // {"GETWORLDTOSCREEN", cmd_getworldtoscreen},
   // {"GETWORLDTOSCREEN2D", cmd_getworldtoscreen2d},
   // {"GETWORLDTOSCREENEX", cmd_getworldtoscreenex},

@@ -38,8 +38,8 @@ AC_ARG_WITH(static-include,
 
 case "${host_os}" in
   *mingw*)
-    AC_DEFINE(WIN32, 1, [building for win32])
-    PLATFORM_LDFLAGS="-no-undefined"
+    AC_DEFINE(_WIN32, 1, [building for win32])
+    PLATFORM_LDFLAGS="-no-undefined -Wc,-static"
     RAYLIB_LDFLAGS="-pthread -lgdi32 -mwindows"
     CLIPBOARD_LDFLAGS=""
     STATIC_INCLUDE="yes"

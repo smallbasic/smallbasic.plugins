@@ -24,3 +24,9 @@ $ cd smallbasic.plugins/nuklear
 $ ~/src/SmallBASIC/src/platform/console/sbasic samples/calculator.bas
 ```
 
+Cross-compiling for windows
+
+```
+$ sudo apt install mingw-w64 gcc-mingw-w64
+$ ./configure --host=x86_64-w64-mingw32
+```
