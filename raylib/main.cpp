@@ -253,6 +253,12 @@ void create_rectangle(var_t *var, Rectangle &rect) {
   v_setreal(map_add_var(var, "height", 0), rect.height);
 }
 
+void create_vec2(var_t *var, float x, float y) {
+  map_init(var);
+  v_setreal(map_add_var(var, "x", 0), x);
+  v_setreal(map_add_var(var, "y", 0), y);
+}
+
 int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
@@ -1420,9 +1426,9 @@ int cmd_getmonitorcount(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmonitorheight(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto monitor = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetMonitorHeight(monitor);
-    // v_setint(retval, fnResult);
+    auto monitor = get_param_int(argc, params, 0, 0);
+    auto fnResult = GetMonitorHeight(monitor);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetMonitorHeight", 1);
   }
@@ -1432,9 +1438,9 @@ int cmd_getmonitorheight(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmonitorname(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto monitor = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetMonitorName(monitor);
-    // v_setint(retval, fnResult);
+    auto monitor = get_param_int(argc, params, 0, 0);
+    auto fnResult = GetMonitorName(monitor);
+    v_setstr(retval, fnResult);
   } else {
     error(retval, "GetMonitorName", 1);
   }
@@ -1444,9 +1450,9 @@ int cmd_getmonitorname(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmonitorphysicalheight(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto monitor = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetMonitorPhysicalHeight(monitor);
-    // v_setint(retval, fnResult);
+    auto monitor = get_param_int(argc, params, 0, 0);
+    auto fnResult = GetMonitorPhysicalHeight(monitor);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetMonitorPhysicalHeight", 1);
   }
@@ -1456,9 +1462,9 @@ int cmd_getmonitorphysicalheight(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmonitorphysicalwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto monitor = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetMonitorPhysicalWidth(monitor);
-    // v_setint(retval, fnResult);
+    auto monitor = get_param_int(argc, params, 0, 0);
+    auto fnResult = GetMonitorPhysicalWidth(monitor);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetMonitorPhysicalWidth", 1);
   }
@@ -1468,9 +1474,9 @@ int cmd_getmonitorphysicalwidth(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmonitorrefreshrate(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto monitor = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetMonitorRefreshRate(monitor);
-    // v_setint(retval, fnResult);
+    auto monitor = get_param_int(argc, params, 0, 0);
+    auto fnResult = GetMonitorRefreshRate(monitor);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetMonitorRefreshRate", 1);
   }
@@ -1480,9 +1486,9 @@ int cmd_getmonitorrefreshrate(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getmonitorwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto monitor = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = GetMonitorWidth(monitor);
-    // v_setint(retval, fnResult);
+    auto monitor = get_param_int(argc, params, 0, 0);
+    auto fnResult = GetMonitorWidth(monitor);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetMonitorWidth", 1);
   }
@@ -3099,11 +3105,11 @@ int cmd_beginmode3d(int argc, slib_par_t *params, var_t *retval) {
 int cmd_beginscissormode(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto x = get_param_str(argc, params, 0, NULL);
-    // auto y = get_param_str(argc, params, 1, NULL);
-    // auto width = get_param_str(argc, params, 2, NULL);
-    // auto height = get_param_str(argc, params, 3, NULL);
-    // BeginScissorMode(x, y, width, height);
+    auto x = get_param_int(argc, params, 0, 0);
+    auto y = get_param_int(argc, params, 1, 0);
+    auto width = get_param_int(argc, params, 2, 0);
+    auto height = get_param_int(argc, params, 3, 0);
+    BeginScissorMode(x, y, width, height);
   } else {
     error(retval, "BeginScissorMode", 4);
   }
@@ -5389,8 +5395,8 @@ int cmd_setcamerasmoothzoomcontrol(int argc, slib_par_t *params, var_t *retval) 
 int cmd_setclipboardtext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto text = get_param_str(argc, params, 0, NULL);
-    // SetClipboardText(text);
+    auto text = get_param_str(argc, params, 0, NULL);
+    SetClipboardText(text);
   } else {
     error(retval, "SetClipboardText", 1);
   }
@@ -5411,8 +5417,8 @@ int cmd_setconfigflags(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setexitkey(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto key = get_param_str(argc, params, 0, NULL);
-    // SetExitKey(key);
+    auto key = get_param_int(argc, params, 0, 0);
+    SetExitKey(key);
   } else {
     error(retval, "SetExitKey", 1);
   }
@@ -5433,8 +5439,8 @@ int cmd_setgesturesenabled(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setmastervolume(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto volume = get_param_str(argc, params, 0, NULL);
-    // SetMasterVolume(volume);
+    auto volume = get_param_num(argc, params, 0, 0);
+    SetMasterVolume(volume);
   } else {
     error(retval, "SetMasterVolume", 1);
   }
@@ -5509,9 +5515,9 @@ int cmd_setmodelmeshmaterial(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setmouseoffset(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto offsetX = get_param_str(argc, params, 0, NULL);
-    // auto offsetY = get_param_str(argc, params, 1, NULL);
-    // SetMouseOffset(offsetX, offsetY);
+    auto offsetX = get_param_int(argc, params, 0, 0);
+    auto offsetY = get_param_int(argc, params, 1, 0);
+    SetMouseOffset(offsetX, offsetY);
   } else {
     error(retval, "SetMouseOffset", 2);
   }
@@ -5521,9 +5527,9 @@ int cmd_setmouseoffset(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setmouseposition(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto x = get_param_str(argc, params, 0, NULL);
-    // auto y = get_param_str(argc, params, 1, NULL);
-    // SetMousePosition(x, y);
+    auto x = get_param_int(argc, params, 0, 0);
+    auto y = get_param_int(argc, params, 1, 0);
+    SetMousePosition(x, y);
   } else {
     error(retval, "SetMousePosition", 2);
   }
@@ -5533,9 +5539,9 @@ int cmd_setmouseposition(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setmousescale(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto scaleX = get_param_str(argc, params, 0, NULL);
-    // auto scaleY = get_param_str(argc, params, 1, NULL);
-    // SetMouseScale(scaleX, scaleY);
+    auto scaleX = get_param_num(argc, params, 0, 0);
+    auto scaleY = get_param_num(argc, params, 1, 0);
+    SetMouseScale(scaleX, scaleY);
   } else {
     error(retval, "SetMouseScale", 2);
   }
@@ -5719,8 +5725,8 @@ int cmd_settracelogcallback(int argc, slib_par_t *params, var_t *retval) {
 int cmd_settracelogexit(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto logType = get_param_str(argc, params, 0, NULL);
-    // SetTraceLogExit(logType);
+    auto logType = get_param_int(argc, params, 0, 0);
+    SetTraceLogExit(logType);
   } else {
     error(retval, "SetTraceLogExit", 1);
   }
@@ -5764,9 +5770,9 @@ int cmd_setwindowicon(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setwindowminsize(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto width = get_param_str(argc, params, 0, NULL);
-    // auto height = get_param_str(argc, params, 1, NULL);
-    // SetWindowMinSize(width, height);
+    auto width = get_param_int(argc, params, 0, 0);
+    auto height = get_param_int(argc, params, 1, 0);
+    SetWindowMinSize(width, height);
   } else {
     error(retval, "SetWindowMinSize", 2);
   }
@@ -5776,8 +5782,8 @@ int cmd_setwindowminsize(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setwindowmonitor(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto monitor = get_param_str(argc, params, 0, NULL);
-    // SetWindowMonitor(monitor);
+    auto monitor = get_param_int(argc, params, 0, 0);
+    SetWindowMonitor(monitor);
   } else {
     error(retval, "SetWindowMonitor", 1);
   }
@@ -5787,9 +5793,9 @@ int cmd_setwindowmonitor(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setwindowposition(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto x = get_param_str(argc, params, 0, NULL);
-    // auto y = get_param_str(argc, params, 1, NULL);
-    // SetWindowPosition(x, y);
+    auto x = get_param_int(argc, params, 0, 0);
+    auto y = get_param_int(argc, params, 1, 0);
+    SetWindowPosition(x, y);
   } else {
     error(retval, "SetWindowPosition", 2);
   }
@@ -7015,12 +7021,12 @@ API lib_func[] = {
   // {"GETMATRIXMODELVIEW", cmd_getmatrixmodelview},
   // {"GETMATRIXPROJECTION", cmd_getmatrixprojection},
   {"GETMONITORCOUNT", cmd_getmonitorcount},
-  // {"GETMONITORHEIGHT", cmd_getmonitorheight},
-  // {"GETMONITORNAME", cmd_getmonitorname},
-  // {"GETMONITORPHYSICALHEIGHT", cmd_getmonitorphysicalheight},
-  // {"GETMONITORPHYSICALWIDTH", cmd_getmonitorphysicalwidth},
-  // {"GETMONITORREFRESHRATE", cmd_getmonitorrefreshrate},
-  // {"GETMONITORWIDTH", cmd_getmonitorwidth},
+  {"GETMONITORHEIGHT", cmd_getmonitorheight},
+  {"GETMONITORNAME", cmd_getmonitorname},
+  {"GETMONITORPHYSICALHEIGHT", cmd_getmonitorphysicalheight},
+  {"GETMONITORPHYSICALWIDTH", cmd_getmonitorphysicalwidth},
+  {"GETMONITORREFRESHRATE", cmd_getmonitorrefreshrate},
+  {"GETMONITORWIDTH", cmd_getmonitorwidth},
   {"GETMOUSEPOSITION", cmd_getmouseposition},
   // {"GETMOUSERAY", cmd_getmouseray},
   {"GETMOUSEWHEELMOVE", cmd_getmousewheelmove},
@@ -7182,7 +7188,7 @@ API lib_proc[] = {
   {"BEGINDRAWING", cmd_begindrawing},
   // {"BEGINMODE2D", cmd_beginmode2d},
   {"BEGINMODE3D", cmd_beginmode3d},
-  // {"BEGINSCISSORMODE", cmd_beginscissormode},
+  {"BEGINSCISSORMODE", cmd_beginscissormode},
   {"BEGINSHADERMODE", cmd_beginshadermode},
   {"BEGINTEXTUREMODE", cmd_begintexturemode},
   {"BEGINVRDRAWING", cmd_beginvrdrawing},
@@ -7353,19 +7359,19 @@ API lib_proc[] = {
   // {"SETCAMERAMOVECONTROLS", cmd_setcameramovecontrols},
   // {"SETCAMERAPANCONTROL", cmd_setcamerapancontrol},
   // {"SETCAMERASMOOTHZOOMCONTROL", cmd_setcamerasmoothzoomcontrol},
-  // {"SETCLIPBOARDTEXT", cmd_setclipboardtext},
+  {"SETCLIPBOARDTEXT", cmd_setclipboardtext},
   {"SETCONFIGFLAGS", cmd_setconfigflags},
-  // {"SETEXITKEY", cmd_setexitkey},
+  {"SETEXITKEY", cmd_setexitkey},
   // {"SETGESTURESENABLED", cmd_setgesturesenabled},
-  // {"SETMASTERVOLUME", cmd_setmastervolume},
+  {"SETMASTERVOLUME", cmd_setmastervolume},
   // {"SETMATERIALTEXTURE", cmd_setmaterialtexture},
   // {"SETMATRIXMODELVIEW", cmd_setmatrixmodelview},
   // {"SETMATRIXPROJECTION", cmd_setmatrixprojection},
   {"SETMODELDIFFUSETEXTURE", cmd_setmodeldiffusetexture},
   // {"SETMODELMESHMATERIAL", cmd_setmodelmeshmaterial},
-  // {"SETMOUSEOFFSET", cmd_setmouseoffset},
-  // {"SETMOUSEPOSITION", cmd_setmouseposition},
-  // {"SETMOUSESCALE", cmd_setmousescale},
+  {"SETMOUSEOFFSET", cmd_setmouseoffset},
+  {"SETMOUSEPOSITION", cmd_setmouseposition},
+  {"SETMOUSESCALE", cmd_setmousescale},
   {"SETMUSICPITCH", cmd_setmusicpitch},
   {"SETMUSICVOLUME", cmd_setmusicvolume},
   // {"SETPIXELCOLOR", cmd_setpixelcolor},
@@ -7380,13 +7386,13 @@ API lib_proc[] = {
   // {"SETTEXTUREFILTER", cmd_settexturefilter},
   // {"SETTEXTUREWRAP", cmd_settexturewrap},
   // {"SETTRACELOGCALLBACK", cmd_settracelogcallback},
-  // {"SETTRACELOGEXIT", cmd_settracelogexit},
+  {"SETTRACELOGEXIT", cmd_settracelogexit},
   {"SETTRACELOGLEVEL", cmd_settraceloglevel},
   // {"SETVRCONFIGURATION", cmd_setvrconfiguration},
   // {"SETWINDOWICON", cmd_setwindowicon},
-  // {"SETWINDOWMINSIZE", cmd_setwindowminsize},
-  // {"SETWINDOWMONITOR", cmd_setwindowmonitor},
-  // {"SETWINDOWPOSITION", cmd_setwindowposition},
+  {"SETWINDOWMINSIZE", cmd_setwindowminsize},
+  {"SETWINDOWMONITOR", cmd_setwindowmonitor},
+  {"SETWINDOWPOSITION", cmd_setwindowposition},
   {"SETWINDOWSIZE", cmd_setwindowsize},
   {"SETWINDOWTITLE", cmd_setwindowtitle},
   {"SHOWCURSOR", cmd_showcursor},
