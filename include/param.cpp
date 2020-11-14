@@ -111,15 +111,26 @@ void v_setreal(var_t *var, var_num_t n) {
 }
 
 void v_setstr(var_t *var, const char *str) {
-  assert(var->type == V_INT);
+  assert(var->type == V_INT || var->type == V_STR);
 
-  int length = strlen(str == nullptr ? 0 : str);
-  var->type = V_STR;
-  var->v.p.ptr = (char *)malloc(length + 1);
-  var->v.p.ptr[0] = '\0';
-  var->v.p.length = length + 1;
-  var->v.p.owner = 1;
-  strcpy(var->v.p.ptr, str);
+  bool isSet = false;
+  if (var->type == V_STR) {
+    if (strcmp(str, var->v.p.ptr) == 0) {
+      // already set
+      isSet = true;
+    } else if (var->v.p.owner) {
+      free(var->v.p.ptr);
+    }
+  }
+  if (!isSet) {
+    int length = strlen(str == nullptr ? 0 : str);
+    var->type = V_STR;
+    var->v.p.ptr = (char *)malloc(length + 1);
+    var->v.p.ptr[0] = '\0';
+    var->v.p.length = length + 1;
+    var->v.p.owner = 1;
+    strcpy(var->v.p.ptr, str);
+  }
 }
 
 int v_strlen(const var_t *v) {

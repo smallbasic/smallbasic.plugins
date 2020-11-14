@@ -7,7 +7,7 @@
 
 LIB_VERSION=1:0:0
 
-AM_CXXFLAGS=-fno-rtti -fno-exceptions -std=c++14
+AM_CXXFLAGS=-fno-rtti -std=c++14
 AM_CPPFLAGS = -I../include -Iraylib/src -Iraylib/src/external/glfw/include -Iraylib/src/external/glfw/deps/mingw \
   -DPLATFORM_DESKTOP=1 -DSUPPORT_BUSY_WAIT_LOOP=1 -DSUPPORT_SCREEN_CAPTURE=1 \
   -DSUPPORT_GIF_RECORDING=1 -DSUPPORT_COMPRESSION_API=1 \

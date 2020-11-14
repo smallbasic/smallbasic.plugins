@@ -39,15 +39,21 @@ AC_ARG_WITH(static-include,
 case "${host_os}" in
   *mingw*)
     AC_DEFINE(_WIN32, 1, [building for win32])
-    PLATFORM_LDFLAGS="-no-undefined -Wc,-static"
+    PLATFORM_LDFLAGS="-no-undefined -Wl,-static"
     RAYLIB_LDFLAGS="-pthread -lgdi32 -mwindows"
     CLIPBOARD_LDFLAGS=""
+    NUKLEAR_LDFLAGS=""
+    NUKLEAR_CPPFLAGS=""
+    WEBSOCKET_LDFLAGS="-lwsock32"
     STATIC_INCLUDE="yes"
     ;;
 
   *)
     PLATFORM_LDFLAGS="-Wl,--no-undefined"
     CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
+    NUKLEAR_LDFLAGS="-lGL `sdl2-config --libs`"
+    NUKLEAR_CPPFLAGS="`sdl2-config --cflags`"
+    WEBSOCKET_LDFLAGS=""
     if test "${STATIC_INCLUDE}" = "yes"
     then
       RAYLIB_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
@@ -59,6 +65,9 @@ esac
 AM_CONDITIONAL(WITH_STATIC_INCLUDE, test "${STATIC_INCLUDE}" = "yes")
 AC_SUBST(CLIPBOARD_LDFLAGS)
 AC_SUBST(RAYLIB_LDFLAGS)
+AC_SUBST(NUKLEAR_CPPFLAGS)
+AC_SUBST(NUKLEAR_LDFLAGS)
+AC_SUBST(WEBSOCKET_LDFLAGS)
 AC_SUBST(PLATFORM_LDFLAGS)
 
 # checks for nuklear

@@ -5,7 +5,9 @@
 // This program is distributed under the terms of the GPL v2.0 or later
 // Download the GNU Public License (GPL) from www.gnu.org
 //
-// Copyright(C) 2018 Chris Warren-Smith
+// Copyright(C) 2020 Chris Warren-Smith
+
+#include "config.h"
 
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_STANDARD_IO
@@ -15,32 +17,35 @@
 #define NK_INCLUDE_DEFAULT_FONT
 #define NK_INCLUDE_FONT_BAKING
 #define NK_IMPLEMENTATION
-#define NK_SDL_GL2_IMPLEMENTATION
 
-#include "config.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_opengl.h>
+#include <cstddef>
+#include <cstdio>
+#include <cstddef>
+#include <cstring>
+
 #include "Nuklear/nuklear.h"
-#include "Nuklear/demo/sdl_opengl2/nuklear_sdl_gl2.h"
 #include "var.h"
 #include "var_map.h"
 #include "module.h"
 #include "param.h"
 
+nk_context *nkp_create_window(const char *title, int width, int height);
+void nkp_get_window_size(int *width, int *height);
+void nkp_process_events();
+void nkp_windowend();
+void nkp_close();
+
 #define WINDOW_WIDTH 600
 #define WINDOW_HEIGHT 480
-#define LOOP_DELAY 80
 #define MAX_FLOATS 40
 #define MAX_COMBOBOX_ITEMS 10
 #define MAX_EDIT_BUFFER_LEN 2048
+#define LOOP_DELAY 80
 
-static SDL_Window *_window;
-static SDL_GLContext _glContext;
 static struct nk_context *_ctx;
 static float _floats[MAX_FLOATS];
 static const char *_comboboxItems[MAX_COMBOBOX_ITEMS];
 static char _edit_buffer[MAX_EDIT_BUFFER_LEN];
-static bool _sdlExit;
 static struct nk_color _fg_color;
 static struct nk_color _bg_color;
 static float _line_thickness;
@@ -151,27 +156,10 @@ int get_value(const char *str, int range) {
   return result;
 }
 
-void process_events() {
-  SDL_Event evt;
-  nk_input_begin(_ctx);
-  while (!_sdlExit) {
-    if (SDL_PollEvent(&evt)) {
-      nk_sdl_handle_event(&evt);
-      if (evt.type == SDL_QUIT) {
-        _sdlExit = true;
-      }
-      break;
-    } else {
-      SDL_Delay(LOOP_DELAY);
-    }
-  }
-  nk_input_end(_ctx);
-}
-
 nk_color get_param_color(int argc, slib_par_t *params, int n) {
   nk_color result;
-  const char *color = get_param_str(argc, params, n, NULL);
-  if (color != NULL && is_color(color, v_strlen(params[n].var_p))) {
+  const char *color = get_param_str(argc, params, n, nullptr);
+  if (color != nullptr && is_color(color, v_strlen(params[n].var_p))) {
     result = nk_rgb_hex(color);
   } else {
     result = nk_black;
@@ -188,7 +176,7 @@ struct nk_rect get_param_rect(int argc, slib_par_t *params, int n) {
   bool strh = is_param_str(argc, params, n + 3);
   if (strw || strh) {
     int width, height;
-    SDL_GetWindowSize(_window, &width, &height);
+    nkp_get_window_size(&width, &height);
     if (strw) {
       w = get_value(get_param_str(argc, params, n + 2, ""), width);
     } else {
@@ -222,8 +210,8 @@ enum drawmode get_param_draw_mode(int argc, slib_par_t *params, int n) {
 nk_flags get_param_window_flags(int argc, slib_par_t *params, int n) {
   nk_flags flags = 0;
   for (int i = n; i < argc; i++) {
-    const char *flag = get_param_str(argc, params, i, NULL);
-    if (flag != NULL && flag[0] != '\0') {
+    const char *flag = get_param_str(argc, params, i, nullptr);
+    if (flag != nullptr && flag[0] != '\0') {
       if (!strcasecmp(flag, "border")) {
         flags |= NK_WINDOW_BORDER;
       } else if (!strcasecmp(flag, "movable")) {
@@ -268,9 +256,9 @@ int cmd_arc(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_button(int argc, slib_par_t *params, var_t *retval) {
-  const char *title = get_param_str(argc, params, 0, NULL);
+  const char *title = get_param_str(argc, params, 0, nullptr);
   int result;
-  if (title != NULL) {
+  if (title != nullptr) {
     if (is_color(title, v_strlen(params[0].var_p))) {
       v_setint(retval, nk_button_color(_ctx, nk_rgb_hex(title)));
     } else {
@@ -285,8 +273,8 @@ int cmd_button(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
-  const char *label = get_param_str(argc, params, 0, NULL);
-  if (label != NULL && is_param_map(argc, params, 1)) {
+  const char *label = get_param_str(argc, params, 0, nullptr);
+  if (label != nullptr && is_param_map(argc, params, 1)) {
     var_t *map = params[1].var_p;
     int value = map_get_bool(map, "value");
     int changed = nk_checkbox_label(_ctx, label, &value);
@@ -322,7 +310,7 @@ int cmd_colorpicker(int argc, slib_par_t *params, var_t *retval) {
     get_rgba_str(nk_rgba_cf(color), new_color_string);
   } else if (is_param_map(argc, params, 0)) {
     const char *value = get_param_str_field(argc, params, 0, "value");
-    if (value != NULL) {
+    if (value != nullptr) {
       struct nk_colorf color = nk_color_cf(nk_rgb_hex(value));
       int changed = nk_color_pick(_ctx, &color, NK_RGB);
       if (changed) {
@@ -386,8 +374,8 @@ int cmd_contextualend(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_contextualitem(int argc, slib_par_t *params, var_t *retval) {
-  const char *text = get_param_str(argc, params, 0, NULL);
-  if (text != NULL) {
+  const char *text = get_param_str(argc, params, 0, nullptr);
+  if (text != nullptr) {
     nk_contextual_item_symbol_label(_ctx, NK_SYMBOL_NONE, text, NK_TEXT_LEFT);
   }
   return (argc >= 1 && argc <= 3);
@@ -408,8 +396,8 @@ int cmd_curve(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_edit(int argc, slib_par_t *params, var_t *retval) {
   int success = 0;
-  const char *styleStr = get_param_str(argc, params, 0, NULL);
-  if (styleStr != NULL && is_param_map(argc, params, 1)) {
+  const char *styleStr = get_param_str(argc, params, 0, nullptr);
+  if (styleStr != nullptr && is_param_map(argc, params, 1)) {
     nk_flags style = 0;
     if (!strcasecmp(styleStr, "simple")) {
       style = NK_EDIT_SIMPLE;
@@ -421,7 +409,7 @@ int cmd_edit(int argc, slib_par_t *params, var_t *retval) {
       style = NK_EDIT_BOX;
     }
     const char *value = get_param_str_field(argc, params, 1, "value");
-    if (value != NULL && style != 0) {
+    if (value != nullptr && style != 0) {
       size_t len = NK_CLAMP(0, strlen(value), MAX_EDIT_BUFFER_LEN - 1);
       memcpy(_edit_buffer, value, len);
       _edit_buffer[len] = '\0';
@@ -441,7 +429,7 @@ int cmd_image(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_text(int argc, slib_par_t *params, var_t *retval) {
-  const char *text = get_param_str(argc, params, 0, NULL);
+  const char *text = get_param_str(argc, params, 0, nullptr);
   float x = get_param_num(argc, params, 1, 0);
   float y = get_param_num(argc, params, 2, 0);
   float w = get_param_num(argc, params, 3, 0);
@@ -468,7 +456,7 @@ int cmd_ellipse(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_groupbegin(int argc, slib_par_t *params, var_t *retval) {
-  const char *title = get_param_str(argc, params, 0, NULL);
+  const char *title = get_param_str(argc, params, 0, nullptr);
   nk_flags flags = get_param_window_flags(argc, params, 1);
   return nk_group_begin(_ctx, title, flags);
 }
@@ -479,10 +467,10 @@ int cmd_groupend(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_label(int argc, slib_par_t *params, var_t *retval) {
-  const char *label = get_param_str(argc, params, 0, NULL);
+  const char *label = get_param_str(argc, params, 0, nullptr);
   const char *position = get_param_str(argc, params, 1, "left");
   int result;
-  if (label != NULL) {
+  if (label != nullptr) {
     bool wrap = false;
     bool use_color = 0;
     struct nk_color color;
@@ -515,10 +503,10 @@ int cmd_label(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_layoutrow(int argc, slib_par_t *params, var_t *retval) {
-  const char *format = get_param_str(argc, params, 0, NULL);
+  const char *format = get_param_str(argc, params, 0, nullptr);
   var_num_t height = get_param_num(argc, params, 1, 0);
   int cols = get_param_int(argc, params, 2, 0);
-  if (format != NULL) {
+  if (format != nullptr) {
     if (!strcasecmp(format, "dynamic")) {
       nk_row_layout(_ctx, NK_DYNAMIC, height, cols, 0);
     } else if (!strcasecmp(format, "static")) {
@@ -538,8 +526,8 @@ int cmd_line(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_menubegin(int argc, slib_par_t *params, var_t *retval) {
   int result;
-  const char *text = get_param_str(argc, params, 0, NULL);
-  if (text != NULL) {
+  const char *text = get_param_str(argc, params, 0, nullptr);
+  if (text != nullptr) {
     struct nk_vec2 size;
     size.x = get_param_num(argc, params, 2, 0);
     size.y = get_param_num(argc, params, 3, 0);
@@ -559,8 +547,8 @@ int cmd_menuend(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_menuitem(int argc, slib_par_t *params, var_t *retval) {
   int result;
-  const char *text = get_param_str(argc, params, 0, NULL);
-  if (text != NULL) {
+  const char *text = get_param_str(argc, params, 0, nullptr);
+  if (text != nullptr) {
     result = nk_menu_item_label(_ctx, text, NK_TEXT_LEFT);
     result = 1;
   } else {
@@ -609,7 +597,7 @@ int cmd_progress(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_property(int argc, slib_par_t *params, var_t *retval) {
-  const char *name = get_param_str(argc, params, 0, NULL);
+  const char *name = get_param_str(argc, params, 0, nullptr);
   double min = get_param_num(argc, params, 1, 0);
   double max = get_param_num(argc, params, 3, 0);
   double step = get_param_num(argc, params, 4, 0);
@@ -632,8 +620,8 @@ int cmd_property(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_radio(int argc, slib_par_t *params, var_t *retval) {
   int result;
-  const char *name = get_param_str(argc, params, 0, NULL);
-  if (name != NULL && is_param_map(argc, params, 1)) {
+  const char *name = get_param_str(argc, params, 0, nullptr);
+  if (name != nullptr && is_param_map(argc, params, 1)) {
     const char *value = get_param_str_field(argc, params, 1, "value");
     int active = !strcasecmp(value, name);
     int changed = nk_radio_label(_ctx, name, &active);
@@ -662,8 +650,8 @@ int cmd_rectmulticolor(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_selectable(int argc, slib_par_t *params, var_t *retval) {
-  const char *text = get_param_str(argc, params, 0, NULL);
-  if (text != NULL && is_param_map(argc, params, 1)) {
+  const char *text = get_param_str(argc, params, 0, nullptr);
+  if (text != nullptr && is_param_map(argc, params, 1)) {
     int value = get_param_num_field(argc, params, 1, "value");
     nk_flags align = NK_TEXT_LEFT;
     int changed = nk_selectable_label(_ctx, text, align, &value);
@@ -702,7 +690,7 @@ int cmd_spacing(int argc, slib_par_t *params, var_t *retval) {
 int cmd_textinput(int argc, slib_par_t *params, var_t *retval) {
   int len;
   char buf[256];
-  const char *text = get_param_str(argc, params, 0, NULL);
+  const char *text = get_param_str(argc, params, 0, nullptr);
   strcpy(buf, text);
   nk_edit_string(_ctx, NK_EDIT_SIMPLE, buf, &len, sizeof(buf) - 1, nk_filter_float);
   buf[len] = 0;
@@ -711,7 +699,7 @@ int cmd_textinput(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_tooltip(int argc, slib_par_t *params, var_t *retval) {
-  const char *text = get_param_str(argc, params, 0, NULL);
+  const char *text = get_param_str(argc, params, 0, nullptr);
   if (text) {
     nk_tooltip(_ctx, text);
   }
@@ -724,18 +712,18 @@ int cmd_treepop(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
-  const char *typeStr = get_param_str(argc, params, 0, NULL);
-  const char *title = get_param_str(argc, params, 1, NULL);
+  const char *typeStr = get_param_str(argc, params, 0, nullptr);
+  const char *title = get_param_str(argc, params, 1, nullptr);
   enum nk_tree_type type = NK_TREE_NODE;
 
-  if (typeStr != NULL) {
+  if (typeStr != nullptr) {
     if (!strcasecmp(typeStr, "node")) {
       type = NK_TREE_NODE;
     } else if (!strcasecmp(typeStr, "tab")) {
       type = NK_TREE_TAB;
     }
   }
-  if (title != NULL) {
+  if (title != nullptr) {
     enum nk_collapse_states state = NK_MINIMIZED;
     int id = 0;
     int open = nk_tree_push_hashed(_ctx, type, title, state, title, strlen(title), id);
@@ -762,7 +750,9 @@ int cmd_widgetishovered(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
-  process_events();
+  nk_input_begin(_ctx);  
+  nkp_process_events();
+  nk_input_end(_ctx);
   const char *title = get_param_str(argc, params, 0, "Untitled");
   struct nk_rect rc = get_param_rect(argc, params, 1);
   nk_flags flags = get_param_window_flags(argc, params, 5);
@@ -772,12 +762,7 @@ int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_windowend(int argc, slib_par_t *params, var_t *retval) {
   nk_end(_ctx);
-  int width, height;
-  SDL_GetWindowSize(_window, &width, &height);
-  glViewport(0, 0, width, height);
-  glClear(GL_COLOR_BUFFER_BIT);
-  nk_sdl_render(NK_ANTI_ALIASING_ON);
-  SDL_GL_SwapWindow(_window);
+  nkp_windowend();
   return argc == 0;
 }
 
@@ -844,16 +829,12 @@ int sblib_init(void) {
 }
 
 void sblib_devinit(const char *prog, int width, int height) {
-  _window = NULL;
-  _glContext = NULL;
-  _ctx = NULL;
-  _sdlExit = false;
   _bg_color = nk_black;
   _fg_color = nk_white;
   _line_thickness = 1;
 
   const char *name = strrchr(prog, '/');
-  if (name == NULL) {
+  if (name == nullptr) {
     name = prog;
   } else {
     name++;
@@ -861,27 +842,8 @@ void sblib_devinit(const char *prog, int width, int height) {
   int len = strlen(name) + 16;
   char *title = new char[len];
   sprintf(title, "%s - SmallBASIC", name);
-
-  SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
-  SDL_Init(SDL_INIT_VIDEO);
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-  _window = SDL_CreateWindow(title,
-                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                             (width < 10) ? WINDOW_WIDTH : width,
-                             (height < 10) ? WINDOW_HEIGHT : height,
-                             SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|
-                             SDL_WINDOW_ALLOW_HIGHDPI|SDL_WINDOW_RESIZABLE);
+  _ctx = nkp_create_window(title, width, height);
   delete [] title;
-  _glContext = SDL_GL_CreateContext(_window);
-  glClearColor(0.10f, 0.18f, 0.24f, 1.0f);
-  _ctx = nk_sdl_init(_window);
-  struct nk_font_atlas *atlas;
-  nk_sdl_font_stash_begin(&atlas);
-  nk_sdl_font_stash_end();
 }
 
 int sblib_proc_count() {
@@ -934,16 +896,94 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int sblib_events(int wait_flag) {
-  return _sdlExit ? -2 : 0;
-}
-
 void sblib_close() {
   if (_ctx) {
-    nk_sdl_shutdown();
-    SDL_GL_DeleteContext(_glContext);
-    SDL_DestroyWindow(_window);
+    nkp_close();
   }
+}
+
+#if defined(_WIN32)
+//
+// GDI platform
+//
+
+
+#else
+//
+// SDL platform
+//
+
+#define NK_SDL_GL2_IMPLEMENTATION
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
+#include "Nuklear/demo/sdl_opengl2/nuklear_sdl_gl2.h"
+
+static SDL_Window *_window;
+static SDL_GLContext _glContext;
+static bool _sdlExit;
+
+nk_context *nkp_create_window(const char *title, int width, int height) {
+  SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
+  SDL_Init(SDL_INIT_VIDEO);
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+  _window = SDL_CreateWindow(title,
+                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                             (width < 10) ? WINDOW_WIDTH : width,
+                             (height < 10) ? WINDOW_HEIGHT : height,
+                             SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|
+                             SDL_WINDOW_ALLOW_HIGHDPI|SDL_WINDOW_RESIZABLE);
+  _glContext = SDL_GL_CreateContext(_window);
+  _sdlExit = false;
+  glClearColor(0.10f, 0.18f, 0.24f, 1.0f);
+
+  nk_context *result = nk_sdl_init(_window);
+  struct nk_font_atlas *atlas;
+  nk_sdl_font_stash_begin(&atlas);
+  nk_sdl_font_stash_end();
+
+  return result;
+}
+
+void nkp_get_window_size(int *width, int *height) {
+  SDL_GetWindowSize(_window, width, height);
+}
+
+void nkp_process_events() {
+  SDL_Event evt;
+  while (!_sdlExit) {
+    if (SDL_PollEvent(&evt)) {
+      nk_sdl_handle_event(&evt);
+      if (evt.type == SDL_QUIT) {
+        _sdlExit = true;
+      }
+      break;
+    } else {
+      SDL_Delay(LOOP_DELAY);
+    }
+  }
+}
+
+void nkp_windowend() {
+  int width, height;
+  SDL_GetWindowSize(_window, &width, &height);
+  glViewport(0, 0, width, height);
+  glClear(GL_COLOR_BUFFER_BIT);
+  nk_sdl_render(NK_ANTI_ALIASING_ON);
+  SDL_GL_SwapWindow(_window);
+}
+
+void nkp_close() {
+  nk_sdl_shutdown();
+  SDL_GL_DeleteContext(_glContext);
+  SDL_DestroyWindow(_window);
+}
+
+int sblib_events(int wait_flag) {
+  return _sdlExit ? -2 : 0;
 }
 
 void sblib_settextcolor(long fg, long bg) {
@@ -956,3 +996,5 @@ void sblib_settextcolor(long fg, long bg) {
 void sblib_setcolor(long fg) {
   _fg_color = get_color(fg);
 }
+
+#endif

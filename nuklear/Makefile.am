@@ -5,8 +5,14 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 # 
 
-AM_CPPFLAGS = -I../include `sdl2-config --cflags` -fno-exceptions -pedantic -O2
+#
+# cross-compile sdl: ./configure --host=x86_64-w64-mingw32 --prefix=/home/chrisws/mingw64 --disable-static
+# use built sdl2-config: export PATH=~/mingw64/bin:${PATH}
+# 
+
+AM_CXXFLAGS=-fno-rtti -std=c++14
+AM_CPPFLAGS = -I../include @NUKLEAR_CPPFLAGS@
 lib_LTLIBRARIES = libnuklear.la
 libnuklear_la_SOURCES =  ../include/param.cpp ../include/hashmap.cpp main.cpp
-libnuklear_la_LDFLAGS = -module -rpath '$(libdir)' `sdl2-config --libs` -lGL @PLATFORM_LDFLAGS@
+libnuklear_la_LDFLAGS = -module -rpath '$(libdir)' @NUKLEAR_LDFLAGS@ @PLATFORM_LDFLAGS@
 
