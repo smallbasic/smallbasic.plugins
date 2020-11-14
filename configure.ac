@@ -42,7 +42,7 @@ case "${host_os}" in
     PLATFORM_LDFLAGS="-no-undefined -Wl,-static"
     RAYLIB_LDFLAGS="-pthread -lgdi32 -mwindows"
     CLIPBOARD_LDFLAGS=""
-    NUKLEAR_LDFLAGS=""
+    NUKLEAR_LDFLAGS="-lgdi32 -lmsimg32 -mwindows"
     NUKLEAR_CPPFLAGS=""
     WEBSOCKET_LDFLAGS="-lwsock32"
     STATIC_INCLUDE="yes"

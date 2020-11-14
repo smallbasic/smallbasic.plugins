@@ -30,8 +30,7 @@
 #include "param.h"
 
 nk_context *nkp_create_window(const char *title, int width, int height);
-void nkp_get_window_size(int *width, int *height);
-void nkp_process_events();
+bool nkp_process_events();
 void nkp_windowend();
 void nkp_close();
 
@@ -40,7 +39,7 @@ void nkp_close();
 #define MAX_FLOATS 40
 #define MAX_COMBOBOX_ITEMS 10
 #define MAX_EDIT_BUFFER_LEN 2048
-#define LOOP_DELAY 80
+#define LOOP_DELAY 100
 
 static struct nk_context *_ctx;
 static float _floats[MAX_FLOATS];
@@ -49,6 +48,10 @@ static char _edit_buffer[MAX_EDIT_BUFFER_LEN];
 static struct nk_color _fg_color;
 static struct nk_color _bg_color;
 static float _line_thickness;
+static bool _isExit;
+static int _dirty;
+static int _width;
+static int _height;
 
 enum drawmode {DRAW_FILL, DRAW_LINE, DRAW_NONE};
 
@@ -175,15 +178,13 @@ struct nk_rect get_param_rect(int argc, slib_par_t *params, int n) {
   bool strw = is_param_str(argc, params, n + 2);
   bool strh = is_param_str(argc, params, n + 3);
   if (strw || strh) {
-    int width, height;
-    nkp_get_window_size(&width, &height);
     if (strw) {
-      w = get_value(get_param_str(argc, params, n + 2, ""), width);
+      w = get_value(get_param_str(argc, params, n + 2, ""), _width);
     } else {
       w = get_param_int(argc, params, n + 2, WINDOW_WIDTH);
     }
     if (strh) {
-      h = get_value(get_param_str(argc, params, n + 3, ""), height);
+      h = get_value(get_param_str(argc, params, n + 3, ""), _height);
     } else {
       h = get_param_int(argc, params, n + 3, WINDOW_HEIGHT);
     }
@@ -750,19 +751,27 @@ int cmd_widgetishovered(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
-  nk_input_begin(_ctx);  
-  nkp_process_events();
+  nk_input_begin(_ctx);
+  _dirty = nkp_process_events();
   nk_input_end(_ctx);
-  const char *title = get_param_str(argc, params, 0, "Untitled");
-  struct nk_rect rc = get_param_rect(argc, params, 1);
-  nk_flags flags = get_param_window_flags(argc, params, 5);
-  v_setint(retval, nk_begin(_ctx, title, rc, flags));
+  if (_dirty) {
+    const char *title = get_param_str(argc, params, 0, "Untitled");
+    struct nk_rect rc = get_param_rect(argc, params, 1);
+    nk_flags flags = get_param_window_flags(argc, params, 5);
+    v_setint(retval, nk_begin(_ctx, title, rc, flags));
+  } else {
+    // no UI updates required
+    v_setint(retval, 0);
+  }
   return 1;
 }
 
 int cmd_windowend(int argc, slib_par_t *params, var_t *retval) {
-  nk_end(_ctx);
-  nkp_windowend();
+  if (_dirty) {
+    nk_end(_ctx);
+    nkp_windowend();
+    _dirty = false;
+  }
   return argc == 0;
 }
 
@@ -832,6 +841,7 @@ void sblib_devinit(const char *prog, int width, int height) {
   _bg_color = nk_black;
   _fg_color = nk_white;
   _line_thickness = 1;
+  _dirty = true;
 
   const char *name = strrchr(prog, '/');
   if (name == nullptr) {
@@ -902,13 +912,118 @@ void sblib_close() {
   }
 }
 
+int sblib_events(int wait_flag, int *w, int *h) {
+  *w = _width;
+  *h = _height;
+  return _isExit ? -2 : 0;
+}
+
+void sblib_setcolor(long fg) {
+  _fg_color = get_color(fg);
+}
+
 #if defined(_WIN32)
+
 //
 // GDI platform
 //
 
+#define NK_GDI_IMPLEMENTATION
+#include "Nuklear/demo/gdi/nuklear_gdi.h"
+
+GdiFont* font;
+WNDCLASSW wc;
+HWND wnd;
+HDC dc;
+
+static LRESULT CALLBACK WindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+  switch (msg) {
+  case WM_DESTROY:
+    PostQuitMessage(0);
+    return 0;
+
+  case WM_SIZE:
+    _width = LOWORD(lparam);
+    _height = HIWORD(lparam);
+    break;
+  }
+
+  if (nk_gdi_handle_event(wnd, msg, wparam, lparam)) {
+    return 0;
+  }
+  return DefWindowProcW(wnd, msg, wparam, lparam);
+}
+
+nk_context *nkp_create_window(const char *title, int width, int height) {
+  memset(&wc, 0, sizeof(wc));
+  wc.style = CS_DBLCLKS;
+  wc.lpfnWndProc = WindowProc;
+  wc.hInstance = GetModuleHandleW(0);
+  wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+  wc.lpszClassName = L"NuklearWindowClass";
+  RegisterClassW(&wc);
+
+  RECT rc = {0, 0, (width < 10) ? WINDOW_WIDTH : width, (height < 10) ? WINDOW_HEIGHT : height};
+  DWORD style = WS_OVERLAPPEDWINDOW;
+  DWORD exstyle = WS_EX_APPWINDOW;
+
+  size_t size = strlen(title);
+  wchar_t *wideTitle = new wchar_t[size];
+  for (size_t i = 0; i < size; i++) {
+    wideTitle[i] = title[i];
+  }
+  AdjustWindowRectEx(&rc, style, FALSE, exstyle);
+  wnd = CreateWindowExW(exstyle, wc.lpszClassName, wideTitle,
+                        style | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT,
+                        rc.right - rc.left, rc.bottom - rc.top,
+                        nullptr, nullptr, wc.hInstance, nullptr);
+  dc = GetDC(wnd);
+  delete [] wideTitle;
+
+  font = nk_gdifont_create("Arial", 14);
+  return nk_gdi_init(font, dc, WINDOW_WIDTH, WINDOW_HEIGHT);
+}
+
+bool nkp_process_events() {
+  MSG msg;
+  if (!_dirty) {
+    if (GetMessageW(&msg, nullptr, 0, 0) <= 0) {
+      _isExit = true;
+    } else {
+      TranslateMessage(&msg);
+      DispatchMessageW(&msg);
+    }
+    _dirty = true;
+  }
+  while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
+    if (msg.message == WM_QUIT) {
+      _isExit = true;
+    }
+    TranslateMessage(&msg);
+    DispatchMessageW(&msg);
+    _dirty = true;
+  }
+  return _dirty;
+}
+
+void nkp_windowend() {
+  nk_gdi_render(_bg_color);
+}
+
+void nkp_close() {
+  nk_gdifont_del(font);
+  ReleaseDC(wnd, dc);
+  UnregisterClassW(wc.lpszClassName, wc.hInstance);
+}
+
+void sblib_settextcolor(long fg, long bg) {
+  _fg_color = get_color(fg);
+  _bg_color = get_color(bg);
+}
 
 #else
+
 //
 // SDL platform
 //
@@ -920,7 +1035,6 @@ void sblib_close() {
 
 static SDL_Window *_window;
 static SDL_GLContext _glContext;
-static bool _sdlExit;
 
 nk_context *nkp_create_window(const char *title, int width, int height) {
   SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
@@ -937,8 +1051,9 @@ nk_context *nkp_create_window(const char *title, int width, int height) {
                              SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|
                              SDL_WINDOW_ALLOW_HIGHDPI|SDL_WINDOW_RESIZABLE);
   _glContext = SDL_GL_CreateContext(_window);
-  _sdlExit = false;
   glClearColor(0.10f, 0.18f, 0.24f, 1.0f);
+  SDL_GetWindowSize(_window, &_width, &_height);
+  _isExit = false;
 
   nk_context *result = nk_sdl_init(_window);
   struct nk_font_atlas *atlas;
@@ -948,29 +1063,49 @@ nk_context *nkp_create_window(const char *title, int width, int height) {
   return result;
 }
 
-void nkp_get_window_size(int *width, int *height) {
-  SDL_GetWindowSize(_window, width, height);
-}
-
-void nkp_process_events() {
-  SDL_Event evt;
-  while (!_sdlExit) {
-    if (SDL_PollEvent(&evt)) {
-      nk_sdl_handle_event(&evt);
-      if (evt.type == SDL_QUIT) {
-        _sdlExit = true;
+bool nkp_process_events() {
+  SDL_Event event;
+  while (!_isExit) {
+    if (SDL_PollEvent(&event)) {
+      nk_sdl_handle_event(&event);
+      switch (event.type) {
+      case SDL_WINDOWEVENT:
+        if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+          _width = event.window.data1;
+          _height = event.window.data2;
+        }
+        _dirty = true;
+        break;
+      case SDL_QUIT:
+        _isExit = true;
+        break;
+      case SDL_TEXTINPUT:
+      case SDL_KEYDOWN:
+      case SDL_KEYUP:
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+      case SDL_MOUSEWHEEL:
+        _dirty = true;
+        break;
+      case SDL_MOUSEMOTION:
+        if (SDL_GetMouseState(nullptr, nullptr) &&
+            (SDL_BUTTON(SDL_BUTTON_LEFT) || SDL_BUTTON(SDL_BUTTON_RIGHT))) {
+          _dirty = true;
+        }
+        break;
+      default:
+        break;
       }
       break;
     } else {
       SDL_Delay(LOOP_DELAY);
     }
   }
+  return _dirty;
 }
 
 void nkp_windowend() {
-  int width, height;
-  SDL_GetWindowSize(_window, &width, &height);
-  glViewport(0, 0, width, height);
+  glViewport(0, 0, _width, _height);
   glClear(GL_COLOR_BUFFER_BIT);
   nk_sdl_render(NK_ANTI_ALIASING_ON);
   SDL_GL_SwapWindow(_window);
@@ -982,19 +1117,11 @@ void nkp_close() {
   SDL_DestroyWindow(_window);
 }
 
-int sblib_events(int wait_flag) {
-  return _sdlExit ? -2 : 0;
-}
-
 void sblib_settextcolor(long fg, long bg) {
   _fg_color = get_color(fg);
   _bg_color = get_color(bg);
   struct nk_colorf c = nk_color_cf(_bg_color);
   glClearColor(c.r, c.g, c.b, c.a);
-}
-
-void sblib_setcolor(long fg) {
-  _fg_color = get_color(fg);
 }
 
 #endif

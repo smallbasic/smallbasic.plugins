@@ -98,20 +98,34 @@ var_t *v_new() {
   return result;
 }
 
+void v_free(var_t *var) {
+  switch (var->type) {
+  case V_STR:
+    if (var->v.p.owner) {
+      free(var->v.p.ptr);
+    }
+    break;
+  case V_ARRAY:
+  case V_MAP:
+    assert("cannot free map or array");
+    break;
+  }
+}
+
 void v_setint(var_t *var, var_int_t i) {
-  assert(var->type == V_INT);
+  v_free(var);
   var->type = V_INT;
   var->v.i = i;
 }
 
 void v_setreal(var_t *var, var_num_t n) {
-  assert(var->type == V_INT);
+  v_free(var);
   var->type = V_NUM;
   var->v.n = n;
 }
 
 void v_setstr(var_t *var, const char *str) {
-  assert(var->type == V_INT || var->type == V_STR);
+  assert(var->type != V_ARRAY && var->type != V_MAP);
 
   bool isSet = false;
   if (var->type == V_STR) {
