@@ -12,5 +12,5 @@ AM_CPPFLAGS = -I../include -Iglad/include `pkg-config --cflags glfw3` \
 	-Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter -fno-rtti -fno-exceptions -std=c++14
 lib_LTLIBRARIES = libglfw.la
 libglfw_la_SOURCES = ../include/param.cpp ../include/hashmap.cpp glad/src/glad.cpp main.cpp
-libglfw_la_LDFLAGS = -module -rpath '$(libdir)' `pkg-config --libs glfw3` -ldl -lGL @PLATFORM_LDFLAGS@
+libglfw_la_LDFLAGS = -module -rpath '$(libdir)' `pkg-config --libs glfw3` -lpthread -ldl -lGL @PLATFORM_LDFLAGS@
 

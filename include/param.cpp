@@ -16,6 +16,18 @@
 #include "var_map.h"
 #include "var.h"
 
+void error(var_p_t var, const char *field, int n) {
+  char message[256];
+  snprintf(message, sizeof(message), "Invalid Input: [%s] - expected [%d] arguments", field, n);
+  v_setstr(var, message);
+}
+
+void error(var_p_t var, const char *text) {
+  char message[256];
+  snprintf(message, sizeof(message), "Error: [%s]", text);
+  v_setstr(var, message);
+}
+
 float get_num(var_p_t var) {
   float result;
   switch (var->type) {

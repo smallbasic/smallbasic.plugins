@@ -42,6 +42,8 @@ case "${host_os}" in
     PLATFORM_LDFLAGS="-no-undefined -Wl,-static"
     RAYLIB_LDFLAGS="-pthread -lgdi32 -mwindows"
     CLIPBOARD_LDFLAGS=""
+    IMGUI_LDFLAGS=""
+    IMGUI_CPPFLAGS=""
     NUKLEAR_LDFLAGS="-lgdi32 -lmsimg32 -mwindows"
     NUKLEAR_CPPFLAGS=""
     WEBSOCKET_LDFLAGS="-lwsock32"
@@ -51,6 +53,8 @@ case "${host_os}" in
   *)
     PLATFORM_LDFLAGS="-Wl,--no-undefined"
     CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
+    IMGUI_LDFLAGS=""
+    IMGUI_CPPFLAGS=""
     NUKLEAR_LDFLAGS="-lGL `sdl2-config --libs`"
     NUKLEAR_CPPFLAGS="`sdl2-config --cflags`"
     WEBSOCKET_LDFLAGS=""
@@ -65,6 +69,8 @@ esac
 AM_CONDITIONAL(WITH_STATIC_INCLUDE, test "${STATIC_INCLUDE}" = "yes")
 AC_SUBST(CLIPBOARD_LDFLAGS)
 AC_SUBST(RAYLIB_LDFLAGS)
+AC_SUBST(IMGUI_CPPFLAGS)
+AC_SUBST(IMGUI_LDFLAGS)
 AC_SUBST(NUKLEAR_CPPFLAGS)
 AC_SUBST(NUKLEAR_LDFLAGS)
 AC_SUBST(WEBSOCKET_LDFLAGS)
@@ -88,7 +94,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CXX
 LT_PREREQ([2.2])
 
-BUILD_SUBDIRS="nuklear glfw clipboard websocket raylib"
+BUILD_SUBDIRS="imgui nuklear glfw clipboard websocket raylib"
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
 
@@ -97,6 +103,7 @@ libdir=${libdir}/smallbasic
 AC_CONFIG_FILES([
 Makefile
 nuklear/Makefile
+imgui/Makefile
 glfw/Makefile
 clipboard/Makefile
 websocket/Makefile

@@ -12,33 +12,21 @@
 #include <raylib/raylib/src/raylib.h>
 #include <raygui/src/raygui.h>
 #include <cstring>
-#include <map>
+#include <unordered_map>
 
-#include "var.h"
-#include "var_map.h"
-#include "module.h"
-#include "param.h"
+#include "include/var.h"
+#include "include/var_map.h"
+#include "include/module.h"
+#include "include/param.h"
 
-std::map<int, Image> _imageMap;
-std::map<int, Model> _modelMap;
-std::map<int, Music> _musicMap;
-std::map<int, RenderTexture2D> _renderMap;
-std::map<int, Sound> _soundMap;
-std::map<int, Texture2D> _textureMap;
+std::unordered_map<int, Image> _imageMap;
+std::unordered_map<int, Model> _modelMap;
+std::unordered_map<int, Music> _musicMap;
+std::unordered_map<int, RenderTexture2D> _renderMap;
+std::unordered_map<int, Sound> _soundMap;
+std::unordered_map<int, Texture2D> _textureMap;
 int _nextId = 1;
 const char *mapID = "_ID";
-
-void error(var_p_t var, const char *field, int n) {
-  char message[256];
-  snprintf(message, sizeof(message), "Invalid Input: [%s] - expected [%d] arguments", field, n);
-  v_setstr(var, message);
-}
-
-void error(var_p_t var, const char *text) {
-  char message[256];
-  snprintf(message, sizeof(message), "Error: [%s]", text);
-  v_setstr(var, message);
-}
 
 void error_image(var_p_t var) {
   error(var, "Image not found");
@@ -6718,7 +6706,7 @@ int cmd_guicleartooltip(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     GuiClearTooltip();
   } else {
-    error(retval, "GuiWindowBox", 0);
+    error(retval, "GuiClearTooltip", 0);
   }
   return result;
 }
@@ -6728,7 +6716,7 @@ int cmd_guidisable(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     GuiDisable();
   } else {
-    error(retval, "GuiWindowBox", 0);
+    error(retval, "GuiDisable", 0);
   }
   return result;
 }
@@ -6738,7 +6726,7 @@ int cmd_guidisabletooltip(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     GuiDisableTooltip();
   } else {
-    error(retval, "GuiWindowBox", 0);
+    error(retval, "GuiDisableTooltip", 0);
   }
   return result;
 }
@@ -6750,7 +6738,7 @@ int cmd_guidummyrec(int argc, slib_par_t *params, var_t *retval) {
     auto text = get_param_str(argc, params, 1, 0);
     GuiDummyRec(bounds, text);
   } else {
-    error(retval, "GuiWindowBox", 2);
+    error(retval, "GuiDummyRec", 2);
   }
   return result;
 }
@@ -6760,7 +6748,7 @@ int cmd_guienable(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     GuiEnable();
   } else {
-    error(retval, "GuiWindowBox", 0);
+    error(retval, "GuiEnable", 0);
   }
   return result;
 }
@@ -6770,7 +6758,7 @@ int cmd_guienabletooltip(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     GuiEnableTooltip();
   } else {
-    error(retval, "GuiWindowBox", 0);
+    error(retval, "GuiEnableTooltip", 0);
   }
   return result;
 }
@@ -6781,7 +6769,7 @@ int cmd_guifade(int argc, slib_par_t *params, var_t *retval) {
     auto alpha = get_param_num(argc, params, 0, 0);
     GuiFade(alpha);
   } else {
-    error(retval, "GuiWindowBox", 0);
+    error(retval, "GuiFade", 0);
   }
   return result;
 }
@@ -6793,7 +6781,7 @@ int cmd_guigroupbox(int argc, slib_par_t *params, var_t *retval) {
     auto text = get_param_str(argc, params, 1, 0);
     GuiGroupBox(bounds, text);
   } else {
-    error(retval, "GuiWindowBox", 2);
+    error(retval, "GuiGroupBox", 2);
   }
   return result;
 }
@@ -6805,7 +6793,7 @@ int cmd_guilabel(int argc, slib_par_t *params, var_t *retval) {
     auto text = get_param_str(argc, params, 1, 0);
     GuiLabel(bounds, text);
   } else {
-    error(retval, "GuiWindowBox", 2);
+    error(retval, "GuiLabel", 2);
   }
   return result;
 }
@@ -6817,7 +6805,7 @@ int cmd_guiline(int argc, slib_par_t *params, var_t *retval) {
     auto text = get_param_str(argc, params, 1, 0);
     GuiLine(bounds, text);
   } else {
-    error(retval, "GuiWindowBox", 2);
+    error(retval, "GuiLine", 2);
   }
   return result;
 }
@@ -6828,7 +6816,7 @@ int cmd_guiloadstyle(int argc, slib_par_t *params, var_t *retval) {
     auto fileName = get_param_str(argc, params, 0, 0);
     GuiLoadStyle(fileName);
   } else {
-    error(retval, "GuiWindowBox", 2);
+    error(retval, "GuiLoadStyle", 2);
   }
   return result;
 }
@@ -6838,7 +6826,7 @@ int cmd_guiloadstyledefault(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     GuiLoadStyleDefault();
   } else {
-    error(retval, "GuiWindowBox", 2);
+    error(retval, "GuiLoadStyleDefault", 2);
   }
   return result;
 }
@@ -6848,7 +6836,7 @@ int cmd_guilock(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     GuiLock();
   } else {
-    error(retval, "GuiWindowBox", 0);
+    error(retval, "GuiLock", 0);
   }
   return result;
 }
@@ -6859,7 +6847,7 @@ int cmd_guipanel(int argc, slib_par_t *params, var_t *retval) {
     auto bounds = get_param_rect(argc, params, 0);
     GuiPanel(bounds);
   } else {
-    error(retval, "GuiWindowBox", 1);
+    error(retval, "GuiPanel", 1);
   }
   return result;
 }
@@ -6870,7 +6858,7 @@ int cmd_guisetfont(int argc, slib_par_t *params, var_t *retval) {
     //auto font = get_param_int(argc, params, 0, 0);
     //GuiSetFont(font);
   } else {
-    error(retval, "GuiWindowBox", 1);
+    error(retval, "GuiSetFont", 1);
   }
   return result;
 }
@@ -6881,7 +6869,7 @@ int cmd_guisetstate(int argc, slib_par_t *params, var_t *retval) {
     auto state = get_param_int(argc, params, 0, 0);
     GuiSetState(state);
   } else {
-    error(retval, "GuiWindowBox", 1);
+    error(retval, "GuiSetState", 1);
   }
   return result;
 }
@@ -6894,7 +6882,7 @@ int cmd_guisetstyle(int argc, slib_par_t *params, var_t *retval) {
     auto value = get_param_int(argc, params, 2, 0);
     GuiSetStyle(control, property, value);
   } else {
-    error(retval, "GuiWindowBox", 3);
+    error(retval, "GuiSetStyle", 3);
   }
   return result;
 }
@@ -6905,7 +6893,7 @@ int cmd_guisettooltip(int argc, slib_par_t *params, var_t *retval) {
     auto tooltip = get_param_str(argc, params, 0, 0);
     GuiSetTooltip(tooltip);
   } else {
-    error(retval, "GuiWindowBox", 1);
+    error(retval, "GuiSetTooltip", 1);
   }
   return result;
 }
@@ -6917,7 +6905,7 @@ int cmd_guistatusbar(int argc, slib_par_t *params, var_t *retval) {
     auto text = get_param_str(argc, params, 1, 0);
     GuiStatusBar(bounds, text);
   } else {
-    error(retval, "GuiWindowBox", 2);
+    error(retval, "GuiStatusBar", 2);
   }
   return result;
 }
@@ -6927,7 +6915,7 @@ int cmd_guiunlock(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     GuiUnlock();
   } else {
-    error(retval, "GuiWindowBox", 0);
+    error(retval, "GuiUnlock", 0);
   }
   return result;
 }
