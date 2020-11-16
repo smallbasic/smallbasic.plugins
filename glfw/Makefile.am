@@ -5,12 +5,17 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 # 
 
-# use https://glad.dav1d.de/ to generate glad.c
-# select the latest gl version then click generate
-
-AM_CPPFLAGS = -I../include -Iglad/include `pkg-config --cflags glfw3` \
-	-Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter -fno-rtti -fno-exceptions -std=c++14
+AM_CXXFLAGS=-fno-rtti -std=c++14
+AM_CPPFLAGS = \
+  -I../raylib/raylib/src/external/glfw/include \
+  -I../raylib/raylib/src/external/glfw/deps \
+	-Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter
 lib_LTLIBRARIES = libglfw.la
-libglfw_la_SOURCES = ../include/param.cpp ../include/hashmap.cpp glad/src/glad.cpp main.cpp
-libglfw_la_LDFLAGS = -module -rpath '$(libdir)' `pkg-config --libs glfw3` -lpthread -ldl -lGL @PLATFORM_LDFLAGS@
+libglfw_la_SOURCES = \
+  ../include/param.cpp \
+  ../include/hashmap.cpp \
+  ../raylib/raylib/src/rglfw.c \
+  ../raylib/raylib/src/external/glfw/deps/glad_gl.c \
+  main.cpp
+libglfw_la_LDFLAGS = -module -rpath '$(libdir)' @RAYLIB_LDFLAGS@ @PLATFORM_LDFLAGS@
 

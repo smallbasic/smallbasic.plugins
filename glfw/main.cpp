@@ -9,22 +9,23 @@
 
 #include "config.h"
 
-#include <glad/glad.h>
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
-#include <map>
+#include <unordered_map>
 
-#include "var.h"
-#include "var_map.h"
-#include "module.h"
-#include "param.h"
+#include "include/var.h"
+#include "include/var_map.h"
+#include "include/module.h"
+#include "include/param.h"
 
 #define WAIT_INTERVAL_MILLIS 5
 #define WAIT_INTERVAL (WAIT_INTERVAL_MILLIS/1000)
+#define M_PI 3.14159265358979323846
 
-std::map<int, GLFWwindow *> _windowMap;
+std::unordered_map<int, GLFWwindow *> _windowMap;
 int _nextId = 1;
 float _width, _height;
 double ellipse_segments = 20.0;
@@ -139,7 +140,7 @@ int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
     result = window != nullptr;
     if (result) {
       glfwMakeContextCurrent(window);
-      gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
+      gladLoadGL((GLADloadfunc) glfwGetProcAddress);
       glfwSetErrorCallback(error_callback);
       glfwSetKeyCallback(window, key_callback);
       glfwSetWindowSizeCallback(window, window_size_callback);
