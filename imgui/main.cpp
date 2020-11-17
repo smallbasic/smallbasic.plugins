@@ -9,12 +9,22 @@
 
 #include "config.h"
 
+#include <glad/gl.h>
+#include <GLFW/glfw3.h>
 #include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_opengl3.h>
+#include <unordered_map>
 
 #include "include/var.h"
 #include "include/var_map.h"
 #include "include/module.h"
 #include "include/param.h"
+
+std::unordered_map<int, GLFWwindow *> _windowMap;
+int _nextId = 1;
+float _width, _height;
+ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 using namespace ImGui;
 
@@ -31,6 +41,17 @@ ImVec2 get_param_vec2(int argc, slib_par_t *params, int n) {
     result.y = 0.0;
   }
   return result;
+}
+
+GLFWwindow *get_window(int argc, slib_par_t *params) {
+  GLFWwindow *window;
+  int windowId = get_param_int(argc, params, 0, -1);
+  if (windowId != -1) {
+    window = _windowMap.at(windowId);
+  } else {
+    window = nullptr;
+  }
+  return window;
 }
 
 int cmd_acceptdragdroppayload(int argc, slib_par_t *params, var_t *retval) {
@@ -2929,6 +2950,8 @@ int cmd_memfree(int argc, slib_par_t *params, var_t *retval) {
 int cmd_newframe(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
     NewFrame();
   } else {
     error(retval, "NewFrame", 0);
@@ -3227,11 +3250,20 @@ int cmd_pushtextwrappos(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_render(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 0);
-  if (result) {
+  int result = (argc == 1);
+  GLFWwindow *window = get_window(argc, params);
+  if (result && window != nullptr) {
     Render();
+
+    int display_w, display_h;
+    glfwGetFramebufferSize(window, &display_w, &display_h);
+    glViewport(0, 0, display_w, display_h);
+    glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    glfwSwapBuffers(window);
   } else {
-    error(retval, "Render", 0);
+    error(retval, "Render", 1);
   }
   return result;
 }
@@ -3990,6 +4022,133 @@ int cmd_value(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
+static void error_callback(int error, const char* description) {
+  fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+}
+
+// if not imgui.init() then throw "error"
+int cmd_init(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 0);
+  if (result) {
+    glfwSetErrorCallback(error_callback);
+    result = glfwInit();
+    if (result) {
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    }
+    v_setint(retval, result);
+  } else {
+    error(retval, "Init", 2);
+  }
+  return result;
+}
+
+static void window_size_callback(GLFWwindow* window, int width, int height) {
+  _width = width;
+  _height = height;
+}
+
+// window = imgui.create_window(640, 480, "Hello World")
+int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 3);
+  if (result) {
+    int width = get_param_int(argc, params, 0, 640);
+    int height = get_param_int(argc, params, 1, 480);
+    const char *title = get_param_str(argc, params, 2, "SmallBASIC");
+    GLFWwindow *window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+    result = window != nullptr;
+    if (result) {
+      glfwMakeContextCurrent(window);
+      glfwSwapInterval(1);
+      gladLoadGL((GLADloadfunc) glfwGetProcAddress);
+      glfwSetErrorCallback(error_callback);
+      glfwSetWindowSizeCallback(window, window_size_callback);
+
+      result = ++_nextId;
+      _windowMap[result] = window;
+      _width = width;
+      _height = height;
+
+      GLenum error = glGetError();
+      if (error != GL_NO_ERROR) {
+        char message[100];
+        snprintf(message, sizeof(message), "GL Error %d", error);
+        v_setstr(retval, message);
+        result = 0;
+      } else {
+        v_setint(retval, result);
+
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+        // Setup Dear ImGui style
+        ImGui::StyleColorsDark();
+
+        // Setup Platform/Renderer backends
+        ImGui_ImplGlfw_InitForOpenGL(window, true);
+        ImGui_ImplOpenGL3_Init("#version 130");
+      }
+    } else {
+      char message[100];
+      snprintf(message, sizeof(message), "Failed to create window [%d X %d]", width, height);
+      v_setstr(retval, message);
+    }
+  } else {
+    error(retval, "create_window", 3);
+  }
+  return result;
+}
+
+// n = imgui.window_should_close(window)
+int cmd_window_should_close(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 1);
+  GLFWwindow *window = get_window(argc, params);
+  if (result && window != nullptr) {
+    if (glfwWindowShouldClose(window)) {
+      ImGui_ImplOpenGL3_Shutdown();
+      ImGui_ImplGlfw_Shutdown();
+      ImGui::DestroyContext();
+
+      glfwDestroyWindow(window);
+      glfwTerminate();
+      v_setint(retval, 1);
+      int windowId = get_param_int(argc, params, 0, -1);
+      if (windowId != -1) {
+        _windowMap.erase(windowId);
+      }
+    } else {
+      v_setint(retval, 0);
+    }
+  } else {
+    error(retval, "window_should_close", 1);
+  }
+  return result;
+}
+
+// imgui.poll_events()
+int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 0);
+  if (result) {
+    glfwPollEvents();
+  } else {
+    error(retval, "poll_events", 0);
+  }
+  return result;
+}
+
+// imgui.wait_events(n)
+int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
+  int waitMillis = get_param_int(argc, params, 0, -1);
+  if (waitMillis > 0) {
+    glfwWaitEventsTimeout(waitMillis / 1000);
+  } else {
+    glfwWaitEvents();
+  }
+  return argc < 2;
+}
+
 API lib_func[] = {
   //{"ACCEPTDRAGDROPPAYLOAD", cmd_acceptdragdroppayload},
   //{"ARROWBUTTON", cmd_arrowbutton},
@@ -4168,6 +4327,10 @@ API lib_func[] = {
   //{"VSLIDERFLOAT", cmd_vsliderfloat},
   //{"VSLIDERINT", cmd_vsliderint},
   //{"VSLIDERSCALAR", cmd_vsliderscalar},
+
+  {"CREATE_WINDOW", cmd_create_window},
+  {"INIT", cmd_init},
+  {"WINDOW_SHOULD_CLOSE", cmd_window_should_close},
 };
 
 API lib_proc[] = {
@@ -4307,6 +4470,9 @@ API lib_proc[] = {
   // {"TREEPUSH", cmd_treepush},
   // {"UNINDENT", cmd_unindent},
   // {"VALUE", cmd_value},
+
+  {"POLL_EVENTS", cmd_poll_events},
+  {"WAIT_EVENTS", cmd_wait_events},
 };
 
 int sblib_proc_count() {
@@ -4360,6 +4526,8 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
 }
 
 int sblib_events(int wait_flag, int *w, int *h) {
+  *w = _width;
+  *h = _height;
   return 0;
 }
 
