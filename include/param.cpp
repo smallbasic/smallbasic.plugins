@@ -16,6 +16,12 @@
 #include "var_map.h"
 #include "var.h"
 
+void error(var_p_t var, const char *field, int nMin, int nMax) {
+  char message[256];
+  snprintf(message, sizeof(message), "Invalid Input: [%s] - expected [%d - %d] arguments", field, nMin, nMax);
+  v_setstr(var, message);
+}
+
 void error(var_p_t var, const char *field, int n) {
   char message[256];
   snprintf(message, sizeof(message), "Invalid Input: [%s] - expected [%d] arguments", field, n);

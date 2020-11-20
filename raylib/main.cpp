@@ -41,7 +41,7 @@ void error_model(var_p_t var) {
 }
 
 bool is_array(var_p_t var, uint32_t size) {
-  return v_is_type(var, V_ARRAY) && v_asize(var) == size;
+  return var != nullptr && v_is_type(var, V_ARRAY) && v_asize(var) == size;
 }
 
 var_int_t get_color_int(Color c) {
@@ -129,6 +129,19 @@ Vector3 get_array_elem_vec3(var_p_t array, int index) {
   return result;
 }
 
+Vector3 get_map_vec3(var_p_t map, const char *name) {
+  Vector3 result;
+  var_p_t array = map_get(map, name);
+  if (is_array(array, 3)) {
+    result.x = get_array_elem_num(array, 0);
+    result.y = get_array_elem_num(array, 1);
+    result.z = get_array_elem_num(array, 2);
+  } else {
+    TraceLog(LOG_FATAL, "Vector3 not found");
+  }
+  return result;
+}
+
 Camera3D get_camera_3d(int argc, slib_par_t *params, int n) {
   Camera3D result;
   if (is_param_array(argc, params, n)) {
@@ -138,8 +151,58 @@ Camera3D get_camera_3d(int argc, slib_par_t *params, int n) {
     result.up = get_array_elem_vec3(array, 2);
     result.fovy = get_array_elem_num(array, 3);
     result.type = get_array_elem_num(array, 4);
+  } else if (is_param_map(argc, params, n)) {
+    var_p_t map = params[n].var_p;
+    result.position = get_map_vec3(map, "position");
+    result.target = get_map_vec3(map, "target");
+    result.up = get_map_vec3(map, "up");
+    result.fovy = get_map_num(map, "fovy");
+    result.type = get_map_num(map, "type");
+  } else {
+    TraceLog(LOG_FATAL, "Camera3D not found");
   }
   return result;
+}
+
+void set_camera_3d(var_p_t var, Camera3D *camera) {
+  var_p_t v_position;
+  var_p_t v_target;
+  var_p_t v_up;
+
+  if (is_array(var, 5)) {
+    v_position = v_elem(var, 0);
+    v_target = v_elem(var, 1);
+    v_up = v_elem(var, 2);
+  } else if (v_is_type(var, V_MAP)) {
+    v_position = map_get(var, "position");
+    v_target = map_get(var, "target");
+    v_up = map_get(var, "up");
+  } else {
+    v_position = nullptr;
+    v_target = nullptr;
+    v_up = nullptr;
+  }
+  if (is_array(v_position, 3)) {
+    v_setreal(v_elem(v_position, 0), camera->position.x);
+    v_setreal(v_elem(v_position, 1), camera->position.y);
+    v_setreal(v_elem(v_position, 2), camera->position.z);
+  } else {
+    TraceLog(LOG_FATAL, "Camera3D position not found");
+  }
+  if (is_array(v_target, 3)) {
+    v_setreal(v_elem(v_target, 0), camera->target.x);
+    v_setreal(v_elem(v_target, 1), camera->target.y);
+    v_setreal(v_elem(v_target, 2), camera->target.z);
+  } else {
+    TraceLog(LOG_FATAL, "Camera3D target not found");
+  }
+  if (is_array(v_up, 3)) {
+    v_setreal(v_elem(v_up, 0), camera->up.x);
+    v_setreal(v_elem(v_up, 1), camera->up.y);
+    v_setreal(v_elem(v_up, 2), camera->up.z);
+  } else {
+    TraceLog(LOG_FATAL, "Camera3D up not found");
+  }
 }
 
 Shader get_param_shader(int argc, slib_par_t *params, int n) {
@@ -152,8 +215,9 @@ Shader get_param_shader(int argc, slib_par_t *params, int n) {
       result.locs = nullptr;
     }
     result.id = map_get_int(params[n].var_p, mapID, -1);
+  } else {
+    TraceLog(LOG_FATAL, "Shader not found");
   }
-
   return result;
 }
 
@@ -1688,10 +1752,10 @@ int cmd_getshaderdefault(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getshaderlocation(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto shader = get_param_str(argc, params, 0, NULL);
-    // auto uniformName = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = GetShaderLocation(shader, uniformName);
-    // v_setint(retval, fnResult);
+    auto shader = get_param_shader(argc, params, 0);
+    auto uniformName = get_param_str(argc, params, 1, NULL);
+    auto fnResult = GetShaderLocation(shader, uniformName);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetShaderLocation", 2);
   }
@@ -1701,10 +1765,10 @@ int cmd_getshaderlocation(int argc, slib_par_t *params, var_t *retval) {
 int cmd_getshaderlocationattrib(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto shader = get_param_str(argc, params, 0, NULL);
-    // auto attribName = get_param_str(argc, params, 1, NULL);
-    // auto fnResult = GetShaderLocationAttrib(shader, attribName);
-    // v_setint(retval, fnResult);
+    auto shader = get_param_shader(argc, params, 0);
+    auto attribName = get_param_str(argc, params, 1, NULL);
+    auto fnResult = GetShaderLocationAttrib(shader, attribName);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetShaderLocationAttrib", 2);
   }
@@ -2858,13 +2922,26 @@ int cmd_textfindindex(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_textformat(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
+  int result = (argc == 2);
   if (result) {
-    // auto text = get_param_str(argc, params, 0, NULL);
-    // auto fnResult = TextFormat(text);
-    // v_setint(retval, fnResult);
+    auto text = get_param_str(argc, params, 0, NULL);
+    var_t *var = params[1].var_p;
+    switch (var->type) {
+    case V_INT:
+      v_setstr(retval, TextFormat(text, var->v.i));
+      break;
+    case V_NUM:
+      v_setstr(retval, TextFormat(text, var->v.n));
+      break;
+    case V_STR:
+      v_setstr(retval, TextFormat(text, var->v.p.ptr));
+      break;
+    default:
+      error(retval, "TextFormat", 2);
+      break;
+    }
   } else {
-    error(retval, "TextFormat", 1);
+    error(retval, "TextFormat", 2);
   }
   return result;
 }
@@ -5573,24 +5650,10 @@ int cmd_setpixelcolor(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_setshadervalue(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 4);
-  if (result) {
-    // auto shader = get_param_str(argc, params, 0, NULL);
-    // auto uniformLoc = get_param_str(argc, params, 1, NULL);
-    // auto value = get_param_str(argc, params, 2, NULL);
-    // auto uniformType = get_param_str(argc, params, 3, NULL);
-    // SetShaderValue(shader, uniformLoc, value, uniformType);
-  } else {
-    error(retval, "SetShaderValue", 4);
-  }
-  return result;
-}
-
 int cmd_setshadervaluematrix(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto shader = get_param_str(argc, params, 0, NULL);
+    // auto shader = get_param_shader(argc, params, 0);
     // auto uniformLoc = get_param_str(argc, params, 1, NULL);
     // auto mat = get_param_str(argc, params, 2, NULL);
     // SetShaderValueMatrix(shader, uniformLoc, mat);
@@ -5603,7 +5666,7 @@ int cmd_setshadervaluematrix(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setshadervaluetexture(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto shader = get_param_str(argc, params, 0, NULL);
+    // auto shader = get_param_shader(argc, params, 0);
     // auto uniformLoc = get_param_str(argc, params, 1, NULL);
     // auto texture = get_param_str(argc, params, 2, NULL);
     // SetShaderValueTexture(shader, uniformLoc, texture);
@@ -5614,16 +5677,34 @@ int cmd_setshadervaluetexture(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_setshadervaluev(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 5);
+  int result = (argc == 4 || argc == 5);
   if (result) {
-    // auto shader = get_param_str(argc, params, 0, NULL);
-    // auto uniformLoc = get_param_str(argc, params, 1, NULL);
-    // auto value = get_param_str(argc, params, 2, NULL);
-    // auto uniformType = get_param_str(argc, params, 3, NULL);
-    // auto count = get_param_str(argc, params, 4, NULL);
-    // SetShaderValueV(shader, uniformLoc, value, uniformType, count);
+    auto shader = get_param_shader(argc, params, 0);
+    auto uniformLoc = get_param_int(argc, params, 1, 0);
+    auto uniformType = get_param_int(argc, params, 3, UNIFORM_FLOAT);
+    auto count = get_param_int(argc, params, 4, 1);
+    Vector3 vec3;
+    Vector2 vec2;
+    float num;
+    switch (uniformType) {
+    case UNIFORM_FLOAT:
+      num = get_param_num(argc, params, 2, 0);
+      SetShaderValueV(shader, uniformLoc, &num, uniformType, count);
+      break;
+    case UNIFORM_VEC2:
+      vec2 = get_param_vec2(argc, params, 2);
+      SetShaderValueV(shader, uniformLoc, &vec2, uniformType, count);
+      break;
+    case UNIFORM_VEC3:
+      vec3 = get_param_vec3(argc, params, 2);
+      SetShaderValueV(shader, uniformLoc, &vec3, uniformType, count);
+      break;
+    default:
+      error(retval, "Uniform type not implemented");
+      break;
+    }
   } else {
-    error(retval, "SetShaderValueV", 5);
+    error(retval, "SetShaderValue", 4, 5);
   }
   return result;
 }
@@ -6113,27 +6194,7 @@ int cmd_updatecamera(int argc, slib_par_t *params, var_t *retval) {
   if (result) {
     auto camera = get_camera_3d(argc, params, 0);
     UpdateCamera(&camera);
-    var_p_t array = params[0].var_p;
-    if (is_array(array, 5)) {
-      var_p_t v_position = v_elem(array, 0);
-      if (is_array(v_position, 3)) {
-        v_setreal(v_elem(v_position, 0), camera.position.x);
-        v_setreal(v_elem(v_position, 1), camera.position.y);
-        v_setreal(v_elem(v_position, 2), camera.position.z);
-      }
-      var_p_t v_target = v_elem(array, 1);
-      if (is_array(v_target, 3)) {
-        v_setreal(v_elem(v_target, 0), camera.target.x);
-        v_setreal(v_elem(v_target, 1), camera.target.y);
-        v_setreal(v_elem(v_target, 2), camera.target.z);
-      }
-      var_p_t v_up = v_elem(array, 2);
-      if (is_array(v_up, 3)) {
-        v_setreal(v_elem(v_up, 0), camera.up.x);
-        v_setreal(v_elem(v_up, 1), camera.up.y);
-        v_setreal(v_elem(v_up, 2), camera.up.z);
-      }
-    }
+    set_camera_3d(params[0].var_p, &camera);
   } else {
     error(retval, "UpdateCamera", 1);
   }
@@ -7032,8 +7093,8 @@ API lib_func[] = {
   // {"GETSCREENTOWORLD2D", cmd_getscreentoworld2d},
   {"GETSCREENWIDTH", cmd_getscreenwidth},
   // {"GETSHADERDEFAULT", cmd_getshaderdefault},
-  // {"GETSHADERLOCATION", cmd_getshaderlocation},
-  // {"GETSHADERLOCATIONATTRIB", cmd_getshaderlocationattrib},
+  {"GETSHADERLOCATION", cmd_getshaderlocation},
+  {"GETSHADERLOCATIONATTRIB", cmd_getshaderlocationattrib},
   // {"GETSHAPESTEXTURE", cmd_getshapestexture},
   // {"GETSHAPESTEXTUREREC", cmd_getshapestexturerec},
   {"GETSOUNDSPLAYING", cmd_getsoundsplaying},
@@ -7123,7 +7184,7 @@ API lib_func[] = {
   // {"MESHBOUNDINGBOX", cmd_meshboundingbox},
   // {"TEXTCOPY", cmd_textcopy},
   // {"TEXTFINDINDEX", cmd_textfindindex},
-  // {"TEXTFORMAT", cmd_textformat},
+  {"TEXTFORMAT", cmd_textformat},
   // {"TEXTINSERT", cmd_textinsert},
   // {"TEXTISEQUAL", cmd_textisequal},
   // {"TEXTJOIN", cmd_textjoin},
@@ -7363,10 +7424,10 @@ API lib_proc[] = {
   {"SETMUSICPITCH", cmd_setmusicpitch},
   {"SETMUSICVOLUME", cmd_setmusicvolume},
   // {"SETPIXELCOLOR", cmd_setpixelcolor},
-  // {"SETSHADERVALUE", cmd_setshadervalue},
+  {"SETSHADERVALUE", cmd_setshadervaluev},
   // {"SETSHADERVALUEMATRIX", cmd_setshadervaluematrix},
   // {"SETSHADERVALUETEXTURE", cmd_setshadervaluetexture},
-  // {"SETSHADERVALUEV", cmd_setshadervaluev},
+  {"SETSHADERVALUEV", cmd_setshadervaluev},
   // {"SETSHAPESTEXTURE", cmd_setshapestexture},
   {"SETSOUNDPITCH", cmd_setsoundpitch},
   {"SETSOUNDVOLUME", cmd_setsoundvolume},
@@ -7474,9 +7535,7 @@ int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   if (index >= 0 && index < sblib_proc_count()) {
     result = lib_proc[index].command(argc, params, retval);
   } else {
-    char message[50];
-    sprintf(message, "Invalid proc index [%d]", index);
-    v_setstr(retval, message);
+    fprintf(stderr, "Raylib: PROC index error [%d]\n", index);
     result = 0;
   }
   return result;
@@ -7487,16 +7546,10 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   if (index >= 0 && index < sblib_func_count()) {
     result = lib_func[index].command(argc, params, retval);
   } else {
-    char message[50];
-    sprintf(message, "Invalid func index [%d]", index);
-    v_setstr(retval, message);
+    fprintf(stderr, "Raylib: FUNC index error [%d]\n", index);
     result = 0;
   }
   return result;
-}
-
-int sblib_init(void) {
-  return 1;
 }
 
 void sblib_close(void) {

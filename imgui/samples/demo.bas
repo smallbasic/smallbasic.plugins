@@ -1,24 +1,30 @@
-import imgui
+import ImGui
 
 # Initialize the library
-if not imgui.init() then
-  throw "imgui init failed"
+if not ImGui.init() then
+  throw "ImGui init failed"
 endif
 
 # Create a windowed mode window and its OpenGL context
-wnd = imgui.create_window(640, 480, "SmallBASIC - IMGUI")
+wnd = ImGui.create_window(640, 480, "SmallBASIC - IMGUI")
 if not wnd then
-  throw "imgui create window failed"
+  throw "ImGui create window failed"
 endif
 
-maxfps = 0
+counter = 0
 
 # Loop until the user closes the window
-while not imgui.window_should_close(wnd)
-  imgui.poll_events()
-  imgui.newframe()
-  
-  
-  imgui.render(wnd)
+while not ImGui.window_should_close(wnd)
+  ImGui.poll_events()
+  ImGui.newframe()
+  counter++
+
+  if (ImGui.Begin("New window")) then
+    ImGui.Text("This is some useful text.")
+    ImGui.Text("counter = %d", counter)
+  endif
+  ImGui.End()
+
+  ImGui.Render(wnd)
 wend
 

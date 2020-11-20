@@ -81,15 +81,15 @@ int cmd_arrowbutton(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_begin(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 3);
+  int result = (argc > 0 && argc < 4);
   if (result) {
-    //auto name = get_param_int(argc, params, 0, 0);
-    //auto p_open = get_param_int(argc, params, 1, 0);
-    //auto flags = get_param_int(argc, params, 2, 0);
-    //auto fnResult = Begin(name, p_open, flags);
-    //v_setint(retval, fnResult);
+    auto name = get_param_str(argc, params, 0, 0);
+    auto p_open = get_param_int(argc, params, 1, 0) == 1;
+    auto flags = get_param_int(argc, params, 2, 0);
+    auto fnResult = Begin(name, &p_open, flags);
+    v_setint(retval, fnResult);
   } else {
-    error(retval, "Begin", 3);
+    error(retval, "Begin", 1, 3);
   }
   return result;
 }
@@ -480,13 +480,12 @@ int cmd_combo(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_createcontext(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
+  int result = (argc == 0);
   if (result) {
-    //auto shared_font_atlas = get_param_int(argc, params, 0, 0);
-    //auto fnResult = CreateContext(shared_font_atlas);
-    //v_setint(retval, fnResult);
+    SetCurrentContext(CreateContext());
+    v_setint(retval, 1);
   } else {
-    error(retval, "CreateContext", 1);
+    error(retval, "CreateContext", 0);
   }
   return result;
 }
@@ -2595,10 +2594,9 @@ int cmd_columns(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_destroycontext(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
+  int result = (argc == 0);
   if (result) {
-    // auto ctx = get_param_int(argc, params, 0, 0);
-    // DestroyContext(ctx);
+    DestroyContext();
   } else {
     error(retval, "DestroyContext", 1);
   }
@@ -3250,18 +3248,21 @@ int cmd_pushtextwrappos(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_render(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
-  GLFWwindow *window = get_window(argc, params);
-  if (result && window != nullptr) {
+  int result = (argc == 0 || argc == 1);
+  if (result) {
     Render();
-
-    int display_w, display_h;
-    glfwGetFramebufferSize(window, &display_w, &display_h);
-    glViewport(0, 0, display_w, display_h);
-    glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    glfwSwapBuffers(window);
+    GLFWwindow *window = get_window(argc, params);
+    if (window != nullptr) {
+      int display_w, display_h;
+      glfwGetFramebufferSize(window, &display_w, &display_h);
+      glViewport(0, 0, display_w, display_h);
+      glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+      glClear(GL_COLOR_BUFFER_BIT);
+    }
+    ImGui_ImplOpenGL3_RenderDrawData(GetDrawData());
+    if (window != nullptr) {
+      glfwSwapBuffers(window);
+    }
   } else {
     error(retval, "Render", 1);
   }
@@ -3853,14 +3854,28 @@ int cmd_stylecolorslight(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_text(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 3);
+  int result = (argc > 0 && argc < 4);
   if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto format = get_param_int(argc, params, 1, 0);
-    // auto printf = get_param_int(argc, params, 2, 0);
-    // Text(fmt, format, printf);
+    auto fmt = get_param_str(argc, params, 0, 0);
+    auto arg1 = get_param_str(argc, params, 1, 0);
+    auto arg2 = get_param_str(argc, params, 2, 0);
+    auto arg3 = get_param_str(argc, params, 3, 0);
+    switch (argc) {
+    case 0:
+      Text(fmt);
+      break;
+    case 1:
+      Text(fmt, arg1);
+      break;
+    case 2:
+      Text(fmt, arg1, arg2);
+      break;
+    case 3:
+      Text(fmt, arg1, arg2, arg3);
+      break;
+    }
   } else {
-    error(retval, "Text", 3);
+    error(retval, "Text", 1, 3);
   }
   return result;
 }
@@ -4080,11 +4095,11 @@ int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        CreateContext();
+        ImGuiIO& io = GetIO(); (void)io;
 
         // Setup Dear ImGui style
-        ImGui::StyleColorsDark();
+        StyleColorsDark();
 
         // Setup Platform/Renderer backends
         ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -4109,7 +4124,7 @@ int cmd_window_should_close(int argc, slib_par_t *params, var_t *retval) {
     if (glfwWindowShouldClose(window)) {
       ImGui_ImplOpenGL3_Shutdown();
       ImGui_ImplGlfw_Shutdown();
-      ImGui::DestroyContext();
+      DestroyContext();
 
       glfwDestroyWindow(window);
       glfwTerminate();
@@ -4152,7 +4167,7 @@ int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
 API lib_func[] = {
   //{"ACCEPTDRAGDROPPAYLOAD", cmd_acceptdragdroppayload},
   //{"ARROWBUTTON", cmd_arrowbutton},
-  //{"BEGIN", cmd_begin},
+  {"BEGIN", cmd_begin},
   //{"BEGINCHILD", cmd_beginchild},
   //{"BEGINCHILDFRAME", cmd_beginchildframe},
   //{"BEGINCOMBO", cmd_begincombo},
@@ -4182,7 +4197,7 @@ API lib_func[] = {
   //{"COLORPICKER3", cmd_colorpicker3},
   //{"COLORPICKER4", cmd_colorpicker4},
   //{"COMBO", cmd_combo},
-  //{"CREATECONTEXT", cmd_createcontext},
+  {"CREATECONTEXT", cmd_createcontext},
   //{"DEBUGCHECKVERSIONANDDATALAYOUT", cmd_debugcheckversionanddatalayout},
   //{"DRAGFLOAT", cmd_dragfloat},
   //{"DRAGFLOAT2", cmd_dragfloat2},
@@ -4347,7 +4362,7 @@ API lib_proc[] = {
   // {"COLORCONVERTHSVTORGB", cmd_colorconverthsvtorgb},
   // {"COLORCONVERTRGBTOHSV", cmd_colorconvertrgbtohsv},
   // {"COLUMNS", cmd_columns},
-  // {"DESTROYCONTEXT", cmd_destroycontext},
+  {"DESTROYCONTEXT", cmd_destroycontext},
   // {"DUMMY", cmd_dummy},
   {"END", cmd_end},
   {"ENDCHILD", cmd_endchild},
@@ -4457,7 +4472,7 @@ API lib_proc[] = {
   // {"STYLECOLORSCLASSIC", cmd_stylecolorsclassic},
   // {"STYLECOLORSDARK", cmd_stylecolorsdark},
   // {"STYLECOLORSLIGHT", cmd_stylecolorslight},
-  // {"TEXT", cmd_text},
+  {"TEXT", cmd_text},
   // {"TEXTCOLORED", cmd_textcolored},
   // {"TEXTCOLOREDV", cmd_textcoloredv},
   // {"TEXTDISABLED", cmd_textdisabled},
@@ -4510,6 +4525,7 @@ int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   if (index < sblib_proc_count()) {
     result = lib_proc[index].command(argc, params, retval);
   } else {
+    fprintf(stderr, "ImGui: PROC index error [%d]\n", index);
     result = 0;
   }
   return result;
@@ -4520,6 +4536,7 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   if (index < sblib_func_count()) {
     result = lib_func[index].command(argc, params, retval);
   } else {
+    fprintf(stderr, "ImGui: FUNC index error [%d]\n", index);
     result = 0;
   }
   return result;
@@ -4531,9 +4548,6 @@ int sblib_events(int wait_flag, int *w, int *h) {
   return 0;
 }
 
-int sblib_init(void) {
-  return 1;
-}
-
 void sblib_close(void) {
+  _windowMap.clear();
 }

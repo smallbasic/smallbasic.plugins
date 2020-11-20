@@ -1,5 +1,9 @@
 unit raylibc
 
+export UNIFORM_FLOAT = 0
+export UNIFORM_VEC2  = 1
+export UNIFORM_VEC3  = 2
+
 export const GESTURE_NONE        = 0
 export const GESTURE_TAP         = 1
 export const GESTURE_DOUBLETAP   = 2
