@@ -30,3 +30,4 @@ const char *get_param_str(int argc, slib_par_t *params, int n, const char *def);
 const char *get_param_str_field(int argc, slib_par_t *params, int n, const char *field);
 float get_map_num(var_p_t map, const char *name);
 float get_array_elem_num(var_p_t array, int index);
+const char *format_text(int argc, slib_par_t *params, int n);

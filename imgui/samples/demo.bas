@@ -6,7 +6,7 @@ if not ImGui.init() then
 endif
 
 # Create a windowed mode window and its OpenGL context
-wnd = ImGui.create_window(640, 480, "SmallBASIC - IMGUI")
+wnd = ImGui.create_window(340, 180, "SmallBASIC - IMGUI")
 if not wnd then
   throw "ImGui create window failed"
 endif

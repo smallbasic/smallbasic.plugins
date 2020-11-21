@@ -2922,26 +2922,11 @@ int cmd_textfindindex(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_textformat(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 2);
+  int result = (argc > 0);
   if (result) {
-    auto text = get_param_str(argc, params, 0, NULL);
-    var_t *var = params[1].var_p;
-    switch (var->type) {
-    case V_INT:
-      v_setstr(retval, TextFormat(text, var->v.i));
-      break;
-    case V_NUM:
-      v_setstr(retval, TextFormat(text, var->v.n));
-      break;
-    case V_STR:
-      v_setstr(retval, TextFormat(text, var->v.p.ptr));
-      break;
-    default:
-      error(retval, "TextFormat", 2);
-      break;
-    }
+    v_setstr(retval, format_text(argc, params, 0));
   } else {
-    error(retval, "TextFormat", 2);
+    error(retval, "TextFormat", 1, 9);
   }
   return result;
 }

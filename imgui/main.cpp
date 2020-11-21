@@ -3854,141 +3854,54 @@ int cmd_stylecolorslight(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_text(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc > 0 && argc < 4);
+  int result = (argc > 0);
   if (result) {
-    auto fmt = get_param_str(argc, params, 0, 0);
-    auto arg1 = get_param_str(argc, params, 1, 0);
-    auto arg2 = get_param_str(argc, params, 2, 0);
-    auto arg3 = get_param_str(argc, params, 3, 0);
-    switch (argc) {
-    case 0:
-      Text(fmt);
-      break;
-    case 1:
-      Text(fmt, arg1);
-      break;
-    case 2:
-      Text(fmt, arg1, arg2);
-      break;
-    case 3:
-      Text(fmt, arg1, arg2, arg3);
-      break;
-    }
+    Text(format_text(argc, params, 0));
   } else {
-    error(retval, "Text", 1, 3);
+    error(retval, "Text", 1, 9);
   }
   return result;
 }
 
 int cmd_textcolored(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 4);
+  int result = (argc > 0);
   if (result) {
-    // auto col = get_param_int(argc, params, 0, 0);
-    // auto fmt = get_param_int(argc, params, 1, 0);
-    // auto format = get_param_int(argc, params, 2, 0);
-    // auto printf = get_param_int(argc, params, 3, 0);
-    // TextColored(col, fmt, format, printf);
+    //auto col = get_param_int(argc, params, 0, 0);
+    //TextColored(format_text(argc, params, 1));
   } else {
-    error(retval, "TextColored", 4);
-  }
-  return result;
-}
-
-int cmd_textcoloredv(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 6);
-  if (result) {
-    // auto col = get_param_int(argc, params, 0, 0);
-    // auto fmt = get_param_int(argc, params, 1, 0);
-    // auto va_list = get_param_int(argc, params, 2, 0);
-    // auto args = get_param_int(argc, params, 3, 0);
-    // auto format = get_param_int(argc, params, 4, 0);
-    // auto printf = get_param_int(argc, params, 5, 0);
-    // TextColoredV(col, fmt, va_list, args, format, printf);
-  } else {
-    error(retval, "TextColoredV", 6);
+    error(retval, "TextColored", 1, 9);
   }
   return result;
 }
 
 int cmd_textdisabled(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 3);
+  int result = (argc > 0);
   if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto format = get_param_int(argc, params, 1, 0);
-    // auto printf = get_param_int(argc, params, 2, 0);
-    // TextDisabled(fmt, format, printf);
+    TextDisabled(format_text(argc, params, 0));
   } else {
-    error(retval, "TextDisabled", 3);
-  }
-  return result;
-}
-
-int cmd_textdisabledv(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 5);
-  if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto va_list = get_param_int(argc, params, 1, 0);
-    // auto args = get_param_int(argc, params, 2, 0);
-    // auto format = get_param_int(argc, params, 3, 0);
-    // auto printf = get_param_int(argc, params, 4, 0);
-    // TextDisabledV(fmt, va_list, args, format, printf);
-  } else {
-    error(retval, "TextDisabledV", 5);
+    error(retval, "TextDisabled", 1, 9);
   }
   return result;
 }
 
 int cmd_textunformatted(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 2);
+  int result = (argc == 1 || argc == 2);
   if (result) {
-    // auto text = get_param_str(argc, params, 0, 0);
-    // auto text_end = get_param_int(argc, params, 1, 0);
-    // TextUnformatted(text, text_end);
+    auto text = get_param_str(argc, params, 0, NULL);
+    auto text_end = get_param_str(argc, params, 1, NULL);
+    TextUnformatted(text, text_end);
   } else {
-    error(retval, "TextUnformatted", 2);
-  }
-  return result;
-}
-
-int cmd_textv(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 5);
-  if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto va_list = get_param_int(argc, params, 1, 0);
-    // auto args = get_param_int(argc, params, 2, 0);
-    // auto format = get_param_int(argc, params, 3, 0);
-    // auto printf = get_param_int(argc, params, 4, 0);
-    // TextV(fmt, va_list, args, format, printf);
-  } else {
-    error(retval, "TextV", 5);
+    error(retval, "TextUnformatted", 1, 2);
   }
   return result;
 }
 
 int cmd_textwrapped(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 3);
+  int result = (argc > 0);
   if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto format = get_param_int(argc, params, 1, 0);
-    // auto printf = get_param_int(argc, params, 2, 0);
-    // TextWrapped(fmt, format, printf);
+    TextWrapped(format_text(argc, params, 0));
   } else {
-    error(retval, "TextWrapped", 3);
-  }
-  return result;
-}
-
-int cmd_textwrappedv(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 5);
-  if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto va_list = get_param_int(argc, params, 1, 0);
-    // auto args = get_param_int(argc, params, 2, 0);
-    // auto format = get_param_int(argc, params, 3, 0);
-    // auto printf = get_param_int(argc, params, 4, 0);
-    // TextWrappedV(fmt, va_list, args, format, printf);
-  } else {
-    error(retval, "TextWrappedV", 5);
+    error(retval, "TextWrapped", 1, 9);
   }
   return result;
 }
@@ -4004,12 +3917,12 @@ int cmd_treepop(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
+  int result = (argc == 0 || argc == 1);
   if (result) {
-    // auto str_id = get_param_str(argc, params, 0, 0);
-    // TreePush(str_id);
+    auto str_id = get_param_str(argc, params, 0, NULL);
+    TreePush(str_id);
   } else {
-    error(retval, "TreePush", 1);
+    error(retval, "TreePush", 0, 1);
   }
   return result;
 }
@@ -4017,8 +3930,8 @@ int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
 int cmd_unindent(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto indent_w = get_param_int(argc, params, 0, 0);
-    // Unindent(indent_w);
+    auto indent_w = get_param_num(argc, params, 0, 0);
+    Unindent(indent_w);
   } else {
     error(retval, "Unindent", 1);
   }
@@ -4473,17 +4386,13 @@ API lib_proc[] = {
   // {"STYLECOLORSDARK", cmd_stylecolorsdark},
   // {"STYLECOLORSLIGHT", cmd_stylecolorslight},
   {"TEXT", cmd_text},
-  // {"TEXTCOLORED", cmd_textcolored},
-  // {"TEXTCOLOREDV", cmd_textcoloredv},
-  // {"TEXTDISABLED", cmd_textdisabled},
-  // {"TEXTDISABLEDV", cmd_textdisabledv},
-  // {"TEXTUNFORMATTED", cmd_textunformatted},
-  // {"TEXTV", cmd_textv},
-  // {"TEXTWRAPPED", cmd_textwrapped},
-  // {"TEXTWRAPPEDV", cmd_textwrappedv},
+  //{"TEXTCOLORED", cmd_textcolored},
+  {"TEXTDISABLED", cmd_textdisabled},
+  {"TEXTUNFORMATTED", cmd_textunformatted},
+  {"TEXTWRAPPED", cmd_textwrapped},
   {"TREEPOP", cmd_treepop},
-  // {"TREEPUSH", cmd_treepush},
-  // {"UNINDENT", cmd_unindent},
+  {"TREEPUSH", cmd_treepush},
+  {"UNINDENT", cmd_unindent},
   // {"VALUE", cmd_value},
 
   {"POLL_EVENTS", cmd_poll_events},

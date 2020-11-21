@@ -9,12 +9,15 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
+#include <ctype.h>
 
 #include "config.h"
 #include "param.h"
 #include "hashmap.h"
 #include "var_map.h"
 #include "var.h"
+
+#define MAX_TEXT_BUFFER_LENGTH 1024
 
 void error(var_p_t var, const char *field, int nMin, int nMax) {
   char message[256];
@@ -402,4 +405,89 @@ float get_array_elem_num(var_p_t array, int index) {
     result = 0.0;
   }
   return result;
+}
+
+int is_format_char(char c) {
+  static char specifiers[] = {'d', 'i', 'u', 'o', 'x', 'X', 'f', 'F', 'e', 'E', 'g', 'G', 'a', 'A', 'c', 's', 'n'};
+  static int len = sizeof(specifiers) / sizeof(char);
+  int result = 0;
+  for (int i = 0; i < len && !result; i++) {
+    result = (c == specifiers[i]);
+  }
+  return result;
+}
+
+const char *format_text(int argc, slib_par_t *params, int param) {
+  // supported for inline use only
+  static char buffer[MAX_TEXT_BUFFER_LENGTH];
+  const char *format = get_param_str(argc, params, param++, "");
+  const char *start = format;
+  const int padding = 10;
+
+  char *end = (char *)format;
+  int length = 0;
+  bool error = false;
+
+  memset(buffer, '\0', MAX_TEXT_BUFFER_LENGTH);
+
+  while (*end != '\0' && !error) {
+    if (*end != '%' || param == argc) {
+      end++;
+    } else {
+      while (*end != '\0') {
+        // skip next format symbol
+        end++;
+        if (is_format_char(*end)) {
+          // skip terminating format symbol
+          end++;
+          int segLength = end - start;
+          if (segLength + length + padding < MAX_TEXT_BUFFER_LENGTH) {
+            char cNull = *end;
+            int maxChars = MAX_TEXT_BUFFER_LENGTH - length;
+            int count;
+            *end = '\0';
+            // append to buffer, process the next single var-arg
+            switch (params[param].var_p->type) {
+            case V_INT:
+              count = snprintf(buffer + length, maxChars, start, params[param].var_p->v.i);
+              break;
+            case V_NUM:
+              count = snprintf(buffer + length, maxChars, start, params[param].var_p->v.n);
+              break;
+            case V_STR:
+              count = snprintf(buffer + length, maxChars, start, params[param].var_p->v.p.ptr);
+              break;
+            default:
+              count = -1;
+              break;
+            }
+            if (count < 0 || count >= maxChars) {
+              error = true;
+              break;
+            }
+            param++;
+            length += count;
+            *end = cNull;
+            start = end;
+          }
+          break;
+        } else if (*end != '.' && !isdigit(*end)) {
+          // non-formatting symbol
+          buffer[length++] = *end;
+          buffer[length] = '\0';
+          end++;
+          start = end;
+          break;
+        }
+      }
+    }
+  }
+
+  int segLength = end - start;
+  if (segLength && (segLength + length + padding < MAX_TEXT_BUFFER_LENGTH)) {
+    strncpy(buffer + length, start, segLength);
+    buffer[length + segLength + 1] = '\0';
+  }
+
+  return buffer;
 }
