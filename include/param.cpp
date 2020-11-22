@@ -450,7 +450,10 @@ const char *format_text(int argc, slib_par_t *params, int param) {
             // append to buffer, process the next single var-arg
             switch (params[param].var_p->type) {
             case V_INT:
-              if (formatChar != 's') {
+              if (formatChar == 'f') {
+                double value =  (double)params[param].var_p->v.i;
+                count = snprintf(buffer + length, maxChars, start, value);
+              } else if (formatChar != 's') {
                 count = snprintf(buffer + length, maxChars, start, params[param].var_p->v.i);
               } else {
                 count = -1;

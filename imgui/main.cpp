@@ -121,6 +121,26 @@ static int cmd_begin(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
+static int cmd_begin_fullscreen(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc > 0 && argc < 4);
+  if (result) {
+    const ImVec2 pos = ImVec2(0, 0);
+    const ImVec2 size = ImVec2(_width, _height);
+    SetNextWindowPos(pos);
+    SetNextWindowSize(size);
+
+    auto name = get_param_str(argc, params, 0, 0);
+    auto p_open = get_param_int(argc, params, 1, 0) == 1;
+    auto flags = get_param_int(argc, params, 2, 0) |
+                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    auto fnResult = Begin(name, &p_open, flags);
+    v_setint(retval, fnResult);
+  } else {
+    error(retval, "BeginFullScreen", 1, 3);
+  }
+  return result;
+}
+
 static int cmd_beginchild(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
@@ -316,14 +336,14 @@ static int cmd_begintabitem(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_button(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 2);
+  int result = (argc == 1 || argc == 2);
   if (result) {
     auto label = get_param_str(argc, params, 0, 0);
     auto size = get_param_vec2(argc, params, 1);
     auto fnResult = Button(label, size);
     v_setint(retval, fnResult);
   } else {
-    error(retval, "Button", 2);
+    error(retval, "Button", 1, 2);
   }
   return result;
 }
@@ -339,15 +359,15 @@ static int cmd_calcitemwidth(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_calctextsize(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_calctextsize(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    //auto text = get_param_str(argc, params, 0, 0);
-    //auto text_end = get_param_int(argc, params, 1, 0);
-    //auto hide_text_after_double_hash = get_param_int(argc, params, 2, 0);
-    //auto wrap_width = get_param_int(argc, params, 3, 0);
-    //auto fnResult = CalcTextSize(text, text_end, hide_text_after_double_hash, wrap_width);
-    //v_setint(retval, fnResult);
+    auto text = get_param_str(argc, params, 0, 0);
+    auto text_end = get_param_str(argc, params, 1, 0);
+    bool hide_text_after_double_hash = get_param_int(argc, params, 2, 0) == 1;
+    auto wrap_width = get_param_num(argc, params, 3, 0);
+    auto fnResult = CalcTextSize(text, text_end, hide_text_after_double_hash, wrap_width);
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "CalcTextSize", 4);
   }
@@ -433,30 +453,39 @@ int cmd_colorconvertu32tofloat4(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_coloredit3(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 3);
-  if (result) {
-    //auto label = get_param_str(argc, params, 0, 0);
-    //auto col = get_param_int(argc, params, 1, 0);
-    //auto flags = get_param_int(argc, params, 2, 0);
-    //auto fnResult = ColorEdit3(label, col, flags);
-    //v_setint(retval, fnResult);
+static int cmd_coloredit3(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 2 || argc == 3);
+  if (result && is_param_array(argc, params, 1)) {
+    auto label = get_param_str(argc, params, 0, 0);
+    float col[3] = {
+      get_array_elem_num(params[1].var_p, 0),
+      get_array_elem_num(params[1].var_p, 1),
+      get_array_elem_num(params[1].var_p, 2),
+    };
+    auto flags = get_param_int(argc, params, 2, 0);
+    auto fnResult = ColorEdit3(label, col, flags);
+    v_setint(retval, fnResult);
   } else {
-    error(retval, "ColorEdit3", 3);
+    error(retval, "ColorEdit3", 2, 3);
   }
   return result;
 }
 
 int cmd_coloredit4(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 3);
-  if (result) {
-    //auto label = get_param_str(argc, params, 0, 0);
-    //auto col = get_param_int(argc, params, 1, 0);
-    //auto flags = get_param_int(argc, params, 2, 0);
-    //auto fnResult = ColorEdit4(label, col, flags);
-    //v_setint(retval, fnResult);
+  int result = (argc == 2 || argc == 3);
+  if (result && is_param_array(argc, params, 1)) {
+    auto label = get_param_str(argc, params, 0, 0);
+    float col[4] = {
+      get_array_elem_num(params[1].var_p, 0),
+      get_array_elem_num(params[1].var_p, 1),
+      get_array_elem_num(params[1].var_p, 2),
+      get_array_elem_num(params[1].var_p, 3),
+    };
+    auto flags = get_param_int(argc, params, 2, 0);
+    auto fnResult = ColorEdit3(label, col, flags);
+    v_setint(retval, fnResult);
   } else {
-    error(retval, "ColorEdit4", 3);
+    error(retval, "ColorEdit4", 2, 3);
   }
   return result;
 }
@@ -1352,8 +1381,7 @@ int cmd_getwindowdrawlist(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_getwindowheight(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    auto fnResult = GetWindowHeight();
-    v_setint(retval, fnResult);
+    v_setreal(retval, GetWindowHeight());
   } else {
     error(retval, "GetWindowHeight", 0);
   }
@@ -1385,8 +1413,7 @@ static int cmd_getwindowsize(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_getwindowwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    auto fnResult = GetWindowWidth();
-    v_setint(retval, fnResult);
+    v_setreal(retval, GetWindowWidth());
   } else {
     error(retval, "GetWindowWidth", 0);
   }
@@ -2137,19 +2164,19 @@ int cmd_sliderangle(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_sliderfloat(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 6);
+static int cmd_sliderfloat(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 3 || argc == 5);
   if (result) {
-    //auto label = get_param_str(argc, params, 0, 0);
-    //auto v = get_param_int(argc, params, 1, 0);
-    //auto v_min = get_param_int(argc, params, 2, 0);
-    //auto v_max = get_param_int(argc, params, 3, 0);
-    //auto format = get_param_int(argc, params, 4, 0);
-    //auto flags = get_param_int(argc, params, 5, 0);
-    //auto fnResult = SliderFloat(label, v, v_min, v_max, format, flags);
-    //v_setint(retval, fnResult);
+    auto label = get_param_str(argc, params, 0, 0);
+    float v_min = get_param_num(argc, params, 1, 0);
+    float v_max = get_param_num(argc, params, 2, 0);
+    auto format = get_param_str(argc, params, 3, 0);
+    auto flags = get_param_int(argc, params, 4, 0);
+    float v = 0;
+    SliderFloat(label, &v, v_min, v_max, format, flags);
+    v_setreal(retval, v);
   } else {
-    error(retval, "SliderFloat", 6);
+    error(retval, "SliderFloat", 3, 5);
   }
   return result;
 }
@@ -3236,13 +3263,13 @@ static int cmd_resetmousedragdelta(int argc, slib_par_t *params, var_t *retval) 
 }
 
 static int cmd_sameline(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 2);
+  int result = (argc == 0 || argc == 1 || argc == 2);
   if (result) {
     auto offset_from_start_x = get_param_int(argc, params, 0, 0);
     auto spacing = get_param_int(argc, params, 1, 0);
     SameLine(offset_from_start_x, spacing);
   } else {
-    error(retval, "SameLine", 2);
+    error(retval, "SameLine", 0, 2);
   }
   return result;
 }
@@ -3496,41 +3523,39 @@ static int cmd_setnextwindowfocus(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_setnextwindowpos(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 3);
+static int cmd_setnextwindowpos(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc >= 1 && argc <= 3);
   if (result) {
-    // auto pos = get_param_int(argc, params, 0, 0);
-    // auto cond = get_param_int(argc, params, 1, 0);
-    // auto pivot = get_param_int(argc, params, 2, 0);
-    // SetNextWindowPos(pos, cond, pivot);
+    auto pos = get_param_vec2(argc, params, 0);
+    auto cond = get_param_int(argc, params, 1, 0);
+    auto pivot = get_param_vec2(argc, params, 2);
+    SetNextWindowPos(pos, cond, pivot);
   } else {
-    error(retval, "SetNextWindowPos", 3);
+    error(retval, "SetNextWindowPos", 1, 3);
   }
   return result;
 }
 
-int cmd_setnextwindowsize(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setnextwindowsize(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 1 || argc == 2);
+  if (result) {
+    auto size = get_param_vec2(argc, params, 0);
+    auto cond = get_param_int(argc, params, 1, 0);
+    SetNextWindowSize(size, cond);
+  } else {
+    error(retval, "SetNextWindowSize", 1, 2);
+  }
+  return result;
+}
+
+static int cmd_setnextwindowsizeconstraints(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto size = get_param_int(argc, params, 0, 0);
-    // auto cond = get_param_int(argc, params, 1, 0);
-    // SetNextWindowSize(size, cond);
+    auto size_min = get_param_vec2(argc, params, 0);
+    auto size_max = get_param_vec2(argc, params, 1);
+    SetNextWindowSizeConstraints(size_min, size_max);
   } else {
-    error(retval, "SetNextWindowSize", 2);
-  }
-  return result;
-}
-
-int cmd_setnextwindowsizeconstraints(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 4);
-  if (result) {
-    // auto size_min = get_param_int(argc, params, 0, 0);
-    // auto size_max = get_param_int(argc, params, 1, 0);
-    // auto custom_callback = get_param_int(argc, params, 2, 0);
-    // auto custom_callback_data = get_param_int(argc, params, 3, 0);
-    // SetNextWindowSizeConstraints(size_min, size_max, custom_callback, custom_callback_data);
-  } else {
-    error(retval, "SetNextWindowSizeConstraints", 4);
+    error(retval, "SetNextWindowSizeConstraints", 2);
   }
   return result;
 }
@@ -3699,28 +3724,6 @@ static int cmd_showaboutwindow(int argc, slib_par_t *params, var_t *retval) {
     ShowAboutWindow(&p_open);
   } else {
     error(retval, "ShowAboutWindow", 1);
-  }
-  return result;
-}
-
-static int cmd_showdemowindow(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
-  if (result) {
-    bool p_open = get_param_int(argc, params, 0, 0) == 1;
-    ShowDemoWindow(&p_open);
-  } else {
-    error(retval, "ShowDemoWindow", 1);
-  }
-  return result;
-}
-
-static int cmd_showfontselector(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
-  if (result) {
-    auto label = get_param_str(argc, params, 0, 0);
-    ShowFontSelector(label);
-  } else {
-    error(retval, "ShowFontSelector", 1);
   }
   return result;
 }
@@ -3988,6 +3991,16 @@ int cmd_window_should_close(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
+int cmd_framerate(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 0);
+  if (result) {
+    v_setreal(retval, GetIO().Framerate);
+  } else {
+    error(retval, "Framerate", 0);
+  }
+  return result;
+}
+
 // imgui.poll_events()
 int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
@@ -4014,6 +4027,7 @@ API lib_func[] = {
   //{"ACCEPTDRAGDROPPAYLOAD", cmd_acceptdragdroppayload},
   {"ARROWBUTTON", cmd_arrowbutton},
   {"BEGIN", cmd_begin},
+  {"BEGINFULLSCREEN", cmd_begin_fullscreen},
   {"BEGINCHILD", cmd_beginchild},
   {"BEGINCHILDFRAME", cmd_beginchildframe},
   {"BEGINCOMBO", cmd_begincombo},
@@ -4031,15 +4045,15 @@ API lib_func[] = {
   {"BEGINTABITEM", cmd_begintabitem},
   {"BUTTON", cmd_button},
   {"CALCITEMWIDTH", cmd_calcitemwidth},
-  //{"CALCTEXTSIZE", cmd_calctextsize},
+  {"CALCTEXTSIZE", cmd_calctextsize},
   {"CHECKBOX", cmd_checkbox},
   //{"CHECKBOXFLAGS", cmd_checkboxflags},
   //{"COLLAPSINGHEADER", cmd_collapsingheader},
   //{"COLORBUTTON", cmd_colorbutton},
   //{"COLORCONVERTFLOAT4TOU32", cmd_colorconvertfloat4tou32},
   //{"COLORCONVERTU32TOFLOAT4", cmd_colorconvertu32tofloat4},
-  //{"COLOREDIT3", cmd_coloredit3},
-  //{"COLOREDIT4", cmd_coloredit4},
+  {"COLOREDIT3", cmd_coloredit3},
+  {"COLOREDIT4", cmd_coloredit4},
   //{"COLORPICKER3", cmd_colorpicker3},
   //{"COLORPICKER4", cmd_colorpicker4},
   //{"COMBO", cmd_combo},
@@ -4168,7 +4182,7 @@ API lib_func[] = {
   //{"SETDRAGDROPPAYLOAD", cmd_setdragdroppayload},
   //{"SHOWSTYLESELECTOR", cmd_showstyleselector},
   //{"SLIDERANGLE", cmd_sliderangle},
-  //{"SLIDERFLOAT", cmd_sliderfloat},
+  {"SLIDERFLOAT", cmd_sliderfloat},
   //{"SLIDERFLOAT2", cmd_sliderfloat2},
   //{"SLIDERFLOAT3", cmd_sliderfloat3},
   //{"SLIDERFLOAT4", cmd_sliderfloat4},
@@ -4191,6 +4205,7 @@ API lib_func[] = {
   {"CREATE_WINDOW", cmd_create_window},
   {"INIT", cmd_init},
   {"WINDOW_SHOULD_CLOSE", cmd_window_should_close},
+  {"FRAMERATE", cmd_framerate},
 };
 
 API lib_proc[] = {
@@ -4286,9 +4301,9 @@ API lib_proc[] = {
   {"SETNEXTWINDOWCOLLAPSED", cmd_setnextwindowcollapsed},
   {"SETNEXTWINDOWCONTENTSIZE", cmd_setnextwindowcontentsize},
   {"SETNEXTWINDOWFOCUS", cmd_setnextwindowfocus},
-  // {"SETNEXTWINDOWPOS", cmd_setnextwindowpos},
-  // {"SETNEXTWINDOWSIZE", cmd_setnextwindowsize},
-  // {"SETNEXTWINDOWSIZECONSTRAINTS", cmd_setnextwindowsizeconstraints},
+  {"SETNEXTWINDOWPOS", cmd_setnextwindowpos},
+  {"SETNEXTWINDOWSIZE", cmd_setnextwindowsize},
+  {"SETNEXTWINDOWSIZECONSTRAINTS", cmd_setnextwindowsizeconstraints},
   {"SETSCROLLFROMPOSX", cmd_setscrollfromposx},
   {"SETSCROLLFROMPOSY", cmd_setscrollfromposy},
   {"SETSCROLLHEREX", cmd_setscrollherex},
@@ -4304,8 +4319,6 @@ API lib_proc[] = {
   {"SETWINDOWPOS", cmd_setwindowpos},
   {"SETWINDOWSIZE", cmd_setwindowsize},
   {"SHOWABOUTWINDOW", cmd_showaboutwindow},
-  {"SHOWDEMOWINDOW", cmd_showdemowindow},
-  {"SHOWFONTSELECTOR", cmd_showfontselector},
   {"SHOWMETRICSWINDOW", cmd_showmetricswindow},
   {"SHOWSTYLEEDITOR", cmd_showstyleeditor},
   {"SPACING", cmd_spacing},

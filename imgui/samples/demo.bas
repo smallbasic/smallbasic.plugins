@@ -6,25 +6,37 @@ if not ImGui.init() then
 endif
 
 # Create a windowed mode window and its OpenGL context
-wnd = ImGui.create_window(340, 180, "SmallBASIC - IMGUI")
+wnd = ImGui.create_window(640, 480, "SmallBASIC - IMGUI")
 if not wnd then
   throw "ImGui create window failed"
 endif
 
-counter = 0
+show_demo_window = false
+show_another_window = false
+clear_color = [0.45, 0.55, 0.60, 1.00]
+
+sub show_window
+  if (ImGui.BeginFullScreen("Hello, world!")) then       ' Create a window called "Hello, world!" and append into it.
+    ImGui.Text("This is some useful text.")              ' Display some text (you can use a format strings too)
+    n = ImGui.Checkbox("Demo Window", show_demo_window)  ' Edit bools storing our window open/close state
+    n = ImGui.Checkbox("Another Window", show_another_window)
+    f = ImGui.SliderFloat("float", 0.0, 1.0)             ' Edit 1 float using a slider from 0.0f to 1.0f
+    n = ImGui.ColorEdit3("clear color", clear_color)     ' Edit 3 floats representing a color
+    if (ImGui.Button("Button")) then                     ' Buttons return true when clicked (most widgets return true when edited/activated)
+      counter++
+    endif  
+    ImGui.SameLine()
+    ImGui.Text("counter = %d", counter)
+    ImGui.Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0 / ImGui.Framerate(), ImGui.Framerate())
+  endif  
+  ImGui.End()
+end
 
 # Loop until the user closes the window
 while not ImGui.window_should_close(wnd)
-  ImGui.poll_events()
+  ImGui.wait_events()
   ImGui.newframe()
-  counter++
-
-  if (ImGui.Begin("New window")) then
-    ImGui.Text("This is some useful text.")
-    ImGui.Text("counter = %d", counter)
-  endif
-  ImGui.End()
-
+  show_window()
   ImGui.Render(wnd)
 wend
 

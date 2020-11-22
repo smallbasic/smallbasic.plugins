@@ -10,7 +10,7 @@ AM_CPPFLAGS = \
   -I./imgui \
   -I../raylib/raylib/src/external/glfw/include \
   -I../raylib/raylib/src/external/glfw/deps \
-	-DIMGUI_IMPL_OPENGL_LOADER_GLAD2=1 \
+	-DIMGUI_IMPL_OPENGL_LOADER_GLAD2=1 -DIMGUI_DISABLE_DEMO_WINDOWS=1 \
 	-Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter
 lib_LTLIBRARIES = libimgui.la
 libimgui_la_SOURCES =  \
