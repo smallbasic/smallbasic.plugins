@@ -43,6 +43,33 @@ ImVec2 get_param_vec2(int argc, slib_par_t *params, int n) {
   return result;
 }
 
+ImVec4 get_param_vec4(int argc, slib_par_t *params, int n) {
+  ImVec4 result;
+  if (is_param_map(argc, params, n)) {
+    result.x = get_map_num(params[n].var_p, "x");
+    result.y = get_map_num(params[n].var_p, "y");
+    result.z = get_map_num(params[n].var_p, "z");
+    result.w = get_map_num(params[n].var_p, "w");
+  } else if (is_param_array(argc, params, n)) {
+    result.x = get_array_elem_num(params[n].var_p, 0);
+    result.y = get_array_elem_num(params[n].var_p, 1);
+    result.x = get_array_elem_num(params[n].var_p, 2);
+    result.y = get_array_elem_num(params[n].var_p, 3);
+  } else {
+    result.x = 0.0;
+    result.y = 0.0;
+    result.z = 0.0;
+    result.w = 0.0;
+  }
+  return result;
+}
+
+void v_set_vec2(var_t *var, ImVec2 &vec2) {
+  map_init(var);
+  v_setint(map_add_var(var, "x", 0), vec2.x);
+  v_setint(map_add_var(var, "y", 0), vec2.y);
+}
+
 GLFWwindow *get_window(int argc, slib_par_t *params) {
   GLFWwindow *window;
   int windowId = get_param_int(argc, params, 0, -1);
@@ -67,20 +94,20 @@ int cmd_acceptdragdroppayload(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_arrowbutton(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_arrowbutton(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    //auto str_id = get_param_str(argc, params, 0, 0);
-    //auto dir = get_param_int(argc, params, 1, 0);
-    //auto fnResult = ArrowButton(str_id, dir);
-    //v_setint(retval, fnResult);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    auto dir = get_param_int(argc, params, 1, 0);
+    auto fnResult = ArrowButton(str_id, dir);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "ArrowButton", 2);
   }
   return result;
 }
 
-int cmd_begin(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_begin(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc > 0 && argc < 4);
   if (result) {
     auto name = get_param_str(argc, params, 0, 0);
@@ -94,218 +121,218 @@ int cmd_begin(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_beginchild(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_beginchild(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    //auto str_id = get_param_str(argc, params, 0, 0);
-    //auto size = get_param_int(argc, params, 1, 0);
-    //auto border = get_param_int(argc, params, 2, 0);
-    //auto flags = get_param_int(argc, params, 3, 0);
-    //auto fnResult = BeginChild(str_id, size, border, flags);
-    //v_setint(retval, fnResult);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    auto size = get_param_vec2(argc, params, 1);
+    auto border = get_param_int(argc, params, 2, 0);
+    auto flags = get_param_int(argc, params, 3, 0);
+    auto fnResult = BeginChild(str_id, size, border, flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginChild", 4);
   }
   return result;
 }
 
-int cmd_beginchildframe(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_beginchildframe(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    //auto id = get_param_int(argc, params, 0, 0);
-    //auto size = get_param_int(argc, params, 1, 0);
-    //auto flags = get_param_int(argc, params, 2, 0);
-    //auto fnResult = BeginChildFrame(id, size, flags);
-    //v_setint(retval, fnResult);
+    auto id = get_param_int(argc, params, 0, 0);
+    auto size = get_param_vec2(argc, params, 1);
+    auto flags = get_param_int(argc, params, 2, 0);
+    auto fnResult = BeginChildFrame(id, size, flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginChildFrame", 3);
   }
   return result;
 }
 
-int cmd_begincombo(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_begincombo(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    //auto label = get_param_str(argc, params, 0, 0);
-    //auto preview_value = get_param_int(argc, params, 1, 0);
-    //auto flags = get_param_int(argc, params, 2, 0);
-    //auto fnResult = BeginCombo(label, preview_value, flags);
-    //v_setint(retval, fnResult);
+    auto label = get_param_str(argc, params, 0, 0);
+    auto preview_value = get_param_str(argc, params, 1, NULL);
+    auto flags = get_param_int(argc, params, 2, 0);
+    auto fnResult = BeginCombo(label, preview_value, flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginCombo", 3);
   }
   return result;
 }
 
-int cmd_begindragdropsource(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_begindragdropsource(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    //auto flags = get_param_int(argc, params, 0, 0);
-    //auto fnResult = BeginDragDropSource(flags);
-    //v_setint(retval, fnResult);
+    auto flags = get_param_int(argc, params, 0, 0);
+    auto fnResult = BeginDragDropSource(flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginDragDropSource", 1);
   }
   return result;
 }
 
-int cmd_begindragdroptarget(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_begindragdroptarget(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = BeginDragDropTarget();
-    //v_setint(retval, fnResult);
+    auto fnResult = BeginDragDropTarget();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginDragDropTarget", 0);
   }
   return result;
 }
 
-int cmd_beginmainmenubar(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_beginmainmenubar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = BeginMainMenuBar();
-    //v_setint(retval, fnResult);
+    auto fnResult = BeginMainMenuBar();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginMainMenuBar", 0);
   }
   return result;
 }
 
-int cmd_beginmenu(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_beginmenu(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    //auto label = get_param_str(argc, params, 0, 0);
-    //auto enabled = get_param_int(argc, params, 1, 0);
-    //auto fnResult = BeginMenu(label, enabled);
-    //v_setint(retval, fnResult);
+    auto label = get_param_str(argc, params, 0, 0);
+    auto enabled = get_param_int(argc, params, 1, 0);
+    auto fnResult = BeginMenu(label, enabled);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginMenu", 2);
   }
   return result;
 }
 
-int cmd_beginmenubar(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_beginmenubar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = BeginMenuBar();
-    //v_setint(retval, fnResult);
+    auto fnResult = BeginMenuBar();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginMenuBar", 0);
   }
   return result;
 }
 
-int cmd_beginpopup(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_beginpopup(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    //auto str_id = get_param_str(argc, params, 0, 0);
-    //auto flags = get_param_int(argc, params, 1, 0);
-    //auto fnResult = BeginPopup(str_id, flags);
-    //v_setint(retval, fnResult);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    auto flags = get_param_int(argc, params, 1, 0);
+    auto fnResult = BeginPopup(str_id, flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginPopup", 2);
   }
   return result;
 }
 
-int cmd_beginpopupcontextitem(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_beginpopupcontextitem(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    //auto str_id = get_param_str(argc, params, 0, 0);
-    //auto popup_flags = get_param_int(argc, params, 1, 0);
-    //auto fnResult = BeginPopupContextItem(str_id, popup_flags);
-    //v_setint(retval, fnResult);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    auto popup_flags = get_param_int(argc, params, 1, 0);
+    auto fnResult = BeginPopupContextItem(str_id, popup_flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginPopupContextItem", 2);
   }
   return result;
 }
 
-int cmd_beginpopupcontextvoid(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_beginpopupcontextvoid(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    //auto str_id = get_param_str(argc, params, 0, 0);
-    //auto popup_flags = get_param_int(argc, params, 1, 0);
-    //auto fnResult = BeginPopupContextVoid(str_id, popup_flags);
-    //v_setint(retval, fnResult);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    auto popup_flags = get_param_int(argc, params, 1, 0);
+    auto fnResult = BeginPopupContextVoid(str_id, popup_flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginPopupContextVoid", 2);
   }
   return result;
 }
 
-int cmd_beginpopupcontextwindow(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_beginpopupcontextwindow(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    //auto str_id = get_param_str(argc, params, 0, 0);
-    //auto popup_flags = get_param_int(argc, params, 1, 0);
-    //auto fnResult = BeginPopupContextWindow(str_id, popup_flags);
-    //v_setint(retval, fnResult);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    auto popup_flags = get_param_int(argc, params, 1, 0);
+    auto fnResult = BeginPopupContextWindow(str_id, popup_flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginPopupContextWindow", 2);
   }
   return result;
 }
 
-int cmd_beginpopupmodal(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_beginpopupmodal(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    //auto name = get_param_int(argc, params, 0, 0);
-    //auto p_open = get_param_int(argc, params, 1, 0);
-    //auto flags = get_param_int(argc, params, 2, 0);
-    //auto fnResult = BeginPopupModal(name, p_open, flags);
-    //v_setint(retval, fnResult);
+    auto name = get_param_str(argc, params, 0, 0);
+    bool p_open = (get_param_int(argc, params, 1, 0) == 1);
+    auto flags = get_param_int(argc, params, 2, 0);
+    auto fnResult = BeginPopupModal(name, &p_open, flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginPopupModal", 3);
   }
   return result;
 }
 
-int cmd_begintabbar(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_begintabbar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    //auto str_id = get_param_str(argc, params, 0, 0);
-    //auto flags = get_param_int(argc, params, 1, 0);
-    //auto fnResult = BeginTabBar(str_id, flags);
-    //v_setint(retval, fnResult);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    auto flags = get_param_int(argc, params, 1, 0);
+    auto fnResult = BeginTabBar(str_id, flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginTabBar", 2);
   }
   return result;
 }
 
-int cmd_begintabitem(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_begintabitem(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    //auto label = get_param_str(argc, params, 0, 0);
-    //auto p_open = get_param_int(argc, params, 1, 0);
-    //auto flags = get_param_int(argc, params, 2, 0);
-    //auto fnResult = BeginTabItem(label, p_open, flags);
-    //v_setint(retval, fnResult);
+    auto label = get_param_str(argc, params, 0, 0);
+    bool p_open = get_param_int(argc, params, 1, 0) == 1;
+    auto flags = get_param_int(argc, params, 2, 0);
+    auto fnResult = BeginTabItem(label, &p_open, flags);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "BeginTabItem", 3);
   }
   return result;
 }
 
-int cmd_button(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_button(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    //auto label = get_param_str(argc, params, 0, 0);
-    //auto size = get_param_int(argc, params, 1, 0);
-    //auto fnResult = Button(label, size);
-    //v_setint(retval, fnResult);
+    auto label = get_param_str(argc, params, 0, 0);
+    auto size = get_param_vec2(argc, params, 1);
+    auto fnResult = Button(label, size);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "Button", 2);
   }
   return result;
 }
 
-int cmd_calcitemwidth(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_calcitemwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = CalcItemWidth();
-    //v_setint(retval, fnResult);
+    auto fnResult = CalcItemWidth();
+    v_setreal(retval, fnResult);
   } else {
     error(retval, "CalcItemWidth", 0);
   }
@@ -327,13 +354,13 @@ int cmd_calctextsize(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    //auto label = get_param_str(argc, params, 0, 0);
-    //auto v = get_param_int(argc, params, 1, 0);
-    //auto fnResult = Checkbox(label, v);
-    //v_setint(retval, fnResult);
+    auto label = get_param_str(argc, params, 0, 0);
+    bool v = (get_param_int(argc, params, 1, 0) == 1);
+    auto fnResult = Checkbox(label, &v);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "Checkbox", 2);
   }
@@ -479,7 +506,7 @@ int cmd_combo(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_createcontext(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_createcontext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     SetCurrentContext(CreateContext());
@@ -748,11 +775,11 @@ int cmd_getbackgrounddrawlist(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetClipboardText();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetClipboardText();
+    v_setstr(retval, fnResult);
   } else {
     error(retval, "GetClipboardText", 0);
   }
@@ -772,68 +799,68 @@ int cmd_getcoloru32(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_getcolumnindex(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcolumnindex(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetColumnIndex();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetColumnIndex();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetColumnIndex", 0);
   }
   return result;
 }
 
-int cmd_getcolumnoffset(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcolumnoffset(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    //auto column_index = get_param_int(argc, params, 0, 0);
-    //auto fnResult = GetColumnOffset(column_index);
-    //v_setint(retval, fnResult);
+    auto column_index = get_param_int(argc, params, 0, 0);
+    auto fnResult = GetColumnOffset(column_index);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetColumnOffset", 1);
   }
   return result;
 }
 
-int cmd_getcolumnscount(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcolumnscount(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetColumnsCount();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetColumnsCount();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetColumnsCount", 0);
   }
   return result;
 }
 
-int cmd_getcolumnwidth(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcolumnwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    //auto column_index = get_param_int(argc, params, 0, 0);
-    //auto fnResult = GetColumnWidth(column_index);
-    //v_setint(retval, fnResult);
+    auto column_index = get_param_int(argc, params, 0, 0);
+    auto fnResult = GetColumnWidth(column_index);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetColumnWidth", 1);
   }
   return result;
 }
 
-int cmd_getcontentregionavail(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcontentregionavail(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetContentRegionAvail();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetContentRegionAvail();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetContentRegionAvail", 0);
   }
   return result;
 }
 
-int cmd_getcontentregionmax(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcontentregionmax(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetContentRegionMax();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetContentRegionMax();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetContentRegionMax", 0);
   }
@@ -851,55 +878,55 @@ int cmd_getcurrentcontext(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_getcursorpos(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcursorpos(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetCursorPos();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetCursorPos();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetCursorPos", 0);
   }
   return result;
 }
 
-int cmd_getcursorposx(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcursorposx(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetCursorPosX();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetCursorPosX();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetCursorPosX", 0);
   }
   return result;
 }
 
-int cmd_getcursorposy(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcursorposy(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetCursorPosY();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetCursorPosY();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetCursorPosY", 0);
   }
   return result;
 }
 
-int cmd_getcursorscreenpos(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcursorscreenpos(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetCursorScreenPos();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetCursorScreenPos();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetCursorScreenPos", 0);
   }
   return result;
 }
 
-int cmd_getcursorstartpos(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getcursorstartpos(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetCursorStartPos();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetCursorStartPos();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetCursorStartPos", 0);
   }
@@ -950,22 +977,22 @@ int cmd_getfont(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_getfontsize(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getfontsize(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetFontSize();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetFontSize();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetFontSize", 0);
   }
   return result;
 }
 
-int cmd_getfonttexuvwhitepixel(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getfonttexuvwhitepixel(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetFontTexUvWhitePixel();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetFontTexUvWhitePixel();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetFontTexUvWhitePixel", 0);
   }
@@ -983,101 +1010,90 @@ int cmd_getforegrounddrawlist(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_getframecount(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getframecount(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetFrameCount();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetFrameCount();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetFrameCount", 0);
   }
   return result;
 }
 
-int cmd_getframeheight(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getframeheight(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetFrameHeight();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetFrameHeight();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetFrameHeight", 0);
   }
   return result;
 }
 
-int cmd_getframeheightwithspacing(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getframeheightwithspacing(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetFrameHeightWithSpacing();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetFrameHeightWithSpacing();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetFrameHeightWithSpacing", 0);
   }
   return result;
 }
 
-int cmd_getid(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getid(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    //auto str_id = get_param_str(argc, params, 0, 0);
-    //auto fnResult = GetID(str_id);
-    //v_setint(retval, fnResult);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    auto fnResult = GetID(str_id);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetID", 1);
   }
   return result;
 }
 
-int cmd_getio(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getitemrectmax(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetIO();
-    //v_setint(retval, fnResult);
-  } else {
-    error(retval, "GetIO", 0);
-  }
-  return result;
-}
-
-int cmd_getitemrectmax(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 0);
-  if (result) {
-    //auto fnResult = GetItemRectMax();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetItemRectMax();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetItemRectMax", 0);
   }
   return result;
 }
 
-int cmd_getitemrectmin(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getitemrectmin(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetItemRectMin();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetItemRectMin();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetItemRectMin", 0);
   }
   return result;
 }
 
-int cmd_getitemrectsize(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getitemrectsize(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetItemRectSize();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetItemRectSize();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetItemRectSize", 0);
   }
   return result;
 }
 
-int cmd_getkeyindex(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getkeyindex(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    //auto imgui_key = get_param_int(argc, params, 0, 0);
-    //auto fnResult = GetKeyIndex(imgui_key);
-    //v_setint(retval, fnResult);
+    auto imgui_key = get_param_int(argc, params, 0, 0);
+    auto fnResult = GetKeyIndex(imgui_key);
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetKeyIndex", 1);
   }
@@ -1098,11 +1114,11 @@ int cmd_getkeypressedamount(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_getmousecursor(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getmousecursor(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetMouseCursor();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetMouseCursor();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetMouseCursor", 0);
   }
@@ -1122,66 +1138,66 @@ int cmd_getmousedragdelta(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_getmousepos(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getmousepos(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetMousePos();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetMousePos();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetMousePos", 0);
   }
   return result;
 }
 
-int cmd_getmouseposonopeningcurrentpopup(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getmouseposonopeningcurrentpopup(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetMousePosOnOpeningCurrentPopup();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetMousePosOnOpeningCurrentPopup();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetMousePosOnOpeningCurrentPopup", 0);
   }
   return result;
 }
 
-int cmd_getscrollmaxx(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getscrollmaxx(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetScrollMaxX();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetScrollMaxX();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetScrollMaxX", 0);
   }
   return result;
 }
 
-int cmd_getscrollmaxy(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getscrollmaxy(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetScrollMaxY();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetScrollMaxY();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetScrollMaxY", 0);
   }
   return result;
 }
 
-int cmd_getscrollx(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getscrollx(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetScrollX();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetScrollX();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetScrollX", 0);
   }
   return result;
 }
 
-int cmd_getscrolly(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getscrolly(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetScrollY();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetScrollY();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetScrollY", 0);
   }
@@ -1210,12 +1226,12 @@ int cmd_getstyle(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_getstylecolorname(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getstylecolorname(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    //auto idx = get_param_int(argc, params, 0, 0);
-    //auto fnResult = GetStyleColorName(idx);
-    //v_setint(retval, fnResult);
+    auto idx = get_param_int(argc, params, 0, 0);
+    auto fnResult = GetStyleColorName(idx);
+    v_setstr(retval, fnResult);
   } else {
     error(retval, "GetStyleColorName", 1);
   }
@@ -1234,88 +1250,88 @@ int cmd_getstylecolorvec4(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_gettextlineheight(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_gettextlineheight(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetTextLineHeight();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetTextLineHeight();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetTextLineHeight", 0);
   }
   return result;
 }
 
-int cmd_gettextlineheightwithspacing(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_gettextlineheightwithspacing(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetTextLineHeightWithSpacing();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetTextLineHeightWithSpacing();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetTextLineHeightWithSpacing", 0);
   }
   return result;
 }
 
-int cmd_gettime(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_gettime(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetTime();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetTime();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetTime", 0);
   }
   return result;
 }
 
-int cmd_gettreenodetolabelspacing(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_gettreenodetolabelspacing(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetTreeNodeToLabelSpacing();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetTreeNodeToLabelSpacing();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetTreeNodeToLabelSpacing", 0);
   }
   return result;
 }
 
-int cmd_getversion(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getversion(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetVersion();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetVersion();
+    v_setstr(retval, fnResult);
   } else {
     error(retval, "GetVersion", 0);
   }
   return result;
 }
 
-int cmd_getwindowcontentregionmax(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getwindowcontentregionmax(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetWindowContentRegionMax();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetWindowContentRegionMax();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetWindowContentRegionMax", 0);
   }
   return result;
 }
 
-int cmd_getwindowcontentregionmin(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getwindowcontentregionmin(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetWindowContentRegionMin();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetWindowContentRegionMin();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetWindowContentRegionMin", 0);
   }
   return result;
 }
 
-int cmd_getwindowcontentregionwidth(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getwindowcontentregionwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetWindowContentRegionWidth();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetWindowContentRegionWidth();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetWindowContentRegionWidth", 0);
   }
@@ -1326,51 +1342,51 @@ int cmd_getwindowdrawlist(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     //auto fnResult = GetWindowDrawList();
-    //v_setint(retval, fnResult);
+    //v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetWindowDrawList", 0);
   }
   return result;
 }
 
-int cmd_getwindowheight(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getwindowheight(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetWindowHeight();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetWindowHeight();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetWindowHeight", 0);
   }
   return result;
 }
 
-int cmd_getwindowpos(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getwindowpos(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetWindowPos();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetWindowPos();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetWindowPos", 0);
   }
   return result;
 }
 
-int cmd_getwindowsize(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getwindowsize(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetWindowSize();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetWindowSize();
+    v_set_vec2(retval, fnResult);
   } else {
     error(retval, "GetWindowSize", 0);
   }
   return result;
 }
 
-int cmd_getwindowwidth(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getwindowwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
-    //auto fnResult = GetWindowWidth();
-    //v_setint(retval, fnResult);
+    auto fnResult = GetWindowWidth();
+    v_setint(retval, fnResult);
   } else {
     error(retval, "GetWindowWidth", 0);
   }
@@ -1381,7 +1397,7 @@ int cmd_imagebutton(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 7);
   if (result) {
     //auto user_texture_id = get_param_int(argc, params, 0, 0);
-    //auto size = get_param_int(argc, params, 1, 0);
+    //auto size = get_param_vec2(argc, params, 1);
     //auto uv0 = get_param_int(argc, params, 2, 0);
     //auto uv1 = get_param_int(argc, params, 3, 0);
     //auto frame_padding = get_param_int(argc, params, 4, 0);
@@ -1629,7 +1645,7 @@ int cmd_invisiblebutton(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
     //auto str_id = get_param_str(argc, params, 0, 0);
-    //auto size = get_param_int(argc, params, 1, 0);
+    //auto size = get_param_vec2(argc, params, 1);
     //auto flags = get_param_int(argc, params, 2, 0);
     //auto fnResult = InvisibleButton(str_id, size, flags);
     //v_setint(retval, fnResult);
@@ -1639,7 +1655,7 @@ int cmd_invisiblebutton(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isanyitemactive(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isanyitemactive(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsAnyItemActive();
@@ -1650,7 +1666,7 @@ int cmd_isanyitemactive(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isanyitemfocused(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isanyitemfocused(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsAnyItemFocused();
@@ -1661,7 +1677,7 @@ int cmd_isanyitemfocused(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isanyitemhovered(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isanyitemhovered(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsAnyItemHovered();
@@ -1672,7 +1688,7 @@ int cmd_isanyitemhovered(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isanymousedown(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isanymousedown(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsAnyMouseDown();
@@ -1683,7 +1699,7 @@ int cmd_isanymousedown(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isitemactivated(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isitemactivated(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsItemActivated();
@@ -1694,7 +1710,7 @@ int cmd_isitemactivated(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isitemactive(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isitemactive(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsItemActive();
@@ -1705,7 +1721,7 @@ int cmd_isitemactive(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isitemclicked(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isitemclicked(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto mouse_button = get_param_int(argc, params, 0, 0);
@@ -1717,7 +1733,7 @@ int cmd_isitemclicked(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isitemdeactivated(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isitemdeactivated(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsItemDeactivated();
@@ -1728,7 +1744,7 @@ int cmd_isitemdeactivated(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isitemdeactivatedafteredit(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isitemdeactivatedafteredit(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsItemDeactivatedAfterEdit();
@@ -1739,7 +1755,7 @@ int cmd_isitemdeactivatedafteredit(int argc, slib_par_t *params, var_t *retval) 
   return result;
 }
 
-int cmd_isitemedited(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isitemedited(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsItemEdited();
@@ -1750,7 +1766,7 @@ int cmd_isitemedited(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isitemfocused(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isitemfocused(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsItemFocused();
@@ -1761,7 +1777,7 @@ int cmd_isitemfocused(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isitemhovered(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isitemhovered(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto flags = get_param_int(argc, params, 0, 0);
@@ -1773,7 +1789,7 @@ int cmd_isitemhovered(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isitemtoggledopen(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isitemtoggledopen(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsItemToggledOpen();
@@ -1784,7 +1800,7 @@ int cmd_isitemtoggledopen(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isitemvisible(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isitemvisible(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsItemVisible();
@@ -1795,7 +1811,7 @@ int cmd_isitemvisible(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_iskeydown(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_iskeydown(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto user_key_index = get_param_int(argc, params, 0, 0);
@@ -1807,7 +1823,7 @@ int cmd_iskeydown(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_iskeypressed(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_iskeypressed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
     auto user_key_index = get_param_int(argc, params, 0, 0);
@@ -1820,7 +1836,7 @@ int cmd_iskeypressed(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_iskeyreleased(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_iskeyreleased(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto user_key_index = get_param_int(argc, params, 0, 0);
@@ -1832,7 +1848,7 @@ int cmd_iskeyreleased(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_ismouseclicked(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ismouseclicked(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
     auto button = get_param_int(argc, params, 0, 0);
@@ -1845,7 +1861,7 @@ int cmd_ismouseclicked(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_ismousedoubleclicked(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ismousedoubleclicked(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto button = get_param_int(argc, params, 0, 0);
@@ -1857,7 +1873,7 @@ int cmd_ismousedoubleclicked(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_ismousedown(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ismousedown(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto button = get_param_int(argc, params, 0, 0);
@@ -1869,7 +1885,7 @@ int cmd_ismousedown(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_ismousedragging(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ismousedragging(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
     auto button = get_param_int(argc, params, 0, 0);
@@ -1882,7 +1898,7 @@ int cmd_ismousedragging(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_ismousehoveringrect(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ismousehoveringrect(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
     auto r_min = get_param_vec2(argc, params, 0);
@@ -1896,7 +1912,7 @@ int cmd_ismousehoveringrect(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_ismouseposvalid(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ismouseposvalid(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto mouse_pos = get_param_vec2(argc, params, 0);
@@ -1908,7 +1924,7 @@ int cmd_ismouseposvalid(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_ismousereleased(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ismousereleased(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto button = get_param_int(argc, params, 0, 0);
@@ -1920,7 +1936,7 @@ int cmd_ismousereleased(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_ispopupopen(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ispopupopen(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
     auto str_id = get_param_str(argc, params, 0, 0);
@@ -1933,7 +1949,7 @@ int cmd_ispopupopen(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_isrectvisible(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isrectvisible(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto size = get_param_vec2(argc, params, 0);
@@ -1945,7 +1961,7 @@ int cmd_isrectvisible(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_iswindowappearing(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_iswindowappearing(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsWindowAppearing();
@@ -1956,7 +1972,7 @@ int cmd_iswindowappearing(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_iswindowcollapsed(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_iswindowcollapsed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     auto fnResult = IsWindowCollapsed();
@@ -1967,7 +1983,7 @@ int cmd_iswindowcollapsed(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_iswindowfocused(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_iswindowfocused(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto flags = get_param_int(argc, params, 0, 0);
@@ -1979,7 +1995,7 @@ int cmd_iswindowfocused(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_iswindowhovered(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_iswindowhovered(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto flags = get_param_int(argc, params, 0, 0);
@@ -2011,7 +2027,7 @@ int cmd_listboxheader(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
     //auto label = get_param_str(argc, params, 0, 0);
-    //auto size = get_param_int(argc, params, 1, 0);
+    //auto size = get_param_vec2(argc, params, 1);
     //auto fnResult = ListBoxHeader(label, size);
     //v_setint(retval, fnResult);
   } else {
@@ -2354,6 +2370,7 @@ int cmd_treenodeexv(int argc, slib_par_t *params, var_t *retval) {
     //auto args = get_param_int(argc, params, 4, 0);
     //auto format = get_param_int(argc, params, 5, 0);
     //auto printf = get_param_int(argc, params, 6, 0);
+    // format_text(argc, params, 0)
     //auto fnResult = TreeNodeExV(str_id, flags, fmt, va_list, args, format, printf);
     //v_setint(retval, fnResult);
   } else {
@@ -2371,6 +2388,7 @@ int cmd_treenodev(int argc, slib_par_t *params, var_t *retval) {
     //auto args = get_param_int(argc, params, 3, 0);
     //auto format = get_param_int(argc, params, 4, 0);
     //auto printf = get_param_int(argc, params, 5, 0);
+    // format_text(argc, params, 0)
     //auto fnResult = TreeNodeV(str_id, fmt, va_list, args, format, printf);
     //v_setint(retval, fnResult);
   } else {
@@ -2383,7 +2401,7 @@ int cmd_vsliderfloat(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 7);
   if (result) {
     //auto label = get_param_str(argc, params, 0, 0);
-    //auto size = get_param_int(argc, params, 1, 0);
+    //auto size = get_param_vec2(argc, params, 1);
     //auto v = get_param_int(argc, params, 2, 0);
     //auto v_min = get_param_int(argc, params, 3, 0);
     //auto v_max = get_param_int(argc, params, 4, 0);
@@ -2401,7 +2419,7 @@ int cmd_vsliderint(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 7);
   if (result) {
     //auto label = get_param_str(argc, params, 0, 0);
-    //auto size = get_param_int(argc, params, 1, 0);
+    //auto size = get_param_vec2(argc, params, 1);
     //auto v = get_param_int(argc, params, 2, 0);
     //auto v_min = get_param_int(argc, params, 3, 0);
     //auto v_max = get_param_int(argc, params, 4, 0);
@@ -2419,7 +2437,7 @@ int cmd_vsliderscalar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 8);
   if (result) {
     //auto label = get_param_str(argc, params, 0, 0);
-    //auto size = get_param_int(argc, params, 1, 0);
+    //auto size = get_param_vec2(argc, params, 1);
     //auto data_type = get_param_int(argc, params, 2, 0);
     //auto p_data = get_param_int(argc, params, 3, 0);
     //auto p_min = get_param_int(argc, params, 4, 0);
@@ -2444,7 +2462,7 @@ int cmd_aligntexttoframepadding(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_begingroup(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_begingroup(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     BeginGroup();
@@ -2454,7 +2472,7 @@ int cmd_begingroup(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_begintooltip(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_begintooltip(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     BeginTooltip();
@@ -2464,7 +2482,7 @@ int cmd_begintooltip(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_bullet(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_bullet(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     Bullet();
@@ -2474,30 +2492,12 @@ int cmd_bullet(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_bullettext(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_bullettext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto format = get_param_int(argc, params, 1, 0);
-    // auto printf = get_param_int(argc, params, 2, 0);
-    // BulletText(fmt, format, printf);
+    BulletText(format_text(argc, params, 0));
   } else {
     error(retval, "BulletText", 3);
-  }
-  return result;
-}
-
-int cmd_bullettextv(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 5);
-  if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto va_list = get_param_int(argc, params, 1, 0);
-    // auto args = get_param_int(argc, params, 2, 0);
-    // auto format = get_param_int(argc, params, 3, 0);
-    // auto printf = get_param_int(argc, params, 4, 0);
-    // BulletTextV(fmt, va_list, args, format, printf);
-  } else {
-    error(retval, "BulletTextV", 5);
   }
   return result;
 }
@@ -2516,29 +2516,29 @@ int cmd_calclistclipping(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_capturekeyboardfromapp(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_capturekeyboardfromapp(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto want_capture_keyboard_value = get_param_int(argc, params, 0, 0);
-    // CaptureKeyboardFromApp(want_capture_keyboard_value);
+    bool want_capture_keyboard_value = get_param_int(argc, params, 0, 0) == 1;
+    CaptureKeyboardFromApp(want_capture_keyboard_value);
   } else {
     error(retval, "CaptureKeyboardFromApp", 1);
   }
   return result;
 }
 
-int cmd_capturemousefromapp(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_capturemousefromapp(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto want_capture_mouse_value = get_param_int(argc, params, 0, 0);
-    // CaptureMouseFromApp(want_capture_mouse_value);
+    bool want_capture_mouse_value = get_param_int(argc, params, 0, 0) == 1;
+    CaptureMouseFromApp(want_capture_mouse_value);
   } else {
     error(retval, "CaptureMouseFromApp", 1);
   }
   return result;
 }
 
-int cmd_closecurrentpopup(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_closecurrentpopup(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     CloseCurrentPopup();
@@ -2580,20 +2580,20 @@ int cmd_colorconvertrgbtohsv(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_columns(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_columns(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto count = get_param_int(argc, params, 0, 0);
-    // auto id = get_param_int(argc, params, 1, 0);
-    // auto border = get_param_int(argc, params, 2, 0);
-    // Columns(count, id, border);
+    auto count = get_param_int(argc, params, 0, 0);
+    auto id = get_param_str(argc, params, 1, 0);
+    bool border = get_param_int(argc, params, 2, 0) == 1;
+    Columns(count, id, border);
   } else {
     error(retval, "Columns", 3);
   }
   return result;
 }
 
-int cmd_destroycontext(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_destroycontext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     DestroyContext();
@@ -2603,18 +2603,18 @@ int cmd_destroycontext(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_dummy(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_dummy(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto size = get_param_int(argc, params, 0, 0);
-    // Dummy(size);
+    auto size = get_param_vec2(argc, params, 0);
+    Dummy(size);
   } else {
     error(retval, "Dummy", 1);
   }
   return result;
 }
 
-int cmd_end(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_end(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     End();
@@ -2624,7 +2624,7 @@ int cmd_end(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endchild(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endchild(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndChild();
@@ -2634,7 +2634,7 @@ int cmd_endchild(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endchildframe(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endchildframe(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndChildFrame();
@@ -2644,7 +2644,7 @@ int cmd_endchildframe(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endcombo(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endcombo(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndCombo();
@@ -2654,7 +2654,7 @@ int cmd_endcombo(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_enddragdropsource(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_enddragdropsource(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndDragDropSource();
@@ -2664,7 +2664,7 @@ int cmd_enddragdropsource(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_enddragdroptarget(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_enddragdroptarget(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndDragDropTarget();
@@ -2674,7 +2674,7 @@ int cmd_enddragdroptarget(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endframe(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endframe(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndFrame();
@@ -2684,7 +2684,7 @@ int cmd_endframe(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endgroup(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endgroup(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndGroup();
@@ -2694,7 +2694,7 @@ int cmd_endgroup(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endmainmenubar(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endmainmenubar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndMainMenuBar();
@@ -2704,7 +2704,7 @@ int cmd_endmainmenubar(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endmenu(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endmenu(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndMenu();
@@ -2714,7 +2714,7 @@ int cmd_endmenu(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endmenubar(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endmenubar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndMenuBar();
@@ -2724,7 +2724,7 @@ int cmd_endmenubar(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endpopup(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endpopup(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndPopup();
@@ -2734,7 +2734,7 @@ int cmd_endpopup(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endtabbar(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endtabbar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndTabBar();
@@ -2744,7 +2744,7 @@ int cmd_endtabbar(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endtabitem(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endtabitem(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndTabItem();
@@ -2754,7 +2754,7 @@ int cmd_endtabitem(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_endtooltip(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_endtooltip(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     EndTooltip();
@@ -2780,48 +2780,29 @@ int cmd_image(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_indent(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_indent(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto indent_w = get_param_int(argc, params, 0, 0);
-    // Indent(indent_w);
+    auto indent_w = get_param_int(argc, params, 0, 0);
+    Indent(indent_w);
   } else {
     error(retval, "Indent", 1);
   }
   return result;
 }
 
-int cmd_labeltext(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_labeltext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 4);
   if (result) {
-    // auto label = get_param_str(argc, params, 0, 0);
-    // auto fmt = get_param_int(argc, params, 1, 0);
-    // auto format = get_param_int(argc, params, 2, 0);
-    // auto printf = get_param_int(argc, params, 3, 0);
-    // LabelText(label, fmt, format, printf);
+    auto label = get_param_str(argc, params, 0, 0);
+    LabelText(label, format_text(argc, params, 1));
   } else {
     error(retval, "LabelText", 4);
   }
   return result;
 }
 
-int cmd_labeltextv(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 6);
-  if (result) {
-    // auto label = get_param_str(argc, params, 0, 0);
-    // auto fmt = get_param_int(argc, params, 1, 0);
-    // auto va_list = get_param_int(argc, params, 2, 0);
-    // auto args = get_param_int(argc, params, 3, 0);
-    // auto format = get_param_int(argc, params, 4, 0);
-    // auto printf = get_param_int(argc, params, 5, 0);
-    // LabelTextV(label, fmt, va_list, args, format, printf);
-  } else {
-    error(retval, "LabelTextV", 6);
-  }
-  return result;
-}
-
-int cmd_listboxfooter(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_listboxfooter(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     ListBoxFooter();
@@ -2831,11 +2812,11 @@ int cmd_listboxfooter(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_loadinisettingsfromdisk(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_loadinisettingsfromdisk(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto ini_filename = get_param_int(argc, params, 0, 0);
-    // LoadIniSettingsFromDisk(ini_filename);
+    auto ini_filename = get_param_str(argc, params, 0, 0);
+    LoadIniSettingsFromDisk(ini_filename);
   } else {
     error(retval, "LoadIniSettingsFromDisk", 1);
   }
@@ -2855,7 +2836,7 @@ int cmd_loadinisettingsfrommemory(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_logbuttons(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_logbuttons(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     LogButtons();
@@ -2865,7 +2846,7 @@ int cmd_logbuttons(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_logfinish(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_logfinish(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     LogFinish();
@@ -2875,77 +2856,51 @@ int cmd_logfinish(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_logtext(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_logtext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto format = get_param_int(argc, params, 1, 0);
-    // auto printf = get_param_int(argc, params, 2, 0);
-    // LogText(fmt, format, printf);
+    LogText(format_text(argc, params, 0));
   } else {
     error(retval, "LogText", 3);
   }
   return result;
 }
 
-int cmd_logtoclipboard(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_logtoclipboard(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto auto_open_depth = get_param_int(argc, params, 0, 0);
-    // LogToClipboard(auto_open_depth);
+    auto auto_open_depth = get_param_int(argc, params, 0, 0);
+    LogToClipboard(auto_open_depth);
   } else {
     error(retval, "LogToClipboard", 1);
   }
   return result;
 }
 
-int cmd_logtofile(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_logtofile(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto auto_open_depth = get_param_int(argc, params, 0, 0);
-    // auto filename = get_param_int(argc, params, 1, 0);
-    // LogToFile(auto_open_depth, filename);
+    auto auto_open_depth = get_param_int(argc, params, 0, 0);
+    auto filename = get_param_str(argc, params, 1, 0);
+    LogToFile(auto_open_depth, filename);
   } else {
     error(retval, "LogToFile", 2);
   }
   return result;
 }
 
-int cmd_logtotty(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_logtotty(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto auto_open_depth = get_param_int(argc, params, 0, 0);
-    // LogToTTY(auto_open_depth);
+    auto auto_open_depth = get_param_int(argc, params, 0, 0);
+    LogToTTY(auto_open_depth);
   } else {
     error(retval, "LogToTTY", 1);
   }
   return result;
 }
 
-int cmd_memalloc(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 2);
-  if (result) {
-    // auto size_t = get_param_int(argc, params, 0, 0);
-    // auto size = get_param_int(argc, params, 1, 0);
-    // MemAlloc(size_t, size);
-  } else {
-    error(retval, "MemAlloc", 2);
-  }
-  return result;
-}
-
-int cmd_memfree(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
-  if (result) {
-    // auto ptr = get_param_int(argc, params, 0, 0);
-    // MemFree(ptr);
-  } else {
-    error(retval, "MemFree", 1);
-  }
-  return result;
-}
-
-int cmd_newframe(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_newframe(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     ImGui_ImplOpenGL3_NewFrame();
@@ -2967,7 +2922,7 @@ int cmd_newline(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_nextcolumn(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_nextcolumn(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     NextColumn();
@@ -2977,24 +2932,24 @@ int cmd_nextcolumn(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_openpopup(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_openpopup(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto str_id = get_param_str(argc, params, 0, 0);
-    // auto popup_flags = get_param_int(argc, params, 1, 0);
-    // OpenPopup(str_id, popup_flags);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    auto popup_flags = get_param_int(argc, params, 1, 0);
+    OpenPopup(str_id, popup_flags);
   } else {
     error(retval, "OpenPopup", 2);
   }
   return result;
 }
 
-int cmd_openpopuponitemclick(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_openpopuponitemclick(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto str_id = get_param_str(argc, params, 0, 0);
-    // auto popup_flags = get_param_int(argc, params, 1, 0);
-    // OpenPopupOnItemClick(str_id, popup_flags);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    auto popup_flags = get_param_int(argc, params, 1, 0);
+    OpenPopupOnItemClick(str_id, popup_flags);
   } else {
     error(retval, "OpenPopupOnItemClick", 2);
   }
@@ -3049,7 +3004,7 @@ int cmd_popallowkeyboardfocus(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_popbuttonrepeat(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_popbuttonrepeat(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     PopButtonRepeat();
@@ -3059,7 +3014,7 @@ int cmd_popbuttonrepeat(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_popcliprect(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_popcliprect(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     PopClipRect();
@@ -3069,7 +3024,7 @@ int cmd_popcliprect(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_popfont(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_popfont(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     PopFont();
@@ -3079,7 +3034,7 @@ int cmd_popfont(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_popid(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_popid(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     PopID();
@@ -3089,7 +3044,7 @@ int cmd_popid(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_popitemwidth(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_popitemwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     PopItemWidth();
@@ -3099,29 +3054,29 @@ int cmd_popitemwidth(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_popstylecolor(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_popstylecolor(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto count = get_param_int(argc, params, 0, 0);
-    // PopStyleColor(count);
+    auto count = get_param_int(argc, params, 0, 0);
+    PopStyleColor(count);
   } else {
     error(retval, "PopStyleColor", 1);
   }
   return result;
 }
 
-int cmd_popstylevar(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_popstylevar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto count = get_param_int(argc, params, 0, 0);
-    // PopStyleVar(count);
+    auto count = get_param_int(argc, params, 0, 0);
+    PopStyleVar(count);
   } else {
     error(retval, "PopStyleVar", 1);
   }
   return result;
 }
 
-int cmd_poptextwrappos(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_poptextwrappos(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     PopTextWrapPos();
@@ -3131,35 +3086,35 @@ int cmd_poptextwrappos(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_progressbar(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_progressbar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto fraction = get_param_int(argc, params, 0, 0);
-    // auto size_arg = get_param_int(argc, params, 1, 0);
-    // auto overlay = get_param_int(argc, params, 2, 0);
-    // ProgressBar(fraction, size_arg, overlay);
+    auto fraction = get_param_int(argc, params, 0, 0);
+    auto size_arg = get_param_vec2(argc, params, 1);
+    auto overlay = get_param_str(argc, params, 2, "");
+    ProgressBar(fraction, size_arg, overlay);
   } else {
     error(retval, "ProgressBar", 3);
   }
   return result;
 }
 
-int cmd_pushallowkeyboardfocus(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_pushallowkeyboardfocus(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto allow_keyboard_focus = get_param_int(argc, params, 0, 0);
-    // PushAllowKeyboardFocus(allow_keyboard_focus);
+    auto allow_keyboard_focus = get_param_int(argc, params, 0, 0);
+    PushAllowKeyboardFocus(allow_keyboard_focus);
   } else {
     error(retval, "PushAllowKeyboardFocus", 1);
   }
   return result;
 }
 
-int cmd_pushbuttonrepeat(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_pushbuttonrepeat(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto repeat = get_param_int(argc, params, 0, 0);
-    // PushButtonRepeat(repeat);
+    auto repeat = get_param_int(argc, params, 0, 0);
+    PushButtonRepeat(repeat);
   } else {
     error(retval, "PushButtonRepeat", 1);
   }
@@ -3182,72 +3137,72 @@ int cmd_pushcliprect(int argc, slib_par_t *params, var_t *retval) {
 int cmd_pushfont(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto font = get_param_int(argc, params, 0, 0);
-    // PushFont(font);
+    //auto font = get_param_int(argc, params, 0, 0);
+    //PushFont(font);
   } else {
     error(retval, "PushFont", 1);
   }
   return result;
 }
 
-int cmd_pushid(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_pushid(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto str_id = get_param_str(argc, params, 0, 0);
-    // PushID(str_id);
+    auto str_id = get_param_str(argc, params, 0, 0);
+    PushID(str_id);
   } else {
     error(retval, "PushID", 1);
   }
   return result;
 }
 
-int cmd_pushitemwidth(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_pushitemwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto item_width = get_param_int(argc, params, 0, 0);
-    // PushItemWidth(item_width);
+    auto item_width = get_param_int(argc, params, 0, 0);
+    PushItemWidth(item_width);
   } else {
     error(retval, "PushItemWidth", 1);
   }
   return result;
 }
 
-int cmd_pushstylecolor(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_pushstylecolor(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto idx = get_param_int(argc, params, 0, 0);
-    // auto col = get_param_int(argc, params, 1, 0);
-    // PushStyleColor(idx, col);
+    auto idx = get_param_int(argc, params, 0, 0);
+    auto col = get_param_int(argc, params, 1, 0);
+    PushStyleColor(idx, col);
   } else {
     error(retval, "PushStyleColor", 2);
   }
   return result;
 }
 
-int cmd_pushstylevar(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_pushstylevar(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto idx = get_param_int(argc, params, 0, 0);
-    // auto val = get_param_int(argc, params, 1, 0);
-    // PushStyleVar(idx, val);
+    auto idx = get_param_int(argc, params, 0, 0);
+    auto val = get_param_int(argc, params, 1, 0);
+    PushStyleVar(idx, val);
   } else {
     error(retval, "PushStyleVar", 2);
   }
   return result;
 }
 
-int cmd_pushtextwrappos(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_pushtextwrappos(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto wrap_local_pos_x = get_param_int(argc, params, 0, 0);
-    // PushTextWrapPos(wrap_local_pos_x);
+    auto wrap_local_pos_x = get_param_int(argc, params, 0, 0);
+    PushTextWrapPos(wrap_local_pos_x);
   } else {
     error(retval, "PushTextWrapPos", 1);
   }
   return result;
 }
 
-int cmd_render(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_render(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0 || argc == 1);
   if (result) {
     Render();
@@ -3269,23 +3224,23 @@ int cmd_render(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_resetmousedragdelta(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_resetmousedragdelta(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto button = get_param_int(argc, params, 0, 0);
-    // ResetMouseDragDelta(button);
+    auto button = get_param_int(argc, params, 0, 0);
+    ResetMouseDragDelta(button);
   } else {
     error(retval, "ResetMouseDragDelta", 1);
   }
   return result;
 }
 
-int cmd_sameline(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_sameline(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto offset_from_start_x = get_param_int(argc, params, 0, 0);
-    // auto spacing = get_param_int(argc, params, 1, 0);
-    // SameLine(offset_from_start_x, spacing);
+    auto offset_from_start_x = get_param_int(argc, params, 0, 0);
+    auto spacing = get_param_int(argc, params, 1, 0);
+    SameLine(offset_from_start_x, spacing);
   } else {
     error(retval, "SameLine", 2);
   }
@@ -3303,7 +3258,7 @@ int cmd_saveinisettingstodisk(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_separator(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_separator(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     Separator();
@@ -3331,46 +3286,46 @@ int cmd_setallocatorfunctions(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_setclipboardtext(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setclipboardtext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto text = get_param_str(argc, params, 0, 0);
-    // SetClipboardText(text);
+    auto text = get_param_str(argc, params, 0, 0);
+    SetClipboardText(text);
   } else {
     error(retval, "SetClipboardText", 1);
   }
   return result;
 }
 
-int cmd_setcoloreditoptions(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setcoloreditoptions(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto flags = get_param_int(argc, params, 0, 0);
-    // SetColorEditOptions(flags);
+    auto flags = get_param_int(argc, params, 0, 0);
+    SetColorEditOptions(flags);
   } else {
     error(retval, "SetColorEditOptions", 1);
   }
   return result;
 }
 
-int cmd_setcolumnoffset(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setcolumnoffset(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto column_index = get_param_int(argc, params, 0, 0);
-    // auto offset_x = get_param_int(argc, params, 1, 0);
-    // SetColumnOffset(column_index, offset_x);
+    auto column_index = get_param_int(argc, params, 0, 0);
+    auto offset_x = get_param_int(argc, params, 1, 0);
+    SetColumnOffset(column_index, offset_x);
   } else {
     error(retval, "SetColumnOffset", 2);
   }
   return result;
 }
 
-int cmd_setcolumnwidth(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setcolumnwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto column_index = get_param_int(argc, params, 0, 0);
-    // auto width = get_param_int(argc, params, 1, 0);
-    // SetColumnWidth(column_index, width);
+    auto column_index = get_param_int(argc, params, 0, 0);
+    auto width = get_param_int(argc, params, 1, 0);
+    SetColumnWidth(column_index, width);
   } else {
     error(retval, "SetColumnWidth", 2);
   }
@@ -3380,52 +3335,52 @@ int cmd_setcolumnwidth(int argc, slib_par_t *params, var_t *retval) {
 int cmd_setcurrentcontext(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto ctx = get_param_int(argc, params, 0, 0);
-    // SetCurrentContext(ctx);
+    //auto ctx = get_param_int(argc, params, 0, 0);
+    //SetCurrentContext(ctx);
   } else {
     error(retval, "SetCurrentContext", 1);
   }
   return result;
 }
 
-int cmd_setcursorpos(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setcursorpos(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto local_pos = get_param_int(argc, params, 0, 0);
-    // SetCursorPos(local_pos);
+    auto local_pos = get_param_vec2(argc, params, 0);
+    SetCursorPos(local_pos);
   } else {
     error(retval, "SetCursorPos", 1);
   }
   return result;
 }
 
-int cmd_setcursorposx(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setcursorposx(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto local_x = get_param_int(argc, params, 0, 0);
-    // SetCursorPosX(local_x);
+    auto local_x = get_param_int(argc, params, 0, 0);
+    SetCursorPosX(local_x);
   } else {
     error(retval, "SetCursorPosX", 1);
   }
   return result;
 }
 
-int cmd_setcursorposy(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setcursorposy(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto local_y = get_param_int(argc, params, 0, 0);
-    // SetCursorPosY(local_y);
+    auto local_y = get_param_int(argc, params, 0, 0);
+    SetCursorPosY(local_y);
   } else {
     error(retval, "SetCursorPosY", 1);
   }
   return result;
 }
 
-int cmd_setcursorscreenpos(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setcursorscreenpos(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto pos = get_param_int(argc, params, 0, 0);
-    // SetCursorScreenPos(pos);
+    auto pos = get_param_vec2(argc, params, 0);
+    SetCursorScreenPos(pos);
   } else {
     error(retval, "SetCursorScreenPos", 1);
   }
@@ -3452,86 +3407,86 @@ int cmd_setitemdefaultfocus(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_setkeyboardfocushere(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setkeyboardfocushere(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto offset = get_param_int(argc, params, 0, 0);
-    // SetKeyboardFocusHere(offset);
+    auto offset = get_param_int(argc, params, 0, 0);
+    SetKeyboardFocusHere(offset);
   } else {
     error(retval, "SetKeyboardFocusHere", 1);
   }
   return result;
 }
 
-int cmd_setmousecursor(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setmousecursor(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto cursor_type = get_param_int(argc, params, 0, 0);
-    // SetMouseCursor(cursor_type);
+    auto cursor_type = get_param_int(argc, params, 0, 0);
+    SetMouseCursor(cursor_type);
   } else {
     error(retval, "SetMouseCursor", 1);
   }
   return result;
 }
 
-int cmd_setnextitemopen(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setnextitemopen(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto is_open = get_param_int(argc, params, 0, 0);
-    // auto cond = get_param_int(argc, params, 1, 0);
-    // SetNextItemOpen(is_open, cond);
+    auto is_open = get_param_int(argc, params, 0, 0);
+    auto cond = get_param_int(argc, params, 1, 0);
+    SetNextItemOpen(is_open, cond);
   } else {
     error(retval, "SetNextItemOpen", 2);
   }
   return result;
 }
 
-int cmd_setnextitemwidth(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setnextitemwidth(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto item_width = get_param_int(argc, params, 0, 0);
-    // SetNextItemWidth(item_width);
+    auto item_width = get_param_int(argc, params, 0, 0);
+    SetNextItemWidth(item_width);
   } else {
     error(retval, "SetNextItemWidth", 1);
   }
   return result;
 }
 
-int cmd_setnextwindowbgalpha(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setnextwindowbgalpha(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto alpha = get_param_num(argc, params, 0, 0);
-    // SetNextWindowBgAlpha(alpha);
+    auto alpha = get_param_num(argc, params, 0, 0);
+    SetNextWindowBgAlpha(alpha);
   } else {
     error(retval, "SetNextWindowBgAlpha", 1);
   }
   return result;
 }
 
-int cmd_setnextwindowcollapsed(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setnextwindowcollapsed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto collapsed = get_param_int(argc, params, 0, 0);
-    // auto cond = get_param_int(argc, params, 1, 0);
-    // SetNextWindowCollapsed(collapsed, cond);
+    bool collapsed = get_param_int(argc, params, 0, 0) == 1;
+    auto cond = get_param_int(argc, params, 1, 0);
+    SetNextWindowCollapsed(collapsed, cond);
   } else {
     error(retval, "SetNextWindowCollapsed", 2);
   }
   return result;
 }
 
-int cmd_setnextwindowcontentsize(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setnextwindowcontentsize(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto size = get_param_int(argc, params, 0, 0);
-    // SetNextWindowContentSize(size);
+    auto size = get_param_vec2(argc, params, 0);
+    SetNextWindowContentSize(size);
   } else {
     error(retval, "SetNextWindowContentSize", 1);
   }
   return result;
 }
 
-int cmd_setnextwindowfocus(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setnextwindowfocus(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     SetNextWindowFocus();
@@ -3580,68 +3535,68 @@ int cmd_setnextwindowsizeconstraints(int argc, slib_par_t *params, var_t *retval
   return result;
 }
 
-int cmd_setscrollfromposx(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setscrollfromposx(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto local_x = get_param_int(argc, params, 0, 0);
-    // auto center_x_ratio = get_param_int(argc, params, 1, 0);
-    // SetScrollFromPosX(local_x, center_x_ratio);
+    auto local_x = get_param_int(argc, params, 0, 0);
+    auto center_x_ratio = get_param_int(argc, params, 1, 0);
+    SetScrollFromPosX(local_x, center_x_ratio);
   } else {
     error(retval, "SetScrollFromPosX", 2);
   }
   return result;
 }
 
-int cmd_setscrollfromposy(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setscrollfromposy(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto local_y = get_param_int(argc, params, 0, 0);
-    // auto center_y_ratio = get_param_int(argc, params, 1, 0);
-    // SetScrollFromPosY(local_y, center_y_ratio);
+    auto local_y = get_param_int(argc, params, 0, 0);
+    auto center_y_ratio = get_param_int(argc, params, 1, 0);
+    SetScrollFromPosY(local_y, center_y_ratio);
   } else {
     error(retval, "SetScrollFromPosY", 2);
   }
   return result;
 }
 
-int cmd_setscrollherex(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setscrollherex(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto center_x_ratio = get_param_int(argc, params, 0, 0);
-    // SetScrollHereX(center_x_ratio);
+    auto center_x_ratio = get_param_int(argc, params, 0, 0);
+    SetScrollHereX(center_x_ratio);
   } else {
     error(retval, "SetScrollHereX", 1);
   }
   return result;
 }
 
-int cmd_setscrollherey(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setscrollherey(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto center_y_ratio = get_param_int(argc, params, 0, 0);
-    // SetScrollHereY(center_y_ratio);
+    auto center_y_ratio = get_param_int(argc, params, 0, 0);
+    SetScrollHereY(center_y_ratio);
   } else {
     error(retval, "SetScrollHereY", 1);
   }
   return result;
 }
 
-int cmd_setscrollx(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setscrollx(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto scroll_x = get_param_int(argc, params, 0, 0);
-    // SetScrollX(scroll_x);
+    auto scroll_x = get_param_int(argc, params, 0, 0);
+    SetScrollX(scroll_x);
   } else {
     error(retval, "SetScrollX", 1);
   }
   return result;
 }
 
-int cmd_setscrolly(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setscrolly(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto scroll_y = get_param_int(argc, params, 0, 0);
-    // SetScrollY(scroll_y);
+    auto scroll_y = get_param_int(argc, params, 0, 0);
+    SetScrollY(scroll_y);
   } else {
     error(retval, "SetScrollY", 1);
   }
@@ -3659,58 +3614,40 @@ int cmd_setstatestorage(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_settabitemclosed(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_settabitemclosed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto tab_or_docked_window_label = get_param_int(argc, params, 0, 0);
-    // SetTabItemClosed(tab_or_docked_window_label);
+    auto tab_or_docked_window_label = get_param_str(argc, params, 0, "");
+    SetTabItemClosed(tab_or_docked_window_label);
   } else {
     error(retval, "SetTabItemClosed", 1);
   }
   return result;
 }
 
-int cmd_settooltip(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_settooltip(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto format = get_param_int(argc, params, 1, 0);
-    // auto printf = get_param_int(argc, params, 2, 0);
-    // SetTooltip(fmt, format, printf);
+    SetTooltip(format_text(argc, params, 0));
   } else {
     error(retval, "SetTooltip", 3);
   }
   return result;
 }
 
-int cmd_settooltipv(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 5);
-  if (result) {
-    // auto fmt = get_param_int(argc, params, 0, 0);
-    // auto va_list = get_param_int(argc, params, 1, 0);
-    // auto args = get_param_int(argc, params, 2, 0);
-    // auto format = get_param_int(argc, params, 3, 0);
-    // auto printf = get_param_int(argc, params, 4, 0);
-    // SetTooltipV(fmt, va_list, args, format, printf);
-  } else {
-    error(retval, "SetTooltipV", 5);
-  }
-  return result;
-}
-
-int cmd_setwindowcollapsed(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setwindowcollapsed(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto collapsed = get_param_int(argc, params, 0, 0);
-    // auto cond = get_param_int(argc, params, 1, 0);
-    // SetWindowCollapsed(collapsed, cond);
+    auto collapsed = get_param_int(argc, params, 0, 0);
+    bool cond = get_param_int(argc, params, 1, 0) == 1;
+    SetWindowCollapsed(collapsed, cond);
   } else {
     error(retval, "SetWindowCollapsed", 2);
   }
   return result;
 }
 
-int cmd_setwindowfocus(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setwindowfocus(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     SetWindowFocus();
@@ -3720,97 +3657,96 @@ int cmd_setwindowfocus(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_setwindowfontscale(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setwindowfontscale(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto scale = get_param_int(argc, params, 0, 0);
-    // SetWindowFontScale(scale);
+    auto scale = get_param_int(argc, params, 0, 0);
+    SetWindowFontScale(scale);
   } else {
     error(retval, "SetWindowFontScale", 1);
   }
   return result;
 }
 
-int cmd_setwindowpos(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setwindowpos(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto pos = get_param_int(argc, params, 0, 0);
-    // auto cond = get_param_int(argc, params, 1, 0);
-    // SetWindowPos(pos, cond);
+    auto pos = get_param_vec2(argc, params, 0);
+    auto cond = get_param_int(argc, params, 1, 0);
+    SetWindowPos(pos, cond);
   } else {
     error(retval, "SetWindowPos", 2);
   }
   return result;
 }
 
-int cmd_setwindowsize(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setwindowsize(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 2);
   if (result) {
-    // auto size = get_param_int(argc, params, 0, 0);
-    // auto cond = get_param_int(argc, params, 1, 0);
-    // SetWindowSize(size, cond);
+    auto size = get_param_vec2(argc, params, 0);
+    auto cond = get_param_int(argc, params, 1, 0);
+    SetWindowSize(size, cond);
   } else {
     error(retval, "SetWindowSize", 2);
   }
   return result;
 }
 
-int cmd_showaboutwindow(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_showaboutwindow(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto p_open = get_param_int(argc, params, 0, 0);
-    // ShowAboutWindow(p_open);
+    bool p_open = (get_param_int(argc, params, 0, 0) == 1);
+    ShowAboutWindow(&p_open);
   } else {
     error(retval, "ShowAboutWindow", 1);
   }
   return result;
 }
 
-int cmd_showdemowindow(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_showdemowindow(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto p_open = get_param_int(argc, params, 0, 0);
-    // ShowDemoWindow(p_open);
+    bool p_open = get_param_int(argc, params, 0, 0) == 1;
+    ShowDemoWindow(&p_open);
   } else {
     error(retval, "ShowDemoWindow", 1);
   }
   return result;
 }
 
-int cmd_showfontselector(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_showfontselector(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto label = get_param_str(argc, params, 0, 0);
-    // ShowFontSelector(label);
+    auto label = get_param_str(argc, params, 0, 0);
+    ShowFontSelector(label);
   } else {
     error(retval, "ShowFontSelector", 1);
   }
   return result;
 }
 
-int cmd_showmetricswindow(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_showmetricswindow(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto p_open = get_param_int(argc, params, 0, 0);
-    // ShowMetricsWindow(p_open);
+    bool p_open = get_param_int(argc, params, 0, 0) == 1;
+    ShowMetricsWindow(&p_open);
   } else {
     error(retval, "ShowMetricsWindow", 1);
   }
   return result;
 }
 
-int cmd_showstyleeditor(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
+static int cmd_showstyleeditor(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 0);
   if (result) {
-    // auto ref = get_param_int(argc, params, 0, 0);
-    // ShowStyleEditor(ref);
+    ShowStyleEditor();
   } else {
-    error(retval, "ShowStyleEditor", 1);
+    error(retval, "ShowStyleEditor", 0);
   }
   return result;
 }
 
-int cmd_spacing(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_spacing(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     Spacing();
@@ -3820,40 +3756,37 @@ int cmd_spacing(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_stylecolorsclassic(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
+static int cmd_stylecolorsclassic(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 0);
   if (result) {
-    // auto dst = get_param_int(argc, params, 0, 0);
-    // StyleColorsClassic(dst);
+    StyleColorsClassic();
   } else {
-    error(retval, "StyleColorsClassic", 1);
+    error(retval, "StyleColorsClassic", 0);
   }
   return result;
 }
 
-int cmd_stylecolorsdark(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_stylecolorsdark(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
-    // auto dst = get_param_int(argc, params, 0, 0);
-    // StyleColorsDark(dst);
+    StyleColorsDark();
   } else {
-    error(retval, "StyleColorsDark", 1);
+    error(retval, "StyleColorsDark", 0);
   }
   return result;
 }
 
-int cmd_stylecolorslight(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 1);
+static int cmd_stylecolorslight(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 0);
   if (result) {
-    // auto dst = get_param_int(argc, params, 0, 0);
-    // StyleColorsLight(dst);
+    StyleColorsLight();
   } else {
-    error(retval, "StyleColorsLight", 1);
+    error(retval, "StyleColorsLight", 0);
   }
   return result;
 }
 
-int cmd_text(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_text(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc > 0);
   if (result) {
     Text(format_text(argc, params, 0));
@@ -3863,18 +3796,18 @@ int cmd_text(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_textcolored(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_textcolored(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc > 0);
   if (result) {
-    //auto col = get_param_int(argc, params, 0, 0);
-    //TextColored(format_text(argc, params, 1));
+    auto col = get_param_vec4(argc, params, 0);
+    TextColored(col, format_text(argc, params, 1));
   } else {
     error(retval, "TextColored", 1, 9);
   }
   return result;
 }
 
-int cmd_textdisabled(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_textdisabled(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc > 0);
   if (result) {
     TextDisabled(format_text(argc, params, 0));
@@ -3884,7 +3817,7 @@ int cmd_textdisabled(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_textunformatted(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_textunformatted(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1 || argc == 2);
   if (result) {
     auto text = get_param_str(argc, params, 0, NULL);
@@ -3896,7 +3829,7 @@ int cmd_textunformatted(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_textwrapped(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_textwrapped(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc > 0);
   if (result) {
     TextWrapped(format_text(argc, params, 0));
@@ -3906,7 +3839,7 @@ int cmd_textwrapped(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_treepop(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_treepop(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     TreePop();
@@ -3916,7 +3849,7 @@ int cmd_treepop(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0 || argc == 1);
   if (result) {
     auto str_id = get_param_str(argc, params, 0, NULL);
@@ -3927,7 +3860,7 @@ int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_unindent(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_unindent(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   if (result) {
     auto indent_w = get_param_num(argc, params, 0, 0);
@@ -4079,27 +4012,27 @@ int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
 
 API lib_func[] = {
   //{"ACCEPTDRAGDROPPAYLOAD", cmd_acceptdragdroppayload},
-  //{"ARROWBUTTON", cmd_arrowbutton},
+  {"ARROWBUTTON", cmd_arrowbutton},
   {"BEGIN", cmd_begin},
-  //{"BEGINCHILD", cmd_beginchild},
-  //{"BEGINCHILDFRAME", cmd_beginchildframe},
-  //{"BEGINCOMBO", cmd_begincombo},
-  //{"BEGINDRAGDROPSOURCE", cmd_begindragdropsource},
-  //{"BEGINDRAGDROPTARGET", cmd_begindragdroptarget},
-  //{"BEGINMAINMENUBAR", cmd_beginmainmenubar},
-  //{"BEGINMENU", cmd_beginmenu},
-  //{"BEGINMENUBAR", cmd_beginmenubar},
-  //{"BEGINPOPUP", cmd_beginpopup},
-  //{"BEGINPOPUPCONTEXTITEM", cmd_beginpopupcontextitem},
-  //{"BEGINPOPUPCONTEXTVOID", cmd_beginpopupcontextvoid},
-  //{"BEGINPOPUPCONTEXTWINDOW", cmd_beginpopupcontextwindow},
-  //{"BEGINPOPUPMODAL", cmd_beginpopupmodal},
-  //{"BEGINTABBAR", cmd_begintabbar},
-  //{"BEGINTABITEM", cmd_begintabitem},
-  //{"BUTTON", cmd_button},
-  //{"CALCITEMWIDTH", cmd_calcitemwidth},
+  {"BEGINCHILD", cmd_beginchild},
+  {"BEGINCHILDFRAME", cmd_beginchildframe},
+  {"BEGINCOMBO", cmd_begincombo},
+  {"BEGINDRAGDROPSOURCE", cmd_begindragdropsource},
+  {"BEGINDRAGDROPTARGET", cmd_begindragdroptarget},
+  {"BEGINMAINMENUBAR", cmd_beginmainmenubar},
+  {"BEGINMENU", cmd_beginmenu},
+  {"BEGINMENUBAR", cmd_beginmenubar},
+  {"BEGINPOPUP", cmd_beginpopup},
+  {"BEGINPOPUPCONTEXTITEM", cmd_beginpopupcontextitem},
+  {"BEGINPOPUPCONTEXTVOID", cmd_beginpopupcontextvoid},
+  {"BEGINPOPUPCONTEXTWINDOW", cmd_beginpopupcontextwindow},
+  {"BEGINPOPUPMODAL", cmd_beginpopupmodal},
+  {"BEGINTABBAR", cmd_begintabbar},
+  {"BEGINTABITEM", cmd_begintabitem},
+  {"BUTTON", cmd_button},
+  {"CALCITEMWIDTH", cmd_calcitemwidth},
   //{"CALCTEXTSIZE", cmd_calctextsize},
-  //{"CHECKBOX", cmd_checkbox},
+  {"CHECKBOX", cmd_checkbox},
   //{"CHECKBOXFLAGS", cmd_checkboxflags},
   //{"COLLAPSINGHEADER", cmd_collapsingheader},
   //{"COLORBUTTON", cmd_colorbutton},
@@ -4125,62 +4058,61 @@ API lib_func[] = {
   //{"DRAGSCALAR", cmd_dragscalar},
   //{"DRAGSCALARN", cmd_dragscalarn},
   //{"GETBACKGROUNDDRAWLIST", cmd_getbackgrounddrawlist},
-  //{"GETCLIPBOARDTEXT", cmd_getclipboardtext},
+  {"GETCLIPBOARDTEXT", cmd_getclipboardtext},
   //{"GETCOLORU32", cmd_getcoloru32},
-  //{"GETCOLUMNINDEX", cmd_getcolumnindex},
-  //{"GETCOLUMNOFFSET", cmd_getcolumnoffset},
-  //{"GETCOLUMNSCOUNT", cmd_getcolumnscount},
-  //{"GETCOLUMNWIDTH", cmd_getcolumnwidth},
-  //{"GETCONTENTREGIONAVAIL", cmd_getcontentregionavail},
-  //{"GETCONTENTREGIONMAX", cmd_getcontentregionmax},
+  {"GETCOLUMNINDEX", cmd_getcolumnindex},
+  {"GETCOLUMNOFFSET", cmd_getcolumnoffset},
+  {"GETCOLUMNSCOUNT", cmd_getcolumnscount},
+  {"GETCOLUMNWIDTH", cmd_getcolumnwidth},
+  {"GETCONTENTREGIONAVAIL", cmd_getcontentregionavail},
+  {"GETCONTENTREGIONMAX", cmd_getcontentregionmax},
   //{"GETCURRENTCONTEXT", cmd_getcurrentcontext},
-  //{"GETCURSORPOS", cmd_getcursorpos},
-  //{"GETCURSORPOSX", cmd_getcursorposx},
-  //{"GETCURSORPOSY", cmd_getcursorposy},
-  //{"GETCURSORSCREENPOS", cmd_getcursorscreenpos},
-  //{"GETCURSORSTARTPOS", cmd_getcursorstartpos},
+  {"GETCURSORPOS", cmd_getcursorpos},
+  {"GETCURSORPOSX", cmd_getcursorposx},
+  {"GETCURSORPOSY", cmd_getcursorposy},
+  {"GETCURSORSCREENPOS", cmd_getcursorscreenpos},
+  {"GETCURSORSTARTPOS", cmd_getcursorstartpos},
   //{"GETDRAGDROPPAYLOAD", cmd_getdragdroppayload},
   //{"GETDRAWDATA", cmd_getdrawdata},
   //{"GETDRAWLISTSHAREDDATA", cmd_getdrawlistshareddata},
   //{"GETFONT", cmd_getfont},
-  //{"GETFONTSIZE", cmd_getfontsize},
-  //{"GETFONTTEXUVWHITEPIXEL", cmd_getfonttexuvwhitepixel},
+  {"GETFONTSIZE", cmd_getfontsize},
+  {"GETFONTTEXUVWHITEPIXEL", cmd_getfonttexuvwhitepixel},
   //{"GETFOREGROUNDDRAWLIST", cmd_getforegrounddrawlist},
-  //{"GETFRAMECOUNT", cmd_getframecount},
-  //{"GETFRAMEHEIGHT", cmd_getframeheight},
-  //{"GETFRAMEHEIGHTWITHSPACING", cmd_getframeheightwithspacing},
-  //{"GETID", cmd_getid},
-  //{"GETIO", cmd_getio},
-  //{"GETITEMRECTMAX", cmd_getitemrectmax},
-  //{"GETITEMRECTMIN", cmd_getitemrectmin},
-  //{"GETITEMRECTSIZE", cmd_getitemrectsize},
-  //{"GETKEYINDEX", cmd_getkeyindex},
+  {"GETFRAMECOUNT", cmd_getframecount},
+  {"GETFRAMEHEIGHT", cmd_getframeheight},
+  {"GETFRAMEHEIGHTWITHSPACING", cmd_getframeheightwithspacing},
+  {"GETID", cmd_getid},
+  {"GETITEMRECTMAX", cmd_getitemrectmax},
+  {"GETITEMRECTMIN", cmd_getitemrectmin},
+  {"GETITEMRECTSIZE", cmd_getitemrectsize},
+  {"GETKEYINDEX", cmd_getkeyindex},
   //{"GETKEYPRESSEDAMOUNT", cmd_getkeypressedamount},
-  //{"GETMOUSECURSOR", cmd_getmousecursor},
+  {"GETMOUSECURSOR", cmd_getmousecursor},
   //{"GETMOUSEDRAGDELTA", cmd_getmousedragdelta},
-  //{"GETMOUSEPOS", cmd_getmousepos},
-  //{"GETMOUSEPOSONOPENINGCURRENTPOPUP", cmd_getmouseposonopeningcurrentpopup},
-  //{"GETSCROLLMAXX", cmd_getscrollmaxx},
-  //{"GETSCROLLMAXY", cmd_getscrollmaxy},
-  //{"GETSCROLLX", cmd_getscrollx},
-  //{"GETSCROLLY", cmd_getscrolly},
+  {"GETMOUSEPOS", cmd_getmousepos},
+  {"GETMOUSEPOSONOPENINGCURRENTPOPUP", cmd_getmouseposonopeningcurrentpopup},
+  {"GETSCROLLMAXX", cmd_getscrollmaxx},
+  {"GETSCROLLMAXY", cmd_getscrollmaxy},
+  {"GETSCROLLX", cmd_getscrollx},
+  {"GETSCROLLY", cmd_getscrolly},
   //{"GETSTATESTORAGE", cmd_getstatestorage},
   //{"GETSTYLE", cmd_getstyle},
-  //{"GETSTYLECOLORNAME", cmd_getstylecolorname},
+  {"GETSTYLECOLORNAME", cmd_getstylecolorname},
   //{"GETSTYLECOLORVEC4", cmd_getstylecolorvec4},
-  //{"GETTEXTLINEHEIGHT", cmd_gettextlineheight},
-  //{"GETTEXTLINEHEIGHTWITHSPACING", cmd_gettextlineheightwithspacing},
-  //{"GETTIME", cmd_gettime},
-  //{"GETTREENODETOLABELSPACING", cmd_gettreenodetolabelspacing},
-  //{"GETVERSION", cmd_getversion},
-  //{"GETWINDOWCONTENTREGIONMAX", cmd_getwindowcontentregionmax},
-  //{"GETWINDOWCONTENTREGIONMIN", cmd_getwindowcontentregionmin},
-  //{"GETWINDOWCONTENTREGIONWIDTH", cmd_getwindowcontentregionwidth},
-  //{"GETWINDOWDRAWLIST", cmd_getwindowdrawlist},
-  //{"GETWINDOWHEIGHT", cmd_getwindowheight},
-  //{"GETWINDOWPOS", cmd_getwindowpos},
-  //{"GETWINDOWSIZE", cmd_getwindowsize},
-  //{"GETWINDOWWIDTH", cmd_getwindowwidth},
+  {"GETTEXTLINEHEIGHT", cmd_gettextlineheight},
+  {"GETTEXTLINEHEIGHTWITHSPACING", cmd_gettextlineheightwithspacing},
+  {"GETTIME", cmd_gettime},
+  {"GETTREENODETOLABELSPACING", cmd_gettreenodetolabelspacing},
+  {"GETVERSION", cmd_getversion},
+  {"GETWINDOWCONTENTREGIONMAX", cmd_getwindowcontentregionmax},
+  {"GETWINDOWCONTENTREGIONMIN", cmd_getwindowcontentregionmin},
+  {"GETWINDOWCONTENTREGIONWIDTH", cmd_getwindowcontentregionwidth},
+  {"GETWINDOWDRAWLIST", cmd_getwindowdrawlist},
+  {"GETWINDOWHEIGHT", cmd_getwindowheight},
+  {"GETWINDOWPOS", cmd_getwindowpos},
+  {"GETWINDOWSIZE", cmd_getwindowsize},
+  {"GETWINDOWWIDTH", cmd_getwindowwidth},
   //{"IMAGEBUTTON", cmd_imagebutton},
   //{"INPUTDOUBLE", cmd_inputdouble},
   //{"INPUTFLOAT", cmd_inputfloat},
@@ -4266,17 +4198,16 @@ API lib_proc[] = {
   {"BEGINGROUP", cmd_begingroup},
   {"BEGINTOOLTIP", cmd_begintooltip},
   {"BULLET", cmd_bullet},
-  // {"BULLETTEXT", cmd_bullettext},
-  // {"BULLETTEXTV", cmd_bullettextv},
+  {"BULLETTEXT", cmd_bullettext},
   // {"CALCLISTCLIPPING", cmd_calclistclipping},
-  // {"CAPTUREKEYBOARDFROMAPP", cmd_capturekeyboardfromapp},
-  // {"CAPTUREMOUSEFROMAPP", cmd_capturemousefromapp},
+  {"CAPTUREKEYBOARDFROMAPP", cmd_capturekeyboardfromapp},
+  {"CAPTUREMOUSEFROMAPP", cmd_capturemousefromapp},
   {"CLOSECURRENTPOPUP", cmd_closecurrentpopup},
   // {"COLORCONVERTHSVTORGB", cmd_colorconverthsvtorgb},
   // {"COLORCONVERTRGBTOHSV", cmd_colorconvertrgbtohsv},
-  // {"COLUMNS", cmd_columns},
+  {"COLUMNS", cmd_columns},
   {"DESTROYCONTEXT", cmd_destroycontext},
-  // {"DUMMY", cmd_dummy},
+  {"DUMMY", cmd_dummy},
   {"END", cmd_end},
   {"ENDCHILD", cmd_endchild},
   {"ENDCHILDFRAME", cmd_endchildframe},
@@ -4293,25 +4224,22 @@ API lib_proc[] = {
   {"ENDTABITEM", cmd_endtabitem},
   {"ENDTOOLTIP", cmd_endtooltip},
   // {"IMAGE", cmd_image},
-  // {"INDENT", cmd_indent},
-  // {"LABELTEXT", cmd_labeltext},
-  // {"LABELTEXTV", cmd_labeltextv},
+  {"INDENT", cmd_indent},
+  {"LABELTEXT", cmd_labeltext},
   {"LISTBOXFOOTER", cmd_listboxfooter},
-  // {"LOADINISETTINGSFROMDISK", cmd_loadinisettingsfromdisk},
+  {"LOADINISETTINGSFROMDISK", cmd_loadinisettingsfromdisk},
   // {"LOADINISETTINGSFROMMEMORY", cmd_loadinisettingsfrommemory},
   {"LOGBUTTONS", cmd_logbuttons},
   {"LOGFINISH", cmd_logfinish},
-  // {"LOGTEXT", cmd_logtext},
-  // {"LOGTOCLIPBOARD", cmd_logtoclipboard},
-  // {"LOGTOFILE", cmd_logtofile},
-  // {"LOGTOTTY", cmd_logtotty},
-  // {"MEMALLOC", cmd_memalloc},
-  // {"MEMFREE", cmd_memfree},
+  {"LOGTEXT", cmd_logtext},
+  {"LOGTOCLIPBOARD", cmd_logtoclipboard},
+  {"LOGTOFILE", cmd_logtofile},
+  {"LOGTOTTY", cmd_logtotty},
   {"NEWFRAME", cmd_newframe},
   {"NEWLINE", cmd_newline},
   {"NEXTCOLUMN", cmd_nextcolumn},
-  // {"OPENPOPUP", cmd_openpopup},
-  // {"OPENPOPUPONITEMCLICK", cmd_openpopuponitemclick},
+  {"OPENPOPUP", cmd_openpopup},
+  {"OPENPOPUPONITEMCLICK", cmd_openpopuponitemclick},
   // {"PLOTHISTOGRAM", cmd_plothistogram},
   // {"PLOTLINES", cmd_plotlines},
   {"POPALLOWKEYBOARDFOCUS", cmd_popallowkeyboardfocus},
@@ -4320,73 +4248,72 @@ API lib_proc[] = {
   {"POPFONT", cmd_popfont},
   {"POPID", cmd_popid},
   {"POPITEMWIDTH", cmd_popitemwidth},
-  // {"POPSTYLECOLOR", cmd_popstylecolor},
-  // {"POPSTYLEVAR", cmd_popstylevar},
+  {"POPSTYLECOLOR", cmd_popstylecolor},
+  {"POPSTYLEVAR", cmd_popstylevar},
   {"POPTEXTWRAPPOS", cmd_poptextwrappos},
-  // {"PROGRESSBAR", cmd_progressbar},
-  // {"PUSHALLOWKEYBOARDFOCUS", cmd_pushallowkeyboardfocus},
-  // {"PUSHBUTTONREPEAT", cmd_pushbuttonrepeat},
+  {"PROGRESSBAR", cmd_progressbar},
+  {"PUSHALLOWKEYBOARDFOCUS", cmd_pushallowkeyboardfocus},
+  {"PUSHBUTTONREPEAT", cmd_pushbuttonrepeat},
   // {"PUSHCLIPRECT", cmd_pushcliprect},
   // {"PUSHFONT", cmd_pushfont},
-  // {"PUSHID", cmd_pushid},
-  // {"PUSHITEMWIDTH", cmd_pushitemwidth},
-  // {"PUSHSTYLECOLOR", cmd_pushstylecolor},
-  // {"PUSHSTYLEVAR", cmd_pushstylevar},
-  // {"PUSHTEXTWRAPPOS", cmd_pushtextwrappos},
+  {"PUSHID", cmd_pushid},
+  {"PUSHITEMWIDTH", cmd_pushitemwidth},
+  {"PUSHSTYLECOLOR", cmd_pushstylecolor},
+  {"PUSHSTYLEVAR", cmd_pushstylevar},
+  {"PUSHTEXTWRAPPOS", cmd_pushtextwrappos},
   {"RENDER", cmd_render},
-  // {"RESETMOUSEDRAGDELTA", cmd_resetmousedragdelta},
-  // {"SAMELINE", cmd_sameline},
+  {"RESETMOUSEDRAGDELTA", cmd_resetmousedragdelta},
+  {"SAMELINE", cmd_sameline},
   // {"SAVEINISETTINGSTODISK", cmd_saveinisettingstodisk},
   {"SEPARATOR", cmd_separator},
   // {"SETALLOCATORFUNCTIONS", cmd_setallocatorfunctions},
-  // {"SETCLIPBOARDTEXT", cmd_setclipboardtext},
-  // {"SETCOLOREDITOPTIONS", cmd_setcoloreditoptions},
-  // {"SETCOLUMNOFFSET", cmd_setcolumnoffset},
-  // {"SETCOLUMNWIDTH", cmd_setcolumnwidth},
+  {"SETCLIPBOARDTEXT", cmd_setclipboardtext},
+  {"SETCOLOREDITOPTIONS", cmd_setcoloreditoptions},
+  {"SETCOLUMNOFFSET", cmd_setcolumnoffset},
+  {"SETCOLUMNWIDTH", cmd_setcolumnwidth},
   // {"SETCURRENTCONTEXT", cmd_setcurrentcontext},
-  // {"SETCURSORPOS", cmd_setcursorpos},
-  // {"SETCURSORPOSX", cmd_setcursorposx},
-  // {"SETCURSORPOSY", cmd_setcursorposy},
-  // {"SETCURSORSCREENPOS", cmd_setcursorscreenpos},
+  {"SETCURSORPOS", cmd_setcursorpos},
+  {"SETCURSORPOSX", cmd_setcursorposx},
+  {"SETCURSORPOSY", cmd_setcursorposy},
+  {"SETCURSORSCREENPOS", cmd_setcursorscreenpos},
   {"SETITEMALLOWOVERLAP", cmd_setitemallowoverlap},
   {"SETITEMDEFAULTFOCUS", cmd_setitemdefaultfocus},
-  // {"SETKEYBOARDFOCUSHERE", cmd_setkeyboardfocushere},
-  // {"SETMOUSECURSOR", cmd_setmousecursor},
-  // {"SETNEXTITEMOPEN", cmd_setnextitemopen},
-  // {"SETNEXTITEMWIDTH", cmd_setnextitemwidth},
-  // {"SETNEXTWINDOWBGALPHA", cmd_setnextwindowbgalpha},
-  // {"SETNEXTWINDOWCOLLAPSED", cmd_setnextwindowcollapsed},
-  // {"SETNEXTWINDOWCONTENTSIZE", cmd_setnextwindowcontentsize},
+  {"SETKEYBOARDFOCUSHERE", cmd_setkeyboardfocushere},
+  {"SETMOUSECURSOR", cmd_setmousecursor},
+  {"SETNEXTITEMOPEN", cmd_setnextitemopen},
+  {"SETNEXTITEMWIDTH", cmd_setnextitemwidth},
+  {"SETNEXTWINDOWBGALPHA", cmd_setnextwindowbgalpha},
+  {"SETNEXTWINDOWCOLLAPSED", cmd_setnextwindowcollapsed},
+  {"SETNEXTWINDOWCONTENTSIZE", cmd_setnextwindowcontentsize},
   {"SETNEXTWINDOWFOCUS", cmd_setnextwindowfocus},
   // {"SETNEXTWINDOWPOS", cmd_setnextwindowpos},
   // {"SETNEXTWINDOWSIZE", cmd_setnextwindowsize},
   // {"SETNEXTWINDOWSIZECONSTRAINTS", cmd_setnextwindowsizeconstraints},
-  // {"SETSCROLLFROMPOSX", cmd_setscrollfromposx},
-  // {"SETSCROLLFROMPOSY", cmd_setscrollfromposy},
-  // {"SETSCROLLHEREX", cmd_setscrollherex},
-  // {"SETSCROLLHEREY", cmd_setscrollherey},
-  // {"SETSCROLLX", cmd_setscrollx},
-  // {"SETSCROLLY", cmd_setscrolly},
+  {"SETSCROLLFROMPOSX", cmd_setscrollfromposx},
+  {"SETSCROLLFROMPOSY", cmd_setscrollfromposy},
+  {"SETSCROLLHEREX", cmd_setscrollherex},
+  {"SETSCROLLHEREY", cmd_setscrollherey},
+  {"SETSCROLLX", cmd_setscrollx},
+  {"SETSCROLLY", cmd_setscrolly},
   // {"SETSTATESTORAGE", cmd_setstatestorage},
-  // {"SETTABITEMCLOSED", cmd_settabitemclosed},
-  // {"SETTOOLTIP", cmd_settooltip},
-  // {"SETTOOLTIPV", cmd_settooltipv},
-  // {"SETWINDOWCOLLAPSED", cmd_setwindowcollapsed},
+  {"SETTABITEMCLOSED", cmd_settabitemclosed},
+  {"SETTOOLTIP", cmd_settooltip},
+  {"SETWINDOWCOLLAPSED", cmd_setwindowcollapsed},
   {"SETWINDOWFOCUS", cmd_setwindowfocus},
-  // {"SETWINDOWFONTSCALE", cmd_setwindowfontscale},
-  // {"SETWINDOWPOS", cmd_setwindowpos},
-  // {"SETWINDOWSIZE", cmd_setwindowsize},
-  // {"SHOWABOUTWINDOW", cmd_showaboutwindow},
-  // {"SHOWDEMOWINDOW", cmd_showdemowindow},
-  // {"SHOWFONTSELECTOR", cmd_showfontselector},
-  // {"SHOWMETRICSWINDOW", cmd_showmetricswindow},
-  // {"SHOWSTYLEEDITOR", cmd_showstyleeditor},
+  {"SETWINDOWFONTSCALE", cmd_setwindowfontscale},
+  {"SETWINDOWPOS", cmd_setwindowpos},
+  {"SETWINDOWSIZE", cmd_setwindowsize},
+  {"SHOWABOUTWINDOW", cmd_showaboutwindow},
+  {"SHOWDEMOWINDOW", cmd_showdemowindow},
+  {"SHOWFONTSELECTOR", cmd_showfontselector},
+  {"SHOWMETRICSWINDOW", cmd_showmetricswindow},
+  {"SHOWSTYLEEDITOR", cmd_showstyleeditor},
   {"SPACING", cmd_spacing},
-  // {"STYLECOLORSCLASSIC", cmd_stylecolorsclassic},
-  // {"STYLECOLORSDARK", cmd_stylecolorsdark},
-  // {"STYLECOLORSLIGHT", cmd_stylecolorslight},
+  {"STYLECOLORSCLASSIC", cmd_stylecolorsclassic},
+  {"STYLECOLORSDARK", cmd_stylecolorsdark},
+  {"STYLECOLORSLIGHT", cmd_stylecolorslight},
   {"TEXT", cmd_text},
-  //{"TEXTCOLORED", cmd_textcolored},
+  {"TEXTCOLORED", cmd_textcolored},
   {"TEXTDISABLED", cmd_textdisabled},
   {"TEXTUNFORMATTED", cmd_textunformatted},
   {"TEXTWRAPPED", cmd_textwrapped},

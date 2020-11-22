@@ -367,11 +367,11 @@ const char *get_param_str(int argc, slib_par_t *params, int n, const char *def) 
       result = buf;
       break;
     default:
-      result = 0;
+      result = "";
       break;
     }
   } else {
-    result = def;
+    result = def == nullptr ? "" : def;
   }
   return result;
 }
@@ -439,6 +439,7 @@ const char *format_text(int argc, slib_par_t *params, int param) {
         end++;
         if (is_format_char(*end)) {
           // skip terminating format symbol
+          char formatChar = *end;
           end++;
           int segLength = end - start;
           if (segLength + length + padding < MAX_TEXT_BUFFER_LENGTH) {
@@ -449,26 +450,38 @@ const char *format_text(int argc, slib_par_t *params, int param) {
             // append to buffer, process the next single var-arg
             switch (params[param].var_p->type) {
             case V_INT:
-              count = snprintf(buffer + length, maxChars, start, params[param].var_p->v.i);
+              if (formatChar != 's') {
+                count = snprintf(buffer + length, maxChars, start, params[param].var_p->v.i);
+              } else {
+                count = -1;
+              }
               break;
             case V_NUM:
-              count = snprintf(buffer + length, maxChars, start, params[param].var_p->v.n);
+              if (formatChar != 's') {
+                count = snprintf(buffer + length, maxChars, start, params[param].var_p->v.n);
+              } else {
+                count = -1;
+              }
               break;
             case V_STR:
-              count = snprintf(buffer + length, maxChars, start, params[param].var_p->v.p.ptr);
+              if (formatChar == 's') {
+                count = snprintf(buffer + length, maxChars, start, params[param].var_p->v.p.ptr);
+              } else {
+                count = -1;
+              }
               break;
             default:
               count = -1;
-              break;
-            }
-            if (count < 0 || count >= maxChars) {
-              error = true;
               break;
             }
             param++;
             length += count;
             *end = cNull;
             start = end;
+            if (count < 0 || count >= maxChars) {
+              error = true;
+              break;
+            }
           }
           break;
         } else if (*end != '.' && !isdigit(*end)) {
@@ -483,10 +496,15 @@ const char *format_text(int argc, slib_par_t *params, int param) {
     }
   }
 
-  int segLength = end - start;
-  if (segLength && (segLength + length + padding < MAX_TEXT_BUFFER_LENGTH)) {
-    strncpy(buffer + length, start, segLength);
-    buffer[length + segLength + 1] = '\0';
+  if (error) {
+    memset(buffer, '\0', MAX_TEXT_BUFFER_LENGTH);
+    strcpy(buffer, "ERROR: Invalid text format");
+  } else {
+    int segLength = end - start;
+    if (segLength && (segLength + length + padding < MAX_TEXT_BUFFER_LENGTH)) {
+      strncpy(buffer + length, start, segLength);
+      buffer[length + segLength + 1] = '\0';
+    }
   }
 
   return buffer;

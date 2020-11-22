@@ -23,6 +23,7 @@ libimgui_la_SOURCES =  \
   imgui/imgui.cpp \
   imgui/imgui_widgets.cpp \
   imgui/imgui_draw.cpp \
+  imgui/imgui_demo.cpp \
   main.cpp
 
 libimgui_la_LDFLAGS = -module -rpath '$(libdir)' @IMGUI_LDFLAGS@ @PLATFORM_LDFLAGS@
