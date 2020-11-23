@@ -28,7 +28,12 @@ ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 using namespace ImGui;
 
-ImVec2 get_param_vec2(int argc, slib_par_t *params, int n) {
+static bool is_int_byref(int argc, slib_par_t *params, int n) {
+  return (n < argc && params[n].byref &&
+          (v_is_type(params[n].var_p, V_INT) || v_is_type(params[n].var_p, V_NUM)));
+}
+
+static ImVec2 get_param_vec2(int argc, slib_par_t *params, int n) {
   ImVec2 result;
   if (is_param_map(argc, params, n)) {
     result.x = get_map_num(params[n].var_p, "x");
@@ -43,7 +48,7 @@ ImVec2 get_param_vec2(int argc, slib_par_t *params, int n) {
   return result;
 }
 
-ImVec4 get_param_vec4(int argc, slib_par_t *params, int n) {
+static ImVec4 get_param_vec4(int argc, slib_par_t *params, int n) {
   ImVec4 result;
   if (is_param_map(argc, params, n)) {
     result.x = get_map_num(params[n].var_p, "x");
@@ -64,13 +69,13 @@ ImVec4 get_param_vec4(int argc, slib_par_t *params, int n) {
   return result;
 }
 
-void v_set_vec2(var_t *var, ImVec2 &vec2) {
+static void v_set_vec2(var_t *var, ImVec2 &vec2) {
   map_init(var);
   v_setint(map_add_var(var, "x", 0), vec2.x);
   v_setint(map_add_var(var, "y", 0), vec2.y);
 }
 
-GLFWwindow *get_window(int argc, slib_par_t *params) {
+static GLFWwindow *get_window(int argc, slib_par_t *params) {
   GLFWwindow *window;
   int windowId = get_param_int(argc, params, 0, -1);
   if (windowId != -1) {
@@ -79,6 +84,19 @@ GLFWwindow *get_window(int argc, slib_par_t *params) {
     window = nullptr;
   }
   return window;
+}
+
+static void close_window(GLFWwindow *window, int windowId) {
+  if (window != nullptr) {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    DestroyContext();
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    if (windowId != -1) {
+      _windowMap.erase(windowId);
+    }
+  }
 }
 
 int cmd_acceptdragdroppayload(int argc, slib_par_t *params, var_t *retval) {
@@ -132,7 +150,7 @@ static int cmd_begin_fullscreen(int argc, slib_par_t *params, var_t *retval) {
     auto name = get_param_str(argc, params, 0, 0);
     auto p_open = get_param_int(argc, params, 1, 0) == 1;
     auto flags = get_param_int(argc, params, 2, 0) |
-                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove;
     auto fnResult = Begin(name, &p_open, flags);
     v_setint(retval, fnResult);
   } else {
@@ -375,12 +393,12 @@ static int cmd_calctextsize(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 2);
+  int result = (argc == 2 && is_int_byref(argc, params, 1));
   if (result) {
     auto label = get_param_str(argc, params, 0, 0);
-    bool v = (get_param_int(argc, params, 1, 0) == 1);
-    auto fnResult = Checkbox(label, &v);
-    v_setint(retval, fnResult);
+    bool value = get_param_int(argc, params, 1, 0) == 1;
+    Checkbox(label, &value);
+    v_setint(params[1].var_p, value);
   } else {
     error(retval, "Checkbox", 2);
   }
@@ -2165,18 +2183,18 @@ int cmd_sliderangle(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_sliderfloat(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 3 || argc == 5);
+  int result = (argc >= 4 && argc <= 6 && is_int_byref(argc, params, 1));
   if (result) {
     auto label = get_param_str(argc, params, 0, 0);
-    float v_min = get_param_num(argc, params, 1, 0);
-    float v_max = get_param_num(argc, params, 2, 0);
-    auto format = get_param_str(argc, params, 3, 0);
-    auto flags = get_param_int(argc, params, 4, 0);
-    float v = 0;
-    SliderFloat(label, &v, v_min, v_max, format, flags);
-    v_setreal(retval, v);
+    float value = get_param_num(argc, params, 1, 0);
+    float v_min = get_param_num(argc, params, 2, 0);
+    float v_max = get_param_num(argc, params, 3, 0);
+    auto format = get_param_str(argc, params, 4, "%.3f");
+    auto flags = get_param_int(argc, params, 5, 0);
+    SliderFloat(label, &value, v_min, v_max, format, flags);
+    v_setreal(params[1].var_p, value);
   } else {
-    error(retval, "SliderFloat", 3, 5);
+    error(retval, "SliderFloat", 4, 5);
   }
   return result;
 }
@@ -2191,7 +2209,6 @@ int cmd_sliderfloat2(int argc, slib_par_t *params, var_t *retval) {
     //auto format = get_param_int(argc, params, 4, 0);
     //auto flags = get_param_int(argc, params, 5, 0);
     //auto fnResult = SliderFloat2(label, v, v_min, v_max, format, flags);
-    //v_setint(retval, fnResult);
   } else {
     error(retval, "SliderFloat2", 6);
   }
@@ -2208,7 +2225,6 @@ int cmd_sliderfloat3(int argc, slib_par_t *params, var_t *retval) {
     //auto format = get_param_int(argc, params, 4, 0);
     //auto flags = get_param_int(argc, params, 5, 0);
     //auto fnResult = SliderFloat3(label, v, v_min, v_max, format, flags);
-    //v_setint(retval, fnResult);
   } else {
     error(retval, "SliderFloat3", 6);
   }
@@ -2225,7 +2241,6 @@ int cmd_sliderfloat4(int argc, slib_par_t *params, var_t *retval) {
     //auto format = get_param_int(argc, params, 4, 0);
     //auto flags = get_param_int(argc, params, 5, 0);
     //auto fnResult = SliderFloat4(label, v, v_min, v_max, format, flags);
-    //v_setint(retval, fnResult);
   } else {
     error(retval, "SliderFloat4", 6);
   }
@@ -3891,7 +3906,7 @@ static void error_callback(int error, const char* description) {
 }
 
 // if not imgui.init() then throw "error"
-int cmd_init(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_init(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     glfwSetErrorCallback(error_callback);
@@ -3913,7 +3928,7 @@ static void window_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 // window = imgui.create_window(640, 480, "Hello World")
-int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 3);
   if (result) {
     int width = get_param_int(argc, params, 0, 640);
@@ -3966,22 +3981,13 @@ int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
 }
 
 // n = imgui.window_should_close(window)
-int cmd_window_should_close(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_window_should_close(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 1);
   GLFWwindow *window = get_window(argc, params);
   if (result && window != nullptr) {
     if (glfwWindowShouldClose(window)) {
-      ImGui_ImplOpenGL3_Shutdown();
-      ImGui_ImplGlfw_Shutdown();
-      DestroyContext();
-
-      glfwDestroyWindow(window);
-      glfwTerminate();
+      close_window(window, get_param_int(argc, params, 0, -1));
       v_setint(retval, 1);
-      int windowId = get_param_int(argc, params, 0, -1);
-      if (windowId != -1) {
-        _windowMap.erase(windowId);
-      }
     } else {
       v_setint(retval, 0);
     }
@@ -3991,7 +3997,7 @@ int cmd_window_should_close(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_framerate(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_framerate(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     v_setreal(retval, GetIO().Framerate);
@@ -4002,7 +4008,7 @@ int cmd_framerate(int argc, slib_par_t *params, var_t *retval) {
 }
 
 // imgui.poll_events()
-int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
   int result = (argc == 0);
   if (result) {
     glfwPollEvents();
@@ -4013,7 +4019,7 @@ int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
 }
 
 // imgui.wait_events(n)
-int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
   int waitMillis = get_param_int(argc, params, 0, -1);
   if (waitMillis > 0) {
     glfwWaitEventsTimeout(waitMillis / 1000);
@@ -4021,6 +4027,16 @@ int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
     glfwWaitEvents();
   }
   return argc < 2;
+}
+
+static int cmd_close_window(int argc, slib_par_t *params, var_t *retval) {
+  int result = (argc == 1);
+  if (result) {
+    close_window(get_window(argc, params), get_param_int(argc, params, 0, -1));
+  } else {
+    error(retval, "close_window", 1);
+  }
+  return result;
 }
 
 API lib_func[] = {
@@ -4046,8 +4062,6 @@ API lib_func[] = {
   {"BUTTON", cmd_button},
   {"CALCITEMWIDTH", cmd_calcitemwidth},
   {"CALCTEXTSIZE", cmd_calctextsize},
-  {"CHECKBOX", cmd_checkbox},
-  //{"CHECKBOXFLAGS", cmd_checkboxflags},
   //{"COLLAPSINGHEADER", cmd_collapsingheader},
   //{"COLORBUTTON", cmd_colorbutton},
   //{"COLORCONVERTFLOAT4TOU32", cmd_colorconvertfloat4tou32},
@@ -4182,10 +4196,6 @@ API lib_func[] = {
   //{"SETDRAGDROPPAYLOAD", cmd_setdragdroppayload},
   //{"SHOWSTYLESELECTOR", cmd_showstyleselector},
   //{"SLIDERANGLE", cmd_sliderangle},
-  {"SLIDERFLOAT", cmd_sliderfloat},
-  //{"SLIDERFLOAT2", cmd_sliderfloat2},
-  //{"SLIDERFLOAT3", cmd_sliderfloat3},
-  //{"SLIDERFLOAT4", cmd_sliderfloat4},
   //{"SLIDERINT", cmd_sliderint},
   //{"SLIDERINT2", cmd_sliderint2},
   //{"SLIDERINT3", cmd_sliderint3},
@@ -4217,6 +4227,8 @@ API lib_proc[] = {
   // {"CALCLISTCLIPPING", cmd_calclistclipping},
   {"CAPTUREKEYBOARDFROMAPP", cmd_capturekeyboardfromapp},
   {"CAPTUREMOUSEFROMAPP", cmd_capturemousefromapp},
+  {"CHECKBOX", cmd_checkbox},
+  //{"CHECKBOXFLAGS", cmd_checkboxflags},
   {"CLOSECURRENTPOPUP", cmd_closecurrentpopup},
   // {"COLORCONVERTHSVTORGB", cmd_colorconverthsvtorgb},
   // {"COLORCONVERTRGBTOHSV", cmd_colorconvertrgbtohsv},
@@ -4321,6 +4333,10 @@ API lib_proc[] = {
   {"SHOWABOUTWINDOW", cmd_showaboutwindow},
   {"SHOWMETRICSWINDOW", cmd_showmetricswindow},
   {"SHOWSTYLEEDITOR", cmd_showstyleeditor},
+  {"SLIDERFLOAT", cmd_sliderfloat},
+  //{"SLIDERFLOAT2", cmd_sliderfloat2},
+  //{"SLIDERFLOAT3", cmd_sliderfloat3},
+  //{"SLIDERFLOAT4", cmd_sliderfloat4},
   {"SPACING", cmd_spacing},
   {"STYLECOLORSCLASSIC", cmd_stylecolorsclassic},
   {"STYLECOLORSDARK", cmd_stylecolorsdark},
@@ -4337,6 +4353,7 @@ API lib_proc[] = {
 
   {"POLL_EVENTS", cmd_poll_events},
   {"WAIT_EVENTS", cmd_wait_events},
+  {"CLOSE_WINDOW", cmd_close_window},
 };
 
 int sblib_proc_count() {

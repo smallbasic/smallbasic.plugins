@@ -9,7 +9,7 @@ AM_CXXFLAGS=-fno-rtti -std=c++14
 AM_CPPFLAGS = \
   -I../raylib/raylib/src/external/glfw/include \
   -I../raylib/raylib/src/external/glfw/deps \
-	-Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter
+	-Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter -D_GLFW_BUILD_DLL=1
 lib_LTLIBRARIES = libglfw.la
 libglfw_la_SOURCES = \
   ../include/param.cpp \

@@ -10,7 +10,7 @@ LIB_VERSION=1:0:0
 AM_CXXFLAGS=-fno-rtti -std=c++14
 AM_CPPFLAGS = -Iraylib/src -Iraylib/src/external/glfw/include -Iraylib/src/external/glfw/deps/mingw \
   -DPLATFORM_DESKTOP=1 -DSUPPORT_BUSY_WAIT_LOOP=1 -DSUPPORT_SCREEN_CAPTURE=1 \
-  -DSUPPORT_GIF_RECORDING=1 -DSUPPORT_COMPRESSION_API=1 \
+  -DSUPPORT_GIF_RECORDING=1 -DSUPPORT_COMPRESSION_API=1 -D_GLFW_BUILD_DLL=1 \
   -Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter -fPIC
 
 lib_LTLIBRARIES = libraylib.la

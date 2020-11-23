@@ -79,9 +79,6 @@ if test "${have_sdl}" = "no" ; then
   AC_MSG_ERROR([libsdl2-dev not installed: configure failed.])
 fi
 
-# checks for glfw
-AC_CHECK_HEADERS([GL/gl.h], [], [AC_MSG_ERROR([GL/gl.h not found])])
-
 dnl change default aru setting to avoid warning
 ARFLAGS=cr
 AC_SUBST(ARFLAGS)
