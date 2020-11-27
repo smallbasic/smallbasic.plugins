@@ -59,7 +59,7 @@ for fun in skelton("func")
   funcs += NL + "  }"
   funcs += NL + "  return result;"
   funcs += NL + "}" + NL
-  func_api += NL + "  " + commented + "{\"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + "},"
+  func_api += NL + "  " + commented + "{" + len(fun.args) + ", " + len(fun.args) + ", \"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + ", {-1}},"
 next fun
 func_api += NL + "};" + NL
 
@@ -79,10 +79,10 @@ for proc in skelton("sub")
   next a
   if (len(proc.args) == 0) then
     funcs += NL + "    " + proc.name + "(" + args + ");"
-    proc_api += NL + "  {\"" + upper(proc.name) + "\", cmd_" + lower(proc.name) + "},"
+    proc_api += NL + "   {0, 0, \"" + upper(proc.name) + "\", cmd_" + lower(proc.name) + ", {-1}},"
   else
     funcs += NL + "    " + commented + " " + proc.name + "(" + args + ");"
-    proc_api += NL + "  " + commented + " {\"" + upper(proc.name) + "\", cmd_" + lower(proc.name) + "},"
+    proc_api += NL + "  " + commented + " {" + len(proc.args) + ", " + len(proc.args) + ", \"" + upper(proc.name) + "\", cmd_" + lower(proc.name) + ", {-1}},"
   endif
   funcs += NL + "  } else {"
   funcs += NL + "    error(retval, \"" + proc.name + "\", " + len(proc.args) + ");"
