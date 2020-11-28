@@ -19,6 +19,7 @@
 #include "include/module.h"
 #include "include/param.h"
 
+std::unordered_map<int, Font> _fontMap;
 std::unordered_map<int, Image> _imageMap;
 std::unordered_map<int, Model> _modelMap;
 std::unordered_map<int, Music> _musicMap;
@@ -226,6 +227,22 @@ static BoundingBox get_param_bounding_box(int argc, slib_par_t *params, int n) {
   return result;
 }
 
+static int get_font_id(int argc, slib_par_t *params, int arg, var_t *retval) {
+  int result = -1;
+  if (is_param_map(argc, params, arg)) {
+    // the passed in variable is a map
+    int id = map_get_int(params[arg].var_p, mapID, -1);
+    if (id != -1 && _fontMap.find(id) != _fontMap.end()) {
+      // the map contained an ID field with a live value
+      result = id;
+    }
+  }
+  if (result == -1) {
+    error(retval, "Font not found");
+  }
+  return result;
+}
+
 static int get_image_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
@@ -287,6 +304,13 @@ static int get_render_texture_id(int argc, slib_par_t *params, int n) {
   return result;
 }
 
+static void create_font(var_t *var, Font &font, int id) {
+  map_init(var);
+  v_setint(map_add_var(var, "baseSize", 0), font.baseSize);
+  v_setint(map_add_var(var, "charsCount", 0), font.charsCount);
+  v_setint(map_add_var(var, mapID, 0), id);
+}
+
 static void create_rectangle(var_t *var, int width, int height, int id) {
   map_init(var);
   v_setint(map_add_var(var, "width", 0), width);
@@ -300,12 +324,6 @@ static void create_rectangle(var_t *var, Rectangle &rect) {
   v_setreal(map_add_var(var, "y", 0), rect.y);
   v_setreal(map_add_var(var, "width", 0), rect.width);
   v_setreal(map_add_var(var, "height", 0), rect.height);
-}
-
-static void create_vec2(var_t *var, float x, float y) {
-  map_init(var);
-  v_setreal(map_add_var(var, "x", 0), x);
-  v_setreal(map_add_var(var, "y", 0), y);
 }
 
 static int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
@@ -981,7 +999,7 @@ int cmd_getimagealphaborder(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_getimagedata(int argc, slib_par_t *params, var_t *retval) {
-  int result;  
+  int result;
   int id = get_image_id(argc, params, 0, retval);
   if (id != -1) {
     auto fnResult = GetImageData(_imageMap.at(id));
@@ -1165,10 +1183,10 @@ int cmd_getpixeldatasize(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_getprevdirectorypath(int argc, slib_par_t *params, var_t *retval) {
-  // auto dirPath = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetPrevDirectoryPath(dirPath);
-  // v_setint(retval, fnResult);
+static int cmd_getprevdirectorypath(int argc, slib_par_t *params, var_t *retval) {
+  auto dirPath = get_param_str(argc, params, 0, NULL);
+  auto fnResult = GetPrevDirectoryPath(dirPath);
+  v_setstr(retval, fnResult);
   return 1;
 }
 
@@ -1646,10 +1664,12 @@ int cmd_loadfiletext(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = LoadFont(fileName);
-  // v_setint(retval, fnResult);
+static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
+  auto fileName = get_param_str(argc, params, 0, NULL);
+  Font font = LoadFont(fileName);
+  auto id = ++_nextId;
+  _fontMap[id] = font;
+  create_font(retval, font, id);
   return 1;
 }
 
@@ -1665,13 +1685,15 @@ int cmd_loadfontdata(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto fontSize = get_param_str(argc, params, 1, NULL);
-  // auto fontChars = get_param_str(argc, params, 2, NULL);
-  // auto charsCount = get_param_str(argc, params, 3, NULL);
-  // auto fnResult = LoadFontEx(fileName, fontSize, fontChars, charsCount);
-  // v_setint(retval, fnResult);
+static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
+  auto fileName = get_param_str(argc, params, 0, NULL);
+  auto fontSize = get_param_int(argc, params, 1, 0);
+  // char *fontChars = 0; // get_param_str(argc, params, 2, NULL);
+  auto charsCount = get_param_int(argc, params, 3, 0);
+  auto font = LoadFontEx(fileName, fontSize, 0, charsCount);
+  auto id = ++_nextId;
+  _fontMap[id] = font;
+  create_font(retval, font, id);
   return 1;
 }
 
@@ -2689,15 +2711,21 @@ int cmd_drawtextcodepoint(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawtextex(int argc, slib_par_t *params, var_t *retval) {
-  // auto font = get_param_str(argc, params, 0, NULL);
-  // auto text = get_param_str(argc, params, 1, NULL);
-  // auto position = get_param_str(argc, params, 2, NULL);
-  // auto fontSize = get_param_str(argc, params, 3, NULL);
-  // auto spacing = get_param_str(argc, params, 4, NULL);
-  // auto tint = get_param_str(argc, params, 5, NULL);
-  // DrawTextEx(font, text, position, fontSize, spacing, tint);
-  return 1;
+static int cmd_drawtextex(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_font_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto text = get_param_str(argc, params, 1, NULL);
+    auto position = get_param_vec2(argc, params, 2);
+    auto fontSize = get_param_num(argc, params, 3, 0);
+    auto spacing = get_param_num(argc, params, 4, 0);
+    auto tint = get_param_color(argc, params, 5);
+    DrawTextEx(_fontMap[id], text, position, fontSize, spacing, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 int cmd_drawtextrec(int argc, slib_par_t *params, var_t *retval) {
@@ -3946,16 +3974,30 @@ static int cmd_unhidewindow(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_unloadfont(int argc, slib_par_t *params, var_t *retval) {
-  // auto font = get_param_str(argc, params, 0, NULL);
-  // UnloadFont(font);
-  return 1;
+static int cmd_unloadfont(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_font_id(argc, params, 0, retval);
+  if (id != -1) {
+    UnloadFont(_fontMap.at(id));
+    _fontMap.erase(id);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_unloadimage(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // UnloadImage(image);
-  return 1;
+static int cmd_unloadimage(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    UnloadImage(_imageMap.at(id));
+    _imageMap.erase(id);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 int cmd_unloadmaterial(int argc, slib_par_t *params, var_t *retval) {
@@ -4674,7 +4716,7 @@ FUNC_SIG lib_func[] = {
   //{2, 2, "GETNEXTCODEPOINT", cmd_getnextcodepoint, {-1}},
   //{2, 2, "GETPIXELCOLOR", cmd_getpixelcolor, {-1}},
   //{3, 3, "GETPIXELDATASIZE", cmd_getpixeldatasize, {-1}},
-  //{1, 1, "GETPREVDIRECTORYPATH", cmd_getprevdirectorypath, {-1}},
+  {1, 1, "GETPREVDIRECTORYPATH", cmd_getprevdirectorypath, {-1}},
   //{2, 2, "GETRANDOMVALUE", cmd_getrandomvalue, {-1}},
   //{0, 0, "GETSCREENDATA", cmd_getscreendata, {-1}},
   {0, 0, "GETSCREENHEIGHT", cmd_getscreenheight, {-1}},
@@ -4740,9 +4782,9 @@ FUNC_SIG lib_func[] = {
   {0, 0, "ISWINDOWRESIZED", cmd_iswindowresized, {-1}},
   //{2, 2, "LOADFILEDATA", cmd_loadfiledata, {-1}},
   //{1, 1, "LOADFILETEXT", cmd_loadfiletext, {-1}},
-  //{1, 1, "LOADFONT", cmd_loadfont, {-1}},
+  {1, 1, "LOADFONT", cmd_loadfont, {-1}},
   //{6, 6, "LOADFONTDATA", cmd_loadfontdata, {-1}},
-  //{4, 4, "LOADFONTEX", cmd_loadfontex, {-1}},
+  {4, 4, "LOADFONTEX", cmd_loadfontex, {-1}},
   //{3, 3, "LOADFONTFROMIMAGE", cmd_loadfontfromimage, {-1}},
   //{6, 6, "LOADFONTFROMMEMORY", cmd_loadfontfrommemory, {-1}},
   {1, 1, "LOADIMAGE", cmd_loadimage, {-1}},
@@ -4895,7 +4937,7 @@ FUNC_SIG lib_proc[] = {
   //{5, 5, "DRAWSPHEREWIRES", cmd_drawspherewires, {-1}},
   {5, 5, "DRAWTEXT", cmd_drawtext, {-1}},
   //{5, 5, "DRAWTEXTCODEPOINT", cmd_drawtextcodepoint, {-1}},
-  //{6, 6, "DRAWTEXTEX", cmd_drawtextex, {-1}},
+  {6, 6, "DRAWTEXTEX", cmd_drawtextex, {-1}},
   //{7, 7, "DRAWTEXTREC", cmd_drawtextrec, {-1}},
   //{11, 11, "DRAWTEXTRECEX", cmd_drawtextrecex, {-1}},
   {4, 4, "DRAWTEXTURE", cmd_drawtexture, {-1}},
@@ -5045,8 +5087,8 @@ FUNC_SIG lib_proc[] = {
   {2, 2, "TRACELOG", cmd_tracelog, {-1}},
   {0, 0, "UNDECORATEWINDOW", cmd_undecoratewindow, {-1}},
   {0, 0, "UNHIDEWINDOW", cmd_unhidewindow, {-1}},
-  //{1, 1, "UNLOADFONT", cmd_unloadfont, {-1}},
-  //{1, 1, "UNLOADIMAGE", cmd_unloadimage, {-1}},
+  {1, 1, "UNLOADFONT", cmd_unloadfont, {-1}},
+  {1, 1, "UNLOADIMAGE", cmd_unloadimage, {-1}},
   //{1, 1, "UNLOADMATERIAL", cmd_unloadmaterial, {-1}},
   //{1, 1, "UNLOADMESH", cmd_unloadmesh, {-1}},
   {1, 1, "UNLOADMODEL", cmd_unloadmodel, {-1}},
@@ -5160,6 +5202,7 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
 }
 
 void sblib_close(void) {
+  _fontMap.clear();
   _imageMap.clear();
   _modelMap.clear();
   _musicMap.clear();
