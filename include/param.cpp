@@ -133,6 +133,18 @@ void v_free(var_t *var) {
   }
 }
 
+int set_param_int(int argc, slib_par_t *params, int param, int value, var_t *retval) {
+  int result;
+  if (argc < param || !params[param].byref || params[param].var_p->type != V_INT) {
+    v_setstr(retval, "Cannot assign argument reference");
+    result = 0;
+  } else {
+    v_setint(params[param].var_p, value);
+    result = 1;
+  }
+  return result;
+}
+
 void v_setint(var_t *var, var_int_t i) {
   v_free(var);
   var->type = V_INT;
@@ -243,53 +255,58 @@ int map_get_int(var_p_t base, const char *name, int def) {
   return var != nullptr ? get_int(var) : def;
 }
 
-int is_param_array(int argc, slib_par_t *params, int n) {
-  int result;
+bool is_param_int_byref(int argc, slib_par_t *params, int arg) {
+  return (arg < argc && params[arg].byref &&
+          (v_is_type(params[arg].var_p, V_INT) || v_is_type(params[arg].var_p, V_NUM)));
+}
+
+bool is_param_array(int argc, slib_par_t *params, int n) {
+  bool result;
   if (n >= 0 && n < argc) {
     result = (params[n].var_p->type == V_ARRAY);
   } else {
-    result = 0;
+    result = false;
   }
   return result;
 }
 
-int is_param_num(int argc, slib_par_t *params, int n) {
+bool is_param_num(int argc, slib_par_t *params, int n) {
   int result;
   if (n >= 0 && n < argc) {
     result = (params[n].var_p->type == V_NUM ||
               params[n].var_p->type == V_INT);
   } else {
-    result = 0;
+    result = false;
   }
   return result;
 }
 
-int is_param_str(int argc, slib_par_t *params, int n) {
+bool is_param_str(int argc, slib_par_t *params, int n) {
   int result;
   if (n >= 0 && n < argc) {
     result = (params[n].var_p->type == V_STR);
   } else {
-    result = 0;
+    result = false;
   }
   return result;
 }
 
-int is_param_map(int argc, slib_par_t *params, int n) {
+bool is_param_map(int argc, slib_par_t *params, int n) {
   int result;
   if (n >= 0 && n < argc) {
     result = (params[n].var_p->type == V_MAP);
   } else {
-    result = 0;
+    result = false;
   }
   return result;
 }
 
-int is_param_nil(int argc, slib_par_t *params, int n) {
+bool is_param_nil(int argc, slib_par_t *params, int n) {
   int result;
   if (n >= 0 && n < argc) {
     result = (params[n].var_p->type == V_NIL);
   } else {
-    result = 0;
+    result = false;
   }
   return result;
 }

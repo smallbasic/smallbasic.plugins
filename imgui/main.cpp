@@ -28,11 +28,6 @@ ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 using namespace ImGui;
 
-static bool is_int_byref(int argc, slib_par_t *params, int n) {
-  return (n < argc && params[n].byref &&
-          (v_is_type(params[n].var_p, V_INT) || v_is_type(params[n].var_p, V_NUM)));
-}
-
 static ImVec2 get_param_vec2(int argc, slib_par_t *params, int n) {
   ImVec2 result;
   if (is_param_map(argc, params, n)) {
@@ -393,7 +388,7 @@ static int cmd_calctextsize(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc == 2 && is_int_byref(argc, params, 1));
+  int result = (argc == 2 && is_param_int_byref(argc, params, 1));
   if (result) {
     auto label = get_param_str(argc, params, 0, 0);
     bool value = get_param_int(argc, params, 1, 0) == 1;
@@ -2183,7 +2178,7 @@ int cmd_sliderangle(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_sliderfloat(int argc, slib_par_t *params, var_t *retval) {
-  int result = (argc >= 4 && argc <= 6 && is_int_byref(argc, params, 1));
+  int result = (argc >= 4 && argc <= 6 && is_param_int_byref(argc, params, 1));
   if (result) {
     auto label = get_param_str(argc, params, 0, 0);
     float value = get_param_num(argc, params, 1, 0);

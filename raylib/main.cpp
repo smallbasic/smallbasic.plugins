@@ -304,26 +304,32 @@ static int get_render_texture_id(int argc, slib_par_t *params, int n) {
   return result;
 }
 
-static void create_font(var_t *var, Font &font, int id) {
+static void v_setfont(var_t *var, Font &font, int id) {
   map_init(var);
   v_setint(map_add_var(var, "baseSize", 0), font.baseSize);
   v_setint(map_add_var(var, "charsCount", 0), font.charsCount);
   v_setint(map_add_var(var, mapID, 0), id);
 }
 
-static void create_rectangle(var_t *var, int width, int height, int id) {
+static void v_setrect(var_t *var, int width, int height, int id) {
   map_init(var);
   v_setint(map_add_var(var, "width", 0), width);
   v_setint(map_add_var(var, "height", 0), height);
   v_setint(map_add_var(var, mapID, 0), id);
 }
 
-static void create_rectangle(var_t *var, Rectangle &rect) {
+static void v_setrect(var_t *var, Rectangle &rect) {
   map_init(var);
   v_setreal(map_add_var(var, "x", 0), rect.x);
   v_setreal(map_add_var(var, "y", 0), rect.y);
   v_setreal(map_add_var(var, "width", 0), rect.width);
   v_setreal(map_add_var(var, "height", 0), rect.height);
+}
+
+static void v_setvec2(var_t *var, Vector2 &vec2) {
+  map_init(var);
+  v_setreal(map_add_var(var, "x", 0), vec2.x);
+  v_setreal(map_add_var(var, "y", 0), vec2.y);
 }
 
 static int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
@@ -549,7 +555,7 @@ static int cmd_genimagecellular(int argc, slib_par_t *params, var_t *retval) {
   auto image = GenImageCellular(width, height, tileSize);
   auto id = ++_nextId;
   _imageMap[id] = image;
-  create_rectangle(retval, image.width, image.height, id);
+  v_setrect(retval, image.width, image.height, id);
   return 1;
 }
 
@@ -563,7 +569,7 @@ static int cmd_genimagechecked(int argc, slib_par_t *params, var_t *retval) {
   auto image = GenImageChecked(width, height, checksX, checksY, col1, col2);
   auto id = ++_nextId;
   _imageMap[id] = image;
-  create_rectangle(retval, image.width, image.height, id);
+  v_setrect(retval, image.width, image.height, id);
   return 1;
 }
 
@@ -574,7 +580,7 @@ static int cmd_genimagecolor(int argc, slib_par_t *params, var_t *retval) {
   auto image = GenImageColor(width, height, color);
   auto id = ++_nextId;
   _imageMap[id] = image;
-  create_rectangle(retval, image.width, image.height, id);
+  v_setrect(retval, image.width, image.height, id);
   return 1;
 }
 
@@ -598,7 +604,7 @@ static int cmd_genimagegradienth(int argc, slib_par_t *params, var_t *retval) {
   auto image = GenImageGradientH(width, height, left, right);
   auto id = ++_nextId;
   _imageMap[id] = image;
-  create_rectangle(retval, image.width, image.height, id);
+  v_setrect(retval, image.width, image.height, id);
   return 1;
 }
 
@@ -611,7 +617,7 @@ static int cmd_genimagegradientradial(int argc, slib_par_t *params, var_t *retva
   auto image = GenImageGradientRadial(width, height, density, inner, outer);
   auto id = ++_nextId;
   _imageMap[id] = image;
-  create_rectangle(retval, image.width, image.height, id);
+  v_setrect(retval, image.width, image.height, id);
   return 1;
 }
 
@@ -623,7 +629,7 @@ static int cmd_genimagegradientv(int argc, slib_par_t *params, var_t *retval) {
   auto image = GenImageGradientV(width, height, top, bottom);
   auto id = ++_nextId;
   _imageMap[id] = image;
-  create_rectangle(retval, image.width, image.height, id);
+  v_setrect(retval, image.width, image.height, id);
   return 1;
 }
 
@@ -636,7 +642,7 @@ static int cmd_genimageperlinnoise(int argc, slib_par_t *params, var_t *retval) 
   auto image = GenImagePerlinNoise(width, height, offsetX, offsetY, scale);
   auto id = ++_nextId;
   _imageMap[id] = image;
-  create_rectangle(retval, image.width, image.height, id);
+  v_setrect(retval, image.width, image.height, id);
   return 1;
 }
 
@@ -647,7 +653,7 @@ static int cmd_genimagewhitenoise(int argc, slib_par_t *params, var_t *retval) {
   auto image = GenImageWhiteNoise(width, height, factor);
   auto id = ++_nextId;
   _imageMap[id] = image;
-  create_rectangle(retval, image.width, image.height, id);
+  v_setrect(retval, image.width, image.height, id);
   return 1;
 }
 
@@ -842,7 +848,7 @@ static int cmd_getcollisionrec(int argc, slib_par_t *params, var_t *retval) {
   auto rec1 = get_param_rect(argc, params, 0);
   auto rec2 = get_param_rect(argc, params, 1);
   Rectangle rect = GetCollisionRec(rec1, rec2);
-  create_rectangle(retval, rect);
+  v_setrect(retval, rect);
   return 1;
 }
 
@@ -1271,7 +1277,7 @@ static int cmd_gettexturedata(int argc, slib_par_t *params, var_t *retval) {
     Image image = GetTextureData(_textureMap.at(id));
     id = ++_nextId;
     _imageMap[id] = image;
-    create_rectangle(retval, image.width, image.height, id);
+    v_setrect(retval, image.width, image.height, id);
     result = 1;
   } else {
     result = 0;
@@ -1669,7 +1675,7 @@ static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
   Font font = LoadFont(fileName);
   auto id = ++_nextId;
   _fontMap[id] = font;
-  create_font(retval, font, id);
+  v_setfont(retval, font, id);
   return 1;
 }
 
@@ -1693,7 +1699,7 @@ static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto font = LoadFontEx(fileName, fontSize, 0, charsCount);
   auto id = ++_nextId;
   _fontMap[id] = font;
-  create_font(retval, font, id);
+  v_setfont(retval, font, id);
   return 1;
 }
 
@@ -1723,7 +1729,7 @@ static int cmd_loadimage(int argc, slib_par_t *params, var_t *retval) {
   auto image = LoadImage(fileName);
   auto id = ++_nextId;
   _imageMap[id] = image;
-  create_rectangle(retval, image.width, image.height, id);
+  v_setrect(retval, image.width, image.height, id);
   return 1;
 }
 
@@ -1827,7 +1833,7 @@ static int cmd_loadrendertexture(int argc, slib_par_t *params, var_t *retval) {
   auto textureId = ++_nextId;
   _textureMap[textureId] = renderTexture.texture;
   var_p_t texture = map_add_var(retval, "texture", 0);
-  create_rectangle(texture, renderTexture.texture.width, renderTexture.texture.height, textureId);
+  v_setrect(texture, renderTexture.texture.width, renderTexture.texture.height, textureId);
   return 1;
 }
 
@@ -1883,7 +1889,7 @@ static int cmd_loadtexture(int argc, slib_par_t *params, var_t *retval) {
   Texture2D texture = LoadTexture(fileName);
   int id = ++_nextId;
   _textureMap[id] = texture;
-  create_rectangle(retval, texture.width, texture.height, id);
+  v_setrect(retval, texture.width, texture.height, id);
   return 1;
 }
 
@@ -1902,7 +1908,7 @@ static int cmd_loadtexturefromimage(int argc, slib_par_t *params, var_t *retval)
     auto texture = LoadTextureFromImage(_imageMap.at(id));
     id = ++_nextId;
     _textureMap[id] = texture;
-    create_rectangle(retval, texture.width, texture.height, id);
+    v_setrect(retval, texture.width, texture.height, id);
     result = 1;
   } else {
     result = 0;
@@ -4244,33 +4250,20 @@ static int cmd_guicolorpicker(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_guicombobox(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
-  auto active = get_param_int(argc, params, 2, 0);
+  bool active = get_param_int(argc, params, 2, 0) == 1;
   auto fnResult = GuiComboBox(bounds, text, active);
   v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_guidropdownbox(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto text = get_param_str(argc, params, 1, 0);
-  // auto active = get_param_int(argc, params, 2, 0);
-  // auto bool = get_param_int(argc, params, 3, 0);
-  // auto editMode = get_param_int(argc, params, 4, 0);
-  // auto fnResult = GuiDropdownBox(bounds, text, active, bool, editMode);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_guigetfont(int argc, slib_par_t *params, var_t *retval) {
-  //auto fnResult = GuiGetFont();
-  //v_setint(retval, fnResult);
-  return 1;
-}
-
-static int cmd_guigetstate(int argc, slib_par_t *params, var_t *retval) {
-  auto fnResult = GuiGetState();
+static int cmd_guidropdownbox(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto active = get_param_int(argc, params, 2, 0);
+  bool editMode = get_param_int(argc, params, 3, 0) == 1;
+  auto fnResult = GuiDropdownBox(bounds, text, &active, editMode);
   v_setint(retval, fnResult);
-  return 1;
+  return set_param_int(argc, params, 2, active, retval);
 }
 
 static int cmd_guigetstyle(int argc, slib_par_t *params, var_t *retval) {
@@ -4281,32 +4274,44 @@ static int cmd_guigetstyle(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_guigrid(int argc, slib_par_t *params, var_t *retval) {
-  //auto bounds = get_param_rect(argc, params, 0);
-  //auto spacing = get_param_int(argc, params, 1, 0);
-  //auto subdivs = get_param_int(argc, params, 2, 0);
-  //auto fnResult = GuiGrid(bounds, spacing, subdivs);
-  //v_setint(retval, fnResult);
+static int cmd_guigrid(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto spacing = get_param_int(argc, params, 1, 0);
+  auto subdivs = get_param_int(argc, params, 2, 0);
+  auto fnResult = GuiGrid(bounds, spacing, subdivs);
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
-int cmd_guiimagebutton(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto text = get_param_str(argc, params, 1, 0);
-  // auto texture = get_param_int(argc, params, 2, 0);
-  // auto fnResult = GuiImageButton(bounds, text, texture);
-  // v_setint(retval, fnResult);
-  return 1;
+static int cmd_guiimagebutton(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 2, retval);
+  if (id != -1) {
+    auto bounds = get_param_rect(argc, params, 0);
+    auto text = get_param_str(argc, params, 1, 0);
+    auto fnResult = GuiImageButton(bounds, text, _textureMap.at(id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_guiimagebuttonex(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto text = get_param_str(argc, params, 1, 0);
-  // auto texture = get_param_int(argc, params, 2, 0);
-  // auto texSource = get_param_int(argc, params, 3, 0);
-  // auto fnResult = GuiImageButtonEx(bounds, text, texture, texSource);
-  // v_setint(retval, fnResult);
-  return 1;
+static int cmd_guiimagebuttonex(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 2, retval);
+  if (id != -1) {
+    auto bounds = get_param_rect(argc, params, 0);
+    auto text = get_param_str(argc, params, 1, 0);
+    auto texSource = get_param_rect(argc, params, 3);
+    auto fnResult = GuiImageButtonEx(bounds, text, _textureMap.at(id), texSource);
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_guilabelbutton(int argc, slib_par_t *params, var_t *retval) {
@@ -4317,66 +4322,67 @@ static int cmd_guilabelbutton(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_guilistview(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto text = get_param_str(argc, params, 1, 0);
-  // auto scrollIndex = get_param_int(argc, params, 2, 0);
-  // auto active = get_param_int(argc, params, 3, 0);
-  // auto fnResult = GuiListView(bounds, text, scrollIndex, active);
-  // v_setint(retval, fnResult);
+static int cmd_guilistview(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto scrollIndex = get_param_int(argc, params, 2, 0);
+  bool active = get_param_int(argc, params, 3, 0) == 1;
+  auto fnResult = GuiListView(bounds, text, &scrollIndex, active);
+  v_setint(params[2].var_p, scrollIndex);  
+  v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_guilistviewex(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto text = get_param_str(argc, params, 1, 0);
-  // auto count = get_param_int(argc, params, 2, 0);
-  // auto focus = get_param_int(argc, params, 3, 0);
-  // auto scrollIndex = get_param_int(argc, params, 4, 0);
-  // auto active = get_param_int(argc, params, 5, 0);
-  // auto fnResult = GuiListViewEx(bounds, text, count, focus, scrollIndex, active);
-  // v_setint(retval, fnResult);
+static int cmd_guilistviewex(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto count = get_param_int(argc, params, 2, 0);
+  auto focus = get_param_int(argc, params, 3, 0);
+  auto scrollIndex = get_param_int(argc, params, 4, 0);
+  bool active = get_param_int(argc, params, 5, 0) == 1;
+  auto fnResult = GuiListViewEx(bounds, &text, count, &focus, &scrollIndex, active);
+  v_setint(retval, fnResult);
+  return set_param_int(argc, params, 3, focus, retval) && set_param_int(argc, params, 4, scrollIndex, retval);
+}
+
+static int cmd_guimessagebox(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto title = get_param_str(argc, params, 1, 0);
+  auto message = get_param_str(argc, params, 2, NULL);
+  auto buttons = get_param_str(argc, params, 3, 0);
+  auto fnResult = GuiMessageBox(bounds, title, message, buttons);
+  v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_guimessagebox(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto title = get_param_int(argc, params, 1, 0);
-  // auto message = get_param_int(argc, params, 2, 0);
-  // auto buttons = get_param_int(argc, params, 3, 0);
-  // auto fnResult = GuiMessageBox(bounds, title, message, buttons);
-  // v_setint(retval, fnResult);
+static int cmd_guiprogressbar(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto textLeft = get_param_str(argc, params, 1, 0);
+  auto textRight = get_param_str(argc, params, 2, 0);
+  auto value = get_param_num(argc, params, 3, 0);
+  auto minValue = get_param_num(argc, params, 4, 0);
+  auto maxValue = get_param_num(argc, params, 5, 0);
+  auto fnResult = GuiProgressBar(bounds, textLeft, textRight, value, minValue, maxValue);
+  v_setreal(retval, fnResult);
   return 1;
 }
 
-int cmd_guiprogressbar(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto textLeft = get_param_int(argc, params, 1, 0);
-  // auto textRight = get_param_int(argc, params, 2, 0);
-  // auto value = get_param_num(argc, params, 3, 0);
-  // auto minValue = get_param_num(argc, params, 4, 0);
-  // auto maxValue = get_param_num(argc, params, 5, 0);
-  // auto fnResult = GuiProgressBar(bounds, textLeft, textRight, value, minValue, maxValue);
-  // v_setreal(retval, fnResult);
+static int cmd_guiscrollbar(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto value = get_param_num(argc, params, 1, 0);
+  auto minValue = get_param_num(argc, params, 2, 0);
+  auto maxValue = get_param_num(argc, params, 3, 0);
+  auto fnResult = GuiScrollBar(bounds, value, minValue, maxValue);
+  v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_guiscrollbar(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto value = get_param_num(argc, params, 1, 0);
-  // auto minValue = get_param_num(argc, params, 2, 0);
-  // auto maxValue = get_param_num(argc, params, 3, 0);
-  // auto fnResult = GuiScrollBar(bounds, value, minValue, maxValue);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_guiscrollpanel(int argc, slib_par_t *params, var_t *retval) {
-  //auto bounds = get_param_rect(argc, params, 0);
-  //auto content = get_param_int(argc, params, 1, 0);
-  //auto scroll = get_param_int(argc, params, 2, 0);
-  //auto fnResult = GuiScrollPanel(bounds, content, scroll);
-  //v_setint(retval, fnResult);
+static int cmd_guiscrollpanel(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto content = get_param_rect(argc, params, 1);
+  auto scroll = get_param_vec2(argc, params, 2);
+  auto fnResult = GuiScrollPanel(bounds, content, &scroll);
+  v_setrect(retval, fnResult);
   return 1;
 }
 
@@ -4404,89 +4410,84 @@ static int cmd_guisliderbar(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_guispinner(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto text = get_param_str(argc, params, 1, 0);
-  // auto value = get_param_num(argc, params, 2, 0);
-  // auto minValue = get_param_num(argc, params, 3, 0);
-  // auto maxValue = get_param_num(argc, params, 4, 0);
-  // auto bool = get_param_int(argc, params, 5, 0);
-  // auto editMode = get_param_int(argc, params, 6, 0);
-  // auto fnResult = GuiSpinner(bounds, text, value, minValue, maxValue, bool, editMode);
-  // v_setint(retval, fnResult);
+static int cmd_guispinner(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto value = get_param_int(argc, params, 2, 0);
+  auto minValue = get_param_num(argc, params, 3, 0);
+  auto maxValue = get_param_num(argc, params, 4, 0);
+  auto editMode = get_param_int(argc, params, 4, 0);
+  auto fnResult = GuiSpinner(bounds, text, &value, minValue, maxValue, editMode);
+  v_setint(retval, fnResult);
+  return set_param_int(argc, params, 2, value, retval);
+}
+
+static int cmd_guitextbox(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto textSize = get_param_int(argc, params, 2, 0);
+  auto editMode = get_param_int(argc, params, 3, 0);
+  auto fnResult = GuiTextBox(bounds, (char *)text, textSize, editMode);
+  v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_guitextbox(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto text = get_param_str(argc, params, 1, 0);
-  // auto textSize = get_param_int(argc, params, 2, 0);
-  // auto bool = get_param_int(argc, params, 3, 0);
-  // auto editMode = get_param_int(argc, params, 4, 0);
-  // auto fnResult = GuiTextBox(bounds, text, textSize, bool, editMode);
-  // v_setint(retval, fnResult);
+static int cmd_guitextboxmulti(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto textSize = get_param_int(argc, params, 2, 0);
+  auto editMode = get_param_int(argc, params, 3, 0);
+  auto fnResult = GuiTextBoxMulti(bounds, (char *)text, textSize, editMode);
+  v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_guitextboxmulti(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto text = get_param_str(argc, params, 1, 0);
-  // auto textSize = get_param_int(argc, params, 2, 0);
-  // auto bool = get_param_int(argc, params, 3, 0);
-  // auto editMode = get_param_int(argc, params, 4, 0);
-  // auto fnResult = GuiTextBoxMulti(bounds, text, textSize, bool, editMode);
-  // v_setint(retval, fnResult);
+static int cmd_guitextinputbox(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto title = get_param_str(argc, params, 1, 0);
+  auto message = get_param_str(argc, params, 2, NULL);
+  auto buttons = get_param_str(argc, params, 3, 0);
+  auto text = get_param_str(argc, params, 4, 0);
+  auto fnResult = GuiTextInputBox(bounds, title, message, buttons, (char *)text);
+  v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_guitextinputbox(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto title = get_param_int(argc, params, 1, 0);
-  // auto message = get_param_int(argc, params, 2, 0);
-  // auto buttons = get_param_int(argc, params, 3, 0);
-  // auto text = get_param_str(argc, params, 4, 0);
-  // auto fnResult = GuiTextInputBox(bounds, title, message, buttons, text);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_guitoggle(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto text = get_param_str(argc, params, 1, 0);
-  // auto bool = get_param_int(argc, params, 2, 0);
-  // auto active = get_param_int(argc, params, 3, 0);
-  // auto fnResult = GuiToggle(bounds, text, bool, active);
-  // v_setint(retval, fnResult);
+static int cmd_guitoggle(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto text = get_param_str(argc, params, 1, 0);
+  bool active = get_param_int(argc, params, 2, 0) == 1;
+  auto fnResult = GuiToggle(bounds, text, active);
+  v_setint(retval, fnResult);
   return 1;
 }
 
 static int cmd_guitogglegroup(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
-  auto active = get_param_int(argc, params, 2, 0);
+  bool active = get_param_int(argc, params, 2, 0) == 1;
   auto fnResult = GuiToggleGroup(bounds, text, active);
   v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_guivaluebox(int argc, slib_par_t *params, var_t *retval) {
-  // auto bounds = get_param_rect(argc, params, 0);
-  // auto text = get_param_str(argc, params, 1, 0);
-  // auto value = get_param_num(argc, params, 2, 0);
-  // auto minValue = get_param_num(argc, params, 3, 0);
-  // auto maxValue = get_param_num(argc, params, 4, 0);
-  // auto bool = get_param_int(argc, params, 5, 0);
-  // auto editMode = get_param_int(argc, params, 6, 0);
-  // auto fnResult = GuiValueBox(bounds, text, value, minValue, maxValue, bool, editMode);
-  // v_setint(retval, fnResult);
-  return 1;
+static int cmd_guivaluebox(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto value = get_param_int(argc, params, 2, 0);
+  auto minValue = get_param_int(argc, params, 3, 0);
+  auto maxValue = get_param_int(argc, params, 4, 0);
+  bool editMode = get_param_int(argc, params, 5, 0) == 1;
+  auto fnResult = GuiValueBox(bounds, text, &value, minValue, maxValue, editMode);
+  v_setint(retval, fnResult);
+  return set_param_int(argc, params, 2, value, retval);
 }
 
-int cmd_guiwindowbox(int argc, slib_par_t *params, var_t *retval) {
-  //auto bounds = get_param_rect(argc, params, 0);
-  //auto title = get_param_int(argc, params, 1, 0);
-  //auto fnResult = GuiWindowBox(bounds, title);
-  //v_setint(retval, fnResult);
+static int cmd_guiwindowbox(int argc, slib_par_t *params, var_t *retval) {
+  auto bounds = get_param_rect(argc, params, 0);
+  auto title = get_param_str(argc, params, 1, NULL);
+  auto fnResult = GuiWindowBox(bounds, title);
+  v_setint(retval, fnResult);
   return 1;
 }
 
@@ -4571,12 +4572,6 @@ static int cmd_guipanel(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_guisetfont(int argc, slib_par_t *params, var_t *retval) {
-  //auto font = get_param_int(argc, params, 0, 0);
-  //GuiSetFont(font);
-  return 1;
-}
-
 static int cmd_guisetstate(int argc, slib_par_t *params, var_t *retval) {
   auto state = get_param_int(argc, params, 0, 0);
   GuiSetState(state);
@@ -4606,7 +4601,6 @@ static int cmd_guistatusbar(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_guiunlock(int argc, slib_par_t *params, var_t *retval) {
   GuiUnlock();
-
   return 1;
 }
 
@@ -4836,30 +4830,28 @@ FUNC_SIG lib_func[] = {
   {2, 2, "GUICOLORPANEL", cmd_guicolorpanel, {-1}},
   {2, 2, "GUICOLORPICKER", cmd_guicolorpicker, {-1}},
   {3, 3, "GUICOMBOBOX", cmd_guicombobox, {-1}},
-  //  {2, 2, "GUIDROPDOWNBOX", cmd_guidropdownbox, {-1}},
-  //  {2, 2, "GUIGETFONT", cmd_guigetfont, {-1}},
-  {0, 0, "GUIGETSTATE", cmd_guigetstate, {-1}},
+  {4, 4, "GUIDROPDOWNBOX", cmd_guidropdownbox, {-1}},
   {2, 2, "GUIGETSTYLE", cmd_guigetstyle, {-1}},
-  //  {2, 2, "GUIGRID", cmd_guigrid, {-1}},
-  // {2, 2, "GUIIMAGEBUTTON", cmd_guiimagebutton, {-1}},
-  //  {2, 2, "GUIIMAGEBUTTONEX", cmd_guiimagebuttonex, {-1}},
+  {2, 2, "GUIGRID", cmd_guigrid, {-1}},
+  {2, 2, "GUIIMAGEBUTTON", cmd_guiimagebutton, {-1}},
+  {2, 2, "GUIIMAGEBUTTONEX", cmd_guiimagebuttonex, {-1}},
   {2, 2, "GUILABELBUTTON", cmd_guilabelbutton, {-1}},
-  //  {2, 2, "GUILISTVIEW", cmd_guilistview, {-1}},
-  //  {2, 2, "GUILISTVIEWEX", cmd_guilistviewex, {-1}},
-  //  {2, 2, "GUIMESSAGEBOX", cmd_guimessagebox, {-1}},
-  //  {2, 2, "GUIPROGRESSBAR", cmd_guiprogressbar, {-1}},
-  //  {2, 2, "GUISCROLLBAR", cmd_guiscrollbar, {-1}},
-  // {2, 2, "GUISCROLLPANEL", cmd_guiscrollpanel, {-1}},
+  {4, 4, "GUILISTVIEW", cmd_guilistview, {-1}},
+  {6, 6, "GUILISTVIEWEX", cmd_guilistviewex, {-1}},
+  {2, 2, "GUIMESSAGEBOX", cmd_guimessagebox, {-1}},
+  {2, 2, "GUIPROGRESSBAR", cmd_guiprogressbar, {-1}},
+  {2, 2, "GUISCROLLBAR", cmd_guiscrollbar, {-1}},
+  {2, 2, "GUISCROLLPANEL", cmd_guiscrollpanel, {-1}},
   {6, 6, "GUISLIDER", cmd_guislider, {-1}},
   {6, 6, "GUISLIDERBAR", cmd_guisliderbar, {-1}},
-  //  {2, 2, "GUISPINNER", cmd_guispinner, {-1}},
-  //  {2, 2, "GUITEXTBOX", cmd_guitextbox, {-1}},
-  //  {2, 2, "GUITEXTBOXMULTI", cmd_guitextboxmulti, {-1}},
-  //  {2, 2, "GUITEXTINPUTBOX", cmd_guitextinputbox, {-1}},
-  //  {2, 2, "GUITOGGLE", cmd_guitoggle, {-1}},
+  {2, 2, "GUISPINNER", cmd_guispinner, {-1}},
+  {2, 2, "GUITEXTBOX", cmd_guitextbox, {-1}},
+  {2, 2, "GUITEXTBOXMULTI", cmd_guitextboxmulti, {-1}},
+  {5, 5, "GUITEXTINPUTBOX", cmd_guitextinputbox, {-1}},
+  {3, 3, "GUITOGGLE", cmd_guitoggle, {-1}},
   {3, 3, "GUITOGGLEGROUP", cmd_guitogglegroup, {-1}},
-  //  {2, 2, "GUIVALUEBOX", cmd_guivaluebox, {-1}},
-  //{2, 2, "GUIWINDOWBOX", cmd_guiwindowbox, {-1}},
+  {6, 6, "GUIVALUEBOX", cmd_guivaluebox, {-1}},
+  {2, 2, "GUIWINDOWBOX", cmd_guiwindowbox, {-1}},
 };
 
 FUNC_SIG lib_proc[] = {
@@ -5123,7 +5115,6 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "GUILOADSTYLEDEFAULT", cmd_guiloadstyledefault, {-1}},
   {0, 0, "GUILOCK", cmd_guilock, {-1}},
   {1, 1, "GUIPANEL", cmd_guipanel, {-1}},
-  //{2, 2, "GUISETFONT", cmd_guisetfont, {-1}},
   {1, 1, "GUISETSTATE", cmd_guisetstate, {-1}},
   {3, 3, "GUISETSTYLE", cmd_guisetstyle, {-1}},
   {1, 1, "GUISETTOOLTIP", cmd_guisettooltip, {-1}},
