@@ -326,7 +326,7 @@ int sblib_events(int wait_flag, int *w, int *h) {
   return signalReceived ? 2 : 0;
 }
 
-int sblib_init(void) {
+int sblib_init(const char *sourceFile) {
   signal(SIGTERM, signal_handler);
   signal(SIGINT, signal_handler);
   mg_mgr_init(&manager, nullptr);

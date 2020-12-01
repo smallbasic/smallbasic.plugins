@@ -833,10 +833,6 @@ API lib_func[] = {
   {"WINDOWGETBOUNDS", cmd_windowgetbounds}
 };
 
-int sblib_init(void) {
-  return 1;
-}
-
 void sblib_devinit(const char *prog, int width, int height) {
   _bg_color = nk_black;
   _fg_color = nk_white;

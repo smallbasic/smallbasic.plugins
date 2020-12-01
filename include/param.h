@@ -10,8 +10,6 @@
 #include "var.h"
 #include "module.h"
 
-#define MAX_ARGS 8
-
 typedef struct API {
   const char *name;
   int (*command)(int, slib_par_t *, var_t *retval);
@@ -22,7 +20,6 @@ typedef struct FUNC_SIG {
   int _max;
   const char *_name;
   int (*_command)(int, slib_par_t *, var_t *retval);
-  int _format[MAX_ARGS];
 } FUNC_SIG;
 
 void error(var_p_t var, const char *field, int nMin, int nMax);

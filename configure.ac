@@ -88,7 +88,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CXX
 LT_PREREQ([2.2])
 
-BUILD_SUBDIRS="imgui nuklear glfw clipboard websocket raylib"
+BUILD_SUBDIRS="debug imgui nuklear glfw clipboard websocket raylib"
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
 
@@ -96,6 +96,7 @@ libdir=${libdir}/smallbasic
 
 AC_CONFIG_FILES([
 Makefile
+debug/Makefile
 nuklear/Makefile
 imgui/Makefile
 glfw/Makefile

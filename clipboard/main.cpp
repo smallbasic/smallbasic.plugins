@@ -14,7 +14,7 @@
 
 clipboard_c *clipboard;
 
-int sblib_init(void) {
+int sblib_init(const char *sourceFile) {
   clipboard = clipboard_new(nullptr);
   return clipboard != nullptr;
 }
