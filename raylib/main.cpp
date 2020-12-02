@@ -1144,7 +1144,7 @@ static int cmd_getscreenheight(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_getscreentoworld2d(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
+  // auto position = get_param_vec3(argc, params, 0);
   // auto camera = get_camera_3d(argc, params, 1, NULL);
   // auto fnResult = GetScreenToWorld2D(position, camera);
   // v_setint(retval, fnResult);
@@ -1275,7 +1275,7 @@ static int cmd_getworkingdirectory(int argc, slib_par_t *params, var_t *retval) 
 }
 
 int cmd_getworldtoscreen(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
+  // auto position = get_param_vec3(argc, params, 0);
   // auto camera = get_camera_3d(argc, params, 1, NULL);
   // auto fnResult = GetWorldToScreen(position, camera);
   // v_setint(retval, fnResult);
@@ -1283,7 +1283,7 @@ int cmd_getworldtoscreen(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_getworldtoscreen2d(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
+  // auto position = get_param_vec3(argc, params, 0);
   // auto camera = get_camera_3d(argc, params, 1, NULL);
   // auto fnResult = GetWorldToScreen2D(position, camera);
   // v_setint(retval, fnResult);
@@ -1291,7 +1291,7 @@ int cmd_getworldtoscreen2d(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_getworldtoscreenex(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
+  // auto position = get_param_vec3(argc, params, 0);
   // auto camera = get_camera_3d(argc, params, 1, NULL);
   // auto width = get_param_str(argc, params, 2, NULL);
   // auto height = get_param_str(argc, params, 3, NULL);
@@ -1805,7 +1805,7 @@ int cmd_loadsoundfromwave(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_loadstoragevalue(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
+  // auto position = get_param_vec3(argc, params, 0);
   // auto fnResult = LoadStorageValue(position);
   // v_setint(retval, fnResult);
   return 1;
@@ -2019,10 +2019,10 @@ int cmd_drawbillboardrec(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawboundingbox(int argc, slib_par_t *params, var_t *retval) {
-  // auto box = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1);
-  // DrawBoundingBox(box, color);
+static int cmd_drawboundingbox(int argc, slib_par_t *params, var_t *retval) {
+  auto box = get_param_bounding_box(argc, params, 0);
+  auto color = get_param_color(argc, params, 1);
+  DrawBoundingBox(box, color);
   return 1;
 }
 
@@ -2035,23 +2035,23 @@ static int cmd_drawcircle(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawcircle3d(int argc, slib_par_t *params, var_t *retval) {
-  // auto center = get_param_str(argc, params, 0, NULL);
-  // auto radius = get_param_num(argc, params, 1, NULL);
-  // auto rotationAxis = get_param_str(argc, params, 2, NULL);
-  // auto rotationAngle = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4, NULL);
-  // DrawCircle3D(center, radius, rotationAxis, rotationAngle, color);
+static int cmd_drawcircle3d(int argc, slib_par_t *params, var_t *retval) {
+  auto center = get_param_vec3(argc, params, 0);
+  auto radius = get_param_num(argc, params, 1, 0);
+  auto rotationAxis = get_param_vec3(argc, params, 2);
+  auto rotationAngle = get_param_num(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawCircle3D(center, radius, rotationAxis, rotationAngle, color);
   return 1;
 }
 
-int cmd_drawcirclegradient(int argc, slib_par_t *params, var_t *retval) {
-  // auto centerX = get_param_str(argc, params, 0, NULL);
-  // auto centerY = get_param_str(argc, params, 1, NULL);
-  // auto radius = get_param_num(argc, params, 2, NULL);
-  // auto color1 = get_param_str(argc, params, 3, NULL);
-  // auto color2 = get_param_str(argc, params, 4, NULL);
-  // DrawCircleGradient(centerX, centerY, radius, color1, color2);
+static int cmd_drawcirclegradient(int argc, slib_par_t *params, var_t *retval) {
+  auto centerX = get_param_int(argc, params, 0, 0);
+  auto centerY = get_param_int(argc, params, 1, 0);
+  auto radius = get_param_num(argc, params, 2, 0);
+  auto color1 = get_param_color(argc, params, 3);
+  auto color2 = get_param_color(argc, params, 4);
+  DrawCircleGradient(centerX, centerY, radius, color1, color2);
   return 1;
 }
 
@@ -2106,7 +2106,7 @@ static int cmd_drawcube(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_drawcubetexture(int argc, slib_par_t *params, var_t *retval) {
   // auto texture = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_str(argc, params, 1, NULL);
+  // auto position = get_param_vec3(argc, params, 1, NULL);
   // auto width = get_param_str(argc, params, 2, NULL);
   // auto height = get_param_str(argc, params, 3, NULL);
   // auto length = get_param_str(argc, params, 4, NULL);
@@ -2115,71 +2115,71 @@ int cmd_drawcubetexture(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawcubev(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
-  // auto size = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // DrawCubeV(position, size, color);
+static int cmd_drawcubev(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec3(argc, params, 0);
+  auto size = get_param_vec3(argc, params, 1);
+  auto color = get_param_color(argc, params, 2);
+  DrawCubeV(position, size, color);
   return 1;
 }
 
-int cmd_drawcubewires(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
-  // auto width = get_param_str(argc, params, 1, NULL);
-  // auto height = get_param_str(argc, params, 2, NULL);
-  // auto length = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4);
-  // DrawCubeWires(position, width, height, length, color);
+static int cmd_drawcubewires(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec3(argc, params, 0);
+  auto width = get_param_num(argc, params, 1, 0);
+  auto height = get_param_num(argc, params, 2, 0);
+  auto length = get_param_num(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawCubeWires(position, width, height, length, color);
   return 1;
 }
 
-int cmd_drawcubewiresv(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
-  // auto size = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // DrawCubeWiresV(position, size, color);
+static int cmd_drawcubewiresv(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec3(argc, params, 0);
+  auto size = get_param_vec3(argc, params, 1);
+  auto color = get_param_color(argc, params, 2);
+  DrawCubeWiresV(position, size, color);
   return 1;
 }
 
-int cmd_drawcylinder(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
-  // auto radiusTop = get_param_str(argc, params, 1, NULL);
-  // auto radiusBottom = get_param_str(argc, params, 2, NULL);
-  // auto height = get_param_str(argc, params, 3, NULL);
-  // auto slices = get_param_str(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5);
-  // DrawCylinder(position, radiusTop, radiusBottom, height, slices, color);
+static int cmd_drawcylinder(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec3(argc, params, 0);
+  auto radiusTop = get_param_num(argc, params, 1, 0);
+  auto radiusBottom = get_param_num(argc, params, 2, 0);
+  auto height = get_param_num(argc, params, 3, 0);
+  auto slices = get_param_int(argc, params, 4, 0);
+  auto color = get_param_color(argc, params, 5);
+  DrawCylinder(position, radiusTop, radiusBottom, height, slices, color);
   return 1;
 }
 
-int cmd_drawcylinderwires(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
-  // auto radiusTop = get_param_str(argc, params, 1, NULL);
-  // auto radiusBottom = get_param_str(argc, params, 2, NULL);
-  // auto height = get_param_str(argc, params, 3, NULL);
-  // auto slices = get_param_str(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5);
-  // DrawCylinderWires(position, radiusTop, radiusBottom, height, slices, color);
+static int cmd_drawcylinderwires(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec3(argc, params, 0);
+  auto radiusTop = get_param_num(argc, params, 1, 0);
+  auto radiusBottom = get_param_num(argc, params, 2, 0);
+  auto height = get_param_num(argc, params, 3, 0);
+  auto slices = get_param_int(argc, params, 4, 0);
+  auto color = get_param_color(argc, params, 5);
+  DrawCylinderWires(position, radiusTop, radiusBottom, height, slices, color);
   return 1;
 }
 
-int cmd_drawellipse(int argc, slib_par_t *params, var_t *retval) {
-  // auto centerX = get_param_str(argc, params, 0, NULL);
-  // auto centerY = get_param_str(argc, params, 1, NULL);
-  // auto radiusH = get_param_str(argc, params, 2, NULL);
-  // auto radiusV = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4);
-  // DrawEllipse(centerX, centerY, radiusH, radiusV, color);
+static int cmd_drawellipse(int argc, slib_par_t *params, var_t *retval) {
+  auto centerX = get_param_int(argc, params, 0, 0);
+  auto centerY = get_param_int(argc, params, 1, 0);
+  auto radiusH = get_param_num(argc, params, 2, 0);
+  auto radiusV = get_param_num(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawEllipse(centerX, centerY, radiusH, radiusV, color);
   return 1;
 }
 
-int cmd_drawellipselines(int argc, slib_par_t *params, var_t *retval) {
-  // auto centerX = get_param_str(argc, params, 0, NULL);
-  // auto centerY = get_param_str(argc, params, 1, NULL);
-  // auto radiusH = get_param_str(argc, params, 2, NULL);
-  // auto radiusV = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4);
-  // DrawEllipseLines(centerX, centerY, radiusH, radiusV, color);
+static int cmd_drawellipselines(int argc, slib_par_t *params, var_t *retval) {
+  auto centerX = get_param_int(argc, params, 0, 0);
+  auto centerY = get_param_int(argc, params, 1, 0);
+  auto radiusH = get_param_num(argc, params, 2, 0);
+  auto radiusV = get_param_num(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawEllipseLines(centerX, centerY, radiusH, radiusV, color);
   return 1;
 }
 
@@ -2212,45 +2212,45 @@ static int cmd_drawline(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawline3d(int argc, slib_par_t *params, var_t *retval) {
-  // auto startPos = get_param_str(argc, params, 0, NULL);
-  // auto endPos = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // DrawLine3D(startPos, endPos, color);
+static int cmd_drawline3d(int argc, slib_par_t *params, var_t *retval) {
+  auto startPos = get_param_vec3(argc, params, 0);
+  auto endPos = get_param_vec3(argc, params, 1);
+  auto color = get_param_color(argc, params, 2);
+  DrawLine3D(startPos, endPos, color);
   return 1;
 }
 
-int cmd_drawlinebezier(int argc, slib_par_t *params, var_t *retval) {
-  // auto startPos = get_param_str(argc, params, 0, NULL);
-  // auto endPos = get_param_str(argc, params, 1, NULL);
-  // auto thick = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // DrawLineBezier(startPos, endPos, thick, color);
+static int cmd_drawlinebezier(int argc, slib_par_t *params, var_t *retval) {
+  auto startPos = get_param_vec2(argc, params, 0);
+  auto endPos = get_param_vec2(argc, params, 1);
+  auto thick = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawLineBezier(startPos, endPos, thick, color);
   return 1;
 }
 
-int cmd_drawlineex(int argc, slib_par_t *params, var_t *retval) {
-  // auto startPos = get_param_str(argc, params, 0, NULL);
-  // auto endPos = get_param_str(argc, params, 1, NULL);
-  // auto thick = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // DrawLineEx(startPos, endPos, thick, color);
+static int cmd_drawlineex(int argc, slib_par_t *params, var_t *retval) {
+  auto startPos = get_param_vec2(argc, params, 0);
+  auto endPos = get_param_vec2(argc, params, 1);
+  auto thick = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawLineEx(startPos, endPos, thick, color);
   return 1;
 }
 
-int cmd_drawlinestrip(int argc, slib_par_t *params, var_t *retval) {
-  // auto points = get_param_str(argc, params, 0, NULL);
-  // auto numPoints = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // DrawLineStrip(points, numPoints, color);
+static int cmd_drawlinestrip(int argc, slib_par_t *params, var_t *retval) {
+  auto points = get_param_vec2(argc, params, 0);
+  auto numPoints = get_param_int(argc, params, 1, 0);
+  auto color = get_param_color(argc, params, 2);
+  DrawLineStrip(&points, numPoints, color);
   return 1;
 }
 
-int cmd_drawlinev(int argc, slib_par_t *params, var_t *retval) {
-  // auto startPos = get_param_str(argc, params, 0, NULL);
-  // auto endPos = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // DrawLineV(startPos, endPos, color);
+static int cmd_drawlinev(int argc, slib_par_t *params, var_t *retval) {
+  auto startPos = get_param_vec2(argc, params, 0);
+  auto endPos = get_param_vec2(argc, params, 1);
+  auto color = get_param_color(argc, params, 2);
+  DrawLineV(startPos, endPos, color);
   return 1;
 }
 
@@ -2271,7 +2271,7 @@ static int cmd_drawmodel(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_drawmodelex(int argc, slib_par_t *params, var_t *retval) {
   // auto model = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_str(argc, params, 1, NULL);
+  // auto position = get_param_vec3(argc, params, 1, NULL);
   // auto rotationAxis = get_param_str(argc, params, 2, NULL);
   // auto rotationAngle = get_param_str(argc, params, 3, NULL);
   // auto scale = get_param_str(argc, params, 4, NULL);
@@ -2282,7 +2282,7 @@ int cmd_drawmodelex(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_drawmodelwires(int argc, slib_par_t *params, var_t *retval) {
   // auto model = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_str(argc, params, 1, NULL);
+  // auto position = get_param_vec3(argc, params, 1, NULL);
   // auto scale = get_param_str(argc, params, 2, NULL);
   // auto tint = get_param_color(argc, params, 3);
   // DrawModelWires(model, position, scale, tint);
@@ -2291,7 +2291,7 @@ int cmd_drawmodelwires(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_drawmodelwiresex(int argc, slib_par_t *params, var_t *retval) {
   // auto model = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_str(argc, params, 1, NULL);
+  // auto position = get_param_vec3(argc, params, 1, NULL);
   // auto rotationAxis = get_param_str(argc, params, 2, NULL);
   // auto rotationAngle = get_param_str(argc, params, 3, NULL);
   // auto scale = get_param_str(argc, params, 4, NULL);
@@ -2300,53 +2300,53 @@ int cmd_drawmodelwiresex(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawpixel(int argc, slib_par_t *params, var_t *retval) {
-  // auto posX = get_param_str(argc, params, 0, NULL);
-  // auto posY = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // DrawPixel(posX, posY, color);
+static int cmd_drawpixel(int argc, slib_par_t *params, var_t *retval) {
+  auto posX = get_param_int(argc, params, 0, 0);
+  auto posY = get_param_int(argc, params, 1, 0);
+  auto color = get_param_color(argc, params, 2);
+  DrawPixel(posX, posY, color);
   return 1;
 }
 
-int cmd_drawpixelv(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1);
-  // DrawPixelV(position, color);
+static int cmd_drawpixelv(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec2(argc, params, 0);
+  auto color = get_param_color(argc, params, 1);
+  DrawPixelV(position, color);
   return 1;
 }
 
-int cmd_drawplane(int argc, slib_par_t *params, var_t *retval) {
-  // auto centerPos = get_param_str(argc, params, 0, NULL);
-  // auto size = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // DrawPlane(centerPos, size, color);
+static int cmd_drawplane(int argc, slib_par_t *params, var_t *retval) {
+  auto centerPos = get_param_vec3(argc, params, 0);
+  auto size = get_param_vec2(argc, params, 1);
+  auto color = get_param_color(argc, params, 2);
+  DrawPlane(centerPos, size, color);
   return 1;
 }
 
-int cmd_drawpoint3d(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1);
-  // DrawPoint3D(position, color);
+static int cmd_drawpoint3d(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec3(argc, params, 0);
+  auto color = get_param_color(argc, params, 1);
+  DrawPoint3D(position, color);
   return 1;
 }
 
-int cmd_drawpoly(int argc, slib_par_t *params, var_t *retval) {
-  // auto center = get_param_str(argc, params, 0, NULL);
-  // auto sides = get_param_str(argc, params, 1, NULL);
-  // auto radius = get_param_num(argc, params, 2, NULL);
-  // auto rotation = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4);
-  // DrawPoly(center, sides, radius, rotation, color);
+static int cmd_drawpoly(int argc, slib_par_t *params, var_t *retval) {
+  auto center = get_param_vec2(argc, params, 0);
+  auto sides = get_param_int(argc, params, 1, 0);
+  auto radius = get_param_num(argc, params, 2, 0);
+  auto rotation = get_param_num(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawPoly(center, sides, radius, rotation, color);
   return 1;
 }
 
-int cmd_drawpolylines(int argc, slib_par_t *params, var_t *retval) {
-  // auto center = get_param_str(argc, params, 0, NULL);
-  // auto sides = get_param_str(argc, params, 1, NULL);
-  // auto radius = get_param_num(argc, params, 2, NULL);
-  // auto rotation = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4);
-  // DrawPolyLines(center, sides, radius, rotation, color);
+static int cmd_drawpolylines(int argc, slib_par_t *params, var_t *retval) {
+  auto center = get_param_vec2(argc, params, 0);
+  auto sides = get_param_int(argc, params, 1, 0);
+  auto radius = get_param_num(argc, params, 2, 0);
+  auto rotation = get_param_num(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawPolyLines(center, sides, radius, rotation, color);
   return 1;
 }
 
@@ -2367,35 +2367,35 @@ static int cmd_drawrectangle(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawrectanglegradientex(int argc, slib_par_t *params, var_t *retval) {
-  // auto rec = get_param_str(argc, params, 0, NULL);
-  // auto col1 = get_param_str(argc, params, 1, NULL);
-  // auto col2 = get_param_str(argc, params, 2, NULL);
-  // auto col3 = get_param_str(argc, params, 3, NULL);
-  // auto col4 = get_param_str(argc, params, 4, NULL);
-  // DrawRectangleGradientEx(rec, col1, col2, col3, col4);
+static int cmd_drawrectanglegradientex(int argc, slib_par_t *params, var_t *retval) {
+  auto rec = get_param_rect(argc, params, 0);
+  auto col1 = get_param_color(argc, params, 1);
+  auto col2 = get_param_color(argc, params, 2);
+  auto col3 = get_param_color(argc, params, 3);
+  auto col4 = get_param_color(argc, params, 4);
+  DrawRectangleGradientEx(rec, col1, col2, col3, col4);
   return 1;
 }
 
-int cmd_drawrectanglegradienth(int argc, slib_par_t *params, var_t *retval) {
-  // auto posX = get_param_str(argc, params, 0, NULL);
-  // auto posY = get_param_str(argc, params, 1, NULL);
-  // auto width = get_param_str(argc, params, 2, NULL);
-  // auto height = get_param_str(argc, params, 3, NULL);
-  // auto color1 = get_param_str(argc, params, 4, NULL);
-  // auto color2 = get_param_str(argc, params, 5, NULL);
-  // DrawRectangleGradientH(posX, posY, width, height, color1, color2);
+static int cmd_drawrectanglegradienth(int argc, slib_par_t *params, var_t *retval) {
+  auto posX = get_param_int(argc, params, 0, 0);
+  auto posY = get_param_int(argc, params, 1, 0);
+  auto width = get_param_int(argc, params, 2, 0);
+  auto height = get_param_int(argc, params, 3, 0);
+  auto color1 = get_param_color(argc, params, 4);
+  auto color2 = get_param_color(argc, params, 5);
+  DrawRectangleGradientH(posX, posY, width, height, color1, color2);
   return 1;
 }
 
-int cmd_drawrectanglegradientv(int argc, slib_par_t *params, var_t *retval) {
-  // auto posX = get_param_str(argc, params, 0, NULL);
-  // auto posY = get_param_str(argc, params, 1, NULL);
-  // auto width = get_param_str(argc, params, 2, NULL);
-  // auto height = get_param_str(argc, params, 3, NULL);
-  // auto color1 = get_param_str(argc, params, 4, NULL);
-  // auto color2 = get_param_str(argc, params, 5, NULL);
-  // DrawRectangleGradientV(posX, posY, width, height, color1, color2);
+static int cmd_drawrectanglegradientv(int argc, slib_par_t *params, var_t *retval) {
+  auto posX = get_param_int(argc, params, 0, 0);
+  auto posY = get_param_int(argc, params, 1, 0);
+  auto width = get_param_int(argc, params, 2, 0);
+  auto height = get_param_int(argc, params, 3, 0);
+  auto color1 = get_param_color(argc, params, 4);
+  auto color2 = get_param_color(argc, params, 5);
+  DrawRectangleGradientV(posX, posY, width, height, color1, color2);
   return 1;
 }
 
@@ -2417,12 +2417,12 @@ static int cmd_drawrectanglelinesex(int argc, slib_par_t *params, var_t *retval)
   return 1;
 }
 
-int cmd_drawrectanglepro(int argc, slib_par_t *params, var_t *retval) {
-  // auto rec = get_param_str(argc, params, 0, NULL);
-  // auto origin = get_param_str(argc, params, 1, NULL);
-  // auto rotation = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // DrawRectanglePro(rec, origin, rotation, color);
+static int cmd_drawrectanglepro(int argc, slib_par_t *params, var_t *retval) {
+  auto rec = get_param_rect(argc, params, 0);
+  auto origin = get_param_vec2(argc, params, 1);
+  auto rotation = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawRectanglePro(rec, origin, rotation, color);
   return 1;
 }
 
@@ -2433,30 +2433,30 @@ static int cmd_drawrectanglerec(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawrectanglerounded(int argc, slib_par_t *params, var_t *retval) {
-  // auto rec = get_param_str(argc, params, 0, NULL);
-  // auto roundness = get_param_str(argc, params, 1, NULL);
-  // auto segments = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // DrawRectangleRounded(rec, roundness, segments, color);
+static int cmd_drawrectanglerounded(int argc, slib_par_t *params, var_t *retval) {
+  auto rec = get_param_rect(argc, params, 0);
+  auto roundness = get_param_num(argc, params, 1, 0);
+  auto segments = get_param_int(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawRectangleRounded(rec, roundness, segments, color);
   return 1;
 }
 
-int cmd_drawrectangleroundedlines(int argc, slib_par_t *params, var_t *retval) {
-  // auto rec = get_param_str(argc, params, 0, NULL);
-  // auto roundness = get_param_str(argc, params, 1, NULL);
-  // auto segments = get_param_str(argc, params, 2, NULL);
-  // auto lineThick = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4);
-  // DrawRectangleRoundedLines(rec, roundness, segments, lineThick, color);
+static int cmd_drawrectangleroundedlines(int argc, slib_par_t *params, var_t *retval) {
+  auto rec = get_param_rect(argc, params, 0);
+  auto roundness = get_param_num(argc, params, 1, 0);
+  auto segments = get_param_int(argc, params, 2, 0);
+  auto lineThick = get_param_int(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawRectangleRoundedLines(rec, roundness, segments, lineThick, color);
   return 1;
 }
 
-int cmd_drawrectanglev(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
-  // auto size = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
-  // DrawRectangleV(position, size, color);
+static int cmd_drawrectanglev(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec2(argc, params, 0);
+  auto size = get_param_vec2(argc, params, 1);
+  auto color = get_param_color(argc, params, 2);
+  DrawRectangleV(position, size, color);
   return 1;
 }
 
@@ -2492,23 +2492,23 @@ static int cmd_drawsphere(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawsphereex(int argc, slib_par_t *params, var_t *retval) {
-  // auto centerPos = get_param_str(argc, params, 0, NULL);
-  // auto radius = get_param_num(argc, params, 1, NULL);
-  // auto rings = get_param_str(argc, params, 2, NULL);
-  // auto slices = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4);
-  // DrawSphereEx(centerPos, radius, rings, slices, color);
+static int cmd_drawsphereex(int argc, slib_par_t *params, var_t *retval) {
+  auto centerPos = get_param_vec3(argc, params, 0);
+  auto radius = get_param_num(argc, params, 1, 0);
+  auto rings = get_param_int(argc, params, 2, 0);
+  auto slices = get_param_int(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawSphereEx(centerPos, radius, rings, slices, color);
   return 1;
 }
 
-int cmd_drawspherewires(int argc, slib_par_t *params, var_t *retval) {
-  // auto centerPos = get_param_str(argc, params, 0, NULL);
-  // auto radius = get_param_num(argc, params, 1, NULL);
-  // auto rings = get_param_str(argc, params, 2, NULL);
-  // auto slices = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4, NULL);
-  // DrawSphereWires(centerPos, radius, rings, slices, color);
+static int cmd_drawspherewires(int argc, slib_par_t *params, var_t *retval) {
+  auto centerPos = get_param_vec3(argc, params, 0);
+  auto radius = get_param_num(argc, params, 1, 0);
+  auto rings = get_param_int(argc, params, 2, 0);
+  auto slices = get_param_int(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawSphereWires(centerPos, radius, rings, slices, color);
   return 1;
 }
 
@@ -2525,7 +2525,7 @@ static int cmd_drawtext(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtextcodepoint(int argc, slib_par_t *params, var_t *retval) {
   // auto font = get_param_str(argc, params, 0, NULL);
   // auto codepoint = get_param_str(argc, params, 1, NULL);
-  // auto position = get_param_str(argc, params, 2, NULL);
+  // auto position = get_param_vec3(argc, params, 2, NULL);
   // auto scale = get_param_str(argc, params, 3, NULL);
   // auto tint = get_param_color(argc, params, 4);
   // DrawTextCodepoint(font, codepoint, position, scale, tint);
@@ -2676,45 +2676,45 @@ int cmd_drawtexturetiled(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_drawtexturev(int argc, slib_par_t *params, var_t *retval) {
-  // auto texture = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_str(argc, params, 1, NULL);
-  // auto tint = get_param_color(argc, params, 2, NULL);
-  // DrawTextureV(texture, position, tint);
+  //auto texture = get_param_str(argc, params, 0, NULL);
+  //auto position = get_param_vec3(argc, params, 1, NULL);
+  //auto tint = get_param_color(argc, params, 2, NULL);
+  //DrawTextureV(texture, position, tint);
   return 1;
 }
 
-int cmd_drawtriangle(int argc, slib_par_t *params, var_t *retval) {
-  // auto v1 = get_param_str(argc, params, 0, NULL);
-  // auto v2 = get_param_str(argc, params, 1, NULL);
-  // auto v3 = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // DrawTriangle(v1, v2, v3, color);
+static int cmd_drawtriangle(int argc, slib_par_t *params, var_t *retval) {
+  auto v1 = get_param_vec2(argc, params, 0);
+  auto v2 = get_param_vec2(argc, params, 1);
+  auto v3 = get_param_vec2(argc, params, 2);
+  auto color = get_param_color(argc, params, 3);
+  DrawTriangle(v1, v2, v3, color);
   return 1;
 }
 
-int cmd_drawtriangle3d(int argc, slib_par_t *params, var_t *retval) {
-  // auto v1 = get_param_str(argc, params, 0, NULL);
-  // auto v2 = get_param_str(argc, params, 1, NULL);
-  // auto v3 = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // DrawTriangle3D(v1, v2, v3, color);
+static int cmd_drawtriangle3d(int argc, slib_par_t *params, var_t *retval) {
+  auto v1 = get_param_vec3(argc, params, 0);
+  auto v2 = get_param_vec3(argc, params, 1);
+  auto v3 = get_param_vec3(argc, params, 2);
+  auto color = get_param_color(argc, params, 3);
+  DrawTriangle3D(v1, v2, v3, color);
   return 1;
 }
 
-int cmd_drawtrianglefan(int argc, slib_par_t *params, var_t *retval) {
-  // auto points = get_param_str(argc, params, 0, NULL);
-  // auto numPoints = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // DrawTriangleFan(points, numPoints, color);
+static int cmd_drawtrianglefan(int argc, slib_par_t *params, var_t *retval) {
+  auto points = get_param_vec2(argc, params, 0);
+  auto numPoints = get_param_int(argc, params, 1, 0);
+  auto color = get_param_color(argc, params, 2);
+  DrawTriangleFan(&points, numPoints, color);
   return 1;
 }
 
-int cmd_drawtrianglelines(int argc, slib_par_t *params, var_t *retval) {
-  // auto v1 = get_param_str(argc, params, 0, NULL);
-  // auto v2 = get_param_str(argc, params, 1, NULL);
-  // auto v3 = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // DrawTriangleLines(v1, v2, v3, color);
+static int cmd_drawtrianglelines(int argc, slib_par_t *params, var_t *retval) {
+  auto v1 = get_param_vec2(argc, params, 0);
+  auto v2 = get_param_vec2(argc, params, 1);
+  auto v3 = get_param_vec2(argc, params, 2);
+  auto color = get_param_color(argc, params, 3);
+  DrawTriangleLines(v1, v2, v3, color);
   return 1;
 }
 
@@ -2726,11 +2726,11 @@ int cmd_drawtrianglestrip(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawtrianglestrip3d(int argc, slib_par_t *params, var_t *retval) {
-  // auto points = get_param_str(argc, params, 0, NULL);
-  // auto pointsCount = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // DrawTriangleStrip3D(points, pointsCount, color);
+static int cmd_drawtrianglestrip3d(int argc, slib_par_t *params, var_t *retval) {
+  auto points = get_param_vec3(argc, params, 0);
+  auto pointsCount = get_param_int(argc, params, 1, 0);
+  auto color = get_param_color(argc, params, 2);
+  DrawTriangleStrip3D(&points, pointsCount, color);
   return 1;
 }
 
@@ -3030,7 +3030,7 @@ int cmd_imagedrawpixel(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_imagedrawpixelv(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_str(argc, params, 1, NULL);
+  // auto position = get_param_vec3(argc, params, 1, NULL);
   // auto color = get_param_color(argc, params, 2);
   // ImageDrawPixelV(dst, position, color);
   return 1;
@@ -3072,7 +3072,7 @@ static int cmd_imagedrawrectanglerec(int argc, slib_par_t *params, var_t *retval
 
 int cmd_imagedrawrectanglev(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_str(argc, params, 1, NULL);
+  // auto position = get_param_vec3(argc, params, 1, NULL);
   // auto size = get_param_str(argc, params, 2, NULL);
   // auto color = get_param_color(argc, params, 3);
   // ImageDrawRectangleV(dst, position, size, color);
@@ -3094,7 +3094,7 @@ int cmd_imagedrawtextex(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
   // auto font = get_param_str(argc, params, 1, NULL);
   // auto text = get_param_str(argc, params, 2, NULL);
-  // auto position = get_param_str(argc, params, 3, NULL);
+  // auto position = get_param_vec3(argc, params, 3, NULL);
   // auto fontSize = get_param_int(argc, params, 4, NULL);
   // auto spacing = get_param_str(argc, params, 5, NULL);
   // auto tint = get_param_color(argc, params, 6);
@@ -3361,7 +3361,7 @@ int cmd_savefiletext(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_savestoragevalue(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_str(argc, params, 0, NULL);
+  // auto position = get_param_vec3(argc, params, 0);
   // auto value = get_param_num(argc, params, 1, 0);
   // SaveStorageValue(position, value);
   return 1;
@@ -4660,59 +4660,59 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "DISABLECURSOR", cmd_disablecursor},
   //{5, 5, "DRAWBILLBOARD", cmd_drawbillboard},
   //{6, 6, "DRAWBILLBOARDREC", cmd_drawbillboardrec},
-  //{2, 2, "DRAWBOUNDINGBOX", cmd_drawboundingbox},
+  {2, 2, "DRAWBOUNDINGBOX", cmd_drawboundingbox},
   {4, 4, "DRAWCIRCLE", cmd_drawcircle},
-  //{5, 5, "DRAWCIRCLE3D", cmd_drawcircle3d},
-  //{5, 5, "DRAWCIRCLEGRADIENT", cmd_drawcirclegradient},
+  {5, 5, "DRAWCIRCLE3D", cmd_drawcircle3d},
+  {5, 5, "DRAWCIRCLEGRADIENT", cmd_drawcirclegradient},
   {4, 4, "DRAWCIRCLELINES", cmd_drawcirclelines},
   {6, 6, "DRAWCIRCLESECTOR", cmd_drawcirclesector},
   {6, 6, "DRAWCIRCLESECTORLINES", cmd_drawcirclesectorlines},
   {3, 3, "DRAWCIRCLEV", cmd_drawcirclev},
   {5, 5, "DRAWCUBE", cmd_drawcube},
   //{6, 6, "DRAWCUBETEXTURE", cmd_drawcubetexture},
-  //{3, 3, "DRAWCUBEV", cmd_drawcubev},
-  //{5, 5, "DRAWCUBEWIRES", cmd_drawcubewires},
-  //{3, 3, "DRAWCUBEWIRESV", cmd_drawcubewiresv},
-  //{6, 6, "DRAWCYLINDER", cmd_drawcylinder},
-  //{6, 6, "DRAWCYLINDERWIRES", cmd_drawcylinderwires},
-  //{5, 5, "DRAWELLIPSE", cmd_drawellipse},
-  //{5, 5, "DRAWELLIPSELINES", cmd_drawellipselines},
+  {3, 3, "DRAWCUBEV", cmd_drawcubev},
+  {5, 5, "DRAWCUBEWIRES", cmd_drawcubewires},
+  {3, 3, "DRAWCUBEWIRESV", cmd_drawcubewiresv},
+  {6, 6, "DRAWCYLINDER", cmd_drawcylinder},
+  {6, 6, "DRAWCYLINDERWIRES", cmd_drawcylinderwires},
+  {5, 5, "DRAWELLIPSE", cmd_drawellipse},
+  {5, 5, "DRAWELLIPSELINES", cmd_drawellipselines},
   {2, 2, "DRAWFPS", cmd_drawfps},
   {1, 1, "DRAWGIZMO", cmd_drawgizmo},
   {2, 2, "DRAWGRID", cmd_drawgrid},
   {5, 5, "DRAWLINE", cmd_drawline},
-  //{3, 3, "DRAWLINE3D", cmd_drawline3d},
-  //{4, 4, "DRAWLINEBEZIER", cmd_drawlinebezier},
-  //{4, 4, "DRAWLINEEX", cmd_drawlineex},
-  //{3, 3, "DRAWLINESTRIP", cmd_drawlinestrip},
-  //{3, 3, "DRAWLINEV", cmd_drawlinev},
+  {3, 3, "DRAWLINE3D", cmd_drawline3d},
+  {4, 4, "DRAWLINEBEZIER", cmd_drawlinebezier},
+  {4, 4, "DRAWLINEEX", cmd_drawlineex},
+  {3, 3, "DRAWLINESTRIP", cmd_drawlinestrip},
+  {3, 3, "DRAWLINEV", cmd_drawlinev},
   {4, 4, "DRAWMODEL", cmd_drawmodel},
   //{6, 6, "DRAWMODELEX", cmd_drawmodelex},
   //{4, 4, "DRAWMODELWIRES", cmd_drawmodelwires},
   //{6, 6, "DRAWMODELWIRESEX", cmd_drawmodelwiresex},
-  //{3, 3, "DRAWPIXEL", cmd_drawpixel},
-  //{2, 2, "DRAWPIXELV", cmd_drawpixelv},
-  //{3, 3, "DRAWPLANE", cmd_drawplane},
-  //{2, 2, "DRAWPOINT3D", cmd_drawpoint3d},
-  //{5, 5, "DRAWPOLY", cmd_drawpoly},
-  //{5, 5, "DRAWPOLYLINES", cmd_drawpolylines},
+  {3, 3, "DRAWPIXEL", cmd_drawpixel},
+  {2, 2, "DRAWPIXELV", cmd_drawpixelv},
+  {3, 3, "DRAWPLANE", cmd_drawplane},
+  {2, 2, "DRAWPOINT3D", cmd_drawpoint3d},
+  {5, 5, "DRAWPOLY", cmd_drawpoly},
+  {5, 5, "DRAWPOLYLINES", cmd_drawpolylines},
   //{2, 2, "DRAWRAY", cmd_drawray},
   {5, 5, "DRAWRECTANGLE", cmd_drawrectangle},
-  //{5, 5, "DRAWRECTANGLEGRADIENTEX", cmd_drawrectanglegradientex},
-  //{6, 6, "DRAWRECTANGLEGRADIENTH", cmd_drawrectanglegradienth},
-  //{6, 6, "DRAWRECTANGLEGRADIENTV", cmd_drawrectanglegradientv},
+  {5, 5, "DRAWRECTANGLEGRADIENTEX", cmd_drawrectanglegradientex},
+  {6, 6, "DRAWRECTANGLEGRADIENTH", cmd_drawrectanglegradienth},
+  {6, 6, "DRAWRECTANGLEGRADIENTV", cmd_drawrectanglegradientv},
   {5, 5, "DRAWRECTANGLELINES", cmd_drawrectanglelines},
   {3, 3, "DRAWRECTANGLELINESEX", cmd_drawrectanglelinesex},
-  //{4, 4, "DRAWRECTANGLEPRO", cmd_drawrectanglepro},
+  {4, 4, "DRAWRECTANGLEPRO", cmd_drawrectanglepro},
   {2, 2, "DRAWRECTANGLEREC", cmd_drawrectanglerec},
-  //{4, 4, "DRAWRECTANGLEROUNDED", cmd_drawrectanglerounded},
-  //{5, 5, "DRAWRECTANGLEROUNDEDLINES", cmd_drawrectangleroundedlines},
-  //{3, 3, "DRAWRECTANGLEV", cmd_drawrectanglev},
+  {4, 4, "DRAWRECTANGLEROUNDED", cmd_drawrectanglerounded},
+  {5, 5, "DRAWRECTANGLEROUNDEDLINES", cmd_drawrectangleroundedlines},
+  {3, 3, "DRAWRECTANGLEV", cmd_drawrectanglev},
   {7, 7, "DRAWRING", cmd_drawring},
   {7, 7, "DRAWRINGLINES", cmd_drawringlines},
   {3, 3, "DRAWSPHERE", cmd_drawsphere},
-  //{5, 5, "DRAWSPHEREEX", cmd_drawsphereex},
-  //{5, 5, "DRAWSPHEREWIRES", cmd_drawspherewires},
+  {5, 5, "DRAWSPHEREEX", cmd_drawsphereex},
+  {5, 5, "DRAWSPHEREWIRES", cmd_drawspherewires},
   {5, 5, "DRAWTEXT", cmd_drawtext},
   //{5, 5, "DRAWTEXTCODEPOINT", cmd_drawtextcodepoint},
   {6, 6, "DRAWTEXTEX", cmd_drawtextex},
@@ -4726,12 +4726,12 @@ FUNC_SIG lib_proc[] = {
   {4, 4, "DRAWTEXTUREREC", cmd_drawtexturerec},
   //{7, 7, "DRAWTEXTURETILED", cmd_drawtexturetiled},
   //{3, 3, "DRAWTEXTUREV", cmd_drawtexturev},
-  //{4, 4, "DRAWTRIANGLE", cmd_drawtriangle},
-  //{4, 4, "DRAWTRIANGLE3D", cmd_drawtriangle3d},
-  //{3, 3, "DRAWTRIANGLEFAN", cmd_drawtrianglefan},
-  //{4, 4, "DRAWTRIANGLELINES", cmd_drawtrianglelines},
-  //{3, 3, "DRAWTRIANGLESTRIP", cmd_drawtrianglestrip},
-  //{3, 3, "DRAWTRIANGLESTRIP3D", cmd_drawtrianglestrip3d},
+  {4, 4, "DRAWTRIANGLE", cmd_drawtriangle},
+  {4, 4, "DRAWTRIANGLE3D", cmd_drawtriangle3d},
+  {3, 3, "DRAWTRIANGLEFAN", cmd_drawtrianglefan},
+  {4, 4, "DRAWTRIANGLELINES", cmd_drawtrianglelines},
+  {3, 3, "DRAWTRIANGLESTRIP", cmd_drawtrianglestrip},
+  {3, 3, "DRAWTRIANGLESTRIP3D", cmd_drawtrianglestrip3d},
   {0, 0, "ENABLECURSOR", cmd_enablecursor},
   {0, 0, "ENDBLENDMODE", cmd_endblendmode},
   {0, 0, "ENDDRAWING", cmd_enddrawing},
