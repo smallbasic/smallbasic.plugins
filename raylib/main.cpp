@@ -34,10 +34,6 @@ static bool is_array(var_p_t var, uint32_t size) {
   return var != nullptr && v_is_type(var, V_ARRAY) && v_asize(var) == size;
 }
 
-static var_int_t get_color_int(Color c) {
-  return ((0x00000000) | (c.r << 24) | (c.g << 16) | (c.b << 8) | (c.a));
-}
-
 static Color get_param_color(int argc, slib_par_t *params, int n) {
   Color result;
   if (n >= 0 && n < argc && params[n].var_p->type == V_INT) {
@@ -51,7 +47,16 @@ static Color get_param_color(int argc, slib_par_t *params, int n) {
     result.r = get_array_elem_num(params[n].var_p, 0);
     result.g = get_array_elem_num(params[n].var_p, 1);
     result.b = get_array_elem_num(params[n].var_p, 2);
-    result.a = 255;
+    if (v_asize(params[n].var_p) == 4) {
+      result.a = get_array_elem_num(params[n].var_p, 3);
+    } else {
+      result.a = 255;
+    }
+  } if (is_param_map(argc, params, n)) {
+    result.r = get_map_num(params[n].var_p, "r");
+    result.g = get_map_num(params[n].var_p, "g");
+    result.b = get_map_num(params[n].var_p, "b");
+    result.a = get_map_num(params[n].var_p, "a");
   }
   return result;
 }
@@ -305,6 +310,11 @@ static int get_render_texture_id(int argc, slib_par_t *params, int n) {
   return result;
 }
 
+static void v_setcolor(var_t *var, Color &c) {
+  var_int_t color = ((0x00000000) | (c.r << 24) | (c.g << 16) | (c.b << 8) | (c.a));
+  v_setint(var, color);
+}
+
 static void v_setfont(var_t *var, Font &font, int id) {
   map_init(var);
   v_setint(map_add_var(var, "baseSize", 0), font.baseSize);
@@ -448,26 +458,18 @@ static int cmd_checkcollisionspheres(int argc, slib_par_t *params, var_t *retval
   return 1;
 }
 
-int cmd_codepointtoutf8(int argc, slib_par_t *params, var_t *retval) {
-  // auto codepoint = get_param_str(argc, params, 0, NULL);
-  // auto byteLength = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = CodepointToUtf8(codepoint, byteLength);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_coloralpha(int argc, slib_par_t *params, var_t *retval) {
-  // auto color = get_param_color(argc, params, 0, NULL);
-  // auto alpha = get_param_num(argc, params, 1, NULL);
-  // auto fnResult = ColorAlpha(color, alpha);
-  // v_setint(retval, fnResult);
+static int cmd_coloralpha(int argc, slib_par_t *params, var_t *retval) {
+  auto color = get_param_color(argc, params, 0);
+  auto alpha = get_param_num(argc, params, 1, 0);
+  auto fnResult = ColorAlpha(color, alpha);
+  v_setcolor(retval, fnResult);
   return 1;
 }
 
 int cmd_coloralphablend(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
   // auto src = get_param_str(argc, params, 1, NULL);
-  // auto tint = get_param_str(argc, params, 2, NULL);
+  // auto tint = get_param_color(argc, params, 2);
   // auto fnResult = ColorAlphaBlend(dst, src, tint);
   // v_setint(retval, fnResult);
   return 1;
@@ -476,36 +478,15 @@ int cmd_coloralphablend(int argc, slib_par_t *params, var_t *retval) {
 int cmd_colorfromhsv(int argc, slib_par_t *params, var_t *retval) {
   // auto hue = get_param_str(argc, params, 0, NULL);
   // auto saturation = get_param_str(argc, params, 1, NULL);
-  // auto value = get_param_str(argc, params, 2, NULL);
+  // auto value = get_param_num(argc, params, 2, 0);
   // auto fnResult = ColorFromHSV(hue, saturation, value);
   // v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_colorfromnormalized(int argc, slib_par_t *params, var_t *retval) {
-  // auto normalized = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = ColorFromNormalized(normalized);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_colornormalize(int argc, slib_par_t *params, var_t *retval) {
-  // auto color = get_param_color(argc, params, 0, NULL);
-  // auto fnResult = ColorNormalize(color);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
 int cmd_colortohsv(int argc, slib_par_t *params, var_t *retval) {
-  // auto color = get_param_color(argc, params, 0, NULL);
+  // auto color = get_param_color(argc, params, 0);
   // auto fnResult = ColorToHSV(color);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_colortoint(int argc, slib_par_t *params, var_t *retval) {
-  // auto color = get_param_color(argc, params, 0, NULL);
-  // auto fnResult = ColorToInt(color);
   // v_setint(retval, fnResult);
   return 1;
 }
@@ -528,24 +509,11 @@ int cmd_decompressdata(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_directoryexists(int argc, slib_par_t *params, var_t *retval) {
-  auto dirPath = get_param_str(argc, params, 0, NULL);
-  auto fnResult = DirectoryExists(dirPath);
-  v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_fade(int argc, slib_par_t *params, var_t *retval) {
   auto color = get_param_color(argc, params, 0);
   auto alpha = get_param_num(argc, params, 1, 0);
-  v_setint(retval, get_color_int(Fade(color, alpha)));
-  return 1;
-}
-
-static int cmd_fileexists(int argc, slib_par_t *params, var_t *retval) {
-  auto fileName = get_param_str(argc, params, 0, NULL);
-  auto fnResult = FileExists(fileName);
-  v_setint(retval, fnResult);
+  auto fnResult = Fade(color, alpha);
+  v_setcolor(retval, fnResult);
   return 1;
 }
 
@@ -589,7 +557,7 @@ int cmd_genimagefontatlas(int argc, slib_par_t *params, var_t *retval) {
   // auto chars = get_param_str(argc, params, 0, NULL);
   // auto recs = get_param_str(argc, params, 1, NULL);
   // auto charsCount = get_param_str(argc, params, 2, NULL);
-  // auto fontSize = get_param_str(argc, params, 3, NULL);
+  // auto fontSize = get_param_int(argc, params, 3, NULL);
   // auto padding = get_param_str(argc, params, 4, NULL);
   // auto packMethod = get_param_str(argc, params, 5, NULL);
   // auto fnResult = GenImageFontAtlas(chars, recs, charsCount, fontSize, padding, packMethod);
@@ -785,14 +753,14 @@ int cmd_gentextureprefilter(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_getcameramatrix(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_param_str(argc, params, 0, NULL);
+  // auto camera = get_camera_3d(argc, params, 0, NULL);
   // auto fnResult = GetCameraMatrix(camera);
   // v_setint(retval, fnResult);
   return 1;
 }
 
 int cmd_getcameramatrix2d(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_param_str(argc, params, 0, NULL);
+  // auto camera = get_camera_3d(argc, params, 0, NULL);
   // auto fnResult = GetCameraMatrix2D(camera);
   // v_setint(retval, fnResult);
   return 1;
@@ -855,56 +823,14 @@ static int cmd_getcollisionrec(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_getcolor(int argc, slib_par_t *params, var_t *retval) {
   auto hexValue = get_param_int(argc, params, 0, 0);
-  v_setint(retval, get_color_int(GetColor(hexValue)));
-  return 1;
-}
-
-int cmd_getdirectoryfiles(int argc, slib_par_t *params, var_t *retval) {
-  // auto dirPath = get_param_str(argc, params, 0, NULL);
-  // auto count = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GetDirectoryFiles(dirPath, count);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-static int cmd_getdirectorypath(int argc, slib_par_t *params, var_t *retval) {
-  auto filePath = get_param_str(argc, params, 0, NULL);
-  auto fnResult = GetDirectoryPath(filePath);
-  v_setstr(retval, fnResult);
+  auto fnResult = GetColor(hexValue);
+  v_setcolor(retval, fnResult);
   return 1;
 }
 
 int cmd_getdroppedfiles(int argc, slib_par_t *params, var_t *retval) {
   // auto count = get_param_str(argc, params, 0, NULL);
   // auto fnResult = GetDroppedFiles(count);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getfileextension(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetFileExtension(fileName);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getfilemodtime(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetFileModTime(fileName);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getfilename(int argc, slib_par_t *params, var_t *retval) {
-  // auto filePath = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetFileName(filePath);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getfilenamewithoutext(int argc, slib_par_t *params, var_t *retval) {
-  // auto filePath = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetFileNameWithoutExt(filePath);
   // v_setint(retval, fnResult);
   return 1;
 }
@@ -927,18 +853,18 @@ static int cmd_getframetime(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_getgamepadaxiscount(int argc, slib_par_t *params, var_t *retval) {
-  // auto gamepad = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetGamepadAxisCount(gamepad);
-  // v_setint(retval, fnResult);
+static int cmd_getgamepadaxiscount(int argc, slib_par_t *params, var_t *retval) {
+  auto gamepad = get_param_int(argc, params, 0, 0);
+  auto fnResult = GetGamepadAxisCount(gamepad);
+  v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_getgamepadaxismovement(int argc, slib_par_t *params, var_t *retval) {
-  // auto gamepad = get_param_str(argc, params, 0, NULL);
-  // auto axis = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GetGamepadAxisMovement(gamepad, axis);
-  // v_setint(retval, fnResult);
+static int cmd_getgamepadaxismovement(int argc, slib_par_t *params, var_t *retval) {
+  auto gamepad = get_param_int(argc, params, 0, 0);
+  auto axis = get_param_int(argc, params, 1, 0);
+  auto fnResult = GetGamepadAxisMovement(gamepad, axis);
+  v_setint(retval, fnResult);
   return 1;
 }
 
@@ -948,10 +874,10 @@ static int cmd_getgamepadbuttonpressed(int argc, slib_par_t *params, var_t *retv
   return 1;
 }
 
-int cmd_getgamepadname(int argc, slib_par_t *params, var_t *retval) {
-  // auto gamepad = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetGamepadName(gamepad);
-  // v_setint(retval, fnResult);
+static int cmd_getgamepadname(int argc, slib_par_t *params, var_t *retval) {
+  auto gamepad = get_param_int(argc, params, 0, 0);
+  auto fnResult = GetGamepadName(gamepad);
+  v_setstr(retval, fnResult);
   return 1;
 }
 
@@ -1116,7 +1042,7 @@ static int cmd_getmouseposition(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_getmouseray(int argc, slib_par_t *params, var_t *retval) {
   // auto mousePosition = get_param_str(argc, params, 0, NULL);
-  // auto camera = get_param_str(argc, params, 1, NULL);
+  // auto camera = get_camera_3d(argc, params, 1, NULL);
   // auto fnResult = GetMouseRay(mousePosition, camera);
   // v_setint(retval, fnResult);
   return 1;
@@ -1219,7 +1145,7 @@ static int cmd_getscreenheight(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_getscreentoworld2d(int argc, slib_par_t *params, var_t *retval) {
   // auto position = get_param_str(argc, params, 0, NULL);
-  // auto camera = get_param_str(argc, params, 1, NULL);
+  // auto camera = get_camera_3d(argc, params, 1, NULL);
   // auto fnResult = GetScreenToWorld2D(position, camera);
   // v_setint(retval, fnResult);
   return 1;
@@ -1350,7 +1276,7 @@ static int cmd_getworkingdirectory(int argc, slib_par_t *params, var_t *retval) 
 
 int cmd_getworldtoscreen(int argc, slib_par_t *params, var_t *retval) {
   // auto position = get_param_str(argc, params, 0, NULL);
-  // auto camera = get_param_str(argc, params, 1, NULL);
+  // auto camera = get_camera_3d(argc, params, 1, NULL);
   // auto fnResult = GetWorldToScreen(position, camera);
   // v_setint(retval, fnResult);
   return 1;
@@ -1358,7 +1284,7 @@ int cmd_getworldtoscreen(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_getworldtoscreen2d(int argc, slib_par_t *params, var_t *retval) {
   // auto position = get_param_str(argc, params, 0, NULL);
-  // auto camera = get_param_str(argc, params, 1, NULL);
+  // auto camera = get_camera_3d(argc, params, 1, NULL);
   // auto fnResult = GetWorldToScreen2D(position, camera);
   // v_setint(retval, fnResult);
   return 1;
@@ -1366,7 +1292,7 @@ int cmd_getworldtoscreen2d(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_getworldtoscreenex(int argc, slib_par_t *params, var_t *retval) {
   // auto position = get_param_str(argc, params, 0, NULL);
-  // auto camera = get_param_str(argc, params, 1, NULL);
+  // auto camera = get_camera_3d(argc, params, 1, NULL);
   // auto width = get_param_str(argc, params, 2, NULL);
   // auto height = get_param_str(argc, params, 3, NULL);
   // auto fnResult = GetWorldToScreenEx(position, camera, width, height);
@@ -1391,8 +1317,8 @@ int cmd_imagefromimage(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_imagetext(int argc, slib_par_t *params, var_t *retval) {
   // auto text = get_param_str(argc, params, 0, NULL);
-  // auto fontSize = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto fontSize = get_param_int(argc, params, 1, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // auto fnResult = ImageText(text, fontSize, color);
   // v_setint(retval, fnResult);
   return 1;
@@ -1401,9 +1327,9 @@ int cmd_imagetext(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imagetextex(int argc, slib_par_t *params, var_t *retval) {
   // auto font = get_param_str(argc, params, 0, NULL);
   // auto text = get_param_str(argc, params, 1, NULL);
-  // auto fontSize = get_param_str(argc, params, 2, NULL);
+  // auto fontSize = get_param_int(argc, params, 2, NULL);
   // auto spacing = get_param_str(argc, params, 3, NULL);
-  // auto tint = get_param_str(argc, params, 4, NULL);
+  // auto tint = get_param_color(argc, params, 4);
   // auto fnResult = ImageTextEx(font, text, fontSize, spacing, tint);
   // v_setint(retval, fnResult);
   return 1;
@@ -1683,7 +1609,7 @@ static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
 int cmd_loadfontdata(int argc, slib_par_t *params, var_t *retval) {
   // auto fileData = get_param_str(argc, params, 0, NULL);
   // auto dataSize = get_param_str(argc, params, 1, NULL);
-  // auto fontSize = get_param_str(argc, params, 2, NULL);
+  // auto fontSize = get_param_int(argc, params, 2, NULL);
   // auto fontChars = get_param_str(argc, params, 3, NULL);
   // auto charsCount = get_param_str(argc, params, 4, NULL);
   // auto type = get_param_str(argc, params, 5, NULL);
@@ -1717,7 +1643,7 @@ int cmd_loadfontfrommemory(int argc, slib_par_t *params, var_t *retval) {
   // auto fileType = get_param_str(argc, params, 0, NULL);
   // auto fileData = get_param_str(argc, params, 1, NULL);
   // auto dataSize = get_param_str(argc, params, 2, NULL);
-  // auto fontSize = get_param_str(argc, params, 3, NULL);
+  // auto fontSize = get_param_int(argc, params, 3, NULL);
   // auto fontChars = get_param_str(argc, params, 4, NULL);
   // auto charsCount = get_param_str(argc, params, 5, NULL);
   // auto fnResult = LoadFontFromMemory(fileType, fileData, dataSize, fontSize, fontChars, charsCount);
@@ -1944,7 +1870,7 @@ static int cmd_measuretext(int argc, slib_par_t *params, var_t *retval) {
 int cmd_measuretextex(int argc, slib_par_t *params, var_t *retval) {
   // auto font = get_param_str(argc, params, 0, NULL);
   // auto text = get_param_str(argc, params, 1, NULL);
-  // auto fontSize = get_param_str(argc, params, 2, NULL);
+  // auto fontSize = get_param_int(argc, params, 2, NULL);
   // auto spacing = get_param_str(argc, params, 3, NULL);
   // auto fnResult = MeasureTextEx(font, text, fontSize, spacing);
   // v_setint(retval, fnResult);
@@ -1958,120 +1884,8 @@ int cmd_meshboundingbox(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_textcopy(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto src = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = TextCopy(dst, src);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_textfindindex(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto find = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = TextFindIndex(text, find);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_textformat(int argc, slib_par_t *params, var_t *retval) {
   v_setstr(retval, format_text(argc, params, 0));
-  return 1;
-}
-
-int cmd_textinsert(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto insert = get_param_str(argc, params, 1, NULL);
-  // auto position = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = TextInsert(text, insert, position);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_textisequal(int argc, slib_par_t *params, var_t *retval) {
-  // auto text1 = get_param_str(argc, params, 0, NULL);
-  // auto text2 = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = TextIsEqual(text1, text2);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_textjoin(int argc, slib_par_t *params, var_t *retval) {
-  // auto textList = get_param_str(argc, params, 0, NULL);
-  // auto count = get_param_str(argc, params, 1, NULL);
-  // auto delimiter = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = TextJoin(textList, count, delimiter);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_textlength(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = TextLength(text);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_textreplace(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto replace = get_param_str(argc, params, 1, NULL);
-  // auto by = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = TextReplace(text, replace, by);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_textsplit(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto delimiter = get_param_str(argc, params, 1, NULL);
-  // auto count = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = TextSplit(text, delimiter, count);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_textsubtext(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_str(argc, params, 1, NULL);
-  // auto length = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = TextSubtext(text, position, length);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_texttointeger(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = TextToInteger(text);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_texttolower(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = TextToLower(text);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_texttopascal(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = TextToPascal(text);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_texttoupper(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = TextToUpper(text);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_texttoutf8(int argc, slib_par_t *params, var_t *retval) {
-  // auto codepoints = get_param_str(argc, params, 0, NULL);
-  // auto length = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = TextToUtf8(codepoints, length);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -2100,7 +1914,7 @@ static int cmd_begindrawing(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_beginmode2d(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_param_str(argc, params, 0, NULL);
+  // auto camera = get_camera_3d(argc, params, 0, NULL);
   // BeginMode2D(camera);
   return 1;
 }
@@ -2185,29 +1999,29 @@ static int cmd_disablecursor(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_drawbillboard(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_param_str(argc, params, 0, NULL);
+  // auto camera = get_camera_3d(argc, params, 0, NULL);
   // auto texture = get_param_str(argc, params, 1, NULL);
   // auto center = get_param_str(argc, params, 2, NULL);
   // auto size = get_param_str(argc, params, 3, NULL);
-  // auto tint = get_param_str(argc, params, 4, NULL);
+  // auto tint = get_param_color(argc, params, 4);
   // DrawBillboard(camera, texture, center, size, tint);
   return 1;
 }
 
 int cmd_drawbillboardrec(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_param_str(argc, params, 0, NULL);
+  // auto camera = get_camera_3d(argc, params, 0, NULL);
   // auto texture = get_param_str(argc, params, 1, NULL);
   // auto sourceRec = get_param_str(argc, params, 2, NULL);
   // auto center = get_param_str(argc, params, 3, NULL);
   // auto size = get_param_str(argc, params, 4, NULL);
-  // auto tint = get_param_str(argc, params, 5, NULL);
+  // auto tint = get_param_color(argc, params, 5);
   // DrawBillboardRec(camera, texture, sourceRec, center, size, tint);
   return 1;
 }
 
 int cmd_drawboundingbox(int argc, slib_par_t *params, var_t *retval) {
   // auto box = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1, NULL);
+  // auto color = get_param_color(argc, params, 1);
   // DrawBoundingBox(box, color);
   return 1;
 }
@@ -2296,7 +2110,7 @@ int cmd_drawcubetexture(int argc, slib_par_t *params, var_t *retval) {
   // auto width = get_param_str(argc, params, 2, NULL);
   // auto height = get_param_str(argc, params, 3, NULL);
   // auto length = get_param_str(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5, NULL);
+  // auto color = get_param_color(argc, params, 5);
   // DrawCubeTexture(texture, position, width, height, length, color);
   return 1;
 }
@@ -2304,7 +2118,7 @@ int cmd_drawcubetexture(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawcubev(int argc, slib_par_t *params, var_t *retval) {
   // auto position = get_param_str(argc, params, 0, NULL);
   // auto size = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // DrawCubeV(position, size, color);
   return 1;
 }
@@ -2314,7 +2128,7 @@ int cmd_drawcubewires(int argc, slib_par_t *params, var_t *retval) {
   // auto width = get_param_str(argc, params, 1, NULL);
   // auto height = get_param_str(argc, params, 2, NULL);
   // auto length = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4, NULL);
+  // auto color = get_param_color(argc, params, 4);
   // DrawCubeWires(position, width, height, length, color);
   return 1;
 }
@@ -2322,7 +2136,7 @@ int cmd_drawcubewires(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawcubewiresv(int argc, slib_par_t *params, var_t *retval) {
   // auto position = get_param_str(argc, params, 0, NULL);
   // auto size = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // DrawCubeWiresV(position, size, color);
   return 1;
 }
@@ -2333,7 +2147,7 @@ int cmd_drawcylinder(int argc, slib_par_t *params, var_t *retval) {
   // auto radiusBottom = get_param_str(argc, params, 2, NULL);
   // auto height = get_param_str(argc, params, 3, NULL);
   // auto slices = get_param_str(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5, NULL);
+  // auto color = get_param_color(argc, params, 5);
   // DrawCylinder(position, radiusTop, radiusBottom, height, slices, color);
   return 1;
 }
@@ -2344,7 +2158,7 @@ int cmd_drawcylinderwires(int argc, slib_par_t *params, var_t *retval) {
   // auto radiusBottom = get_param_str(argc, params, 2, NULL);
   // auto height = get_param_str(argc, params, 3, NULL);
   // auto slices = get_param_str(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5, NULL);
+  // auto color = get_param_color(argc, params, 5);
   // DrawCylinderWires(position, radiusTop, radiusBottom, height, slices, color);
   return 1;
 }
@@ -2354,7 +2168,7 @@ int cmd_drawellipse(int argc, slib_par_t *params, var_t *retval) {
   // auto centerY = get_param_str(argc, params, 1, NULL);
   // auto radiusH = get_param_str(argc, params, 2, NULL);
   // auto radiusV = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4, NULL);
+  // auto color = get_param_color(argc, params, 4);
   // DrawEllipse(centerX, centerY, radiusH, radiusV, color);
   return 1;
 }
@@ -2364,7 +2178,7 @@ int cmd_drawellipselines(int argc, slib_par_t *params, var_t *retval) {
   // auto centerY = get_param_str(argc, params, 1, NULL);
   // auto radiusH = get_param_str(argc, params, 2, NULL);
   // auto radiusV = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4, NULL);
+  // auto color = get_param_color(argc, params, 4);
   // DrawEllipseLines(centerX, centerY, radiusH, radiusV, color);
   return 1;
 }
@@ -2401,7 +2215,7 @@ static int cmd_drawline(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawline3d(int argc, slib_par_t *params, var_t *retval) {
   // auto startPos = get_param_str(argc, params, 0, NULL);
   // auto endPos = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // DrawLine3D(startPos, endPos, color);
   return 1;
 }
@@ -2410,7 +2224,7 @@ int cmd_drawlinebezier(int argc, slib_par_t *params, var_t *retval) {
   // auto startPos = get_param_str(argc, params, 0, NULL);
   // auto endPos = get_param_str(argc, params, 1, NULL);
   // auto thick = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // DrawLineBezier(startPos, endPos, thick, color);
   return 1;
 }
@@ -2419,7 +2233,7 @@ int cmd_drawlineex(int argc, slib_par_t *params, var_t *retval) {
   // auto startPos = get_param_str(argc, params, 0, NULL);
   // auto endPos = get_param_str(argc, params, 1, NULL);
   // auto thick = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // DrawLineEx(startPos, endPos, thick, color);
   return 1;
 }
@@ -2427,7 +2241,7 @@ int cmd_drawlineex(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawlinestrip(int argc, slib_par_t *params, var_t *retval) {
   // auto points = get_param_str(argc, params, 0, NULL);
   // auto numPoints = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // DrawLineStrip(points, numPoints, color);
   return 1;
 }
@@ -2435,7 +2249,7 @@ int cmd_drawlinestrip(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawlinev(int argc, slib_par_t *params, var_t *retval) {
   // auto startPos = get_param_str(argc, params, 0, NULL);
   // auto endPos = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // DrawLineV(startPos, endPos, color);
   return 1;
 }
@@ -2461,7 +2275,7 @@ int cmd_drawmodelex(int argc, slib_par_t *params, var_t *retval) {
   // auto rotationAxis = get_param_str(argc, params, 2, NULL);
   // auto rotationAngle = get_param_str(argc, params, 3, NULL);
   // auto scale = get_param_str(argc, params, 4, NULL);
-  // auto tint = get_param_str(argc, params, 5, NULL);
+  // auto tint = get_param_color(argc, params, 5);
   // DrawModelEx(model, position, rotationAxis, rotationAngle, scale, tint);
   return 1;
 }
@@ -2470,7 +2284,7 @@ int cmd_drawmodelwires(int argc, slib_par_t *params, var_t *retval) {
   // auto model = get_param_str(argc, params, 0, NULL);
   // auto position = get_param_str(argc, params, 1, NULL);
   // auto scale = get_param_str(argc, params, 2, NULL);
-  // auto tint = get_param_str(argc, params, 3, NULL);
+  // auto tint = get_param_color(argc, params, 3);
   // DrawModelWires(model, position, scale, tint);
   return 1;
 }
@@ -2481,7 +2295,7 @@ int cmd_drawmodelwiresex(int argc, slib_par_t *params, var_t *retval) {
   // auto rotationAxis = get_param_str(argc, params, 2, NULL);
   // auto rotationAngle = get_param_str(argc, params, 3, NULL);
   // auto scale = get_param_str(argc, params, 4, NULL);
-  // auto tint = get_param_str(argc, params, 5, NULL);
+  // auto tint = get_param_color(argc, params, 5);
   // DrawModelWiresEx(model, position, rotationAxis, rotationAngle, scale, tint);
   return 1;
 }
@@ -2489,14 +2303,14 @@ int cmd_drawmodelwiresex(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawpixel(int argc, slib_par_t *params, var_t *retval) {
   // auto posX = get_param_str(argc, params, 0, NULL);
   // auto posY = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // DrawPixel(posX, posY, color);
   return 1;
 }
 
 int cmd_drawpixelv(int argc, slib_par_t *params, var_t *retval) {
   // auto position = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1, NULL);
+  // auto color = get_param_color(argc, params, 1);
   // DrawPixelV(position, color);
   return 1;
 }
@@ -2504,14 +2318,14 @@ int cmd_drawpixelv(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawplane(int argc, slib_par_t *params, var_t *retval) {
   // auto centerPos = get_param_str(argc, params, 0, NULL);
   // auto size = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // DrawPlane(centerPos, size, color);
   return 1;
 }
 
 int cmd_drawpoint3d(int argc, slib_par_t *params, var_t *retval) {
   // auto position = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1, NULL);
+  // auto color = get_param_color(argc, params, 1);
   // DrawPoint3D(position, color);
   return 1;
 }
@@ -2521,7 +2335,7 @@ int cmd_drawpoly(int argc, slib_par_t *params, var_t *retval) {
   // auto sides = get_param_str(argc, params, 1, NULL);
   // auto radius = get_param_num(argc, params, 2, NULL);
   // auto rotation = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4, NULL);
+  // auto color = get_param_color(argc, params, 4);
   // DrawPoly(center, sides, radius, rotation, color);
   return 1;
 }
@@ -2531,14 +2345,14 @@ int cmd_drawpolylines(int argc, slib_par_t *params, var_t *retval) {
   // auto sides = get_param_str(argc, params, 1, NULL);
   // auto radius = get_param_num(argc, params, 2, NULL);
   // auto rotation = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4, NULL);
+  // auto color = get_param_color(argc, params, 4);
   // DrawPolyLines(center, sides, radius, rotation, color);
   return 1;
 }
 
 int cmd_drawray(int argc, slib_par_t *params, var_t *retval) {
   // auto ray = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1, NULL);
+  // auto color = get_param_color(argc, params, 1);
   // DrawRay(ray, color);
   return 1;
 }
@@ -2607,7 +2421,7 @@ int cmd_drawrectanglepro(int argc, slib_par_t *params, var_t *retval) {
   // auto rec = get_param_str(argc, params, 0, NULL);
   // auto origin = get_param_str(argc, params, 1, NULL);
   // auto rotation = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // DrawRectanglePro(rec, origin, rotation, color);
   return 1;
 }
@@ -2623,7 +2437,7 @@ int cmd_drawrectanglerounded(int argc, slib_par_t *params, var_t *retval) {
   // auto rec = get_param_str(argc, params, 0, NULL);
   // auto roundness = get_param_str(argc, params, 1, NULL);
   // auto segments = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // DrawRectangleRounded(rec, roundness, segments, color);
   return 1;
 }
@@ -2633,7 +2447,7 @@ int cmd_drawrectangleroundedlines(int argc, slib_par_t *params, var_t *retval) {
   // auto roundness = get_param_str(argc, params, 1, NULL);
   // auto segments = get_param_str(argc, params, 2, NULL);
   // auto lineThick = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4, NULL);
+  // auto color = get_param_color(argc, params, 4);
   // DrawRectangleRoundedLines(rec, roundness, segments, lineThick, color);
   return 1;
 }
@@ -2683,7 +2497,7 @@ int cmd_drawsphereex(int argc, slib_par_t *params, var_t *retval) {
   // auto radius = get_param_num(argc, params, 1, NULL);
   // auto rings = get_param_str(argc, params, 2, NULL);
   // auto slices = get_param_str(argc, params, 3, NULL);
-  // auto color = get_param_color(argc, params, 4, NULL);
+  // auto color = get_param_color(argc, params, 4);
   // DrawSphereEx(centerPos, radius, rings, slices, color);
   return 1;
 }
@@ -2713,7 +2527,7 @@ int cmd_drawtextcodepoint(int argc, slib_par_t *params, var_t *retval) {
   // auto codepoint = get_param_str(argc, params, 1, NULL);
   // auto position = get_param_str(argc, params, 2, NULL);
   // auto scale = get_param_str(argc, params, 3, NULL);
-  // auto tint = get_param_str(argc, params, 4, NULL);
+  // auto tint = get_param_color(argc, params, 4);
   // DrawTextCodepoint(font, codepoint, position, scale, tint);
   return 1;
 }
@@ -2739,10 +2553,10 @@ int cmd_drawtextrec(int argc, slib_par_t *params, var_t *retval) {
   // auto font = get_param_str(argc, params, 0, NULL);
   // auto text = get_param_str(argc, params, 1, NULL);
   // auto rec = get_param_str(argc, params, 2, NULL);
-  // auto fontSize = get_param_str(argc, params, 3, NULL);
+  // auto fontSize = get_param_int(argc, params, 3, NULL);
   // auto spacing = get_param_str(argc, params, 4, NULL);
   // auto wordWrap = get_param_str(argc, params, 5, NULL);
-  // auto tint = get_param_str(argc, params, 6, NULL);
+  // auto tint = get_param_color(argc, params, 6);
   // DrawTextRec(font, text, rec, fontSize, spacing, wordWrap, tint);
   return 1;
 }
@@ -2751,10 +2565,10 @@ int cmd_drawtextrecex(int argc, slib_par_t *params, var_t *retval) {
   // auto font = get_param_str(argc, params, 0, NULL);
   // auto text = get_param_str(argc, params, 1, NULL);
   // auto rec = get_param_str(argc, params, 2, NULL);
-  // auto fontSize = get_param_str(argc, params, 3, NULL);
+  // auto fontSize = get_param_int(argc, params, 3, NULL);
   // auto spacing = get_param_str(argc, params, 4, NULL);
   // auto wordWrap = get_param_str(argc, params, 5, NULL);
-  // auto tint = get_param_str(argc, params, 6, NULL);
+  // auto tint = get_param_color(argc, params, 6);
   // auto selectStart = get_param_str(argc, params, 7, NULL);
   // auto selectLength = get_param_str(argc, params, 8, NULL);
   // auto selectTint = get_param_str(argc, params, 9, NULL);
@@ -2800,7 +2614,7 @@ int cmd_drawtexturenpatch(int argc, slib_par_t *params, var_t *retval) {
   // auto destRec = get_param_str(argc, params, 2, NULL);
   // auto origin = get_param_str(argc, params, 3, NULL);
   // auto rotation = get_param_str(argc, params, 4, NULL);
-  // auto tint = get_param_str(argc, params, 5, NULL);
+  // auto tint = get_param_color(argc, params, 5);
   // DrawTextureNPatch(texture, nPatchInfo, destRec, origin, rotation, tint);
   return 1;
 }
@@ -2827,7 +2641,7 @@ int cmd_drawtexturequad(int argc, slib_par_t *params, var_t *retval) {
   // auto tiling = get_param_str(argc, params, 1, NULL);
   // auto offset = get_param_str(argc, params, 2, NULL);
   // auto quad = get_param_str(argc, params, 3, NULL);
-  // auto tint = get_param_str(argc, params, 4, NULL);
+  // auto tint = get_param_color(argc, params, 4);
   // DrawTextureQuad(texture, tiling, offset, quad, tint);
   return 1;
 }
@@ -2856,7 +2670,7 @@ int cmd_drawtexturetiled(int argc, slib_par_t *params, var_t *retval) {
   // auto origin = get_param_str(argc, params, 3, NULL);
   // auto rotation = get_param_str(argc, params, 4, NULL);
   // auto scale = get_param_str(argc, params, 5, NULL);
-  // auto tint = get_param_str(argc, params, 6, NULL);
+  // auto tint = get_param_color(argc, params, 6);
   // DrawTextureTiled(texture, sourceRec, destRec, origin, rotation, scale, tint);
   return 1;
 }
@@ -2864,7 +2678,7 @@ int cmd_drawtexturetiled(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtexturev(int argc, slib_par_t *params, var_t *retval) {
   // auto texture = get_param_str(argc, params, 0, NULL);
   // auto position = get_param_str(argc, params, 1, NULL);
-  // auto tint = get_param_str(argc, params, 2, NULL);
+  // auto tint = get_param_color(argc, params, 2, NULL);
   // DrawTextureV(texture, position, tint);
   return 1;
 }
@@ -2873,7 +2687,7 @@ int cmd_drawtriangle(int argc, slib_par_t *params, var_t *retval) {
   // auto v1 = get_param_str(argc, params, 0, NULL);
   // auto v2 = get_param_str(argc, params, 1, NULL);
   // auto v3 = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // DrawTriangle(v1, v2, v3, color);
   return 1;
 }
@@ -2882,7 +2696,7 @@ int cmd_drawtriangle3d(int argc, slib_par_t *params, var_t *retval) {
   // auto v1 = get_param_str(argc, params, 0, NULL);
   // auto v2 = get_param_str(argc, params, 1, NULL);
   // auto v3 = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // DrawTriangle3D(v1, v2, v3, color);
   return 1;
 }
@@ -2890,7 +2704,7 @@ int cmd_drawtriangle3d(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtrianglefan(int argc, slib_par_t *params, var_t *retval) {
   // auto points = get_param_str(argc, params, 0, NULL);
   // auto numPoints = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // DrawTriangleFan(points, numPoints, color);
   return 1;
 }
@@ -2899,7 +2713,7 @@ int cmd_drawtrianglelines(int argc, slib_par_t *params, var_t *retval) {
   // auto v1 = get_param_str(argc, params, 0, NULL);
   // auto v2 = get_param_str(argc, params, 1, NULL);
   // auto v3 = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // DrawTriangleLines(v1, v2, v3, color);
   return 1;
 }
@@ -2907,7 +2721,7 @@ int cmd_drawtrianglelines(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtrianglestrip(int argc, slib_par_t *params, var_t *retval) {
   // auto points = get_param_str(argc, params, 0, NULL);
   // auto pointsCount = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // DrawTriangleStrip(points, pointsCount, color);
   return 1;
 }
@@ -2915,7 +2729,7 @@ int cmd_drawtrianglestrip(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtrianglestrip3d(int argc, slib_par_t *params, var_t *retval) {
   // auto points = get_param_str(argc, params, 0, NULL);
   // auto pointsCount = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // DrawTriangleStrip3D(points, pointsCount, color);
   return 1;
 }
@@ -3029,7 +2843,7 @@ static int cmd_hidewindow(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_imagealphaclear(int argc, slib_par_t *params, var_t *retval) {
   // auto image = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1, NULL);
+  // auto color = get_param_color(argc, params, 1);
   // auto threshold = get_param_str(argc, params, 2, NULL);
   // ImageAlphaClear(image, color, threshold);
   return 1;
@@ -3057,7 +2871,7 @@ int cmd_imagealphapremultiply(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_imageclearbackground(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1, NULL);
+  // auto color = get_param_color(argc, params, 1);
   // ImageClearBackground(dst, color);
   return 1;
 }
@@ -3114,7 +2928,7 @@ static int cmd_imagecolorinvert(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_imagecolorreplace(int argc, slib_par_t *params, var_t *retval) {
   // auto image = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1, NULL);
+  // auto color = get_param_color(argc, params, 1);
   // auto replace = get_param_str(argc, params, 2, NULL);
   // ImageColorReplace(image, color, replace);
   return 1;
@@ -3155,7 +2969,7 @@ int cmd_imagedraw(int argc, slib_par_t *params, var_t *retval) {
   // auto src = get_param_str(argc, params, 1, NULL);
   // auto srcRec = get_param_str(argc, params, 2, NULL);
   // auto dstRec = get_param_str(argc, params, 3, NULL);
-  // auto tint = get_param_str(argc, params, 4, NULL);
+  // auto tint = get_param_color(argc, params, 4);
   // ImageDraw(dst, src, srcRec, dstRec, tint);
   return 1;
 }
@@ -3180,7 +2994,7 @@ int cmd_imagedrawcirclev(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
   // auto center = get_param_str(argc, params, 1, NULL);
   // auto radius = get_param_num(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // ImageDrawCircleV(dst, center, radius, color);
   return 1;
 }
@@ -3191,7 +3005,7 @@ int cmd_imagedrawline(int argc, slib_par_t *params, var_t *retval) {
   // auto startPosY = get_param_str(argc, params, 2, NULL);
   // auto endPosX = get_param_str(argc, params, 3, NULL);
   // auto endPosY = get_param_str(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5, NULL);
+  // auto color = get_param_color(argc, params, 5);
   // ImageDrawLine(dst, startPosX, startPosY, endPosX, endPosY, color);
   return 1;
 }
@@ -3200,7 +3014,7 @@ int cmd_imagedrawlinev(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
   // auto start = get_param_str(argc, params, 1, NULL);
   // auto end = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // ImageDrawLineV(dst, start, end, color);
   return 1;
 }
@@ -3209,7 +3023,7 @@ int cmd_imagedrawpixel(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
   // auto posX = get_param_str(argc, params, 1, NULL);
   // auto posY = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // ImageDrawPixel(dst, posX, posY, color);
   return 1;
 }
@@ -3217,7 +3031,7 @@ int cmd_imagedrawpixel(int argc, slib_par_t *params, var_t *retval) {
 int cmd_imagedrawpixelv(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
   // auto position = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2, NULL);
+  // auto color = get_param_color(argc, params, 2);
   // ImageDrawPixelV(dst, position, color);
   return 1;
 }
@@ -3228,7 +3042,7 @@ int cmd_imagedrawrectangle(int argc, slib_par_t *params, var_t *retval) {
   // auto posY = get_param_str(argc, params, 2, NULL);
   // auto width = get_param_str(argc, params, 3, NULL);
   // auto height = get_param_str(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5, NULL);
+  // auto color = get_param_color(argc, params, 5);
   // ImageDrawRectangle(dst, posX, posY, width, height, color);
   return 1;
 }
@@ -3237,7 +3051,7 @@ int cmd_imagedrawrectanglelines(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
   // auto rec = get_param_str(argc, params, 1, NULL);
   // auto thick = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // ImageDrawRectangleLines(dst, rec, thick, color);
   return 1;
 }
@@ -3260,7 +3074,7 @@ int cmd_imagedrawrectanglev(int argc, slib_par_t *params, var_t *retval) {
   // auto dst = get_param_str(argc, params, 0, NULL);
   // auto position = get_param_str(argc, params, 1, NULL);
   // auto size = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3, NULL);
+  // auto color = get_param_color(argc, params, 3);
   // ImageDrawRectangleV(dst, position, size, color);
   return 1;
 }
@@ -3270,7 +3084,7 @@ int cmd_imagedrawtext(int argc, slib_par_t *params, var_t *retval) {
   // auto text = get_param_str(argc, params, 1, NULL);
   // auto posX = get_param_str(argc, params, 2, NULL);
   // auto posY = get_param_str(argc, params, 3, NULL);
-  // auto fontSize = get_param_str(argc, params, 4, NULL);
+  // auto fontSize = get_param_int(argc, params, 4, NULL);
   // auto color = get_param_color(argc, params, 5);
   // ImageDrawText(dst, text, posX, posY, fontSize, color);
   return 1;
@@ -3281,9 +3095,9 @@ int cmd_imagedrawtextex(int argc, slib_par_t *params, var_t *retval) {
   // auto font = get_param_str(argc, params, 1, NULL);
   // auto text = get_param_str(argc, params, 2, NULL);
   // auto position = get_param_str(argc, params, 3, NULL);
-  // auto fontSize = get_param_str(argc, params, 4, NULL);
+  // auto fontSize = get_param_int(argc, params, 4, NULL);
   // auto spacing = get_param_str(argc, params, 5, NULL);
-  // auto tint = get_param_str(argc, params, 6, NULL);
+  // auto tint = get_param_color(argc, params, 6);
   // ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint);
   return 1;
 }
@@ -3548,7 +3362,7 @@ int cmd_savefiletext(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_savestoragevalue(int argc, slib_par_t *params, var_t *retval) {
   // auto position = get_param_str(argc, params, 0, NULL);
-  // auto value = get_param_str(argc, params, 1, NULL);
+  // auto value = get_param_num(argc, params, 1, 0);
   // SaveStorageValue(position, value);
   return 1;
 }
@@ -3947,14 +3761,6 @@ static int cmd_takescreenshot(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_textappend(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto append = get_param_str(argc, params, 1, NULL);
-  // auto position = get_param_str(argc, params, 2, NULL);
-  // TextAppend(text, append, position);
-  return 1;
-}
-
 static int cmd_togglefullscreen(int argc, slib_par_t *params, var_t *retval) {
   ToggleFullscreen();
   return 1;
@@ -4177,7 +3983,7 @@ int cmd_updatetexturerec(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_updatevrtracking(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_param_str(argc, params, 0, NULL);
+  // auto camera = get_camera_3d(argc, params, 0, NULL);
   // UpdateVrTracking(camera);
   return 1;
 }
@@ -4236,7 +4042,7 @@ static int cmd_guicolorpicker(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto color = get_param_color(argc, params, 1);
   auto fnResult = GuiColorPicker(bounds, color);
-  v_setint(retval, get_color_int(fnResult));
+  v_setcolor(retval, fnResult);
   return 1;
 }
 
@@ -4408,7 +4214,7 @@ static int cmd_guispinner(int argc, slib_par_t *params, var_t *retval) {
   auto value = get_param_int(argc, params, 2, 0);
   auto minValue = get_param_num(argc, params, 3, 0);
   auto maxValue = get_param_num(argc, params, 4, 0);
-  auto editMode = get_param_int(argc, params, 4, 0);
+  auto editMode = get_param_int(argc, params, 5, 0);
   auto fnResult = GuiSpinner(bounds, text, &value, minValue, maxValue, editMode);
   v_setint(retval, fnResult);
   return set_param_int(argc, params, 2, value, retval);
@@ -4625,19 +4431,13 @@ FUNC_SIG lib_func[] = {
   //{4, 4, "CHECKCOLLISIONRAYSPHEREEX", cmd_checkcollisionraysphereex},
   {2, 2, "CHECKCOLLISIONRECS", cmd_checkcollisionrecs},
   {4, 4, "CHECKCOLLISIONSPHERES", cmd_checkcollisionspheres},
-  //{2, 2, "CODEPOINTTOUTF8", cmd_codepointtoutf8},
-  //{2, 2, "COLORALPHA", cmd_coloralpha},
+  {2, 2, "COLORALPHA", cmd_coloralpha},
   //{3, 3, "COLORALPHABLEND", cmd_coloralphablend},
   //{3, 3, "COLORFROMHSV", cmd_colorfromhsv},
-  //{1, 1, "COLORFROMNORMALIZED", cmd_colorfromnormalized},
-  //{1, 1, "COLORNORMALIZE", cmd_colornormalize},
   //{1, 1, "COLORTOHSV", cmd_colortohsv},
-  //{1, 1, "COLORTOINT", cmd_colortoint},
   //{3, 3, "COMPRESSDATA", cmd_compressdata},
   //{3, 3, "DECOMPRESSDATA", cmd_decompressdata},
-  {1, 1, "DIRECTORYEXISTS", cmd_directoryexists},
   {2, 2, "FADE", cmd_fade},
-  {1, 1, "FILEEXISTS", cmd_fileexists},
   {3, 3, "GENIMAGECELLULAR", cmd_genimagecellular},
   {6, 6, "GENIMAGECHECKED", cmd_genimagechecked},
   {3, 3, "GENIMAGECOLOR", cmd_genimagecolor},
@@ -4671,20 +4471,14 @@ FUNC_SIG lib_func[] = {
   //{4, 4, "GETCOLLISIONRAYTRIANGLE", cmd_getcollisionraytriangle},
   {2, 2, "GETCOLLISIONREC", cmd_getcollisionrec},
   {1, 1, "GETCOLOR", cmd_getcolor},
-  //{2, 2, "GETDIRECTORYFILES", cmd_getdirectoryfiles},
-  {1, 1, "GETDIRECTORYPATH", cmd_getdirectorypath},
   //{1, 1, "GETDROPPEDFILES", cmd_getdroppedfiles},
-  //{1, 1, "GETFILEEXTENSION", cmd_getfileextension},
-  //{1, 1, "GETFILEMODTIME", cmd_getfilemodtime},
-  //{1, 1, "GETFILENAME", cmd_getfilename},
-  //{1, 1, "GETFILENAMEWITHOUTEXT", cmd_getfilenamewithoutext},
   //{0, 0, "GETFONTDEFAULT", cmd_getfontdefault},
   {0, 0, "GETFPS", cmd_getfps},
   {0, 0, "GETFRAMETIME", cmd_getframetime},
-  //{1, 1, "GETGAMEPADAXISCOUNT", cmd_getgamepadaxiscount},
-  //{2, 2, "GETGAMEPADAXISMOVEMENT", cmd_getgamepadaxismovement},
+  {1, 1, "GETGAMEPADAXISCOUNT", cmd_getgamepadaxiscount},
+  {2, 2, "GETGAMEPADAXISMOVEMENT", cmd_getgamepadaxismovement},
   {0, 0, "GETGAMEPADBUTTONPRESSED", cmd_getgamepadbuttonpressed},
-  //{1, 1, "GETGAMEPADNAME", cmd_getgamepadname},
+  {1, 1, "GETGAMEPADNAME", cmd_getgamepadname},
   {0, 0, "GETGESTUREDETECTED", cmd_getgesturedetected},
   {0, 0, "GETGESTUREDRAGANGLE", cmd_getgesturedragangle},
   //{0, 0, "GETGESTUREDRAGVECTOR", cmd_getgesturedragvector},
@@ -4813,21 +4607,7 @@ FUNC_SIG lib_func[] = {
   {2, 2, "MEASURETEXT", cmd_measuretext},
   //{4, 4, "MEASURETEXTEX", cmd_measuretextex},
   //{1, 1, "MESHBOUNDINGBOX", cmd_meshboundingbox},
-  //{2, 2, "TEXTCOPY", cmd_textcopy},
-  //{2, 2, "TEXTFINDINDEX", cmd_textfindindex},
   {1, 1, "TEXTFORMAT", cmd_textformat},
-  //{3, 3, "TEXTINSERT", cmd_textinsert},
-  //{2, 2, "TEXTISEQUAL", cmd_textisequal},
-  //{3, 3, "TEXTJOIN", cmd_textjoin},
-  //{1, 1, "TEXTLENGTH", cmd_textlength},
-  //{3, 3, "TEXTREPLACE", cmd_textreplace},
-  //{3, 3, "TEXTSPLIT", cmd_textsplit},
-  //{3, 3, "TEXTSUBTEXT", cmd_textsubtext},
-  //{1, 1, "TEXTTOINTEGER", cmd_texttointeger},
-  //{1, 1, "TEXTTOLOWER", cmd_texttolower},
-  //{1, 1, "TEXTTOPASCAL", cmd_texttopascal},
-  //{1, 1, "TEXTTOUPPER", cmd_texttoupper},
-  //{2, 2, "TEXTTOUTF8", cmd_texttoutf8},
   //{1, 1, "WAVECOPY", cmd_wavecopy},
   {0, 0, "WINDOWSHOULDCLOSE", cmd_windowshouldclose},
   {2, 2, "GUIBUTTON", cmd_guibutton},
@@ -4844,15 +4624,15 @@ FUNC_SIG lib_func[] = {
   {2, 2, "GUILABELBUTTON", cmd_guilabelbutton},
   {4, 4, "GUILISTVIEW", cmd_guilistview},
   {6, 6, "GUILISTVIEWEX", cmd_guilistviewex},
-  {2, 2, "GUIMESSAGEBOX", cmd_guimessagebox},
-  {2, 2, "GUIPROGRESSBAR", cmd_guiprogressbar},
-  {2, 2, "GUISCROLLBAR", cmd_guiscrollbar},
-  {2, 2, "GUISCROLLPANEL", cmd_guiscrollpanel},
+  {4, 4, "GUIMESSAGEBOX", cmd_guimessagebox},
+  {6, 6, "GUIPROGRESSBAR", cmd_guiprogressbar},
+  {4, 4, "GUISCROLLBAR", cmd_guiscrollbar},
+  {3, 3, "GUISCROLLPANEL", cmd_guiscrollpanel},
   {6, 6, "GUISLIDER", cmd_guislider},
   {6, 6, "GUISLIDERBAR", cmd_guisliderbar},
-  {2, 2, "GUISPINNER", cmd_guispinner},
-  {2, 2, "GUITEXTBOX", cmd_guitextbox},
-  {2, 2, "GUITEXTBOXMULTI", cmd_guitextboxmulti},
+  {6, 6, "GUISPINNER", cmd_guispinner},
+  {4, 4, "GUITEXTBOX", cmd_guitextbox},
+  {4, 4, "GUITEXTBOXMULTI", cmd_guitextboxmulti},
   {5, 5, "GUITEXTINPUTBOX", cmd_guitextinputbox},
   {3, 3, "GUITOGGLE", cmd_guitoggle},
   {3, 3, "GUITOGGLEGROUP", cmd_guitogglegroup},
@@ -5079,7 +4859,6 @@ FUNC_SIG lib_proc[] = {
   {1, 1, "STOPSOUND", cmd_stopsound},
   {0, 0, "STOPSOUNDMULTI", cmd_stopsoundmulti},
   {1, 1, "TAKESCREENSHOT", cmd_takescreenshot},
-  //{3, 3, "TEXTAPPEND", cmd_textappend},
   {0, 0, "TOGGLEFULLSCREEN", cmd_togglefullscreen},
   {0, 0, "TOGGLEVRMODE", cmd_togglevrmode},
   {2, 2, "TRACELOG", cmd_tracelog},
