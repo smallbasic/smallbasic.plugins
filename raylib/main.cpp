@@ -11,6 +11,7 @@
 
 #include <raylib/raylib/src/raylib.h>
 #include <raygui/src/raygui.h>
+#include <raylib/src/physac.h>
 #include <GLFW/glfw3.h>
 #include <cstring>
 #include <unordered_map>
@@ -24,6 +25,7 @@ std::unordered_map<int, Font> _fontMap;
 std::unordered_map<int, Image> _imageMap;
 std::unordered_map<int, Model> _modelMap;
 std::unordered_map<int, Music> _musicMap;
+std::unordered_map<int, PhysicsBody> _physicsMap;
 std::unordered_map<int, RenderTexture2D> _renderMap;
 std::unordered_map<int, Sound> _soundMap;
 std::unordered_map<int, Texture2D> _textureMap;
@@ -354,6 +356,22 @@ static int get_model_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   return result;
 }
 
+static int get_physics_body_id(int argc, slib_par_t *params, int arg, var_t *retval) {
+  int result = -1;
+  if (is_param_map(argc, params, arg)) {
+    // the passed in variable is a map
+    int id = map_get_int(params[arg].var_p, mapID, -1);
+    if (id != -1 && _physicsMap.find(id) != _physicsMap.end()) {
+      // the map contained an ID field with a live value
+      result = id;
+    }
+  }
+  if (result == -1) {
+    error(retval, "PhysicsBody not found");
+  }
+  return result;
+}
+
 static int get_render_texture_id(int argc, slib_par_t *params, int n) {
   int result = 0;
   if (is_param_map(argc, params, n)) {
@@ -405,6 +423,12 @@ static void v_setvec3(var_t *var, Vector3 &vec3) {
   v_setreal(map_add_var(var, "x", 0), vec3.x);
   v_setreal(map_add_var(var, "y", 0), vec3.y);
   v_setreal(map_add_var(var, "z", 0), vec3.z);
+}
+
+static void v_setphysics(var_t *var, PhysicsBody &physics) {
+  map_init(var);
+  //v_setreal(map_add_var(var, "x", 0), vec2.x);
+  //v_setreal(map_add_var(var, "y", 0), vec2.y);
 }
 
 static int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
@@ -2051,11 +2075,6 @@ static int cmd_closewindow(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_decoratewindow(int argc, slib_par_t *params, var_t *retval) {
-  DecorateWindow();
-  return 1;
-}
-
 static int cmd_disablecursor(int argc, slib_par_t *params, var_t *retval) {
   DisableCursor();
   return 1;
@@ -2896,11 +2915,6 @@ static int cmd_getwindowhandle(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_hidecursor(int argc, slib_par_t *params, var_t *retval) {
   HideCursor();
-  return 1;
-}
-
-static int cmd_hidewindow(int argc, slib_par_t *params, var_t *retval) {
-  HideWindow();
   return 1;
 }
 
@@ -3840,16 +3854,6 @@ static int cmd_tracelog(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_undecoratewindow(int argc, slib_par_t *params, var_t *retval) {
-  UndecorateWindow();
-  return 1;
-}
-
-static int cmd_unhidewindow(int argc, slib_par_t *params, var_t *retval) {
-  UnhideWindow();
-  return 1;
-}
-
 static int cmd_unloadfont(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_font_id(argc, params, 0, retval);
@@ -4480,6 +4484,186 @@ static int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
+static int cmd_createphysicsbodycircle(int argc, slib_par_t *params, var_t *retval) {
+  auto pos = get_param_vec2(argc, params, 0);
+  auto radius = get_param_num(argc, params, 1, 0);
+  auto density = get_param_num(argc, params, 2, 0);
+  auto fnResult = CreatePhysicsBodyCircle(pos, radius, density);
+  v_setphysics(retval, fnResult);
+  return 1;
+}
+
+static int cmd_createphysicsbodypolygon(int argc, slib_par_t *params, var_t *retval) {
+  auto pos = get_param_vec2(argc, params, 0);
+  auto radius = get_param_num(argc, params, 1, 0);
+  auto sides = get_param_int(argc, params, 2, 0);
+  auto density = get_param_num(argc, params, 3, 0);
+  auto fnResult = CreatePhysicsBodyPolygon(pos, radius, sides, density);
+  v_setphysics(retval, fnResult);
+  return 1;
+}
+
+static int cmd_createphysicsbodyrectangle(int argc, slib_par_t *params, var_t *retval) {
+  auto pos = get_param_vec2(argc, params, 0);
+  auto width = get_param_num(argc, params, 1, 0);
+  auto height = get_param_num(argc, params, 2, 0);
+  auto density = get_param_num(argc, params, 3, 0);
+  auto fnResult = CreatePhysicsBodyRectangle(pos, width, height, density);
+  v_setphysics(retval, fnResult);
+  return 1;
+}
+
+static int cmd_getphysicsbodiescount(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetPhysicsBodiesCount();
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+static int cmd_getphysicsbody(int argc, slib_par_t *params, var_t *retval) {
+  auto index = get_param_int(argc, params, 0, 0);
+  auto fnResult = GetPhysicsBody(index);
+  v_setphysics(retval, fnResult);
+  return 1;
+}
+
+static int cmd_getphysicsshapetype(int argc, slib_par_t *params, var_t *retval) {
+  auto index = get_param_int(argc, params, 0, 0);
+  auto fnResult = GetPhysicsShapeType(index);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+static int cmd_getphysicsshapevertex(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto vertex = get_param_int(argc, params, 1, 0);
+    auto fnResult = GetPhysicsShapeVertex(_physicsMap.at(id), vertex);
+    v_setvec2(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_getphysicsshapeverticescount(int argc, slib_par_t *params, var_t *retval) {
+  auto index = get_param_int(argc, params, 0, 0);
+  auto fnResult = GetPhysicsShapeVerticesCount(index);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+static int cmd_isphysicsenabled(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = IsPhysicsEnabled();
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+static int cmd_physicsshapetype(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = PhysicsShapeType();
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+static int cmd_closephysics(int argc, slib_par_t *params, var_t *retval) {
+  ClosePhysics();
+  return 1;
+}
+
+static int cmd_destroyphysicsbody(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    DestroyPhysicsBody(_physicsMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_initphysics(int argc, slib_par_t *params, var_t *retval) {
+  InitPhysics();
+  return 1;
+}
+
+static int cmd_physicsaddforce(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto force = get_param_vec2(argc, params, 1);
+    PhysicsAddForce(_physicsMap.at(id), force);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_physicsaddtorque(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto amount = get_param_num(argc, params, 1, 0);
+    PhysicsAddTorque(_physicsMap.at(id), amount);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_physicsshatter(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto position = get_param_vec2(argc, params, 1);
+    auto force = get_param_num(argc, params, 2, 0);
+    PhysicsShatter(_physicsMap.at(id), position, force);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_resetphysics(int argc, slib_par_t *params, var_t *retval) {
+  ResetPhysics();
+  return 1;
+}
+
+static int cmd_runphysicsstep(int argc, slib_par_t *params, var_t *retval) {
+  RunPhysicsStep();
+  return 1;
+}
+
+static int cmd_setphysicsbodyrotation(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto radians = get_param_num(argc, params, 1, 0);
+    SetPhysicsBodyRotation(_physicsMap.at(id), radians);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_setphysicsgravity(int argc, slib_par_t *params, var_t *retval) {
+  auto x = get_param_num(argc, params, 0, 0);
+  auto y = get_param_num(argc, params, 1, 0);
+  SetPhysicsGravity(x, y);
+  return 1;
+}
+
+static int cmd_setphysicstimestep(int argc, slib_par_t *params, var_t *retval) {
+  auto delta = get_param_int(argc, params, 0, 0);
+  SetPhysicsTimeStep(delta);
+  return 1;
+}
+
 FUNC_SIG lib_func[] = {
   {1, 1, "CHANGEDIRECTORY", cmd_changedirectory},
   {2, 2, "CHECKCOLLISIONBOXES", cmd_checkcollisionboxes},
@@ -4701,6 +4885,16 @@ FUNC_SIG lib_func[] = {
   {3, 3, "GUITOGGLEGROUP", cmd_guitogglegroup},
   {6, 6, "GUIVALUEBOX", cmd_guivaluebox},
   {2, 2, "GUIWINDOWBOX", cmd_guiwindowbox},
+  {3, 3, "CREATEPHYSICSBODYCIRCLE", cmd_createphysicsbodycircle},
+  {4, 4, "CREATEPHYSICSBODYPOLYGON", cmd_createphysicsbodypolygon},
+  {4, 4, "CREATEPHYSICSBODYRECTANGLE", cmd_createphysicsbodyrectangle},
+  {0, 0, "GETPHYSICSBODIESCOUNT", cmd_getphysicsbodiescount},
+  {1, 1, "GETPHYSICSBODY", cmd_getphysicsbody},
+  {1, 1, "GETPHYSICSSHAPETYPE", cmd_getphysicsshapetype},
+  {2, 2, "GETPHYSICSSHAPEVERTEX", cmd_getphysicsshapevertex},
+  {1, 1, "GETPHYSICSSHAPEVERTICESCOUNT", cmd_getphysicsshapeverticescount},
+  {0, 0, "ISPHYSICSENABLED", cmd_isphysicsenabled},
+  {0, 0, "PHYSICSSHAPETYPE", cmd_physicsshapetype},
 };
 
 FUNC_SIG lib_proc[] = {
@@ -4719,7 +4913,6 @@ FUNC_SIG lib_proc[] = {
   //{1, 1, "CLOSEAUDIOSTREAM", cmd_closeaudiostream},
   {0, 0, "CLOSEVRSIMULATOR", cmd_closevrsimulator},
   {0, 0, "CLOSEWINDOW", cmd_closewindow},
-  {0, 0, "DECORATEWINDOW", cmd_decoratewindow},
   {0, 0, "DISABLECURSOR", cmd_disablecursor},
   //{5, 5, "DRAWBILLBOARD", cmd_drawbillboard},
   //{6, 6, "DRAWBILLBOARDREC", cmd_drawbillboardrec},
@@ -4812,7 +5005,6 @@ FUNC_SIG lib_proc[] = {
   //{1, 1, "GENTEXTUREMIPMAPS", cmd_gentexturemipmaps},
   {0, 0, "GETWINDOWHANDLE", cmd_getwindowhandle},
   {0, 0, "HIDECURSOR", cmd_hidecursor},
-  {0, 0, "HIDEWINDOW", cmd_hidewindow},
   //{3, 3, "IMAGEALPHACLEAR", cmd_imagealphaclear},
   //{2, 2, "IMAGEALPHACROP", cmd_imagealphacrop},
   //{2, 2, "IMAGEALPHAMASK", cmd_imagealphamask},
@@ -4925,8 +5117,6 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "TOGGLEFULLSCREEN", cmd_togglefullscreen},
   {0, 0, "TOGGLEVRMODE", cmd_togglevrmode},
   {2, 2, "TRACELOG", cmd_tracelog},
-  {0, 0, "UNDECORATEWINDOW", cmd_undecoratewindow},
-  {0, 0, "UNHIDEWINDOW", cmd_unhidewindow},
   {1, 1, "UNLOADFONT", cmd_unloadfont},
   {1, 1, "UNLOADIMAGE", cmd_unloadimage},
   //{1, 1, "UNLOADMATERIAL", cmd_unloadmaterial},
@@ -4970,6 +5160,17 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "GUIUNLOCK", cmd_guiunlock},
   {0, 0, "POLLEVENTS", cmd_poll_events},
   {0, 1, "WAITEVENTS", cmd_wait_events},
+  {0, 0, "CLOSEPHYSICS", cmd_closephysics},
+  {1, 1, "DESTROYPHYSICSBODY", cmd_destroyphysicsbody},
+  {0, 0, "INITPHYSICS", cmd_initphysics},
+  {2, 2, "PHYSICSADDFORCE", cmd_physicsaddforce},
+  {2, 2, "PHYSICSADDTORQUE", cmd_physicsaddtorque},
+  {3, 3, "PHYSICSSHATTER", cmd_physicsshatter},
+  {0, 0, "RESETPHYSICS", cmd_resetphysics},
+  {0, 0, "RUNPHYSICSSTEP", cmd_runphysicsstep},
+  {2, 2, "SETPHYSICSBODYROTATION", cmd_setphysicsbodyrotation},
+  {2, 2, "SETPHYSICSGRAVITY", cmd_setphysicsgravity},
+  {1, 1, "SETPHYSICSTIMESTEP", cmd_setphysicstimestep},
 };
 
 int sblib_proc_count() {

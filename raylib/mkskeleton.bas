@@ -39,25 +39,20 @@ end
 func_api = "API lib_func[] = {"
 funcs = ""
 for fun in skelton("func")
-  funcs += NL + "int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
-  funcs += NL + "  int result = (argc == " + len(fun.args) + ");"
-  funcs += NL + "  if (result) {"
+  funcs += NL + "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
   i = 0
   args = ""
   commented = iff(lower(left(fun.name, 2)) == "is", "", "//")
   'if (len(fun.args) < 4) then commented = ""
   for a in fun.args
-    funcs += NL + "    " + commented + "auto " + a + " = " + get_param_name(a) + "(argc, params, " + i + ", 0);"
+    funcs += NL + "  " + commented + "auto " + a + " = " + get_param_name(a) + "(argc, params, " + i + ", 0);"
     if (i > 0) then args += ", "
     args += a
     i++
   next a
-  funcs += NL + "    " + commented + "auto fnResult = " + fun.name + "(" + args + ");"
-  funcs += NL + "    " + commented + "v_setint(retval, fnResult);"
-  funcs += NL + "  } else {"
-  funcs += NL + "    error(retval, \"" + fun.name + "\", " + len(fun.args) + ");"
-  funcs += NL + "  }"
-  funcs += NL + "  return result;"
+  funcs += NL + "  " + commented + "auto fnResult = " + fun.name + "(" + args + ");"
+  funcs += NL + "  " + commented + "v_setint(retval, fnResult);"
+  funcs += NL + "  return 1;"
   funcs += NL + "}" + NL
   func_api += NL + "  " + commented + "{" + len(fun.args) + ", " + len(fun.args) + ", \"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + ", {-1}},"
 next fun
@@ -65,14 +60,12 @@ func_api += NL + "};" + NL
 
 proc_api = "API lib_proc[] = {"
 for proc in skelton("sub")
-  funcs += NL + "int cmd_" + lower(proc.name) + "(int argc, slib_par_t *params, var_t *retval) {"
-  funcs += NL + "  int result = (argc == " + len(proc.args) + ");"
-  funcs += NL + "  if (result) {"
+  funcs += NL + "static int cmd_" + lower(proc.name) + "(int argc, slib_par_t *params, var_t *retval) {"
   i = 0
   args = ""
   commented = iff(len(fun.args) < 1, "", "//")
   for a in proc.args
-    funcs += NL + "    " + commented + " auto " + a + " = " + get_param_name(a) + "(argc, params, " + i + ", 0);"
+    funcs += NL + "  " + commented + " auto " + a + " = " + get_param_name(a) + "(argc, params, " + i + ", 0);"
     if (i > 0) then args += ", "
     args += a
     i++
@@ -84,10 +77,7 @@ for proc in skelton("sub")
     funcs += NL + "    " + commented + " " + proc.name + "(" + args + ");"
     proc_api += NL + "  " + commented + " {" + len(proc.args) + ", " + len(proc.args) + ", \"" + upper(proc.name) + "\", cmd_" + lower(proc.name) + ", {-1}},"
   endif
-  funcs += NL + "  } else {"
-  funcs += NL + "    error(retval, \"" + proc.name + "\", " + len(proc.args) + ");"
-  funcs += NL + "  }"
-  funcs += NL + "  return result;"
+  funcs += NL + "  return 1;"
   funcs += NL + "}" + NL
 next proc
 proc_api += NL + "};" + NL
