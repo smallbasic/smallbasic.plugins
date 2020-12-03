@@ -37,8 +37,8 @@ void error(var_p_t var, const char *text) {
   v_setstr(var, message);
 }
 
-float get_num(var_p_t var) {
-  float result;
+var_num_t get_num(var_p_t var) {
+  var_num_t result;
   switch (var->type) {
   case V_INT:
     result = var->v.i;
@@ -408,12 +408,12 @@ const char *get_param_str_field(int argc, slib_par_t *params, int n, const char 
   return result;
 }
 
-float get_map_num(var_p_t map, const char *name) {
+var_num_t get_map_num(var_p_t map, const char *name) {
   var_p_t var = map_get(map, name);
   return var != nullptr ? get_num(var) : 0;
 }
 
-float get_array_elem_num(var_p_t array, int index) {
+var_num_t get_array_elem_num(var_p_t array, int index) {
   float result;
   int size = v_asize(array);
   if (index >= 0 && index < size) {

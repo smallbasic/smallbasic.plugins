@@ -34,6 +34,10 @@ static bool is_array(var_p_t var, uint32_t size) {
   return var != nullptr && v_is_type(var, V_ARRAY) && v_asize(var) == size;
 }
 
+static bool is_map(var_p_t var) {
+  return var != nullptr && v_is_type(var, V_MAP);
+}
+
 static Color get_param_color(int argc, slib_par_t *params, int n) {
   Color result;
   if (n >= 0 && n < argc && params[n].var_p->type == V_INT) {
@@ -92,6 +96,55 @@ static Vector2 get_param_vec2(int argc, slib_par_t *params, int n) {
   return result;
 }
 
+static Vector2 get_array_elem_vec2(var_p_t array, int index) {
+  Vector2 result;
+  int size = v_asize(array);
+  if (index >= 0 && index < size) {
+    var_p_t elem = v_elem(array, index);
+    if (elem->type == V_ARRAY) {
+      result.x = get_array_elem_num(elem, 0);
+      result.y = get_array_elem_num(elem, 1);
+    }
+  }
+  return result;
+}
+
+static Vector2 get_map_vec2(var_p_t map, const char *name) {
+  Vector2 result;
+  var_p_t array = map_get(map, name);
+  if (is_array(array, 2)) {
+    result.x = get_array_elem_num(array, 0);
+    result.y = get_array_elem_num(array, 1);
+  } else if (is_map(array)) {
+    var_p_t var = map_get(map, name);
+    result.x = get_map_num(var, "x");
+    result.y = get_map_num(var, "y");
+  } else {
+    TraceLog(LOG_FATAL, "Vector2 not found");
+  }
+  return result;
+}
+
+static Camera2D get_camera_2d(int argc, slib_par_t *params, int n) {
+  Camera2D result;
+  if (is_param_array(argc, params, n)) {
+    var_p_t array = params[n].var_p;
+    result.offset = get_array_elem_vec2(array, 0);
+    result.target = get_array_elem_vec2(array, 1);
+    result.rotation = get_array_elem_num(array, 2);
+    result.zoom = get_array_elem_num(array, 3);
+  } else if (is_param_map(argc, params, n)) {
+    var_p_t map = params[n].var_p;
+    result.offset = get_map_vec2(map, "offset");
+    result.target = get_map_vec2(map, "target");
+    result.rotation = get_map_num(map, "rotation");
+    result.zoom = get_map_num(map, "zoom");
+  } else {
+    TraceLog(LOG_FATAL, "Camera2D not found");
+  }
+  return result;
+}
+
 static Vector3 get_param_vec3(int argc, slib_par_t *params, int n) {
   Vector3 result;
   if (is_param_map(argc, params, n)) {
@@ -131,6 +184,10 @@ static Vector3 get_map_vec3(var_p_t map, const char *name) {
     result.x = get_array_elem_num(array, 0);
     result.y = get_array_elem_num(array, 1);
     result.z = get_array_elem_num(array, 2);
+  } else if (is_map(array)) {
+    result.x = get_map_num(array, "x");
+    result.y = get_map_num(array, "y");
+    result.z = get_map_num(array, "z");
   } else {
     TraceLog(LOG_FATAL, "Vector3 not found");
   }
@@ -343,6 +400,13 @@ static void v_setvec2(var_t *var, Vector2 &vec2) {
   v_setreal(map_add_var(var, "y", 0), vec2.y);
 }
 
+static void v_setvec3(var_t *var, Vector3 &vec3) {
+  map_init(var);
+  v_setreal(map_add_var(var, "x", 0), vec3.x);
+  v_setreal(map_add_var(var, "y", 0), vec3.y);
+  v_setreal(map_add_var(var, "z", 0), vec3.z);
+}
+
 static int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
   auto dir = get_param_str(argc, params, 0, NULL);
   auto fnResult = ChangeDirectory(dir);
@@ -466,28 +530,28 @@ static int cmd_coloralpha(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_coloralphablend(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto src = get_param_str(argc, params, 1, NULL);
-  // auto tint = get_param_color(argc, params, 2);
-  // auto fnResult = ColorAlphaBlend(dst, src, tint);
-  // v_setint(retval, fnResult);
+static int cmd_coloralphablend(int argc, slib_par_t *params, var_t *retval) {
+  auto dst = get_param_color(argc, params, 0);
+  auto src = get_param_color(argc, params, 1);
+  auto tint = get_param_color(argc, params, 2);
+  auto fnResult = ColorAlphaBlend(dst, src, tint);
+  v_setcolor(retval, fnResult);
   return 1;
 }
 
-int cmd_colorfromhsv(int argc, slib_par_t *params, var_t *retval) {
-  // auto hue = get_param_str(argc, params, 0, NULL);
-  // auto saturation = get_param_str(argc, params, 1, NULL);
-  // auto value = get_param_num(argc, params, 2, 0);
-  // auto fnResult = ColorFromHSV(hue, saturation, value);
-  // v_setint(retval, fnResult);
+static int cmd_colorfromhsv(int argc, slib_par_t *params, var_t *retval) {
+  auto hue = get_param_num(argc, params, 0, 0);
+  auto saturation = get_param_num(argc, params, 1, 0);
+  auto value = get_param_num(argc, params, 2, 0);
+  auto fnResult = ColorFromHSV(hue, saturation, value);
+  v_setcolor(retval, fnResult);
   return 1;
 }
 
-int cmd_colortohsv(int argc, slib_par_t *params, var_t *retval) {
-  // auto color = get_param_color(argc, params, 0);
-  // auto fnResult = ColorToHSV(color);
-  // v_setint(retval, fnResult);
+static int cmd_colortohsv(int argc, slib_par_t *params, var_t *retval) {
+  auto color = get_param_color(argc, params, 0);
+  auto fnResult = ColorToHSV(color);
+  v_setvec3(retval, fnResult);
   return 1;
 }
 
@@ -1123,11 +1187,11 @@ static int cmd_getprevdirectorypath(int argc, slib_par_t *params, var_t *retval)
   return 1;
 }
 
-int cmd_getrandomvalue(int argc, slib_par_t *params, var_t *retval) {
-  // auto min = get_param_str(argc, params, 0, NULL);
-  // auto max = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GetRandomValue(min, max);
-  // v_setint(retval, fnResult);
+static int cmd_getrandomvalue(int argc, slib_par_t *params, var_t *retval) {
+  auto min = get_param_int(argc, params, 0, 0);
+  auto max = get_param_int(argc, params, 1, 0);
+  auto fnResult = GetRandomValue(min, max);
+  v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1143,11 +1207,11 @@ static int cmd_getscreenheight(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_getscreentoworld2d(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_vec3(argc, params, 0);
-  // auto camera = get_camera_3d(argc, params, 1, NULL);
-  // auto fnResult = GetScreenToWorld2D(position, camera);
-  // v_setint(retval, fnResult);
+static int cmd_getscreentoworld2d(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec2(argc, params, 0);
+  auto camera = get_camera_2d(argc, params, 1);
+  auto fnResult = GetScreenToWorld2D(position, camera);
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
@@ -1913,9 +1977,8 @@ static int cmd_begindrawing(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_beginmode2d(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_camera_3d(argc, params, 0, NULL);
-  // BeginMode2D(camera);
+static int cmd_beginmode2d(int argc, slib_par_t *params, var_t *retval) {
+  BeginMode2D(get_camera_2d(argc, params, 0));
   return 1;
 }
 
@@ -4432,9 +4495,9 @@ FUNC_SIG lib_func[] = {
   {2, 2, "CHECKCOLLISIONRECS", cmd_checkcollisionrecs},
   {4, 4, "CHECKCOLLISIONSPHERES", cmd_checkcollisionspheres},
   {2, 2, "COLORALPHA", cmd_coloralpha},
-  //{3, 3, "COLORALPHABLEND", cmd_coloralphablend},
-  //{3, 3, "COLORFROMHSV", cmd_colorfromhsv},
-  //{1, 1, "COLORTOHSV", cmd_colortohsv},
+  {3, 3, "COLORALPHABLEND", cmd_coloralphablend},
+  {3, 3, "COLORFROMHSV", cmd_colorfromhsv},
+  {1, 1, "COLORTOHSV", cmd_colortohsv},
   //{3, 3, "COMPRESSDATA", cmd_compressdata},
   //{3, 3, "DECOMPRESSDATA", cmd_decompressdata},
   {2, 2, "FADE", cmd_fade},
@@ -4512,10 +4575,10 @@ FUNC_SIG lib_func[] = {
   //{2, 2, "GETPIXELCOLOR", cmd_getpixelcolor},
   //{3, 3, "GETPIXELDATASIZE", cmd_getpixeldatasize},
   {1, 1, "GETPREVDIRECTORYPATH", cmd_getprevdirectorypath},
-  //{2, 2, "GETRANDOMVALUE", cmd_getrandomvalue},
+  {2, 2, "GETRANDOMVALUE", cmd_getrandomvalue},
   //{0, 0, "GETSCREENDATA", cmd_getscreendata},
   {0, 0, "GETSCREENHEIGHT", cmd_getscreenheight},
-  //{2, 2, "GETSCREENTOWORLD2D", cmd_getscreentoworld2d},
+  {2, 2, "GETSCREENTOWORLD2D", cmd_getscreentoworld2d},
   {0, 0, "GETSCREENWIDTH", cmd_getscreenwidth},
   //{0, 0, "GETSHADERDEFAULT", cmd_getshaderdefault},
   {2, 2, "GETSHADERLOCATION", cmd_getshaderlocation},
@@ -4643,7 +4706,7 @@ FUNC_SIG lib_func[] = {
 FUNC_SIG lib_proc[] = {
   {1, 1, "BEGINBLENDMODE", cmd_beginblendmode},
   {0, 0, "BEGINDRAWING", cmd_begindrawing},
-  //{1, 1, "BEGINMODE2D", cmd_beginmode2d},
+  {1, 1, "BEGINMODE2D", cmd_beginmode2d},
   {1, 1, "BEGINMODE3D", cmd_beginmode3d},
   {4, 4, "BEGINSCISSORMODE", cmd_beginscissormode},
   {1, 1, "BEGINSHADERMODE", cmd_beginshadermode},
