@@ -431,6 +431,18 @@ static void v_setphysics(var_t *var, PhysicsBody &physics) {
   //v_setreal(map_add_var(var, "y", 0), vec2.y);
 }
 
+static void v_setshader(var_t *var, Shader &shader) {
+  map_init(var);
+  v_setint(map_add_var(var, "locs", 0), (var_int_t)shader.locs);
+  v_setint(map_add_var(var, mapID, 0), shader.id);
+}
+
+static void v_settexture2d(var_t *var, Texture2D &texture) {
+  int id = ++_nextId;
+  _textureMap[id] = texture;
+  v_setrect(var, texture.width, texture.height, id);
+}
+
 static int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
   auto dir = get_param_str(argc, params, 0, NULL);
   auto fnResult = ChangeDirectory(dir);
@@ -576,24 +588,6 @@ static int cmd_colortohsv(int argc, slib_par_t *params, var_t *retval) {
   auto color = get_param_color(argc, params, 0);
   auto fnResult = ColorToHSV(color);
   v_setvec3(retval, fnResult);
-  return 1;
-}
-
-int cmd_compressdata(int argc, slib_par_t *params, var_t *retval) {
-  // auto data = get_param_str(argc, params, 0, NULL);
-  // auto dataLength = get_param_str(argc, params, 1, NULL);
-  // auto compDataLength = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = CompressData(data, dataLength, compDataLength);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_decompressdata(int argc, slib_par_t *params, var_t *retval) {
-  // auto compData = get_param_str(argc, params, 0, NULL);
-  // auto compDataLength = get_param_str(argc, params, 1, NULL);
-  // auto dataLength = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = DecompressData(compData, compDataLength, dataLength);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -841,14 +835,14 @@ int cmd_gentextureprefilter(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_getcameramatrix(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_camera_3d(argc, params, 0, NULL);
+  // auto camera = get_camera_3d(argc, params, 0);
   // auto fnResult = GetCameraMatrix(camera);
   // v_setint(retval, fnResult);
   return 1;
 }
 
 int cmd_getcameramatrix2d(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_camera_3d(argc, params, 0, NULL);
+  // auto camera = get_camera_3d(argc, params, 0);
   // auto fnResult = GetCameraMatrix2D(camera);
   // v_setint(retval, fnResult);
   return 1;
@@ -857,21 +851,6 @@ int cmd_getcameramatrix2d(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetClipboardText();
   v_setstr(retval, fnResult);
-  return 1;
-}
-
-int cmd_getcodepoints(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto count = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GetCodepoints(text, count);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getcodepointscount(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetCodepointsCount(text);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -979,9 +958,9 @@ static int cmd_getgesturedragangle(int argc, slib_par_t *params, var_t *retval) 
   return 1;
 }
 
-int cmd_getgesturedragvector(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetGestureDragVector();
-  // v_setint(retval, fnResult);
+static int cmd_getgesturedragvector(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetGestureDragVector();
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
@@ -997,9 +976,9 @@ static int cmd_getgesturepinchangle(int argc, slib_par_t *params, var_t *retval)
   return 1;
 }
 
-int cmd_getgesturepinchvector(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetGesturePinchVector();
-  // v_setint(retval, fnResult);
+static int cmd_getgesturepinchvector(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetGesturePinchVector();
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
@@ -1030,13 +1009,6 @@ static int cmd_getimagedata(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
-}
-
-int cmd_getimagedatanormalized(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetImageDataNormalized(image);
-  // v_setint(retval, fnResult);
-  return 1;
 }
 
 int cmd_getimagepalette(int argc, slib_par_t *params, var_t *retval) {
@@ -1179,31 +1151,6 @@ static int cmd_getmusictimeplayed(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_getnextcodepoint(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto bytesProcessed = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GetNextCodepoint(text, bytesProcessed);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getpixelcolor(int argc, slib_par_t *params, var_t *retval) {
-  // auto srcPtr = get_param_str(argc, params, 0, NULL);
-  // auto format = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GetPixelColor(srcPtr, format);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getpixeldatasize(int argc, slib_par_t *params, var_t *retval) {
-  // auto width = get_param_str(argc, params, 0, NULL);
-  // auto height = get_param_str(argc, params, 1, NULL);
-  // auto format = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = GetPixelDataSize(width, height, format);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_getprevdirectorypath(int argc, slib_par_t *params, var_t *retval) {
   auto dirPath = get_param_str(argc, params, 0, NULL);
   auto fnResult = GetPrevDirectoryPath(dirPath);
@@ -1245,9 +1192,9 @@ static int cmd_getscreenwidth(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_getshaderdefault(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetShaderDefault();
-  // v_setint(retval, fnResult);
+static int cmd_getshaderdefault(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetShaderDefault();
+  v_setshader(retval, fnResult);
   return 1;
 }
 
@@ -1267,15 +1214,15 @@ static int cmd_getshaderlocationattrib(int argc, slib_par_t *params, var_t *retv
   return 1;
 }
 
-int cmd_getshapestexture(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetShapesTexture();
-  // v_setint(retval, fnResult);
+static int cmd_getshapestexture(int argc, slib_par_t *params, var_t *retval) {
+  auto texture = GetShapesTexture();
+  v_settexture2d(retval, texture);
   return 1;
 }
 
-int cmd_getshapestexturerec(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetShapesTextureRec();
-  // v_setint(retval, fnResult);
+static int cmd_getshapestexturerec(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetShapesTextureRec();
+  v_setrect(retval, fnResult);
   return 1;
 }
 
@@ -1300,9 +1247,9 @@ static int cmd_gettexturedata(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_gettexturedefault(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetTextureDefault();
-  // v_setint(retval, fnResult);
+static int cmd_gettexturedefault(int argc, slib_par_t *params, var_t *retval) {
+  auto texture = GetTextureDefault();
+  v_settexture2d(retval, texture);
   return 1;
 }
 
@@ -1318,10 +1265,10 @@ static int cmd_gettouchpointscount(int argc, slib_par_t *params, var_t *retval) 
   return 1;
 }
 
-int cmd_gettouchposition(int argc, slib_par_t *params, var_t *retval) {
-  // auto index = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetTouchPosition(index);
-  // v_setint(retval, fnResult);
+static int cmd_gettouchposition(int argc, slib_par_t *params, var_t *retval) {
+  auto index = get_param_int(argc, params, 0, 0);
+  auto fnResult = GetTouchPosition(index);
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
@@ -1337,22 +1284,15 @@ static int cmd_gettouchy(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_getwavedata(int argc, slib_par_t *params, var_t *retval) {
-  // auto wave = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetWaveData(wave);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_getwindowposition(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetWindowPosition();
   v_setvec2(retval, fnResult);
   return 1;
 }
 
-int cmd_getwindowscaledpi(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetWindowScaleDPI();
-  // v_setint(retval, fnResult);
+static int cmd_getwindowscaledpi(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetWindowScaleDPI();
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
@@ -1423,32 +1363,9 @@ int cmd_imagetextex(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_initaudiostream(int argc, slib_par_t *params, var_t *retval) {
-  // auto sampleRate = get_param_str(argc, params, 0, NULL);
-  // auto sampleSize = get_param_str(argc, params, 1, NULL);
-  // auto channels = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = InitAudioStream(sampleRate, sampleSize, channels);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_isaudiodeviceready(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = IsAudioDeviceReady();
   v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_isaudiostreamplaying(int argc, slib_par_t *params, var_t *retval) {
-  //auto stream = get_param_int(argc, params, 0, 0);
-  //auto fnResult = IsAudioStreamPlaying(stream);
-  //v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_isaudiostreamprocessed(int argc, slib_par_t *params, var_t *retval) {
-  //auto stream = get_param_str(argc, params, 0, NULL);
-  //auto fnResult = IsAudioStreamProcessed(stream);
-  //v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1622,12 +1539,6 @@ static int cmd_issoundplaying(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmd_isvrsimulatorready(int argc, slib_par_t *params, var_t *retval) {
-  auto fnResult = IsVrSimulatorReady();
-  v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_iswindowfocused(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = IsWindowFocused();
   v_setint(retval, fnResult);
@@ -1667,21 +1578,6 @@ static int cmd_iswindowready(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_iswindowresized(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = IsWindowResized();
   v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_loadfiledata(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto bytesRead = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = LoadFileData(fileName, bytesRead);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_loadfiletext(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = LoadFileText(fileName);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1776,20 +1672,6 @@ int cmd_loadimageraw(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_loadmaterialdefault(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = LoadMaterialDefault();
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_loadmaterials(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto materialCount = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = LoadMaterials(fileName, materialCount);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
 int cmd_loadmeshes(int argc, slib_par_t *params, var_t *retval) {
   // auto fileName = get_param_str(argc, params, 0, NULL);
   // auto meshCount = get_param_str(argc, params, 1, NULL);
@@ -1855,13 +1737,10 @@ static int cmd_loadrendertexture(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_loadshader(int argc, slib_par_t *params, var_t *retval) {
   auto vsFileName = get_param_str(argc, params, 0, NULL);
   auto fsFileName = get_param_str(argc, params, 1, NULL);
-  Shader shader;
   int result;
   if (vsFileName[0] == '0' && vsFileName[1] == '\0') {
-    shader = LoadShader(0, fsFileName);
-    map_init(retval);
-    v_setint(map_add_var(retval, "locs", 0), (var_int_t)shader.locs);
-    v_setint(map_add_var(retval, mapID, 0), shader.id);
+    Shader shader = LoadShader(0, fsFileName);
+    v_setshader(retval, shader);
     result = 1;
   } else {
     result = 0;
@@ -1869,11 +1748,11 @@ static int cmd_loadshader(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_loadshadercode(int argc, slib_par_t *params, var_t *retval) {
-  // auto vsCode = get_param_str(argc, params, 0, NULL);
-  // auto fsCode = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = LoadShaderCode(vsCode, fsCode);
-  // v_setint(retval, fnResult);
+static int cmd_loadshadercode(int argc, slib_par_t *params, var_t *retval) {
+  auto vsCode = get_param_str(argc, params, 0, NULL);
+  auto fsCode = get_param_str(argc, params, 1, NULL);
+  auto fnResult = LoadShaderCode(vsCode, fsCode);
+  v_setshader(retval, fnResult);
   return 1;
 }
 
@@ -1885,26 +1764,10 @@ static int cmd_loadsound(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_loadsoundfromwave(int argc, slib_par_t *params, var_t *retval) {
-  // auto wave = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = LoadSoundFromWave(wave);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_loadstoragevalue(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_vec3(argc, params, 0);
-  // auto fnResult = LoadStorageValue(position);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_loadtexture(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
-  Texture2D texture = LoadTexture(fileName);
-  int id = ++_nextId;
-  _textureMap[id] = texture;
-  v_setrect(retval, texture.width, texture.height, id);
+  auto texture = LoadTexture(fileName);
+  v_settexture2d(retval, texture);
   return 1;
 }
 
@@ -1921,30 +1784,12 @@ static int cmd_loadtexturefromimage(int argc, slib_par_t *params, var_t *retval)
   int id = get_image_id(argc, params, 0, retval);
   if (id != -1) {
     auto texture = LoadTextureFromImage(_imageMap.at(id));
-    id = ++_nextId;
-    _textureMap[id] = texture;
-    v_setrect(retval, texture.width, texture.height, id);
+    v_settexture2d(retval, texture);
     result = 1;
   } else {
     result = 0;
   }
   return result;
-}
-
-int cmd_loadwave(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = LoadWave(fileName);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_loadwavefrommemory(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileType = get_param_str(argc, params, 0, NULL);
-  // auto fileData = get_param_str(argc, params, 1, NULL);
-  // auto dataSize = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = LoadWaveFromMemory(fileType, fileData, dataSize);
-  // v_setint(retval, fnResult);
-  return 1;
 }
 
 static int cmd_measuretext(int argc, slib_par_t *params, var_t *retval) {
@@ -1974,13 +1819,6 @@ int cmd_meshboundingbox(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_textformat(int argc, slib_par_t *params, var_t *retval) {
   v_setstr(retval, format_text(argc, params, 0));
-  return 1;
-}
-
-int cmd_wavecopy(int argc, slib_par_t *params, var_t *retval) {
-  // auto wave = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = WaveCopy(wave);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -2033,11 +1871,6 @@ static int cmd_begintexturemode(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_beginvrdrawing(int argc, slib_par_t *params, var_t *retval) {
-  BeginVrDrawing();
-  return 1;
-}
-
 static int cmd_clearbackground(int argc, slib_par_t *params, var_t *retval) {
   auto color = get_param_color(argc, params, 0);
   ClearBackground(color);
@@ -2059,17 +1892,6 @@ static int cmd_closeaudiodevice(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_closeaudiostream(int argc, slib_par_t *params, var_t *retval) {
-  // auto stream = get_param_str(argc, params, 0, NULL);
-  // CloseAudioStream(stream);
-  return 1;
-}
-
-static int cmd_closevrsimulator(int argc, slib_par_t *params, var_t *retval) {
-  CloseVrSimulator();
-  return 1;
-}
-
 static int cmd_closewindow(int argc, slib_par_t *params, var_t *retval) {
   CloseWindow();
   return 1;
@@ -2080,25 +1902,37 @@ static int cmd_disablecursor(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawbillboard(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_camera_3d(argc, params, 0, NULL);
-  // auto texture = get_param_str(argc, params, 1, NULL);
-  // auto center = get_param_str(argc, params, 2, NULL);
-  // auto size = get_param_str(argc, params, 3, NULL);
-  // auto tint = get_param_color(argc, params, 4);
-  // DrawBillboard(camera, texture, center, size, tint);
-  return 1;
+static int cmd_drawbillboard(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 1, retval);
+  if (id != -1) {
+    auto camera = get_camera_3d(argc, params, 0);
+    auto center = get_param_vec3(argc, params, 2);
+    auto size = get_param_num(argc, params, 3, 0);
+    auto tint = get_param_color(argc, params, 4);
+    DrawBillboard(camera, _textureMap.at(id), center, size, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_drawbillboardrec(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_camera_3d(argc, params, 0, NULL);
-  // auto texture = get_param_str(argc, params, 1, NULL);
-  // auto sourceRec = get_param_str(argc, params, 2, NULL);
-  // auto center = get_param_str(argc, params, 3, NULL);
-  // auto size = get_param_str(argc, params, 4, NULL);
-  // auto tint = get_param_color(argc, params, 5);
-  // DrawBillboardRec(camera, texture, sourceRec, center, size, tint);
-  return 1;
+static int cmd_drawbillboardrec(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 1, retval);
+  if (id != -1) {
+    auto camera = get_camera_3d(argc, params, 0);
+    auto sourceRec = get_param_rect(argc, params, 2);
+    auto center = get_param_vec3(argc, params, 3);
+    auto size = get_param_num(argc, params, 4, 0);
+    auto tint = get_param_color(argc, params, 5);
+    DrawBillboardRec(camera, _textureMap.at(id), sourceRec, center, size, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_drawboundingbox(int argc, slib_par_t *params, var_t *retval) {
@@ -2186,15 +2020,21 @@ static int cmd_drawcube(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawcubetexture(int argc, slib_par_t *params, var_t *retval) {
-  // auto texture = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_vec3(argc, params, 1, NULL);
-  // auto width = get_param_str(argc, params, 2, NULL);
-  // auto height = get_param_str(argc, params, 3, NULL);
-  // auto length = get_param_str(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5);
-  // DrawCubeTexture(texture, position, width, height, length, color);
-  return 1;
+static int cmd_drawcubetexture(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto position = get_param_vec3(argc, params, 1);
+    auto width = get_param_num(argc, params, 2, 0);
+    auto height = get_param_num(argc, params, 3, 0);
+    auto length = get_param_num(argc, params, 4, 0);
+    auto color = get_param_color(argc, params, 5);
+    DrawCubeTexture(_textureMap.at(id), position, width, height, length, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_drawcubev(int argc, slib_par_t *params, var_t *retval) {
@@ -2690,17 +2530,6 @@ static int cmd_drawtextureex(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_drawtexturenpatch(int argc, slib_par_t *params, var_t *retval) {
-  // auto texture = get_param_str(argc, params, 0, NULL);
-  // auto nPatchInfo = get_param_str(argc, params, 1, NULL);
-  // auto destRec = get_param_str(argc, params, 2, NULL);
-  // auto origin = get_param_str(argc, params, 3, NULL);
-  // auto rotation = get_param_str(argc, params, 4, NULL);
-  // auto tint = get_param_color(argc, params, 5);
-  // DrawTextureNPatch(texture, nPatchInfo, destRec, origin, rotation, tint);
-  return 1;
-}
-
 static int cmd_drawtexturepro(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_texture_id(argc, params, 0, retval);
@@ -2718,14 +2547,20 @@ static int cmd_drawtexturepro(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_drawtexturequad(int argc, slib_par_t *params, var_t *retval) {
-  // auto texture = get_param_str(argc, params, 0, NULL);
-  // auto tiling = get_param_str(argc, params, 1, NULL);
-  // auto offset = get_param_str(argc, params, 2, NULL);
-  // auto quad = get_param_str(argc, params, 3, NULL);
-  // auto tint = get_param_color(argc, params, 4);
-  // DrawTextureQuad(texture, tiling, offset, quad, tint);
-  return 1;
+static int cmd_drawtexturequad(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto tiling = get_param_vec2(argc, params, 1);
+    auto offset = get_param_vec2(argc, params, 2);
+    auto quad = get_param_rect(argc, params, 3);
+    auto tint = get_param_color(argc, params, 4);
+    DrawTextureQuad(_textureMap.at(id), tiling, offset, quad, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_drawtexturerec(int argc, slib_par_t *params, var_t *retval) {
@@ -2745,16 +2580,22 @@ static int cmd_drawtexturerec(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_drawtexturetiled(int argc, slib_par_t *params, var_t *retval) {
-  // auto texture = get_param_str(argc, params, 0, NULL);
-  // auto sourceRec = get_param_str(argc, params, 1, NULL);
-  // auto destRec = get_param_str(argc, params, 2, NULL);
-  // auto origin = get_param_str(argc, params, 3, NULL);
-  // auto rotation = get_param_str(argc, params, 4, NULL);
-  // auto scale = get_param_str(argc, params, 5, NULL);
-  // auto tint = get_param_color(argc, params, 6);
-  // DrawTextureTiled(texture, sourceRec, destRec, origin, rotation, scale, tint);
-  return 1;
+static int cmd_drawtexturetiled(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto sourceRec = get_param_rect(argc, params, 1);
+    auto destRec = get_param_rect(argc, params, 2);
+    auto origin = get_param_vec2(argc, params, 3);
+    auto rotation = get_param_num(argc, params, 4, 0);
+    auto scale = get_param_num(argc, params, 5, 0);
+    auto tint = get_param_color(argc, params, 6);
+    DrawTextureTiled(_textureMap.at(id), sourceRec, destRec, origin, rotation, scale, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 int cmd_drawtexturev(int argc, slib_par_t *params, var_t *retval) {
@@ -2856,11 +2697,6 @@ static int cmd_endtexturemode(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_endvrdrawing(int argc, slib_par_t *params, var_t *retval) {
-  EndVrDrawing();
-  return 1;
-}
-
 static int cmd_exportimage(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_image_id(argc, params, 0, retval);
@@ -2888,24 +2724,16 @@ int cmd_exportmesh(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_exportwave(int argc, slib_par_t *params, var_t *retval) {
-  // auto wave = get_param_str(argc, params, 0, NULL);
-  // auto fileName = get_param_str(argc, params, 1, NULL);
-  // ExportWave(wave, fileName);
-  return 1;
-}
-
-int cmd_exportwaveascode(int argc, slib_par_t *params, var_t *retval) {
-  // auto wave = get_param_str(argc, params, 0, NULL);
-  // auto fileName = get_param_str(argc, params, 1, NULL);
-  // ExportWaveAsCode(wave, fileName);
-  return 1;
-}
-
-int cmd_gentexturemipmaps(int argc, slib_par_t *params, var_t *retval) {
-  // auto texture = get_param_str(argc, params, 0, NULL);
-  // GenTextureMipmaps(texture);
-  return 1;
+static int cmd_gentexturemipmaps(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 0, retval);
+  if (id != -1) {
+    GenTextureMipmaps(&_textureMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_getwindowhandle(int argc, slib_par_t *params, var_t *retval) {
@@ -3273,11 +3101,6 @@ static int cmd_initaudiodevice(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_initvrsimulator(int argc, slib_par_t *params, var_t *retval) {
-  InitVrSimulator();
-  return 1;
-}
-
 static int cmd_initwindow(int argc, slib_par_t *params, var_t *retval) {
   auto width = get_param_int(argc, params, 0, 640);
   auto height = get_param_int(argc, params, 1, 480);
@@ -3315,12 +3138,6 @@ static int cmd_openurl(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_pauseaudiostream(int argc, slib_par_t *params, var_t *retval) {
-  // auto stream = get_param_str(argc, params, 0, NULL);
-  // PauseAudioStream(stream);
-  return 1;
-}
-
 static int cmd_pausemusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (_musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
@@ -3343,12 +3160,6 @@ static int cmd_pausesound(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
-}
-
-int cmd_playaudiostream(int argc, slib_par_t *params, var_t *retval) {
-  // auto stream = get_param_str(argc, params, 0, NULL);
-  // PlayAudioStream(stream);
-  return 1;
 }
 
 static int cmd_playmusicstream(int argc, slib_par_t *params, var_t *retval) {
@@ -3392,12 +3203,6 @@ static int cmd_restorewindow(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_resumeaudiostream(int argc, slib_par_t *params, var_t *retval) {
-  // auto stream = get_param_str(argc, params, 0, NULL);
-  // ResumeAudioStream(stream);
-  return 1;
-}
-
 static int cmd_resumemusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (_musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
@@ -3420,48 +3225,6 @@ static int cmd_resumesound(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
-}
-
-int cmd_savefiledata(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto data = get_param_str(argc, params, 1, NULL);
-  // auto bytesToWrite = get_param_str(argc, params, 2, NULL);
-  // SaveFileData(fileName, data, bytesToWrite);
-  return 1;
-}
-
-int cmd_savefiletext(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto text = get_param_str(argc, params, 1, NULL);
-  // SaveFileText(fileName, text);
-  return 1;
-}
-
-int cmd_savestoragevalue(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_vec3(argc, params, 0);
-  // auto value = get_param_num(argc, params, 1, 0);
-  // SaveStorageValue(position, value);
-  return 1;
-}
-
-int cmd_setaudiostreambuffersizedefault(int argc, slib_par_t *params, var_t *retval) {
-  // auto size = get_param_str(argc, params, 0, NULL);
-  // SetAudioStreamBufferSizeDefault(size);
-  return 1;
-}
-
-int cmd_setaudiostreampitch(int argc, slib_par_t *params, var_t *retval) {
-  // auto stream = get_param_str(argc, params, 0, NULL);
-  // auto pitch = get_param_str(argc, params, 1, NULL);
-  // SetAudioStreamPitch(stream, pitch);
-  return 1;
-}
-
-int cmd_setaudiostreamvolume(int argc, slib_par_t *params, var_t *retval) {
-  // auto stream = get_param_str(argc, params, 0, NULL);
-  // auto volume = get_param_str(argc, params, 1, NULL);
-  // SetAudioStreamVolume(stream, volume);
-  return 1;
 }
 
 int cmd_setcameraaltcontrol(int argc, slib_par_t *params, var_t *retval) {
@@ -3517,23 +3280,15 @@ static int cmd_setexitkey(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_setgesturesenabled(int argc, slib_par_t *params, var_t *retval) {
-  // auto gestureFlags = get_param_str(argc, params, 0, NULL);
-  // SetGesturesEnabled(gestureFlags);
+static int cmd_setgesturesenabled(int argc, slib_par_t *params, var_t *retval) {
+  auto gestureFlags = get_param_int(argc, params, 0, 0);
+  SetGesturesEnabled(gestureFlags);
   return 1;
 }
 
 static int cmd_setmastervolume(int argc, slib_par_t *params, var_t *retval) {
   auto volume = get_param_num(argc, params, 0, 0);
   SetMasterVolume(volume);
-  return 1;
-}
-
-int cmd_setmaterialtexture(int argc, slib_par_t *params, var_t *retval) {
-  // auto material = get_param_str(argc, params, 0, NULL);
-  // auto mapType = get_param_str(argc, params, 1, NULL);
-  // auto texture = get_param_str(argc, params, 2, NULL);
-  // SetMaterialTexture(material, mapType, texture);
   return 1;
 }
 
@@ -3560,14 +3315,6 @@ static int cmd_setmodeldiffusetexture(int argc, slib_par_t *params, var_t *retva
     result = 0;
   }
   return result;
-}
-
-int cmd_setmodelmeshmaterial(int argc, slib_par_t *params, var_t *retval) {
-  // auto model = get_param_str(argc, params, 0, NULL);
-  // auto meshId = get_param_str(argc, params, 1, NULL);
-  // auto materialId = get_param_str(argc, params, 2, NULL);
-  // SetModelMeshMaterial(model, meshId, materialId);
-  return 1;
 }
 
 static int cmd_setmousecursor(int argc, slib_par_t *params, var_t *retval) {
@@ -3633,18 +3380,24 @@ int cmd_setpixelcolor(int argc, slib_par_t *params, var_t *retval) {
 
 int cmd_setshadervaluematrix(int argc, slib_par_t *params, var_t *retval) {
   // auto shader = get_param_shader(argc, params, 0);
-  // auto uniformLoc = get_param_str(argc, params, 1, NULL);
+  // auto uniformLoc = get_param_int(argc, params, 1, 0);
   // auto mat = get_param_str(argc, params, 2, NULL);
   // SetShaderValueMatrix(shader, uniformLoc, mat);
   return 1;
 }
 
-int cmd_setshadervaluetexture(int argc, slib_par_t *params, var_t *retval) {
-  // auto shader = get_param_shader(argc, params, 0);
-  // auto uniformLoc = get_param_str(argc, params, 1, NULL);
-  // auto texture = get_param_str(argc, params, 2, NULL);
-  // SetShaderValueTexture(shader, uniformLoc, texture);
-  return 1;
+static int cmd_setshadervaluetexture(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 2, retval);
+  if (id != -1) {
+    auto shader = get_param_shader(argc, params, 0);
+    auto uniformLoc = get_param_int(argc, params, 1, 0);
+    SetShaderValueTexture(shader, uniformLoc, _textureMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_setshadervaluev(int argc, slib_par_t *params, var_t *retval) {
@@ -3675,11 +3428,17 @@ static int cmd_setshadervaluev(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_setshapestexture(int argc, slib_par_t *params, var_t *retval) {
-  // auto texture = get_param_str(argc, params, 0, NULL);
-  // auto source = get_param_str(argc, params, 1, NULL);
-  // SetShapesTexture(texture, source);
-  return 1;
+static int cmd_setshapestexture(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto source = get_param_rect(argc, params, 1);
+    SetShapesTexture(_textureMap.at(id), source);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_setsoundpitch(int argc, slib_par_t *params, var_t *retval) {
@@ -3714,24 +3473,30 @@ static int cmd_settargetfps(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_settexturefilter(int argc, slib_par_t *params, var_t *retval) {
-  // auto texture = get_param_str(argc, params, 0, NULL);
-  // auto filterMode = get_param_str(argc, params, 1, NULL);
-  // SetTextureFilter(texture, filterMode);
-  return 1;
+static int cmd_settexturefilter(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto filterMode = get_param_int(argc, params, 1, 0);
+    SetTextureFilter(_textureMap.at(id), filterMode);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_settexturewrap(int argc, slib_par_t *params, var_t *retval) {
-  // auto texture = get_param_str(argc, params, 0, NULL);
-  // auto wrapMode = get_param_str(argc, params, 1, NULL);
-  // SetTextureWrap(texture, wrapMode);
-  return 1;
-}
-
-int cmd_settracelogcallback(int argc, slib_par_t *params, var_t *retval) {
-  // auto callback = get_param_str(argc, params, 0, NULL);
-  // SetTraceLogCallback(callback);
-  return 1;
+static int cmd_settexturewrap(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto wrapMode = get_param_int(argc, params, 1, 0);
+    SetTextureWrap(_textureMap.at(id), wrapMode);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_settracelogexit(int argc, slib_par_t *params, var_t *retval) {
@@ -3743,19 +3508,6 @@ static int cmd_settracelogexit(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_settraceloglevel(int argc, slib_par_t *params, var_t *retval) {
   auto logType = get_param_int(argc, params, 0, 0);
   SetTraceLogLevel(logType);
-  return 1;
-}
-
-int cmd_setvrconfiguration(int argc, slib_par_t *params, var_t *retval) {
-  // auto info = get_param_str(argc, params, 0, NULL);
-  // auto distortion = get_param_str(argc, params, 1, NULL);
-  // SetVrConfiguration(info, distortion);
-  return 1;
-}
-
-int cmd_setwindowicon(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // SetWindowIcon(image);
   return 1;
 }
 
@@ -3794,12 +3546,6 @@ static int cmd_setwindowtitle(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_showcursor(int argc, slib_par_t *params, var_t *retval) {
   ShowCursor();
-  return 1;
-}
-
-int cmd_stopaudiostream(int argc, slib_par_t *params, var_t *retval) {
-  // auto stream = get_param_str(argc, params, 0, NULL);
-  // StopAudioStream(stream);
   return 1;
 }
 
@@ -3843,11 +3589,6 @@ static int cmd_togglefullscreen(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_togglevrmode(int argc, slib_par_t *params, var_t *retval) {
-  ToggleVrMode();
-  return 1;
-}
-
 static int cmd_tracelog(int argc, slib_par_t *params, var_t *retval) {
   auto logType = get_param_int(argc, params, 0, 0);
   TraceLog(logType, format_text(argc, params, 1));
@@ -3878,12 +3619,6 @@ static int cmd_unloadimage(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
-}
-
-int cmd_unloadmaterial(int argc, slib_par_t *params, var_t *retval) {
-  // auto material = get_param_str(argc, params, 0, NULL);
-  // UnloadMaterial(material);
-  return 1;
 }
 
 int cmd_unloadmesh(int argc, slib_par_t *params, var_t *retval) {
@@ -3970,20 +3705,6 @@ static int cmd_unloadtexture(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_unloadwave(int argc, slib_par_t *params, var_t *retval) {
-  // auto wave = get_param_str(argc, params, 0, NULL);
-  // UnloadWave(wave);
-  return 1;
-}
-
-int cmd_updateaudiostream(int argc, slib_par_t *params, var_t *retval) {
-  // auto stream = get_param_str(argc, params, 0, NULL);
-  // auto data = get_param_str(argc, params, 1, NULL);
-  // auto samplesCount = get_param_str(argc, params, 2, NULL);
-  // UpdateAudioStream(stream, data, samplesCount);
-  return 1;
-}
-
 static int cmd_updatecamera(int argc, slib_par_t *params, var_t *retval) {
   auto camera = get_camera_3d(argc, params, 0);
   UpdateCamera(&camera);
@@ -4011,20 +3732,6 @@ static int cmd_updatemusicstream(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_updatesound(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  if (_soundMap.find(get_param_int(argc, params, 0, 0)) != _soundMap.end()) {
-    //auto sound = _soundMap.at(get_param_int(argc, params, 0, 0));
-    //auto data = get_param_int(argc, params, 1, 0);
-    //auto samplesCount = get_param_int(argc, params, 2, 0);
-    //UpdateSound(sound, data, samplesCount);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
 static int cmd_updatetexture(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_texture_id(argc, params, 0, retval);
@@ -4039,37 +3746,6 @@ static int cmd_updatetexture(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
-}
-
-int cmd_updatetexturerec(int argc, slib_par_t *params, var_t *retval) {
-  // auto texture = get_param_str(argc, params, 0, NULL);
-  // auto rec = get_param_str(argc, params, 1, NULL);
-  // auto pixels = get_param_str(argc, params, 2, NULL);
-  // UpdateTextureRec(texture, rec, pixels);
-  return 1;
-}
-
-int cmd_updatevrtracking(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_camera_3d(argc, params, 0, NULL);
-  // UpdateVrTracking(camera);
-  return 1;
-}
-
-int cmd_wavecrop(int argc, slib_par_t *params, var_t *retval) {
-  // auto wave = get_param_str(argc, params, 0, NULL);
-  // auto initSample = get_param_str(argc, params, 1, NULL);
-  // auto finalSample = get_param_str(argc, params, 2, NULL);
-  // WaveCrop(wave, initSample, finalSample);
-  return 1;
-}
-
-int cmd_waveformat(int argc, slib_par_t *params, var_t *retval) {
-  // auto wave = get_param_str(argc, params, 0, NULL);
-  // auto sampleRate = get_param_str(argc, params, 1, NULL);
-  // auto sampleSize = get_param_str(argc, params, 2, NULL);
-  // auto channels = get_param_str(argc, params, 3, NULL);
-  // WaveFormat(wave, sampleRate, sampleSize, channels);
-  return 1;
 }
 
 static int cmd_guibutton(int argc, slib_par_t *params, var_t *retval) {
@@ -4682,8 +4358,6 @@ FUNC_SIG lib_func[] = {
   {3, 3, "COLORALPHABLEND", cmd_coloralphablend},
   {3, 3, "COLORFROMHSV", cmd_colorfromhsv},
   {1, 1, "COLORTOHSV", cmd_colortohsv},
-  //{3, 3, "COMPRESSDATA", cmd_compressdata},
-  //{3, 3, "DECOMPRESSDATA", cmd_decompressdata},
   {2, 2, "FADE", cmd_fade},
   {3, 3, "GENIMAGECELLULAR", cmd_genimagecellular},
   {6, 6, "GENIMAGECHECKED", cmd_genimagechecked},
@@ -4711,8 +4385,6 @@ FUNC_SIG lib_func[] = {
   //{1, 1, "GETCAMERAMATRIX", cmd_getcameramatrix},
   //{1, 1, "GETCAMERAMATRIX2D", cmd_getcameramatrix2d},
   {0, 0, "GETCLIPBOARDTEXT", cmd_getclipboardtext},
-  //{2, 2, "GETCODEPOINTS", cmd_getcodepoints},
-  //{1, 1, "GETCODEPOINTSCOUNT", cmd_getcodepointscount},
   //{2, 2, "GETCOLLISIONRAYGROUND", cmd_getcollisionrayground},
   //{2, 2, "GETCOLLISIONRAYMODEL", cmd_getcollisionraymodel},
   //{4, 4, "GETCOLLISIONRAYTRIANGLE", cmd_getcollisionraytriangle},
@@ -4728,14 +4400,13 @@ FUNC_SIG lib_func[] = {
   {1, 1, "GETGAMEPADNAME", cmd_getgamepadname},
   {0, 0, "GETGESTUREDETECTED", cmd_getgesturedetected},
   {0, 0, "GETGESTUREDRAGANGLE", cmd_getgesturedragangle},
-  //{0, 0, "GETGESTUREDRAGVECTOR", cmd_getgesturedragvector},
+  {0, 0, "GETGESTUREDRAGVECTOR", cmd_getgesturedragvector},
   {0, 0, "GETGESTUREHOLDDURATION", cmd_getgestureholdduration},
   {0, 0, "GETGESTUREPINCHANGLE", cmd_getgesturepinchangle},
-  //{0, 0, "GETGESTUREPINCHVECTOR", cmd_getgesturepinchvector},
+  {0, 0, "GETGESTUREPINCHVECTOR", cmd_getgesturepinchvector},
   //{2, 2, "GETGLYPHINDEX", cmd_getglyphindex},
   //{2, 2, "GETIMAGEALPHABORDER", cmd_getimagealphaborder},
   {1, 1, "GETIMAGEDATA", cmd_getimagedata},
-  //{1, 1, "GETIMAGEDATANORMALIZED", cmd_getimagedatanormalized},
   //{3, 3, "GETIMAGEPALETTE", cmd_getimagepalette},
   {0, 0, "GETKEYPRESSED", cmd_getkeypressed},
   //{0, 0, "GETMATRIXMODELVIEW", cmd_getmatrixmodelview},
@@ -4755,31 +4426,27 @@ FUNC_SIG lib_func[] = {
   {0, 0, "GETMOUSEY", cmd_getmousey},
   {1, 1, "GETMUSICTIMELENGTH", cmd_getmusictimelength},
   {1, 1, "GETMUSICTIMEPLAYED", cmd_getmusictimeplayed},
-  //{2, 2, "GETNEXTCODEPOINT", cmd_getnextcodepoint},
-  //{2, 2, "GETPIXELCOLOR", cmd_getpixelcolor},
-  //{3, 3, "GETPIXELDATASIZE", cmd_getpixeldatasize},
   {1, 1, "GETPREVDIRECTORYPATH", cmd_getprevdirectorypath},
   {2, 2, "GETRANDOMVALUE", cmd_getrandomvalue},
   //{0, 0, "GETSCREENDATA", cmd_getscreendata},
   {0, 0, "GETSCREENHEIGHT", cmd_getscreenheight},
   {2, 2, "GETSCREENTOWORLD2D", cmd_getscreentoworld2d},
   {0, 0, "GETSCREENWIDTH", cmd_getscreenwidth},
-  //{0, 0, "GETSHADERDEFAULT", cmd_getshaderdefault},
+  {0, 0, "GETSHADERDEFAULT", cmd_getshaderdefault},
   {2, 2, "GETSHADERLOCATION", cmd_getshaderlocation},
   {2, 2, "GETSHADERLOCATIONATTRIB", cmd_getshaderlocationattrib},
-  //{0, 0, "GETSHAPESTEXTURE", cmd_getshapestexture},
-  //{0, 0, "GETSHAPESTEXTUREREC", cmd_getshapestexturerec},
+  {0, 0, "GETSHAPESTEXTURE", cmd_getshapestexture},
+  {0, 0, "GETSHAPESTEXTUREREC", cmd_getshapestexturerec},
   {0, 0, "GETSOUNDSPLAYING", cmd_getsoundsplaying},
   {1, 1, "GETTEXTUREDATA", cmd_gettexturedata},
-  //{0, 0, "GETTEXTUREDEFAULT", cmd_gettexturedefault},
+  {0, 0, "GETTEXTUREDEFAULT", cmd_gettexturedefault},
   {0, 0, "GETTIME", cmd_gettime},
   {0, 0, "GETTOUCHPOINTSCOUNT", cmd_gettouchpointscount},
-  //{1, 1, "GETTOUCHPOSITION", cmd_gettouchposition},
+  {1, 1, "GETTOUCHPOSITION", cmd_gettouchposition},
   {0, 0, "GETTOUCHX", cmd_gettouchx},
   {0, 0, "GETTOUCHY", cmd_gettouchy},
-  //{1, 1, "GETWAVEDATA", cmd_getwavedata},
   {0, 0, "GETWINDOWPOSITION", cmd_getwindowposition},
-  //{0, 0, "GETWINDOWSCALEDPI", cmd_getwindowscaledpi},
+  {0, 0, "GETWINDOWSCALEDPI", cmd_getwindowscaledpi},
   {0, 0, "GETWORKINGDIRECTORY", cmd_getworkingdirectory},
   //{2, 2, "GETWORLDTOSCREEN", cmd_getworldtoscreen},
   //{2, 2, "GETWORLDTOSCREEN2D", cmd_getworldtoscreen2d},
@@ -4788,10 +4455,7 @@ FUNC_SIG lib_func[] = {
   //{2, 2, "IMAGEFROMIMAGE", cmd_imagefromimage},
   //{3, 3, "IMAGETEXT", cmd_imagetext},
   //{5, 5, "IMAGETEXTEX", cmd_imagetextex},
-  //{3, 3, "INITAUDIOSTREAM", cmd_initaudiostream},
   {0, 0, "ISAUDIODEVICEREADY", cmd_isaudiodeviceready},
-  //{1, 1, "ISAUDIOSTREAMPLAYING", cmd_isaudiostreamplaying},
-  //{1, 1, "ISAUDIOSTREAMPROCESSED", cmd_isaudiostreamprocessed},
   {0, 0, "ISCURSORHIDDEN", cmd_iscursorhidden},
   {0, 0, "ISCURSORONSCREEN", cmd_iscursoronscreen},
   {0, 0, "ISFILEDROPPED", cmd_isfiledropped},
@@ -4814,7 +4478,6 @@ FUNC_SIG lib_func[] = {
   {1, 1, "ISMOUSEBUTTONUP", cmd_ismousebuttonup},
   {1, 1, "ISMUSICPLAYING", cmd_ismusicplaying},
   {1, 1, "ISSOUNDPLAYING", cmd_issoundplaying},
-  {0, 0, "ISVRSIMULATORREADY", cmd_isvrsimulatorready},
   {0, 0, "ISWINDOWFOCUSED", cmd_iswindowfocused},
   {0, 0, "ISWINDOWFULLSCREEN", cmd_iswindowfullscreen},
   {0, 0, "ISWINDOWHIDDEN", cmd_iswindowhidden},
@@ -4822,8 +4485,6 @@ FUNC_SIG lib_func[] = {
   {0, 0, "ISWINDOWMINIMIZED", cmd_iswindowminimized},
   {0, 0, "ISWINDOWREADY", cmd_iswindowready},
   {0, 0, "ISWINDOWRESIZED", cmd_iswindowresized},
-  //{2, 2, "LOADFILEDATA", cmd_loadfiledata},
-  //{1, 1, "LOADFILETEXT", cmd_loadfiletext},
   {1, 1, "LOADFONT", cmd_loadfont},
   //{6, 6, "LOADFONTDATA", cmd_loadfontdata},
   {4, 4, "LOADFONTEX", cmd_loadfontex},
@@ -4833,8 +4494,6 @@ FUNC_SIG lib_func[] = {
   //{2, 2, "LOADIMAGEANIM", cmd_loadimageanim},
   //{3, 3, "LOADIMAGEFROMMEMORY", cmd_loadimagefrommemory},
   //{5, 5, "LOADIMAGERAW", cmd_loadimageraw},
-  //{0, 0, "LOADMATERIALDEFAULT", cmd_loadmaterialdefault},
-  //{2, 2, "LOADMATERIALS", cmd_loadmaterials},
   //{2, 2, "LOADMESHES", cmd_loadmeshes},
   {1, 1, "LOADMODEL", cmd_loadmodel},
   //{2, 2, "LOADMODELANIMATIONS", cmd_loadmodelanimations},
@@ -4842,20 +4501,15 @@ FUNC_SIG lib_func[] = {
   {1, 1, "LOADMUSICSTREAM", cmd_loadmusicstream},
   {2, 2, "LOADRENDERTEXTURE", cmd_loadrendertexture},
   {2, 2, "LOADSHADER", cmd_loadshader},
-  //{2, 2, "LOADSHADERCODE", cmd_loadshadercode},
+  {2, 2, "LOADSHADERCODE", cmd_loadshadercode},
   {1, 1, "LOADSOUND", cmd_loadsound},
-  {1, 1, "LOADSOUNDFROMWAVE", cmd_loadsoundfromwave},
-  //{1, 1, "LOADSTORAGEVALUE", cmd_loadstoragevalue},
   {1, 1, "LOADTEXTURE", cmd_loadtexture},
   //{2, 2, "LOADTEXTURECUBEMAP", cmd_loadtexturecubemap},
   {1, 1, "LOADTEXTUREFROMIMAGE", cmd_loadtexturefromimage},
-  //{1, 1, "LOADWAVE", cmd_loadwave},
-  //{3, 3, "LOADWAVEFROMMEMORY", cmd_loadwavefrommemory},
   {2, 2, "MEASURETEXT", cmd_measuretext},
   //{4, 4, "MEASURETEXTEX", cmd_measuretextex},
   //{1, 1, "MESHBOUNDINGBOX", cmd_meshboundingbox},
   {1, 1, "TEXTFORMAT", cmd_textformat},
-  //{1, 1, "WAVECOPY", cmd_wavecopy},
   {0, 0, "WINDOWSHOULDCLOSE", cmd_windowshouldclose},
   {2, 2, "GUIBUTTON", cmd_guibutton},
   {3, 3, "GUICHECKBOX", cmd_guicheckbox},
@@ -4905,17 +4559,14 @@ FUNC_SIG lib_proc[] = {
   {4, 4, "BEGINSCISSORMODE", cmd_beginscissormode},
   {1, 1, "BEGINSHADERMODE", cmd_beginshadermode},
   {1, 1, "BEGINTEXTUREMODE", cmd_begintexturemode},
-  {0, 0, "BEGINVRDRAWING", cmd_beginvrdrawing},
   {1, 1, "CLEARBACKGROUND", cmd_clearbackground},
   {0, 0, "CLEARDIRECTORYFILES", cmd_cleardirectoryfiles},
   {0, 0, "CLEARDROPPEDFILES", cmd_cleardroppedfiles},
   {0, 0, "CLOSEAUDIODEVICE", cmd_closeaudiodevice},
-  //{1, 1, "CLOSEAUDIOSTREAM", cmd_closeaudiostream},
-  {0, 0, "CLOSEVRSIMULATOR", cmd_closevrsimulator},
   {0, 0, "CLOSEWINDOW", cmd_closewindow},
   {0, 0, "DISABLECURSOR", cmd_disablecursor},
-  //{5, 5, "DRAWBILLBOARD", cmd_drawbillboard},
-  //{6, 6, "DRAWBILLBOARDREC", cmd_drawbillboardrec},
+  {5, 5, "DRAWBILLBOARD", cmd_drawbillboard},
+  {6, 6, "DRAWBILLBOARDREC", cmd_drawbillboardrec},
   {2, 2, "DRAWBOUNDINGBOX", cmd_drawboundingbox},
   {4, 4, "DRAWCIRCLE", cmd_drawcircle},
   {5, 5, "DRAWCIRCLE3D", cmd_drawcircle3d},
@@ -4925,7 +4576,7 @@ FUNC_SIG lib_proc[] = {
   {6, 6, "DRAWCIRCLESECTORLINES", cmd_drawcirclesectorlines},
   {3, 3, "DRAWCIRCLEV", cmd_drawcirclev},
   {5, 5, "DRAWCUBE", cmd_drawcube},
-  //{6, 6, "DRAWCUBETEXTURE", cmd_drawcubetexture},
+  {6, 6, "DRAWCUBETEXTURE", cmd_drawcubetexture},
   {3, 3, "DRAWCUBEV", cmd_drawcubev},
   {5, 5, "DRAWCUBEWIRES", cmd_drawcubewires},
   {3, 3, "DRAWCUBEWIRESV", cmd_drawcubewiresv},
@@ -4976,12 +4627,11 @@ FUNC_SIG lib_proc[] = {
   //{11, 11, "DRAWTEXTRECEX", cmd_drawtextrecex},
   {4, 4, "DRAWTEXTURE", cmd_drawtexture},
   {5, 5, "DRAWTEXTUREEX", cmd_drawtextureex},
-  //{6, 6, "DRAWTEXTURENPATCH", cmd_drawtexturenpatch},
   {6, 6, "DRAWTEXTUREPRO", cmd_drawtexturepro},
-  //{5, 5, "DRAWTEXTUREQUAD", cmd_drawtexturequad},
+  {5, 5, "DRAWTEXTUREQUAD", cmd_drawtexturequad},
   {4, 4, "DRAWTEXTUREREC", cmd_drawtexturerec},
-  //{7, 7, "DRAWTEXTURETILED", cmd_drawtexturetiled},
-  //{3, 3, "DRAWTEXTUREV", cmd_drawtexturev},
+  {7, 7, "DRAWTEXTURETILED", cmd_drawtexturetiled},
+  {3, 3, "DRAWTEXTUREV", cmd_drawtexturev},
   {4, 4, "DRAWTRIANGLE", cmd_drawtriangle},
   {4, 4, "DRAWTRIANGLE3D", cmd_drawtriangle3d},
   {3, 3, "DRAWTRIANGLEFAN", cmd_drawtrianglefan},
@@ -4996,13 +4646,10 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "ENDSCISSORMODE", cmd_endscissormode},
   {0, 0, "ENDSHADERMODE", cmd_endshadermode},
   {0, 0, "ENDTEXTUREMODE", cmd_endtexturemode},
-  {0, 0, "ENDVRDRAWING", cmd_endvrdrawing},
   {2, 2, "EXPORTIMAGE", cmd_exportimage},
   //{2, 2, "EXPORTIMAGEASCODE", cmd_exportimageascode},
   //{2, 2, "EXPORTMESH", cmd_exportmesh},
-  //{2, 2, "EXPORTWAVE", cmd_exportwave},
-  //{2, 2, "EXPORTWAVEASCODE", cmd_exportwaveascode},
-  //{1, 1, "GENTEXTUREMIPMAPS", cmd_gentexturemipmaps},
+  {1, 1, "GENTEXTUREMIPMAPS", cmd_gentexturemipmaps},
   {0, 0, "GETWINDOWHANDLE", cmd_getwindowhandle},
   {0, 0, "HIDECURSOR", cmd_hidecursor},
   //{3, 3, "IMAGEALPHACLEAR", cmd_imagealphaclear},
@@ -5042,30 +4689,20 @@ FUNC_SIG lib_proc[] = {
   //{1, 1, "IMAGEROTATECW", cmd_imagerotatecw},
   //{2, 2, "IMAGETOPOT", cmd_imagetopot},
   {0, 0, "INITAUDIODEVICE", cmd_initaudiodevice},
-  {0, 0, "INITVRSIMULATOR", cmd_initvrsimulator},
   {3, 3, "INITWINDOW", cmd_initwindow},
   {0, 0, "MAXIMIZEWINDOW", cmd_maximizewindow},
   //{1, 1, "MESHBINORMALS", cmd_meshbinormals},
   //{1, 1, "MESHNORMALSSMOOTH", cmd_meshnormalssmooth},
   //{1, 1, "MESHTANGENTS", cmd_meshtangents},
   {1, 1, "OPENURL", cmd_openurl},
-  //{1, 1, "PAUSEAUDIOSTREAM", cmd_pauseaudiostream},
   {1, 1, "PAUSEMUSICSTREAM", cmd_pausemusicstream},
   {1, 1, "PAUSESOUND", cmd_pausesound},
-  //{1, 1, "PLAYAUDIOSTREAM", cmd_playaudiostream},
   {1, 1, "PLAYMUSICSTREAM", cmd_playmusicstream},
   {1, 1, "PLAYSOUND", cmd_playsound},
   {1, 1, "PLAYSOUNDMULTI", cmd_playsoundmulti},
   {0, 0, "RESTOREWINDOW", cmd_restorewindow},
-  //{1, 1, "RESUMEAUDIOSTREAM", cmd_resumeaudiostream},
   {1, 1, "RESUMEMUSICSTREAM", cmd_resumemusicstream},
   {1, 1, "RESUMESOUND", cmd_resumesound},
-  //{3, 3, "SAVEFILEDATA", cmd_savefiledata},
-  //{2, 2, "SAVEFILETEXT", cmd_savefiletext},
-  //{2, 2, "SAVESTORAGEVALUE", cmd_savestoragevalue},
-  //{1, 1, "SETAUDIOSTREAMBUFFERSIZEDEFAULT", cmd_setaudiostreambuffersizedefault},
-  //{2, 2, "SETAUDIOSTREAMPITCH", cmd_setaudiostreampitch},
-  //{2, 2, "SETAUDIOSTREAMVOLUME", cmd_setaudiostreamvolume},
   //{1, 1, "SETCAMERAALTCONTROL", cmd_setcameraaltcontrol},
   {2, 2, "SETCAMERAMODE", cmd_setcameramode},
   //{6, 6, "SETCAMERAMOVECONTROLS", cmd_setcameramovecontrols},
@@ -5074,12 +4711,10 @@ FUNC_SIG lib_proc[] = {
   {1, 1, "SETCLIPBOARDTEXT", cmd_setclipboardtext},
   {1, 1, "SETCONFIGFLAGS", cmd_setconfigflags},
   {1, 1, "SETEXITKEY", cmd_setexitkey},
-  //{1, 1, "SETGESTURESENABLED", cmd_setgesturesenabled},
+  {1, 1, "SETGESTURESENABLED", cmd_setgesturesenabled},
   {1, 1, "SETMASTERVOLUME", cmd_setmastervolume},
-  //{3, 3, "SETMATERIALTEXTURE", cmd_setmaterialtexture},
   //{1, 1, "SETMATRIXMODELVIEW", cmd_setmatrixmodelview},
   //{1, 1, "SETMATRIXPROJECTION", cmd_setmatrixprojection},
-  //{3, 3, "SETMODELMESHMATERIAL", cmd_setmodelmeshmaterial},
   {1, 1, "SETMOUSECURSOR", cmd_setmousecursor},
   {2, 2, "SETMOUSEOFFSET", cmd_setmouseoffset},
   {2, 2, "SETMODELDIFFUSETEXTURE", cmd_setmodeldiffusetexture},
@@ -5090,36 +4725,30 @@ FUNC_SIG lib_proc[] = {
   //{3, 3, "SETPIXELCOLOR", cmd_setpixelcolor},
   //{4, 4, "SETSHADERVALUE", cmd_setshadervalue},
   //{3, 3, "SETSHADERVALUEMATRIX", cmd_setshadervaluematrix},
-  //{3, 3, "SETSHADERVALUETEXTURE", cmd_setshadervaluetexture},
+  {3, 3, "SETSHADERVALUETEXTURE", cmd_setshadervaluetexture},
   {4, 5, "SETSHADERVALUEV", cmd_setshadervaluev},
-  //{2, 2, "SETSHAPESTEXTURE", cmd_setshapestexture},
+  {2, 2, "SETSHAPESTEXTURE", cmd_setshapestexture},
   {2, 2, "SETSOUNDPITCH", cmd_setsoundpitch},
   {2, 2, "SETSOUNDVOLUME", cmd_setsoundvolume},
   {1, 1, "SETTARGETFPS", cmd_settargetfps},
-  //{2, 2, "SETTEXTUREFILTER", cmd_settexturefilter},
-  //{2, 2, "SETTEXTUREWRAP", cmd_settexturewrap},
-  //{1, 1, "SETTRACELOGCALLBACK", cmd_settracelogcallback},
+  {2, 2, "SETTEXTUREFILTER", cmd_settexturefilter},
+  {2, 2, "SETTEXTUREWRAP", cmd_settexturewrap},
   {1, 1, "SETTRACELOGEXIT", cmd_settracelogexit},
   {1, 1, "SETTRACELOGLEVEL", cmd_settraceloglevel},
-  //{2, 2, "SETVRCONFIGURATION", cmd_setvrconfiguration},
-  //{1, 1, "SETWINDOWICON", cmd_setwindowicon},
   {2, 2, "SETWINDOWMINSIZE", cmd_setwindowminsize},
   {1, 1, "SETWINDOWMONITOR", cmd_setwindowmonitor},
   {2, 2, "SETWINDOWPOSITION", cmd_setwindowposition},
   {2, 2, "SETWINDOWSIZE", cmd_setwindowsize},
   {1, 1, "SETWINDOWTITLE", cmd_setwindowtitle},
   {0, 0, "SHOWCURSOR", cmd_showcursor},
-  //{1, 1, "STOPAUDIOSTREAM", cmd_stopaudiostream},
   {1, 1, "STOPMUSICSTREAM", cmd_stopmusicstream},
   {1, 1, "STOPSOUND", cmd_stopsound},
   {0, 0, "STOPSOUNDMULTI", cmd_stopsoundmulti},
   {1, 1, "TAKESCREENSHOT", cmd_takescreenshot},
   {0, 0, "TOGGLEFULLSCREEN", cmd_togglefullscreen},
-  {0, 0, "TOGGLEVRMODE", cmd_togglevrmode},
   {2, 2, "TRACELOG", cmd_tracelog},
   {1, 1, "UNLOADFONT", cmd_unloadfont},
   {1, 1, "UNLOADIMAGE", cmd_unloadimage},
-  //{1, 1, "UNLOADMATERIAL", cmd_unloadmaterial},
   //{1, 1, "UNLOADMESH", cmd_unloadmesh},
   {1, 1, "UNLOADMODEL", cmd_unloadmodel},
   //{1, 1, "UNLOADMODELANIMATION", cmd_unloadmodelanimation},
@@ -5128,17 +4757,10 @@ FUNC_SIG lib_proc[] = {
   {1, 1, "UNLOADSHADER", cmd_unloadshader},
   {1, 1, "UNLOADSOUND", cmd_unloadsound},
   {1, 1, "UNLOADTEXTURE", cmd_unloadtexture},
-  //{1, 1, "UNLOADWAVE", cmd_unloadwave},
-  //{3, 3, "UPDATEAUDIOSTREAM", cmd_updateaudiostream},
   {1, 1, "UPDATECAMERA", cmd_updatecamera},
   //{3, 3, "UPDATEMODELANIMATION", cmd_updatemodelanimation},
   {1, 1, "UPDATEMUSICSTREAM", cmd_updatemusicstream},
-  //{3, 3, "UPDATESOUND", cmd_updatesound},
   {2, 2, "UPDATETEXTURE", cmd_updatetexture},
-  //{3, 3, "UPDATETEXTUREREC", cmd_updatetexturerec},
-  //{1, 1, "UPDATEVRTRACKING", cmd_updatevrtracking},
-  //{3, 3, "WAVECROP", cmd_wavecrop},
-  //{4, 4, "WAVEFORMAT", cmd_waveformat},
   {0, 0, "GUICLEARTOOLTIP", cmd_guicleartooltip},
   {0, 0, "GUIDISABLE", cmd_guidisable},
   {0, 0, "GUIDISABLETOOLTIP", cmd_guidisabletooltip},
