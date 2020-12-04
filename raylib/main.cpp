@@ -443,6 +443,12 @@ static void v_settexture2d(var_t *var, Texture2D &texture) {
   v_setrect(var, texture.width, texture.height, id);
 }
 
+static void v_setimage(var_t *var, Image &image) {
+  int id = ++_nextId;
+  _imageMap[id] = image;
+  v_setrect(var, image.width, image.height, id);
+}
+
 static int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
   auto dir = get_param_str(argc, params, 0, NULL);
   auto fnResult = ChangeDirectory(dir);
@@ -604,9 +610,7 @@ static int cmd_genimagecellular(int argc, slib_par_t *params, var_t *retval) {
   auto height = get_param_int(argc, params, 1, 0);
   auto tileSize = get_param_int(argc, params, 2, 0);
   auto image = GenImageCellular(width, height, tileSize);
-  auto id = ++_nextId;
-  _imageMap[id] = image;
-  v_setrect(retval, image.width, image.height, id);
+  v_setimage(retval, image);
   return 1;
 }
 
@@ -618,9 +622,7 @@ static int cmd_genimagechecked(int argc, slib_par_t *params, var_t *retval) {
   auto col1 = get_param_color(argc, params, 4);
   auto col2 = get_param_color(argc, params, 5);
   auto image = GenImageChecked(width, height, checksX, checksY, col1, col2);
-  auto id = ++_nextId;
-  _imageMap[id] = image;
-  v_setrect(retval, image.width, image.height, id);
+  v_setimage(retval, image);
   return 1;
 }
 
@@ -629,9 +631,7 @@ static int cmd_genimagecolor(int argc, slib_par_t *params, var_t *retval) {
   auto height = get_param_int(argc, params, 1, 0);
   auto color = get_param_color(argc, params, 2);
   auto image = GenImageColor(width, height, color);
-  auto id = ++_nextId;
-  _imageMap[id] = image;
-  v_setrect(retval, image.width, image.height, id);
+  v_setimage(retval, image);
   return 1;
 }
 
@@ -653,9 +653,7 @@ static int cmd_genimagegradienth(int argc, slib_par_t *params, var_t *retval) {
   auto left = get_param_color(argc, params, 2);
   auto right = get_param_color(argc, params, 3);
   auto image = GenImageGradientH(width, height, left, right);
-  auto id = ++_nextId;
-  _imageMap[id] = image;
-  v_setrect(retval, image.width, image.height, id);
+  v_setimage(retval, image);
   return 1;
 }
 
@@ -666,9 +664,7 @@ static int cmd_genimagegradientradial(int argc, slib_par_t *params, var_t *retva
   auto inner = get_param_color(argc, params, 3);
   auto outer = get_param_color(argc, params, 4);
   auto image = GenImageGradientRadial(width, height, density, inner, outer);
-  auto id = ++_nextId;
-  _imageMap[id] = image;
-  v_setrect(retval, image.width, image.height, id);
+  v_setimage(retval, image);
   return 1;
 }
 
@@ -678,9 +674,7 @@ static int cmd_genimagegradientv(int argc, slib_par_t *params, var_t *retval) {
   auto top = get_param_color(argc, params, 2);
   auto bottom = get_param_color(argc, params, 3);
   auto image = GenImageGradientV(width, height, top, bottom);
-  auto id = ++_nextId;
-  _imageMap[id] = image;
-  v_setrect(retval, image.width, image.height, id);
+  v_setimage(retval, image);
   return 1;
 }
 
@@ -691,9 +685,7 @@ static int cmd_genimageperlinnoise(int argc, slib_par_t *params, var_t *retval) 
   auto offsetY = get_param_int(argc, params, 3, 0);
   auto scale = get_param_num(argc, params, 4, 0);
   auto image = GenImagePerlinNoise(width, height, offsetX, offsetY, scale);
-  auto id = ++_nextId;
-  _imageMap[id] = image;
-  v_setrect(retval, image.width, image.height, id);
+  v_setimage(retval, image);
   return 1;
 }
 
@@ -702,9 +694,7 @@ static int cmd_genimagewhitenoise(int argc, slib_par_t *params, var_t *retval) {
   auto height = get_param_int(argc, params, 1, 0);
   auto factor = get_param_int(argc, params, 2, 0);
   auto image = GenImageWhiteNoise(width, height, factor);
-  auto id = ++_nextId;
-  _imageMap[id] = image;
-  v_setrect(retval, image.width, image.height, id);
+  v_setimage(retval, image);
   return 1;
 }
 
@@ -802,16 +792,6 @@ int cmd_gentexturebrdf(int argc, slib_par_t *params, var_t *retval) {
   // auto shader = get_param_str(argc, params, 0, NULL);
   // auto size = get_param_str(argc, params, 1, NULL);
   // auto fnResult = GenTextureBRDF(shader, size);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_gentexturecubemap(int argc, slib_par_t *params, var_t *retval) {
-  // auto shader = get_param_str(argc, params, 0, NULL);
-  // auto panorama = get_param_str(argc, params, 1, NULL);
-  // auto size = get_param_str(argc, params, 2, NULL);
-  // auto format = get_param_str(argc, params, 3, NULL);
-  // auto fnResult = GenTextureCubemap(shader, panorama, size, format);
   // v_setint(retval, fnResult);
   return 1;
 }
@@ -990,34 +970,18 @@ int cmd_getglyphindex(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_getimagealphaborder(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto threshold = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GetImageAlphaBorder(image, threshold);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-static int cmd_getimagedata(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getimagealphaborder(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_image_id(argc, params, 0, retval);
   if (id != -1) {
-    auto fnResult = GetImageData(_imageMap.at(id));
-    v_setint(retval, (var_int_t)fnResult);
+    auto threshold = get_param_num(argc, params, 1, 0);
+    auto fnResult = GetImageAlphaBorder(_imageMap.at(id), threshold);
+    v_setrect(retval, fnResult);
     result = 1;
   } else {
     result = 0;
   }
   return result;
-}
-
-int cmd_getimagepalette(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto maxPaletteSize = get_param_str(argc, params, 1, NULL);
-  // auto extractCount = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = GetImagePalette(image, maxPaletteSize, extractCount);
-  // v_setint(retval, fnResult);
-  return 1;
 }
 
 static int cmd_getkeypressed(int argc, slib_par_t *params, var_t *retval) {
@@ -1237,9 +1201,7 @@ static int cmd_gettexturedata(int argc, slib_par_t *params, var_t *retval) {
   int id = get_texture_id(argc, params, 0, retval);
   if (id != -1) {
     Image image = GetTextureData(_textureMap.at(id));
-    id = ++_nextId;
-    _imageMap[id] = image;
-    v_setrect(retval, image.width, image.height, id);
+    v_setimage(retval, image);
     result = 1;
   } else {
     result = 0;
@@ -1328,38 +1290,39 @@ int cmd_getworldtoscreenex(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_imagecopy(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = ImageCopy(image);
-  // v_setint(retval, fnResult);
-  return 1;
+static int cmd_imagecopy(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto fnResult = ImageCopy(_imageMap.at(id));
+    v_setimage(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagefromimage(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto rec = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = ImageFromImage(image, rec);
-  // v_setint(retval, fnResult);
-  return 1;
+static int cmd_imagefromimage(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto rec = get_param_rect(argc, params, 1);
+    auto fnResult = ImageFromImage(_imageMap.at(id), rec);
+    v_setimage(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagetext(int argc, slib_par_t *params, var_t *retval) {
-  // auto text = get_param_str(argc, params, 0, NULL);
-  // auto fontSize = get_param_int(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // auto fnResult = ImageText(text, fontSize, color);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_imagetextex(int argc, slib_par_t *params, var_t *retval) {
-  // auto font = get_param_str(argc, params, 0, NULL);
-  // auto text = get_param_str(argc, params, 1, NULL);
-  // auto fontSize = get_param_int(argc, params, 2, NULL);
-  // auto spacing = get_param_str(argc, params, 3, NULL);
-  // auto tint = get_param_color(argc, params, 4);
-  // auto fnResult = ImageTextEx(font, text, fontSize, spacing, tint);
-  // v_setint(retval, fnResult);
+static int cmd_imagetext(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, NULL);
+  auto fontSize = get_param_int(argc, params, 1, 0);
+  auto color = get_param_color(argc, params, 2);
+  auto fnResult = ImageText(text, fontSize, color);
+  v_setimage(retval, fnResult);
   return 1;
 }
 
@@ -1474,14 +1437,6 @@ static int cmd_iskeyup(int argc, slib_par_t *params, var_t *retval) {
   auto key = get_param_int(argc, params, 0, 0);
   auto fnResult = IsKeyUp(key);
   v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_ismodelanimationvalid(int argc, slib_par_t *params, var_t *retval) {
-  //auto model = get_param_str(argc, params, 0, NULL);
-  //auto anim = get_param_str(argc, params, 1, NULL);
-  //auto fnResult = IsModelAnimationValid(model, anim);
-  //v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1605,21 +1560,11 @@ int cmd_loadfontdata(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
   auto fontSize = get_param_int(argc, params, 1, 0);
-  // char *fontChars = 0; // get_param_str(argc, params, 2, NULL);
   auto charsCount = get_param_int(argc, params, 3, 0);
   auto font = LoadFontEx(fileName, fontSize, 0, charsCount);
   auto id = ++_nextId;
   _fontMap[id] = font;
   v_setfont(retval, font, id);
-  return 1;
-}
-
-int cmd_loadfontfromimage(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto key = get_param_str(argc, params, 1, NULL);
-  // auto firstChar = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = LoadFontFromImage(image, key, firstChar);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1638,9 +1583,7 @@ int cmd_loadfontfrommemory(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_loadimage(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
   auto image = LoadImage(fileName);
-  auto id = ++_nextId;
-  _imageMap[id] = image;
-  v_setrect(retval, image.width, image.height, id);
+  v_setimage(retval, image);
   return 1;
 }
 
@@ -1691,14 +1634,6 @@ static int cmd_loadmodel(int argc, slib_par_t *params, var_t *retval) {
   v_setint(map_add_var(retval, "materialCount", 0), model.materialCount);
   v_setint(map_add_var(retval, "boneCount", 0), model.boneCount);
   v_setint(map_add_var(retval, mapID, 0), id);
-  return 1;
-}
-
-int cmd_loadmodelanimations(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto animsCount = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = LoadModelAnimations(fileName, animsCount);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1768,14 +1703,6 @@ static int cmd_loadtexture(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
   auto texture = LoadTexture(fileName);
   v_settexture2d(retval, texture);
-  return 1;
-}
-
-int cmd_loadtexturecubemap(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto layoutType = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = LoadTextureCubemap(image, layoutType);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -2474,7 +2401,7 @@ static int cmd_drawtextex(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtextrec(int argc, slib_par_t *params, var_t *retval) {
   // auto font = get_param_str(argc, params, 0, NULL);
   // auto text = get_param_str(argc, params, 1, NULL);
-  // auto rec = get_param_str(argc, params, 2, NULL);
+  // auto rec = get_param_rect(argc, params, 2, NULL);
   // auto fontSize = get_param_int(argc, params, 3, NULL);
   // auto spacing = get_param_str(argc, params, 4, NULL);
   // auto wordWrap = get_param_str(argc, params, 5, NULL);
@@ -2486,7 +2413,7 @@ int cmd_drawtextrec(int argc, slib_par_t *params, var_t *retval) {
 int cmd_drawtextrecex(int argc, slib_par_t *params, var_t *retval) {
   // auto font = get_param_str(argc, params, 0, NULL);
   // auto text = get_param_str(argc, params, 1, NULL);
-  // auto rec = get_param_str(argc, params, 2, NULL);
+  // auto rec = get_param_rect(argc, params, 2, NULL);
   // auto fontSize = get_param_int(argc, params, 3, NULL);
   // auto spacing = get_param_str(argc, params, 4, NULL);
   // auto wordWrap = get_param_str(argc, params, 5, NULL);
@@ -2641,11 +2568,11 @@ static int cmd_drawtrianglelines(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawtrianglestrip(int argc, slib_par_t *params, var_t *retval) {
-  // auto points = get_param_str(argc, params, 0, NULL);
-  // auto pointsCount = get_param_str(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // DrawTriangleStrip(points, pointsCount, color);
+static int cmd_drawtrianglestrip(int argc, slib_par_t *params, var_t *retval) {
+  auto points = get_param_vec2(argc, params, 0);
+  auto pointsCount = get_param_int(argc, params, 1, 0);
+  auto color = get_param_color(argc, params, 2);
+  DrawTriangleStrip(&points, pointsCount, color);
   return 1;
 }
 
@@ -2710,11 +2637,17 @@ static int cmd_exportimage(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_exportimageascode(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto fileName = get_param_str(argc, params, 1, NULL);
-  // ExportImageAsCode(image, fileName);
-  return 1;
+static int cmd_exportimageascode(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto fileName = get_param_str(argc, params, 1, NULL);
+    ExportImageAsCode(_imageMap.at(id), fileName);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 int cmd_exportmesh(int argc, slib_par_t *params, var_t *retval) {
@@ -2746,39 +2679,56 @@ static int cmd_hidecursor(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_imagealphaclear(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1);
-  // auto threshold = get_param_str(argc, params, 2, NULL);
-  // ImageAlphaClear(image, color, threshold);
-  return 1;
+static int cmd_imagealphaclear(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto color = get_param_color(argc, params, 1);
+    auto threshold = get_param_num(argc, params, 2, 0);
+    ImageAlphaClear(&_imageMap.at(id), color, threshold);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagealphacrop(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto threshold = get_param_str(argc, params, 1, NULL);
-  // ImageAlphaCrop(image, threshold);
-  return 1;
+static int cmd_imagealphacrop(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto threshold = get_param_num(argc, params, 1, 0);
+    ImageAlphaCrop(&_imageMap.at(id), threshold);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagealphamask(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto alphaMask = get_param_str(argc, params, 1, NULL);
-  // ImageAlphaMask(image, alphaMask);
-  return 1;
+static int cmd_imagealphapremultiply(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    ImageAlphaPremultiply(&_imageMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagealphapremultiply(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // ImageAlphaPremultiply(&image);
-  return 1;
-}
-
-int cmd_imageclearbackground(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1);
-  // ImageClearBackground(dst, color);
-  return 1;
+static int cmd_imageclearbackground(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto color = get_param_color(argc, params, 1);
+    ImageClearBackground(&_imageMap.at(id), color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_imagecolorbrightness(int argc, slib_par_t *params, var_t *retval) {
@@ -2831,12 +2781,18 @@ static int cmd_imagecolorinvert(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_imagecolorreplace(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1);
-  // auto replace = get_param_str(argc, params, 2, NULL);
-  // ImageColorReplace(image, color, replace);
-  return 1;
+static int cmd_imagecolorreplace(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto color = get_param_color(argc, params, 1);
+    auto replace = get_param_color(argc, params, 2);
+    ImageColorReplace(&_imageMap.at(id), color, replace);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_imagecolortint(int argc, slib_par_t *params, var_t *retval) {
@@ -2852,31 +2808,33 @@ static int cmd_imagecolortint(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_imagecrop(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto crop = get_param_str(argc, params, 1, NULL);
-  // ImageCrop(&image, crop);
-  return 1;
+static int cmd_imagecrop(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto crop = get_param_rect(argc, params, 1);
+    ImageCrop(&_imageMap.at(id), crop);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagedither(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto rBpp = get_param_str(argc, params, 1, NULL);
-  // auto gBpp = get_param_str(argc, params, 2, NULL);
-  // auto bBpp = get_param_str(argc, params, 3, NULL);
-  // auto aBpp = get_param_str(argc, params, 4, NULL);
-  // ImageDither(image, rBpp, gBpp, bBpp, aBpp);
-  return 1;
-}
-
-int cmd_imagedraw(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto src = get_param_str(argc, params, 1, NULL);
-  // auto srcRec = get_param_str(argc, params, 2, NULL);
-  // auto dstRec = get_param_str(argc, params, 3, NULL);
-  // auto tint = get_param_color(argc, params, 4);
-  // ImageDraw(dst, src, srcRec, dstRec, tint);
-  return 1;
+static int cmd_imagedither(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto rBpp = get_param_int(argc, params, 1, 0);
+    auto gBpp = get_param_int(argc, params, 2, 0);
+    auto bBpp = get_param_int(argc, params, 3, 0);
+    auto aBpp = get_param_int(argc, params, 4, 0);
+    ImageDither(&_imageMap.at(id), rBpp, gBpp, bBpp, aBpp);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_imagedrawcircle(int argc, slib_par_t *params, var_t *retval) {
@@ -2895,70 +2853,112 @@ static int cmd_imagedrawcircle(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_imagedrawcirclev(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto center = get_param_str(argc, params, 1, NULL);
-  // auto radius = get_param_num(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // ImageDrawCircleV(dst, center, radius, color);
-  return 1;
+static int cmd_imagedrawcirclev(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto center = get_param_vec2(argc, params, 1);
+    auto radius = get_param_num(argc, params, 2, 0);
+    auto color = get_param_color(argc, params, 3);
+    ImageDrawCircleV(&_imageMap.at(id), center, radius, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagedrawline(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto startPosX = get_param_str(argc, params, 1, NULL);
-  // auto startPosY = get_param_str(argc, params, 2, NULL);
-  // auto endPosX = get_param_str(argc, params, 3, NULL);
-  // auto endPosY = get_param_str(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5);
-  // ImageDrawLine(dst, startPosX, startPosY, endPosX, endPosY, color);
-  return 1;
+static int cmd_imagedrawline(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto startPosX = get_param_int(argc, params, 1, 0);
+    auto startPosY = get_param_int(argc, params, 2, 0);
+    auto endPosX = get_param_int(argc, params, 3, 0);
+    auto endPosY = get_param_int(argc, params, 4, 0);
+    auto color = get_param_color(argc, params, 5);
+    ImageDrawLine(&_imageMap.at(id), startPosX, startPosY, endPosX, endPosY, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagedrawlinev(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto start = get_param_str(argc, params, 1, NULL);
-  // auto end = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // ImageDrawLineV(dst, start, end, color);
-  return 1;
+static int cmd_imagedrawlinev(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto start = get_param_vec2(argc, params, 1);
+    auto end = get_param_vec2(argc, params, 2);
+    auto color = get_param_color(argc, params, 3);
+    ImageDrawLineV(&_imageMap.at(id), start, end, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagedrawpixel(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto posX = get_param_str(argc, params, 1, NULL);
-  // auto posY = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // ImageDrawPixel(dst, posX, posY, color);
-  return 1;
+static int cmd_imagedrawpixel(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto posX = get_param_int(argc, params, 1, 0);
+    auto posY = get_param_int(argc, params, 2, 0);
+    auto color = get_param_color(argc, params, 3);
+    ImageDrawPixel(&_imageMap.at(id), posX, posY, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagedrawpixelv(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_vec3(argc, params, 1, NULL);
-  // auto color = get_param_color(argc, params, 2);
-  // ImageDrawPixelV(dst, position, color);
-  return 1;
+static int cmd_imagedrawpixelv(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto position = get_param_vec2(argc, params, 1);
+    auto color = get_param_color(argc, params, 2);
+    ImageDrawPixelV(&_imageMap.at(id), position, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagedrawrectangle(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto posX = get_param_str(argc, params, 1, NULL);
-  // auto posY = get_param_str(argc, params, 2, NULL);
-  // auto width = get_param_str(argc, params, 3, NULL);
-  // auto height = get_param_str(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5);
-  // ImageDrawRectangle(dst, posX, posY, width, height, color);
-  return 1;
+static int cmd_imagedrawrectangle(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto posX = get_param_int(argc, params, 1, 0);
+    auto posY = get_param_int(argc, params, 2, 0);
+    auto width = get_param_int(argc, params, 3, 0);
+    auto height = get_param_int(argc, params, 4, 0);
+    auto color = get_param_color(argc, params, 5);
+    ImageDrawRectangle(&_imageMap.at(id), posX, posY, width, height, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagedrawrectanglelines(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto rec = get_param_str(argc, params, 1, NULL);
-  // auto thick = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // ImageDrawRectangleLines(dst, rec, thick, color);
-  return 1;
+static int cmd_imagedrawrectanglelines(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto rec = get_param_rect(argc, params, 1);
+    auto thick = get_param_int(argc, params, 2, 0);
+    auto color = get_param_color(argc, params, 3);
+    ImageDrawRectangleLines(&_imageMap.at(id), rec, thick, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_imagedrawrectanglerec(int argc, slib_par_t *params, var_t *retval) {
@@ -2975,36 +2975,36 @@ static int cmd_imagedrawrectanglerec(int argc, slib_par_t *params, var_t *retval
   return result;
 }
 
-int cmd_imagedrawrectanglev(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_vec3(argc, params, 1, NULL);
-  // auto size = get_param_str(argc, params, 2, NULL);
-  // auto color = get_param_color(argc, params, 3);
-  // ImageDrawRectangleV(dst, position, size, color);
-  return 1;
+static int cmd_imagedrawrectanglev(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto position = get_param_vec2(argc, params, 1);
+    auto size = get_param_vec2(argc, params, 2);
+    auto color = get_param_color(argc, params, 3);
+    ImageDrawRectangleV(&_imageMap.at(id), position, size, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagedrawtext(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto text = get_param_str(argc, params, 1, NULL);
-  // auto posX = get_param_str(argc, params, 2, NULL);
-  // auto posY = get_param_str(argc, params, 3, NULL);
-  // auto fontSize = get_param_int(argc, params, 4, NULL);
-  // auto color = get_param_color(argc, params, 5);
-  // ImageDrawText(dst, text, posX, posY, fontSize, color);
-  return 1;
-}
-
-int cmd_imagedrawtextex(int argc, slib_par_t *params, var_t *retval) {
-  // auto dst = get_param_str(argc, params, 0, NULL);
-  // auto font = get_param_str(argc, params, 1, NULL);
-  // auto text = get_param_str(argc, params, 2, NULL);
-  // auto position = get_param_vec3(argc, params, 3, NULL);
-  // auto fontSize = get_param_int(argc, params, 4, NULL);
-  // auto spacing = get_param_str(argc, params, 5, NULL);
-  // auto tint = get_param_color(argc, params, 6);
-  // ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint);
-  return 1;
+static int cmd_imagedrawtext(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto text = get_param_str(argc, params, 1, NULL);
+    auto posX = get_param_int(argc, params, 2, 0);
+    auto posY = get_param_int(argc, params, 3, 0);
+    auto fontSize = get_param_int(argc, params, 4, 0);
+    auto color = get_param_color(argc, params, 5);
+    ImageDrawText(&_imageMap.at(id), text, posX, posY, fontSize, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_imagefliphorizontal(int argc, slib_par_t *params, var_t *retval) {
@@ -3044,56 +3044,98 @@ static int cmd_imageformat(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_imagemipmaps(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // ImageMipmaps(image);
-  return 1;
+static int cmd_imagemipmaps(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    ImageMipmaps(&_imageMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imageresize(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto newWidth = get_param_str(argc, params, 1, NULL);
-  // auto newHeight = get_param_str(argc, params, 2, NULL);
-  // ImageResize(image, newWidth, newHeight);
-  return 1;
+static int cmd_imageresize(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto newWidth = get_param_int(argc, params, 1, 0);
+    auto newHeight = get_param_int(argc, params, 2, 0);
+    ImageResize(&_imageMap.at(id), newWidth, newHeight);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imageresizecanvas(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto newWidth = get_param_str(argc, params, 1, NULL);
-  // auto newHeight = get_param_str(argc, params, 2, NULL);
-  // auto offsetX = get_param_str(argc, params, 3, NULL);
-  // auto offsetY = get_param_str(argc, params, 4, NULL);
-  // auto fill = get_param_str(argc, params, 5, NULL);
-  // ImageResizeCanvas(image, newWidth, newHeight, offsetX, offsetY, fill);
-  return 1;
+static int cmd_imageresizecanvas(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto newWidth = get_param_int(argc, params, 1, 0);
+    auto newHeight = get_param_int(argc, params, 2, 0);
+    auto offsetX = get_param_int(argc, params, 3, 0);
+    auto offsetY = get_param_int(argc, params, 4, 0);
+    auto fill = get_param_color(argc, params, 5);
+    ImageResizeCanvas(&_imageMap.at(id), newWidth, newHeight, offsetX, offsetY, fill);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imageresizenn(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto newWidth = get_param_str(argc, params, 1, NULL);
-  // auto newHeight = get_param_str(argc, params, 2, NULL);
-  // ImageResizeNN(image, newWidth, newHeight);
-  return 1;
+static int cmd_imageresizenn(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto newWidth = get_param_int(argc, params, 1, 0);
+    auto newHeight = get_param_int(argc, params, 2, 0);
+    ImageResizeNN(&_imageMap.at(id), newWidth, newHeight);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagerotateccw(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // ImageRotateCCW(image);
-  return 1;
+static int cmd_imagerotateccw(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    ImageRotateCCW(&_imageMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagerotatecw(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // ImageRotateCW(image);
-  return 1;
+static int cmd_imagerotatecw(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    ImageRotateCW(&_imageMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_imagetopot(int argc, slib_par_t *params, var_t *retval) {
-  // auto image = get_param_str(argc, params, 0, NULL);
-  // auto fill = get_param_str(argc, params, 1, NULL);
-  // ImageToPOT(image, fill);
-  return 1;
+static int cmd_imagetopot(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto fill = get_param_color(argc, params, 1);
+    ImageToPOT(&_imageMap.at(id), fill);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_initaudiodevice(int argc, slib_par_t *params, var_t *retval) {
@@ -3227,9 +3269,9 @@ static int cmd_resumesound(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_setcameraaltcontrol(int argc, slib_par_t *params, var_t *retval) {
-  // auto altKey = get_param_str(argc, params, 0, NULL);
-  // SetCameraAltControl(altKey);
+static int cmd_setcameraaltcontrol(int argc, slib_par_t *params, var_t *retval) {
+  auto altKey = get_param_int(argc, params, 0, 0);
+   SetCameraAltControl(altKey);
   return 1;
 }
 
@@ -3250,15 +3292,15 @@ int cmd_setcameramovecontrols(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_setcamerapancontrol(int argc, slib_par_t *params, var_t *retval) {
-  // auto panKey = get_param_str(argc, params, 0, NULL);
-  // SetCameraPanControl(panKey);
+static int cmd_setcamerapancontrol(int argc, slib_par_t *params, var_t *retval) {
+  auto panKey = get_param_int(argc, params, 0, 0);
+  SetCameraPanControl(panKey);
   return 1;
 }
 
-int cmd_setcamerasmoothzoomcontrol(int argc, slib_par_t *params, var_t *retval) {
-  // auto szKey = get_param_str(argc, params, 0, NULL);
-  // SetCameraSmoothZoomControl(szKey);
+static int cmd_setcamerasmoothzoomcontrol(int argc, slib_par_t *params, var_t *retval) {
+  auto szKey = get_param_int(argc, params, 0, 0);
+  SetCameraSmoothZoomControl(szKey);
   return 1;
 }
 
@@ -3368,14 +3410,6 @@ static int cmd_setmusicvolume(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
-}
-
-int cmd_setpixelcolor(int argc, slib_par_t *params, var_t *retval) {
-  // auto dstPtr = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1);
-  // auto format = get_param_str(argc, params, 2, NULL);
-  // SetPixelColor(dstPtr, color, format);
-  return 1;
 }
 
 int cmd_setshadervaluematrix(int argc, slib_par_t *params, var_t *retval) {
@@ -3640,12 +3674,6 @@ static int cmd_unloadmodel(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_unloadmodelanimation(int argc, slib_par_t *params, var_t *retval) {
-  // auto anim = get_param_str(argc, params, 0, NULL);
-  // UnloadModelAnimation(anim);
-  return 1;
-}
-
 static int cmd_unloadmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (_musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
@@ -3709,14 +3737,6 @@ static int cmd_updatecamera(int argc, slib_par_t *params, var_t *retval) {
   auto camera = get_camera_3d(argc, params, 0);
   UpdateCamera(&camera);
   set_camera_3d(params[0].var_p, &camera);
-  return 1;
-}
-
-int cmd_updatemodelanimation(int argc, slib_par_t *params, var_t *retval) {
-  // auto model = get_param_str(argc, params, 0, NULL);
-  // auto anim = get_param_str(argc, params, 1, NULL);
-  // auto frame = get_param_str(argc, params, 2, NULL);
-  // UpdateModelAnimation(model, anim, frame);
   return 1;
 }
 
@@ -4379,7 +4399,6 @@ FUNC_SIG lib_func[] = {
   //{3, 3, "GENMESHSPHERE", cmd_genmeshsphere},
   //{4, 4, "GENMESHTORUS", cmd_genmeshtorus},
   //{2, 2, "GENTEXTUREBRDF", cmd_gentexturebrdf},
-  //{4, 4, "GENTEXTURECUBEMAP", cmd_gentexturecubemap},
   //{3, 3, "GENTEXTUREIRRADIANCE", cmd_gentextureirradiance},
   //{3, 3, "GENTEXTUREPREFILTER", cmd_gentextureprefilter},
   //{1, 1, "GETCAMERAMATRIX", cmd_getcameramatrix},
@@ -4405,9 +4424,7 @@ FUNC_SIG lib_func[] = {
   {0, 0, "GETGESTUREPINCHANGLE", cmd_getgesturepinchangle},
   {0, 0, "GETGESTUREPINCHVECTOR", cmd_getgesturepinchvector},
   //{2, 2, "GETGLYPHINDEX", cmd_getglyphindex},
-  //{2, 2, "GETIMAGEALPHABORDER", cmd_getimagealphaborder},
-  {1, 1, "GETIMAGEDATA", cmd_getimagedata},
-  //{3, 3, "GETIMAGEPALETTE", cmd_getimagepalette},
+  {2, 2, "GETIMAGEALPHABORDER", cmd_getimagealphaborder},
   {0, 0, "GETKEYPRESSED", cmd_getkeypressed},
   //{0, 0, "GETMATRIXMODELVIEW", cmd_getmatrixmodelview},
   //{0, 0, "GETMATRIXPROJECTION", cmd_getmatrixprojection},
@@ -4451,10 +4468,9 @@ FUNC_SIG lib_func[] = {
   //{2, 2, "GETWORLDTOSCREEN", cmd_getworldtoscreen},
   //{2, 2, "GETWORLDTOSCREEN2D", cmd_getworldtoscreen2d},
   //{4, 4, "GETWORLDTOSCREENEX", cmd_getworldtoscreenex},
-  //{1, 1, "IMAGECOPY", cmd_imagecopy},
-  //{2, 2, "IMAGEFROMIMAGE", cmd_imagefromimage},
-  //{3, 3, "IMAGETEXT", cmd_imagetext},
-  //{5, 5, "IMAGETEXTEX", cmd_imagetextex},
+  {1, 1, "IMAGECOPY", cmd_imagecopy},
+  {2, 2, "IMAGEFROMIMAGE", cmd_imagefromimage},
+  {3, 3, "IMAGETEXT", cmd_imagetext},
   {0, 0, "ISAUDIODEVICEREADY", cmd_isaudiodeviceready},
   {0, 0, "ISCURSORHIDDEN", cmd_iscursorhidden},
   {0, 0, "ISCURSORONSCREEN", cmd_iscursoronscreen},
@@ -4471,7 +4487,6 @@ FUNC_SIG lib_func[] = {
   {1, 1, "ISKEYPRESSED", cmd_iskeypressed},
   {1, 1, "ISKEYRELEASED", cmd_iskeyreleased},
   {1, 1, "ISKEYUP", cmd_iskeyup},
-  //{2, 2, "ISMODELANIMATIONVALID", cmd_ismodelanimationvalid},
   {1, 1, "ISMOUSEBUTTONDOWN", cmd_ismousebuttondown},
   {1, 1, "ISMOUSEBUTTONPRESSED", cmd_ismousebuttonpressed},
   {1, 1, "ISMOUSEBUTTONRELEASED", cmd_ismousebuttonreleased},
@@ -4488,7 +4503,6 @@ FUNC_SIG lib_func[] = {
   {1, 1, "LOADFONT", cmd_loadfont},
   //{6, 6, "LOADFONTDATA", cmd_loadfontdata},
   {4, 4, "LOADFONTEX", cmd_loadfontex},
-  //{3, 3, "LOADFONTFROMIMAGE", cmd_loadfontfromimage},
   //{6, 6, "LOADFONTFROMMEMORY", cmd_loadfontfrommemory},
   {1, 1, "LOADIMAGE", cmd_loadimage},
   //{2, 2, "LOADIMAGEANIM", cmd_loadimageanim},
@@ -4496,7 +4510,6 @@ FUNC_SIG lib_func[] = {
   //{5, 5, "LOADIMAGERAW", cmd_loadimageraw},
   //{2, 2, "LOADMESHES", cmd_loadmeshes},
   {1, 1, "LOADMODEL", cmd_loadmodel},
-  //{2, 2, "LOADMODELANIMATIONS", cmd_loadmodelanimations},
   //{1, 1, "LOADMODELFROMMESH", cmd_loadmodelfrommesh},
   {1, 1, "LOADMUSICSTREAM", cmd_loadmusicstream},
   {2, 2, "LOADRENDERTEXTURE", cmd_loadrendertexture},
@@ -4504,7 +4517,6 @@ FUNC_SIG lib_func[] = {
   {2, 2, "LOADSHADERCODE", cmd_loadshadercode},
   {1, 1, "LOADSOUND", cmd_loadsound},
   {1, 1, "LOADTEXTURE", cmd_loadtexture},
-  //{2, 2, "LOADTEXTURECUBEMAP", cmd_loadtexturecubemap},
   {1, 1, "LOADTEXTUREFROMIMAGE", cmd_loadtexturefromimage},
   {2, 2, "MEASURETEXT", cmd_measuretext},
   //{4, 4, "MEASURETEXTEX", cmd_measuretextex},
@@ -4647,47 +4659,44 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "ENDSHADERMODE", cmd_endshadermode},
   {0, 0, "ENDTEXTUREMODE", cmd_endtexturemode},
   {2, 2, "EXPORTIMAGE", cmd_exportimage},
-  //{2, 2, "EXPORTIMAGEASCODE", cmd_exportimageascode},
+  {2, 2, "EXPORTIMAGEASCODE", cmd_exportimageascode},
   //{2, 2, "EXPORTMESH", cmd_exportmesh},
   {1, 1, "GENTEXTUREMIPMAPS", cmd_gentexturemipmaps},
   {0, 0, "GETWINDOWHANDLE", cmd_getwindowhandle},
   {0, 0, "HIDECURSOR", cmd_hidecursor},
-  //{3, 3, "IMAGEALPHACLEAR", cmd_imagealphaclear},
-  //{2, 2, "IMAGEALPHACROP", cmd_imagealphacrop},
-  //{2, 2, "IMAGEALPHAMASK", cmd_imagealphamask},
-  //{1, 1, "IMAGEALPHAPREMULTIPLY", cmd_imagealphapremultiply},
-  //{2, 2, "IMAGECLEARBACKGROUND", cmd_imageclearbackground},
+  {3, 3, "IMAGEALPHACLEAR", cmd_imagealphaclear},
+  {2, 2, "IMAGEALPHACROP", cmd_imagealphacrop},
+  {1, 1, "IMAGEALPHAPREMULTIPLY", cmd_imagealphapremultiply},
+  {2, 2, "IMAGECLEARBACKGROUND", cmd_imageclearbackground},
   {2, 2, "IMAGECOLORBRIGHTNESS", cmd_imagecolorbrightness},
   {2, 2, "IMAGECOLORCONTRAST", cmd_imagecolorcontrast},
   {1, 1, "IMAGECOLORGRAYSCALE", cmd_imagecolorgrayscale},
   {1, 1, "IMAGECOLORINVERT", cmd_imagecolorinvert},
-  //{3, 3, "IMAGECOLORREPLACE", cmd_imagecolorreplace},
+  {3, 3, "IMAGECOLORREPLACE", cmd_imagecolorreplace},
   {2, 2, "IMAGECOLORTINT", cmd_imagecolortint},
-  //{2, 2, "IMAGECROP", cmd_imagecrop},
-  //{5, 5, "IMAGEDITHER", cmd_imagedither},
-  //{5, 5, "IMAGEDRAW", cmd_imagedraw},
+  {2, 2, "IMAGECROP", cmd_imagecrop},
+  {5, 5, "IMAGEDITHER", cmd_imagedither},
   {5, 5, "IMAGEDRAWCIRCLE", cmd_imagedrawcircle},
-  //{4, 4, "IMAGEDRAWCIRCLEV", cmd_imagedrawcirclev},
-  //{6, 6, "IMAGEDRAWLINE", cmd_imagedrawline},
-  //{4, 4, "IMAGEDRAWLINEV", cmd_imagedrawlinev},
-  //{4, 4, "IMAGEDRAWPIXEL", cmd_imagedrawpixel},
-  //{3, 3, "IMAGEDRAWPIXELV", cmd_imagedrawpixelv},
-  //{6, 6, "IMAGEDRAWRECTANGLE", cmd_imagedrawrectangle},
-  //{4, 4, "IMAGEDRAWRECTANGLELINES", cmd_imagedrawrectanglelines},
+  {4, 4, "IMAGEDRAWCIRCLEV", cmd_imagedrawcirclev},
+  {6, 6, "IMAGEDRAWLINE", cmd_imagedrawline},
+  {4, 4, "IMAGEDRAWLINEV", cmd_imagedrawlinev},
+  {4, 4, "IMAGEDRAWPIXEL", cmd_imagedrawpixel},
+  {3, 3, "IMAGEDRAWPIXELV", cmd_imagedrawpixelv},
+  {6, 6, "IMAGEDRAWRECTANGLE", cmd_imagedrawrectangle},
+  {4, 4, "IMAGEDRAWRECTANGLELINES", cmd_imagedrawrectanglelines},
   {3, 3, "IMAGEDRAWRECTANGLEREC", cmd_imagedrawrectanglerec},
-  //{4, 4, "IMAGEDRAWRECTANGLEV", cmd_imagedrawrectanglev},
-  //{6, 6, "IMAGEDRAWTEXT", cmd_imagedrawtext},
-  //{7, 7, "IMAGEDRAWTEXTEX", cmd_imagedrawtextex},
+  {4, 4, "IMAGEDRAWRECTANGLEV", cmd_imagedrawrectanglev},
+  {6, 6, "IMAGEDRAWTEXT", cmd_imagedrawtext},
   {1, 1, "IMAGEFLIPHORIZONTAL", cmd_imagefliphorizontal},
   {1, 1, "IMAGEFLIPVERTICAL", cmd_imageflipvertical},
   {2, 2, "IMAGEFORMAT", cmd_imageformat},
-  //{1, 1, "IMAGEMIPMAPS", cmd_imagemipmaps},
-  //{3, 3, "IMAGERESIZE", cmd_imageresize},
-  //{6, 6, "IMAGERESIZECANVAS", cmd_imageresizecanvas},
-  //{3, 3, "IMAGERESIZENN", cmd_imageresizenn},
-  //{1, 1, "IMAGEROTATECCW", cmd_imagerotateccw},
-  //{1, 1, "IMAGEROTATECW", cmd_imagerotatecw},
-  //{2, 2, "IMAGETOPOT", cmd_imagetopot},
+  {1, 1, "IMAGEMIPMAPS", cmd_imagemipmaps},
+  {3, 3, "IMAGERESIZE", cmd_imageresize},
+  {6, 6, "IMAGERESIZECANVAS", cmd_imageresizecanvas},
+  {3, 3, "IMAGERESIZENN", cmd_imageresizenn},
+  {1, 1, "IMAGEROTATECCW", cmd_imagerotateccw},
+  {1, 1, "IMAGEROTATECW", cmd_imagerotatecw},
+  {2, 2, "IMAGETOPOT", cmd_imagetopot},
   {0, 0, "INITAUDIODEVICE", cmd_initaudiodevice},
   {3, 3, "INITWINDOW", cmd_initwindow},
   {0, 0, "MAXIMIZEWINDOW", cmd_maximizewindow},
@@ -4703,11 +4712,11 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "RESTOREWINDOW", cmd_restorewindow},
   {1, 1, "RESUMEMUSICSTREAM", cmd_resumemusicstream},
   {1, 1, "RESUMESOUND", cmd_resumesound},
-  //{1, 1, "SETCAMERAALTCONTROL", cmd_setcameraaltcontrol},
+  {1, 1, "SETCAMERAALTCONTROL", cmd_setcameraaltcontrol},
   {2, 2, "SETCAMERAMODE", cmd_setcameramode},
   //{6, 6, "SETCAMERAMOVECONTROLS", cmd_setcameramovecontrols},
-  //{1, 1, "SETCAMERAPANCONTROL", cmd_setcamerapancontrol},
-  //{1, 1, "SETCAMERASMOOTHZOOMCONTROL", cmd_setcamerasmoothzoomcontrol},
+  {1, 1, "SETCAMERAPANCONTROL", cmd_setcamerapancontrol},
+  {1, 1, "SETCAMERASMOOTHZOOMCONTROL", cmd_setcamerasmoothzoomcontrol},
   {1, 1, "SETCLIPBOARDTEXT", cmd_setclipboardtext},
   {1, 1, "SETCONFIGFLAGS", cmd_setconfigflags},
   {1, 1, "SETEXITKEY", cmd_setexitkey},
@@ -4722,8 +4731,6 @@ FUNC_SIG lib_proc[] = {
   {2, 2, "SETMOUSESCALE", cmd_setmousescale},
   {2, 2, "SETMUSICPITCH", cmd_setmusicpitch},
   {2, 2, "SETMUSICVOLUME", cmd_setmusicvolume},
-  //{3, 3, "SETPIXELCOLOR", cmd_setpixelcolor},
-  //{4, 4, "SETSHADERVALUE", cmd_setshadervalue},
   //{3, 3, "SETSHADERVALUEMATRIX", cmd_setshadervaluematrix},
   {3, 3, "SETSHADERVALUETEXTURE", cmd_setshadervaluetexture},
   {4, 5, "SETSHADERVALUEV", cmd_setshadervaluev},
@@ -4751,14 +4758,12 @@ FUNC_SIG lib_proc[] = {
   {1, 1, "UNLOADIMAGE", cmd_unloadimage},
   //{1, 1, "UNLOADMESH", cmd_unloadmesh},
   {1, 1, "UNLOADMODEL", cmd_unloadmodel},
-  //{1, 1, "UNLOADMODELANIMATION", cmd_unloadmodelanimation},
   {1, 1, "UNLOADMUSICSTREAM", cmd_unloadmusicstream},
   {1, 1, "UNLOADRENDERTEXTURE", cmd_unloadrendertexture},
   {1, 1, "UNLOADSHADER", cmd_unloadshader},
   {1, 1, "UNLOADSOUND", cmd_unloadsound},
   {1, 1, "UNLOADTEXTURE", cmd_unloadtexture},
   {1, 1, "UPDATECAMERA", cmd_updatecamera},
-  //{3, 3, "UPDATEMODELANIMATION", cmd_updatemodelanimation},
   {1, 1, "UPDATEMUSICSTREAM", cmd_updatemusicstream},
   {2, 2, "UPDATETEXTURE", cmd_updatetexture},
   {0, 0, "GUICLEARTOOLTIP", cmd_guicleartooltip},
