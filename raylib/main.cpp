@@ -41,6 +41,37 @@ static bool is_map(var_p_t var) {
   return var != nullptr && v_is_type(var, V_MAP);
 }
 
+static Vector3 get_array_elem_vec3(var_p_t array, int index) {
+  Vector3 result;
+  int size = v_asize(array);
+  if (index >= 0 && index < size) {
+    var_p_t elem = v_elem(array, index);
+    if (elem->type == V_ARRAY) {
+      result.x = get_array_elem_num(elem, 0);
+      result.y = get_array_elem_num(elem, 1);
+      result.z = get_array_elem_num(elem, 2);
+    }
+  }
+  return result;
+}
+
+static Vector3 get_map_vec3(var_p_t map, const char *name) {
+  Vector3 result;
+  var_p_t array = map_get(map, name);
+  if (is_array(array, 3)) {
+    result.x = get_array_elem_num(array, 0);
+    result.y = get_array_elem_num(array, 1);
+    result.z = get_array_elem_num(array, 2);
+  } else if (is_map(array)) {
+    result.x = get_map_num(array, "x");
+    result.y = get_map_num(array, "y");
+    result.z = get_map_num(array, "z");
+  } else {
+    TraceLog(LOG_FATAL, "Vector3 not found");
+  }
+  return result;
+}
+
 static Color get_param_color(int argc, slib_par_t *params, int n) {
   Color result;
   if (n >= 0 && n < argc && params[n].var_p->type == V_INT) {
@@ -166,33 +197,45 @@ static Vector3 get_param_vec3(int argc, slib_par_t *params, int n) {
   return result;
 }
 
-static Vector3 get_array_elem_vec3(var_p_t array, int index) {
-  Vector3 result;
-  int size = v_asize(array);
-  if (index >= 0 && index < size) {
-    var_p_t elem = v_elem(array, index);
-    if (elem->type == V_ARRAY) {
-      result.x = get_array_elem_num(elem, 0);
-      result.y = get_array_elem_num(elem, 1);
-      result.z = get_array_elem_num(elem, 2);
+static Shader get_param_shader(int argc, slib_par_t *params, int n) {
+  Shader result;
+  if (is_param_map(argc, params, n)) {
+    var_p_t var = map_get(params[n].var_p, "locs");
+    if (v_is_type(var, V_INT)) {
+      result.locs = (int *)(var->v.i);
+    } else {
+      result.locs = nullptr;
     }
+    result.id = map_get_int(params[n].var_p, mapID, -1);
+  } else {
+    TraceLog(LOG_FATAL, "Shader not found");
   }
   return result;
 }
 
-static Vector3 get_map_vec3(var_p_t map, const char *name) {
-  Vector3 result;
-  var_p_t array = map_get(map, name);
-  if (is_array(array, 3)) {
-    result.x = get_array_elem_num(array, 0);
-    result.y = get_array_elem_num(array, 1);
-    result.z = get_array_elem_num(array, 2);
-  } else if (is_map(array)) {
-    result.x = get_map_num(array, "x");
-    result.y = get_map_num(array, "y");
-    result.z = get_map_num(array, "z");
+static BoundingBox get_param_bounding_box(int argc, slib_par_t *params, int n) {
+  BoundingBox result;
+  if (is_param_array(argc, params, n)) {
+    var_p_t array = params[n].var_p;
+    result.min = get_array_elem_vec3(array, 0);
+    result.max = get_array_elem_vec3(array, 1);
   } else {
-    TraceLog(LOG_FATAL, "Vector3 not found");
+    result.min.x = 0;
+    result.min.y = 0;
+    result.min.z = 0;
+    result.max.x = 0;
+    result.max.y = 0;
+    result.max.z = 0;
+  }
+  return result;
+}
+
+static Ray get_param_ray(int argc, slib_par_t *params, int n) {
+  Ray result;
+  if (is_param_map(argc, params, n)) {
+    var_p_t map = params[n].var_p;
+    result.position = get_map_vec3(map, "position");
+    result.direction = get_map_vec3(map, "direction");
   }
   return result;
 }
@@ -260,39 +303,6 @@ static void set_camera_3d(var_p_t var, Camera3D *camera) {
   }
 }
 
-static Shader get_param_shader(int argc, slib_par_t *params, int n) {
-  Shader result;
-  if (is_param_map(argc, params, n)) {
-    var_p_t var = map_get(params[n].var_p, "locs");
-    if (v_is_type(var, V_INT)) {
-      result.locs = (int *)(var->v.i);
-    } else {
-      result.locs = nullptr;
-    }
-    result.id = map_get_int(params[n].var_p, mapID, -1);
-  } else {
-    TraceLog(LOG_FATAL, "Shader not found");
-  }
-  return result;
-}
-
-static BoundingBox get_param_bounding_box(int argc, slib_par_t *params, int n) {
-  BoundingBox result;
-  if (is_param_array(argc, params, n)) {
-    var_p_t array = params[n].var_p;
-    result.min = get_array_elem_vec3(array, 0);
-    result.max = get_array_elem_vec3(array, 1);
-  } else {
-    result.min.x = 0;
-    result.min.y = 0;
-    result.min.z = 0;
-    result.max.x = 0;
-    result.max.y = 0;
-    result.max.z = 0;
-  }
-  return result;
-}
-
 static int get_font_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
@@ -312,10 +322,8 @@ static int get_font_id(int argc, slib_par_t *params, int arg, var_t *retval) {
 static int get_image_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
-    // the passed in variable is a map
     int id = map_get_int(params[arg].var_p, mapID, -1);
     if (id != -1 && _imageMap.find(id) != _imageMap.end()) {
-      // the map contained an ID field with a live value
       result = id;
     }
   }
@@ -356,10 +364,8 @@ static int get_texture_id(int argc, slib_par_t *params, int arg, var_t *retval) 
 static int get_model_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
-    // the passed in variable is a map
     int id = map_get_int(params[arg].var_p, mapID, -1);
     if (id != -1 && _modelMap.find(id) != _modelMap.end()) {
-      // the map contained an ID field with a live value
       result = id;
     }
   }
@@ -372,10 +378,8 @@ static int get_model_id(int argc, slib_par_t *params, int arg, var_t *retval) {
 static int get_physics_body_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
-    // the passed in variable is a map
     int id = map_get_int(params[arg].var_p, mapID, -1);
     if (id != -1 && _physicsMap.find(id) != _physicsMap.end()) {
-      // the map contained an ID field with a live value
       result = id;
     }
   }
@@ -388,10 +392,8 @@ static int get_physics_body_id(int argc, slib_par_t *params, int arg, var_t *ret
 static int get_render_texture_id(int argc, slib_par_t *params, int n) {
   int result = 0;
   if (is_param_map(argc, params, n)) {
-    // the passed in variable is a map
     int id = map_get_int(params[n].var_p, mapID, -1);
     if (id != -1 && _renderMap.find(id) != _renderMap.end()) {
-      // the map contained an ID field with a live value
       result = id;
     }
   }
@@ -403,7 +405,9 @@ static void v_setcolor(var_t *var, Color &c) {
   v_setint(var, color);
 }
 
-static void v_setfont(var_t *var, Font &font, int id) {
+static void v_setfont(var_t *var, Font &font) {
+  auto id = ++_nextId;
+  _fontMap[id] = font;
   map_init(var);
   v_setint(map_add_var(var, "baseSize", 0), font.baseSize);
   v_setint(map_add_var(var, "charsCount", 0), font.charsCount);
@@ -440,8 +444,8 @@ static void v_setvec3(var_t *var, Vector3 &vec3) {
 
 static void v_setphysics(var_t *var, PhysicsBody &physics) {
   map_init(var);
-  //v_setreal(map_add_var(var, "x", 0), vec2.x);
-  //v_setreal(map_add_var(var, "y", 0), vec2.y);
+  auto id = ++_nextId;
+  _physicsMap[id] = physics;
 }
 
 static void v_setshader(var_t *var, Shader &shader) {
@@ -479,6 +483,10 @@ static void v_setmodel(var_t *var, Model &model) {
   v_setint(map_add_var(var, "materialCount", 0), model.materialCount);
   v_setint(map_add_var(var, "boneCount", 0), model.boneCount);
   v_setint(map_add_var(var, mapID, 0), id);
+}
+
+static void v_setrayhit(var_t *var, RayHitInfo &info) {
+  // TODO
 }
 
 static int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
@@ -551,30 +559,20 @@ static int cmd_checkcollisionpointtriangle(int argc, slib_par_t *params, var_t *
   return 1;
 }
 
-int cmd_checkcollisionraybox(int argc, slib_par_t *params, var_t *retval) {
-  //auto ray = get_param_int(argc, params, 0, 0);
-  //auto box = get_param_int(argc, params, 1, 0);
-  //auto fnResult = CheckCollisionRayBox(ray, box);
-  //v_setint(retval, fnResult);
+static int cmd_checkcollisionraybox(int argc, slib_par_t *params, var_t *retval) {
+  auto ray = get_param_ray(argc, params, 0);
+  auto box = get_param_bounding_box(argc, params, 1);
+  auto fnResult = CheckCollisionRayBox(ray, box);
+  v_setint(retval, fnResult);
   return 1;
 }
 
-int cmd_checkcollisionraysphere(int argc, slib_par_t *params, var_t *retval) {
-  //auto ray = get_param_int(argc, params, 0, 0);
-  //auto center = get_param_int(argc, params, 1, 0);
-  //auto radius = get_param_int(argc, params, 2, 0);
-  //auto fnResult = CheckCollisionRaySphere(ray, center, radius);
-  //v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_checkcollisionraysphereex(int argc, slib_par_t *params, var_t *retval) {
-  //auto ray = get_param_int(argc, params, 0, 0);
-  //auto center = get_param_int(argc, params, 1, 0);
-  //auto radius = get_param_int(argc, params, 2, 0);
-  //auto collisionPoint = get_param_int(argc, params, 3, 0);
-  //auto fnResult = CheckCollisionRaySphereEx(ray, center, radius, collisionPoint);
-  //v_setint(retval, fnResult);
+static int cmd_checkcollisionraysphere(int argc, slib_par_t *params, var_t *retval) {
+  auto ray = get_param_ray(argc, params, 0);
+  auto center = get_param_vec3(argc, params, 1);
+  auto radius = get_param_num(argc, params, 2, 0);
+  auto fnResult = CheckCollisionRaySphere(ray, center, radius);
+  v_setint(retval, fnResult);
   return 1;
 }
 
@@ -664,18 +662,6 @@ static int cmd_genimagecolor(int argc, slib_par_t *params, var_t *retval) {
   auto color = get_param_color(argc, params, 2);
   auto image = GenImageColor(width, height, color);
   v_setimage(retval, image);
-  return 1;
-}
-
-int cmd_genimagefontatlas(int argc, slib_par_t *params, var_t *retval) {
-  // auto chars = get_param_str(argc, params, 0, NULL);
-  // auto recs = get_param_str(argc, params, 1, NULL);
-  // auto charsCount = get_param_str(argc, params, 2, NULL);
-  // auto fontSize = get_param_int(argc, params, 3, NULL);
-  // auto padding = get_param_str(argc, params, 4, NULL);
-  // auto packMethod = get_param_str(argc, params, 5, NULL);
-  // auto fnResult = GenImageFontAtlas(chars, recs, charsCount, fontSize, padding, packMethod);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -832,75 +818,41 @@ static int cmd_genmeshtorus(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_gentexturebrdf(int argc, slib_par_t *params, var_t *retval) {
-  // auto shader = get_param_str(argc, params, 0, NULL);
-  // auto size = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GenTextureBRDF(shader, size);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_gentextureirradiance(int argc, slib_par_t *params, var_t *retval) {
-  // auto shader = get_param_str(argc, params, 0, NULL);
-  // auto cubemap = get_param_str(argc, params, 1, NULL);
-  // auto size = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = GenTextureIrradiance(shader, cubemap, size);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_gentextureprefilter(int argc, slib_par_t *params, var_t *retval) {
-  // auto shader = get_param_str(argc, params, 0, NULL);
-  // auto cubemap = get_param_str(argc, params, 1, NULL);
-  // auto size = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = GenTexturePrefilter(shader, cubemap, size);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getcameramatrix(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_camera_3d(argc, params, 0);
-  // auto fnResult = GetCameraMatrix(camera);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getcameramatrix2d(int argc, slib_par_t *params, var_t *retval) {
-  // auto camera = get_camera_3d(argc, params, 0);
-  // auto fnResult = GetCameraMatrix2D(camera);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetClipboardText();
   v_setstr(retval, fnResult);
   return 1;
 }
 
-int cmd_getcollisionrayground(int argc, slib_par_t *params, var_t *retval) {
-  // auto ray = get_param_str(argc, params, 0, NULL);
-  // auto groundHeight = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GetCollisionRayGround(ray, groundHeight);
-  // v_setint(retval, fnResult);
+static int cmd_getcollisionrayground(int argc, slib_par_t *params, var_t *retval) {
+  auto ray = get_param_ray(argc, params, 0);
+  auto groundHeight = get_param_num(argc, params, 1, 0);
+  auto fnResult = GetCollisionRayGround(ray, groundHeight);
+  v_setrayhit(retval, fnResult);
   return 1;
 }
 
-int cmd_getcollisionraymodel(int argc, slib_par_t *params, var_t *retval) {
-  // auto ray = get_param_str(argc, params, 0, NULL);
-  // auto model = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GetCollisionRayModel(ray, model);
-  // v_setint(retval, fnResult);
-  return 1;
+static int cmd_getcollisionraymodel(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_model_id(argc, params, 1, retval);
+  if (id != -1) {
+    auto ray = get_param_ray(argc, params, 0);
+    auto fnResult = GetCollisionRayModel(ray, _modelMap.at(id));
+    v_setrayhit(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_getcollisionraytriangle(int argc, slib_par_t *params, var_t *retval) {
-  // auto ray = get_param_str(argc, params, 0, NULL);
-  // auto p1 = get_param_str(argc, params, 1, NULL);
-  // auto p2 = get_param_str(argc, params, 2, NULL);
-  // auto p3 = get_param_str(argc, params, 3, NULL);
-  // auto fnResult = GetCollisionRayTriangle(ray, p1, p2, p3);
-  // v_setint(retval, fnResult);
+static int cmd_getcollisionraytriangle(int argc, slib_par_t *params, var_t *retval) {
+  auto ray = get_param_ray(argc, params, 0);
+  auto p1 = get_param_vec3(argc, params, 1);
+  auto p2 = get_param_vec3(argc, params, 2);
+  auto p3 = get_param_vec3(argc, params, 3);
+  auto fnResult = GetCollisionRayTriangle(ray, p1, p2, p3);
+  v_setrayhit(retval, fnResult);
   return 1;
 }
 
@@ -919,9 +871,9 @@ static int cmd_getcolor(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_getfontdefault(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetFontDefault();
-  // v_setint(retval, fnResult);
+static int cmd_getfontdefault(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetFontDefault();
+  v_setfont(retval, fnResult);
   return 1;
 }
 
@@ -999,12 +951,18 @@ static int cmd_getgesturepinchvector(int argc, slib_par_t *params, var_t *retval
   return 1;
 }
 
-int cmd_getglyphindex(int argc, slib_par_t *params, var_t *retval) {
-  // auto font = get_param_str(argc, params, 0, NULL);
-  // auto codepoint = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GetGlyphIndex(font, codepoint);
-  // v_setint(retval, fnResult);
-  return 1;
+static int cmd_getglyphindex(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_font_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto codepoint = get_param_int(argc, params, 1, 0);
+    auto fnResult = GetGlyphIndex(_fontMap[id], codepoint);
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_getimagealphaborder(int argc, slib_par_t *params, var_t *retval) {
@@ -1024,18 +982,6 @@ static int cmd_getimagealphaborder(int argc, slib_par_t *params, var_t *retval) 
 static int cmd_getkeypressed(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetKeyPressed();
   v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getmatrixmodelview(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetMatrixModelview();
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_getmatrixprojection(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetMatrixProjection();
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1101,11 +1047,13 @@ static int cmd_getmouseposition(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_getmouseray(int argc, slib_par_t *params, var_t *retval) {
-  // auto mousePosition = get_param_str(argc, params, 0, NULL);
-  // auto camera = get_camera_3d(argc, params, 1, NULL);
-  // auto fnResult = GetMouseRay(mousePosition, camera);
-  // v_setint(retval, fnResult);
+static int cmd_getmouseray(int argc, slib_par_t *params, var_t *retval) {
+  auto mousePosition = get_param_vec2(argc, params, 0);
+  auto camera = get_camera_3d(argc, params, 1);
+  auto ray = GetMouseRay(mousePosition, camera);
+  map_init(retval);
+  v_setvec3(map_add_var(retval, "position", 0), ray.position);
+  v_setvec3(map_add_var(retval, "direction", 0), ray.direction);
   return 1;
 }
 
@@ -1167,9 +1115,9 @@ static int cmd_getrandomvalue(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_getscreendata(int argc, slib_par_t *params, var_t *retval) {
-  // auto fnResult = GetScreenData();
-  // v_setint(retval, fnResult);
+static int cmd_getscreendata(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetScreenData();
+  v_setimage(retval, fnResult);
   return 1;
 }
 
@@ -1576,9 +1524,7 @@ static int cmd_iswindowresized(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
   Font font = LoadFont(fileName);
-  auto id = ++_nextId;
-  _fontMap[id] = font;
-  v_setfont(retval, font, id);
+  v_setfont(retval, font);
   return 1;
 }
 
@@ -1587,9 +1533,7 @@ static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto fontSize = get_param_int(argc, params, 1, 0);
   auto charsCount = get_param_int(argc, params, 3, 0);
   auto font = LoadFontEx(fileName, fontSize, 0, charsCount);
-  auto id = ++_nextId;
-  _fontMap[id] = font;
-  v_setfont(retval, font, id);
+  v_setfont(retval, font);
   return 1;
 }
 
@@ -1597,14 +1541,6 @@ static int cmd_loadimage(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
   auto image = LoadImage(fileName);
   v_setimage(retval, image);
-  return 1;
-}
-
-int cmd_loadimageanim(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto frames = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = LoadImageAnim(fileName, frames);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1616,14 +1552,6 @@ static int cmd_loadimageraw(int argc, slib_par_t *params, var_t *retval) {
   auto headerSize = get_param_int(argc, params, 4, 0);
   auto fnResult = LoadImageRaw(fileName, width, height, format, headerSize);
   v_setimage(retval, fnResult);
-  return 1;
-}
-
-int cmd_loadmeshes(int argc, slib_par_t *params, var_t *retval) {
-  //auto fileName = get_param_str(argc, params, 0, NULL);
-  //auto meshCount = get_param_int(argc, params, 1, 0);
-  //auto fnResult = LoadMeshes(fileName, meshCount);
-  //v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1730,21 +1658,35 @@ static int cmd_measuretext(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_measuretextex(int argc, slib_par_t *params, var_t *retval) {
-  // auto font = get_param_str(argc, params, 0, NULL);
-  // auto text = get_param_str(argc, params, 1, NULL);
-  // auto fontSize = get_param_int(argc, params, 2, NULL);
-  // auto spacing = get_param_str(argc, params, 3, NULL);
-  // auto fnResult = MeasureTextEx(font, text, fontSize, spacing);
-  // v_setint(retval, fnResult);
-  return 1;
+static int cmd_measuretextex(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_font_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto text = get_param_str(argc, params, 1, NULL);
+    auto fontSize = get_param_num(argc, params, 2, 0);
+    auto spacing = get_param_num(argc, params, 3, 0);
+    auto fnResult = MeasureTextEx(_fontMap[id], text, fontSize, spacing);
+    v_setvec2(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_meshboundingbox(int argc, slib_par_t *params, var_t *retval) {
-  // auto mesh = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = MeshBoundingBox(mesh);
-  // v_setint(retval, fnResult);
-  return 1;
+static int cmd_meshboundingbox(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_mesh_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto mesh = MeshBoundingBox(_meshMap.at(id));
+    map_init(retval);
+    v_setvec3(map_add_var(retval, "min", 0), mesh.min);
+    v_setvec3(map_add_var(retval, "max", 0), mesh.max);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_textformat(int argc, slib_par_t *params, var_t *retval) {
@@ -2122,34 +2064,52 @@ static int cmd_drawmodel(int argc, slib_par_t *params, var_t *retval) {
 }
 
 int cmd_drawmodelex(int argc, slib_par_t *params, var_t *retval) {
-  // auto model = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_vec3(argc, params, 1, NULL);
-  // auto rotationAxis = get_param_str(argc, params, 2, NULL);
-  // auto rotationAngle = get_param_str(argc, params, 3, NULL);
-  // auto scale = get_param_str(argc, params, 4, NULL);
-  // auto tint = get_param_color(argc, params, 5);
-  // DrawModelEx(model, position, rotationAxis, rotationAngle, scale, tint);
-  return 1;
+  int result;
+  int id = get_model_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto position = get_param_vec3(argc, params, 1);
+    auto rotationAxis = get_param_vec3(argc, params, 2);
+    auto rotationAngle = get_param_num(argc, params, 3, 0);
+    auto scale = get_param_vec3(argc, params, 4);
+    auto tint = get_param_color(argc, params, 5);
+    DrawModelEx(_modelMap.at(id), position, rotationAxis, rotationAngle, scale, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 int cmd_drawmodelwires(int argc, slib_par_t *params, var_t *retval) {
-  // auto model = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_vec3(argc, params, 1, NULL);
-  // auto scale = get_param_str(argc, params, 2, NULL);
-  // auto tint = get_param_color(argc, params, 3);
-  // DrawModelWires(model, position, scale, tint);
-  return 1;
+  int result;
+  int id = get_model_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto position = get_param_vec3(argc, params, 1);
+    auto scale = get_param_num(argc, params, 2, 0);
+    auto tint = get_param_color(argc, params, 3);
+    DrawModelWires(_modelMap.at(id), position, scale, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 int cmd_drawmodelwiresex(int argc, slib_par_t *params, var_t *retval) {
-  // auto model = get_param_str(argc, params, 0, NULL);
-  // auto position = get_param_vec3(argc, params, 1, NULL);
-  // auto rotationAxis = get_param_str(argc, params, 2, NULL);
-  // auto rotationAngle = get_param_str(argc, params, 3, NULL);
-  // auto scale = get_param_str(argc, params, 4, NULL);
-  // auto tint = get_param_color(argc, params, 5);
-  // DrawModelWiresEx(model, position, rotationAxis, rotationAngle, scale, tint);
-  return 1;
+  int result;
+  int id = get_model_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto position = get_param_vec3(argc, params, 1);
+    auto rotationAxis = get_param_vec3(argc, params, 2);
+    auto rotationAngle = get_param_num(argc, params, 3, 0);
+    auto scale = get_param_vec3(argc, params, 4);
+    auto tint = get_param_color(argc, params, 5);
+    DrawModelWiresEx(_modelMap.at(id), position, rotationAxis, rotationAngle, scale, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_drawpixel(int argc, slib_par_t *params, var_t *retval) {
@@ -2202,10 +2162,10 @@ static int cmd_drawpolylines(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawray(int argc, slib_par_t *params, var_t *retval) {
-  // auto ray = get_param_str(argc, params, 0, NULL);
-  // auto color = get_param_color(argc, params, 1);
-  // DrawRay(ray, color);
+static int cmd_drawray(int argc, slib_par_t *params, var_t *retval) {
+  auto ray = get_param_ray(argc, params, 0);
+  auto color = get_param_color(argc, params, 1);
+  DrawRay(ray, color);
   return 1;
 }
 
@@ -2374,14 +2334,20 @@ static int cmd_drawtext(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_drawtextcodepoint(int argc, slib_par_t *params, var_t *retval) {
-  // auto font = get_param_str(argc, params, 0, NULL);
-  // auto codepoint = get_param_str(argc, params, 1, NULL);
-  // auto position = get_param_vec3(argc, params, 2, NULL);
-  // auto scale = get_param_str(argc, params, 3, NULL);
-  // auto tint = get_param_color(argc, params, 4);
-  // DrawTextCodepoint(font, codepoint, position, scale, tint);
-  return 1;
+static int cmd_drawtextcodepoint(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_font_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto codepoint = get_param_int(argc, params, 1, 0);
+    auto position = get_param_vec2(argc, params, 2);
+    auto scale = get_param_num(argc, params, 3, 0);
+    auto tint = get_param_color(argc, params, 4);
+    DrawTextCodepoint(_fontMap[id], codepoint, position, scale, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_drawtextex(int argc, slib_par_t *params, var_t *retval) {
@@ -2401,32 +2367,22 @@ static int cmd_drawtextex(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_drawtextrec(int argc, slib_par_t *params, var_t *retval) {
-  // auto font = get_param_str(argc, params, 0, NULL);
-  // auto text = get_param_str(argc, params, 1, NULL);
-  // auto rec = get_param_rect(argc, params, 2, NULL);
-  // auto fontSize = get_param_int(argc, params, 3, NULL);
-  // auto spacing = get_param_str(argc, params, 4, NULL);
-  // auto wordWrap = get_param_str(argc, params, 5, NULL);
-  // auto tint = get_param_color(argc, params, 6);
-  // DrawTextRec(font, text, rec, fontSize, spacing, wordWrap, tint);
-  return 1;
-}
-
-int cmd_drawtextrecex(int argc, slib_par_t *params, var_t *retval) {
-  // auto font = get_param_str(argc, params, 0, NULL);
-  // auto text = get_param_str(argc, params, 1, NULL);
-  // auto rec = get_param_rect(argc, params, 2, NULL);
-  // auto fontSize = get_param_int(argc, params, 3, NULL);
-  // auto spacing = get_param_str(argc, params, 4, NULL);
-  // auto wordWrap = get_param_str(argc, params, 5, NULL);
-  // auto tint = get_param_color(argc, params, 6);
-  // auto selectStart = get_param_str(argc, params, 7, NULL);
-  // auto selectLength = get_param_str(argc, params, 8, NULL);
-  // auto selectTint = get_param_str(argc, params, 9, NULL);
-  // auto selectBackTint = get_param_str(argc, params, 10, NULL);
-  // DrawTextRecEx(font, text, rec, fontSize, spacing, wordWrap, tint, selectStart, selectLength, selectTint, selectBackTint);
-  return 1;
+static int cmd_drawtextrec(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_font_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto text = get_param_str(argc, params, 1, NULL);
+    auto rec = get_param_rect(argc, params, 2);
+    auto fontSize = get_param_num(argc, params, 3, 0);
+    auto spacing = get_param_num(argc, params, 4, 0);
+    bool wordWrap = get_param_int(argc, params, 5, 0) == 1;
+    auto tint = get_param_color(argc, params, 6);
+    DrawTextRec(_fontMap[id], text, rec, fontSize, spacing, wordWrap, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_drawtexture(int argc, slib_par_t *params, var_t *retval) {
@@ -3361,18 +3317,6 @@ static int cmd_setmastervolume(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_setmatrixmodelview(int argc, slib_par_t *params, var_t *retval) {
-  // auto view = get_param_str(argc, params, 0, NULL);
-  // SetMatrixModelview(view);
-  return 1;
-}
-
-int cmd_setmatrixprojection(int argc, slib_par_t *params, var_t *retval) {
-  // auto proj = get_param_str(argc, params, 0, NULL);
-  // SetMatrixProjection(proj);
-  return 1;
-}
-
 static int cmd_setmodeldiffusetexture(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int modelId = get_model_id(argc, params, 0, retval);
@@ -3437,14 +3381,6 @@ static int cmd_setmusicvolume(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
-}
-
-int cmd_setshadervaluematrix(int argc, slib_par_t *params, var_t *retval) {
-  // auto shader = get_param_shader(argc, params, 0);
-  // auto uniformLoc = get_param_int(argc, params, 1, 0);
-  // auto mat = get_param_str(argc, params, 2, NULL);
-  // SetShaderValueMatrix(shader, uniformLoc, mat);
-  return 1;
 }
 
 static int cmd_setshadervaluetexture(int argc, slib_par_t *params, var_t *retval) {
@@ -4393,7 +4329,7 @@ static int cmd_setphysicstimestep(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-FUNC_SIG lib_func[] = {
+static FUNC_SIG lib_func[] = {
   {1, 1, "CHANGEDIRECTORY", cmd_changedirectory},
   {2, 2, "CHECKCOLLISIONBOXES", cmd_checkcollisionboxes},
   {3, 3, "CHECKCOLLISIONBOXSPHERE", cmd_checkcollisionboxsphere},
@@ -4402,9 +4338,8 @@ FUNC_SIG lib_func[] = {
   {3, 3, "CHECKCOLLISIONPOINTCIRCLE", cmd_checkcollisionpointcircle},
   {2, 2, "CHECKCOLLISIONPOINTREC", cmd_checkcollisionpointrec},
   {4, 4, "CHECKCOLLISIONPOINTTRIANGLE", cmd_checkcollisionpointtriangle},
-  //{2, 2, "CHECKCOLLISIONRAYBOX", cmd_checkcollisionraybox},
-  //{3, 3, "CHECKCOLLISIONRAYSPHERE", cmd_checkcollisionraysphere},
-  //{4, 4, "CHECKCOLLISIONRAYSPHEREEX", cmd_checkcollisionraysphereex},
+  {2, 2, "CHECKCOLLISIONRAYBOX", cmd_checkcollisionraybox},
+  {3, 3, "CHECKCOLLISIONRAYSPHERE", cmd_checkcollisionraysphere},
   {2, 2, "CHECKCOLLISIONRECS", cmd_checkcollisionrecs},
   {4, 4, "CHECKCOLLISIONSPHERES", cmd_checkcollisionspheres},
   {2, 2, "COLORALPHA", cmd_coloralpha},
@@ -4415,7 +4350,6 @@ FUNC_SIG lib_func[] = {
   {3, 3, "GENIMAGECELLULAR", cmd_genimagecellular},
   {6, 6, "GENIMAGECHECKED", cmd_genimagechecked},
   {3, 3, "GENIMAGECOLOR", cmd_genimagecolor},
-  //{6, 6, "GENIMAGEFONTATLAS", cmd_genimagefontatlas},
   {4, 4, "GENIMAGEGRADIENTH", cmd_genimagegradienth},
   {5, 5, "GENIMAGEGRADIENTRADIAL", cmd_genimagegradientradial},
   {4, 4, "GENIMAGEGRADIENTV", cmd_genimagegradientv},
@@ -4431,18 +4365,13 @@ FUNC_SIG lib_func[] = {
   {2, 2, "GENMESHPOLY", cmd_genmeshpoly},
   {3, 3, "GENMESHSPHERE", cmd_genmeshsphere},
   {4, 4, "GENMESHTORUS", cmd_genmeshtorus},
-  //{2, 2, "GENTEXTUREBRDF", cmd_gentexturebrdf},
-  //{3, 3, "GENTEXTUREIRRADIANCE", cmd_gentextureirradiance},
-  //{3, 3, "GENTEXTUREPREFILTER", cmd_gentextureprefilter},
-  //{1, 1, "GETCAMERAMATRIX", cmd_getcameramatrix},
-  //{1, 1, "GETCAMERAMATRIX2D", cmd_getcameramatrix2d},
   {0, 0, "GETCLIPBOARDTEXT", cmd_getclipboardtext},
-  //{2, 2, "GETCOLLISIONRAYGROUND", cmd_getcollisionrayground},
-  //{2, 2, "GETCOLLISIONRAYMODEL", cmd_getcollisionraymodel},
-  //{4, 4, "GETCOLLISIONRAYTRIANGLE", cmd_getcollisionraytriangle},
+  {2, 2, "GETCOLLISIONRAYGROUND", cmd_getcollisionrayground},
+  {2, 2, "GETCOLLISIONRAYMODEL", cmd_getcollisionraymodel},
+  {4, 4, "GETCOLLISIONRAYTRIANGLE", cmd_getcollisionraytriangle},
   {2, 2, "GETCOLLISIONREC", cmd_getcollisionrec},
   {1, 1, "GETCOLOR", cmd_getcolor},
-  //{0, 0, "GETFONTDEFAULT", cmd_getfontdefault},
+  {0, 0, "GETFONTDEFAULT", cmd_getfontdefault},
   {0, 0, "GETFPS", cmd_getfps},
   {0, 0, "GETFRAMETIME", cmd_getframetime},
   {1, 1, "GETGAMEPADAXISCOUNT", cmd_getgamepadaxiscount},
@@ -4455,11 +4384,9 @@ FUNC_SIG lib_func[] = {
   {0, 0, "GETGESTUREHOLDDURATION", cmd_getgestureholdduration},
   {0, 0, "GETGESTUREPINCHANGLE", cmd_getgesturepinchangle},
   {0, 0, "GETGESTUREPINCHVECTOR", cmd_getgesturepinchvector},
-  //{2, 2, "GETGLYPHINDEX", cmd_getglyphindex},
+  {2, 2, "GETGLYPHINDEX", cmd_getglyphindex},
   {2, 2, "GETIMAGEALPHABORDER", cmd_getimagealphaborder},
   {0, 0, "GETKEYPRESSED", cmd_getkeypressed},
-  //{0, 0, "GETMATRIXMODELVIEW", cmd_getmatrixmodelview},
-  //{0, 0, "GETMATRIXPROJECTION", cmd_getmatrixprojection},
   {0, 0, "GETMONITORCOUNT", cmd_getmonitorcount},
   {1, 1, "GETMONITORHEIGHT", cmd_getmonitorheight},
   {1, 1, "GETMONITORNAME", cmd_getmonitorname},
@@ -4469,7 +4396,7 @@ FUNC_SIG lib_func[] = {
   {1, 1, "GETMONITORWIDTH", cmd_getmonitorwidth},
   {0, 0, "GETMOUSECURSOR", cmd_getmousecursor},
   {0, 0, "GETMOUSEPOSITION", cmd_getmouseposition},
-  //{2, 2, "GETMOUSERAY", cmd_getmouseray},
+  {2, 2, "GETMOUSERAY", cmd_getmouseray},
   {0, 0, "GETMOUSEWHEELMOVE", cmd_getmousewheelmove},
   {0, 0, "GETMOUSEX", cmd_getmousex},
   {0, 0, "GETMOUSEY", cmd_getmousey},
@@ -4477,7 +4404,7 @@ FUNC_SIG lib_func[] = {
   {1, 1, "GETMUSICTIMEPLAYED", cmd_getmusictimeplayed},
   {1, 1, "GETPREVDIRECTORYPATH", cmd_getprevdirectorypath},
   {2, 2, "GETRANDOMVALUE", cmd_getrandomvalue},
-  //{0, 0, "GETSCREENDATA", cmd_getscreendata},
+  {0, 0, "GETSCREENDATA", cmd_getscreendata},
   {0, 0, "GETSCREENHEIGHT", cmd_getscreenheight},
   {2, 2, "GETSCREENTOWORLD2D", cmd_getscreentoworld2d},
   {0, 0, "GETSCREENWIDTH", cmd_getscreenwidth},
@@ -4535,9 +4462,7 @@ FUNC_SIG lib_func[] = {
   {1, 1, "LOADFONT", cmd_loadfont},
   {4, 4, "LOADFONTEX", cmd_loadfontex},
   {1, 1, "LOADIMAGE", cmd_loadimage},
-  //{2, 2, "LOADIMAGEANIM", cmd_loadimageanim},
   {5, 5, "LOADIMAGERAW", cmd_loadimageraw},
-  //{2, 2, "LOADMESHES", cmd_loadmeshes},
   {1, 1, "LOADMODEL", cmd_loadmodel},
   {1, 1, "LOADMODELFROMMESH", cmd_loadmodelfrommesh},
   {1, 1, "LOADMUSICSTREAM", cmd_loadmusicstream},
@@ -4548,8 +4473,8 @@ FUNC_SIG lib_func[] = {
   {1, 1, "LOADTEXTURE", cmd_loadtexture},
   {1, 1, "LOADTEXTUREFROMIMAGE", cmd_loadtexturefromimage},
   {2, 2, "MEASURETEXT", cmd_measuretext},
-  //{4, 4, "MEASURETEXTEX", cmd_measuretextex},
-  //{1, 1, "MESHBOUNDINGBOX", cmd_meshboundingbox},
+  {4, 4, "MEASURETEXTEX", cmd_measuretextex},
+  {1, 1, "MESHBOUNDINGBOX", cmd_meshboundingbox},
   {1, 1, "TEXTFORMAT", cmd_textformat},
   {0, 0, "WINDOWSHOULDCLOSE", cmd_windowshouldclose},
   {2, 2, "GUIBUTTON", cmd_guibutton},
@@ -4592,7 +4517,7 @@ FUNC_SIG lib_func[] = {
   {0, 0, "PHYSICSSHAPETYPE", cmd_physicsshapetype},
 };
 
-FUNC_SIG lib_proc[] = {
+static FUNC_SIG lib_proc[] = {
   {1, 1, "BEGINBLENDMODE", cmd_beginblendmode},
   {0, 0, "BEGINDRAWING", cmd_begindrawing},
   {1, 1, "BEGINMODE2D", cmd_beginmode2d},
@@ -4635,16 +4560,16 @@ FUNC_SIG lib_proc[] = {
   {3, 3, "DRAWLINESTRIP", cmd_drawlinestrip},
   {3, 3, "DRAWLINEV", cmd_drawlinev},
   {4, 4, "DRAWMODEL", cmd_drawmodel},
-  //{6, 6, "DRAWMODELEX", cmd_drawmodelex},
-  //{4, 4, "DRAWMODELWIRES", cmd_drawmodelwires},
-  //{6, 6, "DRAWMODELWIRESEX", cmd_drawmodelwiresex},
+  {6, 6, "DRAWMODELEX", cmd_drawmodelex},
+  {4, 4, "DRAWMODELWIRES", cmd_drawmodelwires},
+  {6, 6, "DRAWMODELWIRESEX", cmd_drawmodelwiresex},
   {3, 3, "DRAWPIXEL", cmd_drawpixel},
   {2, 2, "DRAWPIXELV", cmd_drawpixelv},
   {3, 3, "DRAWPLANE", cmd_drawplane},
   {2, 2, "DRAWPOINT3D", cmd_drawpoint3d},
   {5, 5, "DRAWPOLY", cmd_drawpoly},
   {5, 5, "DRAWPOLYLINES", cmd_drawpolylines},
-  //{2, 2, "DRAWRAY", cmd_drawray},
+  {2, 2, "DRAWRAY", cmd_drawray},
   {5, 5, "DRAWRECTANGLE", cmd_drawrectangle},
   {5, 5, "DRAWRECTANGLEGRADIENTEX", cmd_drawrectanglegradientex},
   {6, 6, "DRAWRECTANGLEGRADIENTH", cmd_drawrectanglegradienth},
@@ -4662,10 +4587,9 @@ FUNC_SIG lib_proc[] = {
   {5, 5, "DRAWSPHEREEX", cmd_drawsphereex},
   {5, 5, "DRAWSPHEREWIRES", cmd_drawspherewires},
   {5, 5, "DRAWTEXT", cmd_drawtext},
-  //{5, 5, "DRAWTEXTCODEPOINT", cmd_drawtextcodepoint},
+  {5, 5, "DRAWTEXTCODEPOINT", cmd_drawtextcodepoint},
   {6, 6, "DRAWTEXTEX", cmd_drawtextex},
-  //{7, 7, "DRAWTEXTREC", cmd_drawtextrec},
-  //{11, 11, "DRAWTEXTRECEX", cmd_drawtextrecex},
+  {6, 6, "DRAWTEXTREC", cmd_drawtextrec},
   {4, 4, "DRAWTEXTURE", cmd_drawtexture},
   {5, 5, "DRAWTEXTUREEX", cmd_drawtextureex},
   {6, 6, "DRAWTEXTUREPRO", cmd_drawtexturepro},
@@ -4751,8 +4675,6 @@ FUNC_SIG lib_proc[] = {
   {1, 1, "SETEXITKEY", cmd_setexitkey},
   {1, 1, "SETGESTURESENABLED", cmd_setgesturesenabled},
   {1, 1, "SETMASTERVOLUME", cmd_setmastervolume},
-  //{1, 1, "SETMATRIXMODELVIEW", cmd_setmatrixmodelview},
-  //{1, 1, "SETMATRIXPROJECTION", cmd_setmatrixprojection},
   {1, 1, "SETMOUSECURSOR", cmd_setmousecursor},
   {2, 2, "SETMOUSEOFFSET", cmd_setmouseoffset},
   {2, 2, "SETMODELDIFFUSETEXTURE", cmd_setmodeldiffusetexture},
@@ -4760,7 +4682,6 @@ FUNC_SIG lib_proc[] = {
   {2, 2, "SETMOUSESCALE", cmd_setmousescale},
   {2, 2, "SETMUSICPITCH", cmd_setmusicpitch},
   {2, 2, "SETMUSICVOLUME", cmd_setmusicvolume},
-  //{3, 3, "SETSHADERVALUEMATRIX", cmd_setshadervaluematrix},
   {3, 3, "SETSHADERVALUETEXTURE", cmd_setshadervaluetexture},
   {4, 5, "SETSHADERVALUEV", cmd_setshadervaluev},
   {2, 2, "SETSHAPESTEXTURE", cmd_setshapestexture},
