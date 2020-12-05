@@ -33,6 +33,9 @@ robin_hood::unordered_map<int, Texture2D> _textureMap;
 int _nextId = 1;
 const char *mapID = "_ID";
 
+// in physac.cpp
+void enablePhysicsBody(PhysicsBody body, bool enabled);
+
 static bool is_array(var_p_t var, uint32_t size) {
   return var != nullptr && v_is_type(var, V_ARRAY) && v_asize(var) == size;
 }
@@ -443,9 +446,14 @@ static void v_setvec3(var_t *var, Vector3 &vec3) {
 }
 
 static void v_setphysics(var_t *var, PhysicsBody &physics) {
-  map_init(var);
-  auto id = ++_nextId;
-  _physicsMap[id] = physics;
+  if (physics != NULL) {
+    auto id = ++_nextId;
+    _physicsMap[id] = physics;
+    map_init(var);
+    v_setint(map_add_var(var, mapID, 0), id);
+  } else {
+    v_setint(var, 0);
+  }
 }
 
 static void v_setshader(var_t *var, Shader &shader) {
@@ -486,7 +494,11 @@ static void v_setmodel(var_t *var, Model &model) {
 }
 
 static void v_setrayhit(var_t *var, RayHitInfo &info) {
-  // TODO
+  map_init(var);
+  v_setint(map_add_var(var, "hit", 0), info.hit);
+  v_setint(map_add_var(var, "distance", 0), info.distance);
+  v_setvec3(map_add_var(var, "position", 0), info.position);
+  v_setvec3(map_add_var(var, "normal", 0), info.normal);
 }
 
 static int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
@@ -4329,6 +4341,18 @@ static int cmd_setphysicstimestep(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
+static int cmd_enablephysicsbody(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    enablePhysicsBody(_physicsMap.at(id), get_param_int(argc, params, 1, 0) == 1);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
 static FUNC_SIG lib_func[] = {
   {1, 1, "CHANGEDIRECTORY", cmd_changedirectory},
   {2, 2, "CHECKCOLLISIONBOXES", cmd_checkcollisionboxes},
@@ -4604,6 +4628,7 @@ static FUNC_SIG lib_proc[] = {
   {3, 3, "DRAWTRIANGLESTRIP", cmd_drawtrianglestrip},
   {3, 3, "DRAWTRIANGLESTRIP3D", cmd_drawtrianglestrip3d},
   {0, 0, "ENABLECURSOR", cmd_enablecursor},
+  {2, 2, "ENABLEPHYSICSBODY", cmd_enablephysicsbody},
   {0, 0, "ENDBLENDMODE", cmd_endblendmode},
   {0, 0, "ENDDRAWING", cmd_enddrawing},
   {0, 0, "ENDMODE2D", cmd_endmode2d},

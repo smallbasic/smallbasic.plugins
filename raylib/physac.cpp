@@ -14,3 +14,6 @@
 #define PHYSAC_NO_THREADS
 #include <raylib/src/physac.h>
 
+void enablePhysicsBody(PhysicsBody body, bool enabled) {
+  body->enabled = enabled;
+}
