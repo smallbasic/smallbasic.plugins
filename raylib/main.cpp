@@ -14,21 +14,22 @@
 #include <raylib/src/physac.h>
 #include <GLFW/glfw3.h>
 #include <cstring>
-#include <unordered_map>
 
+#include "robin-hood-hashing/src/include/robin_hood.h"
 #include "include/var.h"
 #include "include/var_map.h"
 #include "include/module.h"
 #include "include/param.h"
 
-std::unordered_map<int, Font> _fontMap;
-std::unordered_map<int, Image> _imageMap;
-std::unordered_map<int, Model> _modelMap;
-std::unordered_map<int, Music> _musicMap;
-std::unordered_map<int, PhysicsBody> _physicsMap;
-std::unordered_map<int, RenderTexture2D> _renderMap;
-std::unordered_map<int, Sound> _soundMap;
-std::unordered_map<int, Texture2D> _textureMap;
+robin_hood::unordered_map<int, Font> _fontMap;
+robin_hood::unordered_map<int, Image> _imageMap;
+robin_hood::unordered_map<int, Mesh> _meshMap;
+robin_hood::unordered_map<int, Model> _modelMap;
+robin_hood::unordered_map<int, Music> _musicMap;
+robin_hood::unordered_map<int, PhysicsBody> _physicsMap;
+robin_hood::unordered_map<int, RenderTexture2D> _renderMap;
+robin_hood::unordered_map<int, Sound> _soundMap;
+robin_hood::unordered_map<int, Texture2D> _textureMap;
 int _nextId = 1;
 const char *mapID = "_ID";
 
@@ -324,13 +325,25 @@ static int get_image_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   return result;
 }
 
+static int get_mesh_id(int argc, slib_par_t *params, int arg, var_t *retval) {
+  int result = -1;
+  if (is_param_map(argc, params, arg)) {
+    int id = map_get_int(params[arg].var_p, mapID, -1);
+    if (id != -1 && _meshMap.find(id) != _meshMap.end()) {
+      result = id;
+    }
+  }
+  if (result == -1) {
+    error(retval, "Mesh not found");
+  }
+  return result;
+}
+
 static int get_texture_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
-    // the passed in variable is a map
     int id = map_get_int(params[arg].var_p, mapID, -1);
     if (id != -1 && _textureMap.find(id) != _textureMap.end()) {
-      // the map contained an ID field with a live value
       result = id;
     }
   }
@@ -447,6 +460,25 @@ static void v_setimage(var_t *var, Image &image) {
   int id = ++_nextId;
   _imageMap[id] = image;
   v_setrect(var, image.width, image.height, id);
+}
+
+static void v_setmesh(var_t *var, Mesh &mesh) {
+  int id = ++_nextId;
+  _meshMap[id] = mesh;
+  map_init(var);
+  v_setint(map_add_var(var, "vertexCount", 0), mesh.vertexCount);
+  v_setint(map_add_var(var, "triangleCount", 0), mesh.triangleCount);
+  v_setint(map_add_var(var, mapID, 0), id);
+}
+
+static void v_setmodel(var_t *var, Model &model) {
+  auto id = ++_nextId;
+  _modelMap[id] = model;
+  map_init(var);
+  v_setint(map_add_var(var, "meshCount", 0), model.meshCount);
+  v_setint(map_add_var(var, "materialCount", 0), model.materialCount);
+  v_setint(map_add_var(var, "boneCount", 0), model.boneCount);
+  v_setint(map_add_var(var, mapID, 0), id);
 }
 
 static int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
@@ -698,93 +730,105 @@ static int cmd_genimagewhitenoise(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_genmeshcube(int argc, slib_par_t *params, var_t *retval) {
-  // auto width = get_param_str(argc, params, 0, NULL);
-  // auto height = get_param_str(argc, params, 1, NULL);
-  // auto length = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = GenMeshCube(width, height, length);
-  // v_setint(retval, fnResult);
+static int cmd_genmeshcube(int argc, slib_par_t *params, var_t *retval) {
+  auto width = get_param_num(argc, params, 0, 0);
+  auto height = get_param_num(argc, params, 1, 0);
+  auto length = get_param_num(argc, params, 2, 0);
+  auto fnResult = GenMeshCube(width, height, length);
+  v_setmesh(retval, fnResult);
   return 1;
 }
 
-int cmd_genmeshcubicmap(int argc, slib_par_t *params, var_t *retval) {
-  // auto cubicmap = get_param_str(argc, params, 0, NULL);
-  // auto cubeSize = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GenMeshCubicmap(cubicmap, cubeSize);
-  // v_setint(retval, fnResult);
+static int cmd_genmeshcubicmap(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto cubeSize = get_param_vec3(argc, params, 1);
+    auto fnResult = GenMeshCubicmap(_imageMap.at(id), cubeSize);
+    v_setmesh(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_genmeshcylinder(int argc, slib_par_t *params, var_t *retval) {
+  auto radius = get_param_num(argc, params, 0, 0);
+  auto height = get_param_num(argc, params, 1, 0);
+  auto slices = get_param_int(argc, params, 2, 0);
+  auto fnResult = GenMeshCylinder(radius, height, slices);
+  v_setmesh(retval, fnResult);
   return 1;
 }
 
-int cmd_genmeshcylinder(int argc, slib_par_t *params, var_t *retval) {
-  // auto radius = get_param_num(argc, params, 0, NULL);
-  // auto height = get_param_str(argc, params, 1, NULL);
-  // auto slices = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = GenMeshCylinder(radius, height, slices);
-  // v_setint(retval, fnResult);
+static int cmd_genmeshheightmap(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto size = get_param_vec3(argc, params, 1);
+    auto fnResult = GenMeshHeightmap(_imageMap.at(id), size);
+    v_setmesh(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_genmeshhemisphere(int argc, slib_par_t *params, var_t *retval) {
+  auto radius = get_param_num(argc, params, 0, 0);
+  auto rings = get_param_int(argc, params, 1, 0);
+  auto slices = get_param_int(argc, params, 2, 0);
+  auto fnResult = GenMeshHemiSphere(radius, rings, slices);
+  v_setmesh(retval, fnResult);
   return 1;
 }
 
-int cmd_genmeshheightmap(int argc, slib_par_t *params, var_t *retval) {
-  // auto heightmap = get_param_str(argc, params, 0, NULL);
-  // auto size = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = GenMeshHeightmap(heightmap, size);
-  // v_setint(retval, fnResult);
+static int cmd_genmeshknot(int argc, slib_par_t *params, var_t *retval) {
+  auto radius = get_param_num(argc, params, 0, 0);
+  auto size = get_param_num(argc, params, 1, 0);
+  auto radSeg = get_param_int(argc, params, 2, 0);
+  auto sides = get_param_int(argc, params, 3, 0);
+  auto fnResult = GenMeshKnot(radius, size, radSeg, sides);
+  v_setmesh(retval, fnResult);
   return 1;
 }
 
-int cmd_genmeshhemisphere(int argc, slib_par_t *params, var_t *retval) {
-  // auto radius = get_param_num(argc, params, 0, NULL);
-  // auto rings = get_param_str(argc, params, 1, NULL);
-  // auto slices = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = GenMeshHemiSphere(radius, rings, slices);
-  // v_setint(retval, fnResult);
+static int cmd_genmeshplane(int argc, slib_par_t *params, var_t *retval) {
+  auto width = get_param_num(argc, params, 0, 0);
+  auto length = get_param_num(argc, params, 1, 0);
+  auto resX = get_param_int(argc, params, 2, 0);
+  auto resZ = get_param_int(argc, params, 3, 0);
+  auto fnResult = GenMeshPlane(width, length, resX, resZ);
+  v_setmesh(retval, fnResult);
   return 1;
 }
 
-int cmd_genmeshknot(int argc, slib_par_t *params, var_t *retval) {
-  // auto radius = get_param_num(argc, params, 0, NULL);
-  // auto size = get_param_str(argc, params, 1, NULL);
-  // auto radSeg = get_param_str(argc, params, 2, NULL);
-  // auto sides = get_param_str(argc, params, 3, NULL);
-  // auto fnResult = GenMeshKnot(radius, size, radSeg, sides);
-  // v_setint(retval, fnResult);
+static int cmd_genmeshpoly(int argc, slib_par_t *params, var_t *retval) {
+  auto sides = get_param_int(argc, params, 0, 0);
+  auto radius = get_param_num(argc, params, 1, 0);
+  auto fnResult = GenMeshPoly(sides, radius);
+  v_setmesh(retval, fnResult);
   return 1;
 }
 
-int cmd_genmeshplane(int argc, slib_par_t *params, var_t *retval) {
-  // auto width = get_param_str(argc, params, 0, NULL);
-  // auto length = get_param_str(argc, params, 1, NULL);
-  // auto resX = get_param_str(argc, params, 2, NULL);
-  // auto resZ = get_param_str(argc, params, 3, NULL);
-  // auto fnResult = GenMeshPlane(width, length, resX, resZ);
-  // v_setint(retval, fnResult);
+static int cmd_genmeshsphere(int argc, slib_par_t *params, var_t *retval) {
+  auto radius = get_param_num(argc, params, 0, 0);
+  auto rings = get_param_int(argc, params, 1, 0);
+  auto slices = get_param_int(argc, params, 2, 0);
+  auto fnResult = GenMeshSphere(radius, rings, slices);
+  v_setmesh(retval, fnResult);
   return 1;
 }
 
-int cmd_genmeshpoly(int argc, slib_par_t *params, var_t *retval) {
-  // auto sides = get_param_str(argc, params, 0, NULL);
-  // auto radius = get_param_num(argc, params, 1, NULL);
-  // auto fnResult = GenMeshPoly(sides, radius);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_genmeshsphere(int argc, slib_par_t *params, var_t *retval) {
-  // auto radius = get_param_num(argc, params, 0, NULL);
-  // auto rings = get_param_str(argc, params, 1, NULL);
-  // auto slices = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = GenMeshSphere(radius, rings, slices);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_genmeshtorus(int argc, slib_par_t *params, var_t *retval) {
-  // auto radius = get_param_num(argc, params, 0, NULL);
-  // auto size = get_param_str(argc, params, 1, NULL);
-  // auto radSeg = get_param_str(argc, params, 2, NULL);
-  // auto sides = get_param_str(argc, params, 3, NULL);
-  // auto fnResult = GenMeshTorus(radius, size, radSeg, sides);
-  // v_setint(retval, fnResult);
+static int cmd_genmeshtorus(int argc, slib_par_t *params, var_t *retval) {
+  auto radius = get_param_num(argc, params, 0, 0);
+  auto size = get_param_num(argc, params, 1, 0);
+  auto radSeg = get_param_int(argc, params, 2, 0);
+  auto sides = get_param_int(argc, params, 3, 0);
+  auto fnResult = GenMeshTorus(radius, size, radSeg, sides);
+  v_setmesh(retval, fnResult);
   return 1;
 }
 
@@ -872,13 +916,6 @@ static int cmd_getcolor(int argc, slib_par_t *params, var_t *retval) {
   auto hexValue = get_param_int(argc, params, 0, 0);
   auto fnResult = GetColor(hexValue);
   v_setcolor(retval, fnResult);
-  return 1;
-}
-
-int cmd_getdroppedfiles(int argc, slib_par_t *params, var_t *retval) {
-  // auto count = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = GetDroppedFiles(count);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1264,29 +1301,29 @@ static int cmd_getworkingdirectory(int argc, slib_par_t *params, var_t *retval) 
   return 1;
 }
 
-int cmd_getworldtoscreen(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_vec3(argc, params, 0);
-  // auto camera = get_camera_3d(argc, params, 1, NULL);
-  // auto fnResult = GetWorldToScreen(position, camera);
-  // v_setint(retval, fnResult);
+static int cmd_getworldtoscreen(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec3(argc, params, 0);
+  auto camera = get_camera_3d(argc, params, 1);
+  auto fnResult = GetWorldToScreen(position, camera);
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
-int cmd_getworldtoscreen2d(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_vec3(argc, params, 0);
-  // auto camera = get_camera_3d(argc, params, 1, NULL);
-  // auto fnResult = GetWorldToScreen2D(position, camera);
-  // v_setint(retval, fnResult);
+static int cmd_getworldtoscreen2d(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec2(argc, params, 0);
+  auto camera = get_camera_2d(argc, params, 1);
+  auto fnResult = GetWorldToScreen2D(position, camera);
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
-int cmd_getworldtoscreenex(int argc, slib_par_t *params, var_t *retval) {
-  // auto position = get_param_vec3(argc, params, 0);
-  // auto camera = get_camera_3d(argc, params, 1, NULL);
-  // auto width = get_param_str(argc, params, 2, NULL);
-  // auto height = get_param_str(argc, params, 3, NULL);
-  // auto fnResult = GetWorldToScreenEx(position, camera, width, height);
-  // v_setint(retval, fnResult);
+static int cmd_getworldtoscreenex(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec3(argc, params, 0);
+  auto camera = get_camera_3d(argc, params, 1);
+  auto width = get_param_int(argc, params, 2, 0);
+  auto height = get_param_int(argc, params, 3, 0);
+  auto fnResult = GetWorldToScreenEx(position, camera, width, height);
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
@@ -1545,18 +1582,6 @@ static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_loadfontdata(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileData = get_param_str(argc, params, 0, NULL);
-  // auto dataSize = get_param_str(argc, params, 1, NULL);
-  // auto fontSize = get_param_int(argc, params, 2, NULL);
-  // auto fontChars = get_param_str(argc, params, 3, NULL);
-  // auto charsCount = get_param_str(argc, params, 4, NULL);
-  // auto type = get_param_str(argc, params, 5, NULL);
-  // auto fnResult = LoadFontData(fileData, dataSize, fontSize, fontChars, charsCount, type);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
   auto fontSize = get_param_int(argc, params, 1, 0);
@@ -1565,18 +1590,6 @@ static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto id = ++_nextId;
   _fontMap[id] = font;
   v_setfont(retval, font, id);
-  return 1;
-}
-
-int cmd_loadfontfrommemory(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileType = get_param_str(argc, params, 0, NULL);
-  // auto fileData = get_param_str(argc, params, 1, NULL);
-  // auto dataSize = get_param_str(argc, params, 2, NULL);
-  // auto fontSize = get_param_int(argc, params, 3, NULL);
-  // auto fontChars = get_param_str(argc, params, 4, NULL);
-  // auto charsCount = get_param_str(argc, params, 5, NULL);
-  // auto fnResult = LoadFontFromMemory(fileType, fileData, dataSize, fontSize, fontChars, charsCount);
-  // v_setint(retval, fnResult);
   return 1;
 }
 
@@ -1595,53 +1608,43 @@ int cmd_loadimageanim(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_loadimagefrommemory(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileType = get_param_str(argc, params, 0, NULL);
-  // auto fileData = get_param_str(argc, params, 1, NULL);
-  // auto dataSize = get_param_str(argc, params, 2, NULL);
-  // auto fnResult = LoadImageFromMemory(fileType, fileData, dataSize);
-  // v_setint(retval, fnResult);
-  return 1;
-}
-
-int cmd_loadimageraw(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto width = get_param_str(argc, params, 1, NULL);
-  // auto height = get_param_str(argc, params, 2, NULL);
-  // auto format = get_param_str(argc, params, 3, NULL);
-  // auto headerSize = get_param_str(argc, params, 4, NULL);
-  // auto fnResult = LoadImageRaw(fileName, width, height, format, headerSize);
-  // v_setint(retval, fnResult);
+static int cmd_loadimageraw(int argc, slib_par_t *params, var_t *retval) {
+  auto fileName = get_param_str(argc, params, 0, NULL);
+  auto width = get_param_int(argc, params, 1, 0);
+  auto height = get_param_int(argc, params, 2, 0);
+  auto format = get_param_int(argc, params, 3, 0);
+  auto headerSize = get_param_int(argc, params, 4, 0);
+  auto fnResult = LoadImageRaw(fileName, width, height, format, headerSize);
+  v_setimage(retval, fnResult);
   return 1;
 }
 
 int cmd_loadmeshes(int argc, slib_par_t *params, var_t *retval) {
-  // auto fileName = get_param_str(argc, params, 0, NULL);
-  // auto meshCount = get_param_str(argc, params, 1, NULL);
-  // auto fnResult = LoadMeshes(fileName, meshCount);
-  // v_setint(retval, fnResult);
+  //auto fileName = get_param_str(argc, params, 0, NULL);
+  //auto meshCount = get_param_int(argc, params, 1, 0);
+  //auto fnResult = LoadMeshes(fileName, meshCount);
+  //v_setint(retval, fnResult);
   return 1;
 }
 
 static int cmd_loadmodel(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
   auto model = LoadModel(fileName);
-  auto id = ++_nextId;
-  _modelMap[id] = model;
-
-  map_init(retval);
-  v_setint(map_add_var(retval, "meshCount", 0), model.meshCount);
-  v_setint(map_add_var(retval, "materialCount", 0), model.materialCount);
-  v_setint(map_add_var(retval, "boneCount", 0), model.boneCount);
-  v_setint(map_add_var(retval, mapID, 0), id);
+  v_setmodel(retval, model);
   return 1;
 }
 
-int cmd_loadmodelfrommesh(int argc, slib_par_t *params, var_t *retval) {
-  // auto mesh = get_param_str(argc, params, 0, NULL);
-  // auto fnResult = LoadModelFromMesh(mesh);
-  // v_setint(retval, fnResult);
-  return 1;
+static int cmd_loadmodelfrommesh(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_mesh_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto model = LoadModelFromMesh(_meshMap.at(id));
+    v_setmodel(retval, model);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_loadmusicstream(int argc, slib_par_t *params, var_t *retval) {
@@ -2650,11 +2653,17 @@ static int cmd_exportimageascode(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_exportmesh(int argc, slib_par_t *params, var_t *retval) {
-  // auto mesh = get_param_str(argc, params, 0, NULL);
-  // auto fileName = get_param_str(argc, params, 1, NULL);
-  // ExportMesh(mesh, fileName);
-  return 1;
+static int cmd_exportmesh(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_mesh_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto fileName = get_param_str(argc, params, 1, NULL);
+    ExportMesh(_meshMap.at(id), fileName);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_gentexturemipmaps(int argc, slib_par_t *params, var_t *retval) {
@@ -3156,22 +3165,40 @@ static int cmd_maximizewindow(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_meshbinormals(int argc, slib_par_t *params, var_t *retval) {
-  // auto mesh = get_param_str(argc, params, 0, NULL);
-  // MeshBinormals(mesh);
-  return 1;
+static int cmd_meshbinormals(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_mesh_id(argc, params, 0, retval);
+  if (id != -1) {
+    MeshBinormals(&_meshMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_meshnormalssmooth(int argc, slib_par_t *params, var_t *retval) {
-  // auto mesh = get_param_str(argc, params, 0, NULL);
-  // MeshNormalsSmooth(mesh);
-  return 1;
+static int cmd_meshnormalssmooth(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_mesh_id(argc, params, 0, retval);
+  if (id != -1) {
+    MeshNormalsSmooth(&_meshMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
-int cmd_meshtangents(int argc, slib_par_t *params, var_t *retval) {
-  // auto mesh = get_param_str(argc, params, 0, NULL);
-  // MeshTangents(mesh);
-  return 1;
+static int cmd_meshtangents(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_mesh_id(argc, params, 0, retval);
+  if (id != -1) {
+    MeshTangents(&_meshMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_openurl(int argc, slib_par_t *params, var_t *retval) {
@@ -3281,14 +3308,14 @@ static int cmd_setcameramode(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_setcameramovecontrols(int argc, slib_par_t *params, var_t *retval) {
-  // auto frontKey = get_param_str(argc, params, 0, NULL);
-  // auto backKey = get_param_str(argc, params, 1, NULL);
-  // auto rightKey = get_param_str(argc, params, 2, NULL);
-  // auto leftKey = get_param_str(argc, params, 3, NULL);
-  // auto upKey = get_param_str(argc, params, 4, NULL);
-  // auto downKey = get_param_str(argc, params, 5, NULL);
-  // SetCameraMoveControls(frontKey, backKey, rightKey, leftKey, upKey, downKey);
+static int cmd_setcameramovecontrols(int argc, slib_par_t *params, var_t *retval) {
+  auto frontKey = get_param_int(argc, params, 0, 0);
+  auto backKey = get_param_int(argc, params, 1, 0);
+  auto rightKey = get_param_int(argc, params, 2, 0);
+  auto leftKey = get_param_int(argc, params, 3, 0);
+  auto upKey = get_param_int(argc, params, 4, 0);
+  auto downKey = get_param_int(argc, params, 5, 0);
+  SetCameraMoveControls(frontKey, backKey, rightKey, leftKey, upKey, downKey);
   return 1;
 }
 
@@ -3655,10 +3682,16 @@ static int cmd_unloadimage(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_unloadmesh(int argc, slib_par_t *params, var_t *retval) {
-  // auto mesh = get_param_str(argc, params, 0, NULL);
-  // UnloadMesh(mesh);
-  return 1;
+static int cmd_unloadmesh(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_mesh_id(argc, params, 0, retval);
+  if (id != -1) {
+    UnloadMesh(_meshMap.at(id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_unloadmodel(int argc, slib_par_t *params, var_t *retval) {
@@ -4388,16 +4421,16 @@ FUNC_SIG lib_func[] = {
   {4, 4, "GENIMAGEGRADIENTV", cmd_genimagegradientv},
   {5, 5, "GENIMAGEPERLINNOISE", cmd_genimageperlinnoise},
   {3, 3, "GENIMAGEWHITENOISE", cmd_genimagewhitenoise},
-  //{3, 3, "GENMESHCUBE", cmd_genmeshcube},
-  //{2, 2, "GENMESHCUBICMAP", cmd_genmeshcubicmap},
-  //{3, 3, "GENMESHCYLINDER", cmd_genmeshcylinder},
-  //{2, 2, "GENMESHHEIGHTMAP", cmd_genmeshheightmap},
-  //{3, 3, "GENMESHHEMISPHERE", cmd_genmeshhemisphere},
-  //{4, 4, "GENMESHKNOT", cmd_genmeshknot},
-  //{4, 4, "GENMESHPLANE", cmd_genmeshplane},
-  //{2, 2, "GENMESHPOLY", cmd_genmeshpoly},
-  //{3, 3, "GENMESHSPHERE", cmd_genmeshsphere},
-  //{4, 4, "GENMESHTORUS", cmd_genmeshtorus},
+  {3, 3, "GENMESHCUBE", cmd_genmeshcube},
+  {2, 2, "GENMESHCUBICMAP", cmd_genmeshcubicmap},
+  {3, 3, "GENMESHCYLINDER", cmd_genmeshcylinder},
+  {2, 2, "GENMESHHEIGHTMAP", cmd_genmeshheightmap},
+  {3, 3, "GENMESHHEMISPHERE", cmd_genmeshhemisphere},
+  {4, 4, "GENMESHKNOT", cmd_genmeshknot},
+  {4, 4, "GENMESHPLANE", cmd_genmeshplane},
+  {2, 2, "GENMESHPOLY", cmd_genmeshpoly},
+  {3, 3, "GENMESHSPHERE", cmd_genmeshsphere},
+  {4, 4, "GENMESHTORUS", cmd_genmeshtorus},
   //{2, 2, "GENTEXTUREBRDF", cmd_gentexturebrdf},
   //{3, 3, "GENTEXTUREIRRADIANCE", cmd_gentextureirradiance},
   //{3, 3, "GENTEXTUREPREFILTER", cmd_gentextureprefilter},
@@ -4409,7 +4442,6 @@ FUNC_SIG lib_func[] = {
   //{4, 4, "GETCOLLISIONRAYTRIANGLE", cmd_getcollisionraytriangle},
   {2, 2, "GETCOLLISIONREC", cmd_getcollisionrec},
   {1, 1, "GETCOLOR", cmd_getcolor},
-  //{1, 1, "GETDROPPEDFILES", cmd_getdroppedfiles},
   //{0, 0, "GETFONTDEFAULT", cmd_getfontdefault},
   {0, 0, "GETFPS", cmd_getfps},
   {0, 0, "GETFRAMETIME", cmd_getframetime},
@@ -4465,9 +4497,9 @@ FUNC_SIG lib_func[] = {
   {0, 0, "GETWINDOWPOSITION", cmd_getwindowposition},
   {0, 0, "GETWINDOWSCALEDPI", cmd_getwindowscaledpi},
   {0, 0, "GETWORKINGDIRECTORY", cmd_getworkingdirectory},
-  //{2, 2, "GETWORLDTOSCREEN", cmd_getworldtoscreen},
-  //{2, 2, "GETWORLDTOSCREEN2D", cmd_getworldtoscreen2d},
-  //{4, 4, "GETWORLDTOSCREENEX", cmd_getworldtoscreenex},
+  {2, 2, "GETWORLDTOSCREEN", cmd_getworldtoscreen},
+  {2, 2, "GETWORLDTOSCREEN2D", cmd_getworldtoscreen2d},
+  {4, 4, "GETWORLDTOSCREENEX", cmd_getworldtoscreenex},
   {1, 1, "IMAGECOPY", cmd_imagecopy},
   {2, 2, "IMAGEFROMIMAGE", cmd_imagefromimage},
   {3, 3, "IMAGETEXT", cmd_imagetext},
@@ -4501,16 +4533,13 @@ FUNC_SIG lib_func[] = {
   {0, 0, "ISWINDOWREADY", cmd_iswindowready},
   {0, 0, "ISWINDOWRESIZED", cmd_iswindowresized},
   {1, 1, "LOADFONT", cmd_loadfont},
-  //{6, 6, "LOADFONTDATA", cmd_loadfontdata},
   {4, 4, "LOADFONTEX", cmd_loadfontex},
-  //{6, 6, "LOADFONTFROMMEMORY", cmd_loadfontfrommemory},
   {1, 1, "LOADIMAGE", cmd_loadimage},
   //{2, 2, "LOADIMAGEANIM", cmd_loadimageanim},
-  //{3, 3, "LOADIMAGEFROMMEMORY", cmd_loadimagefrommemory},
-  //{5, 5, "LOADIMAGERAW", cmd_loadimageraw},
+  {5, 5, "LOADIMAGERAW", cmd_loadimageraw},
   //{2, 2, "LOADMESHES", cmd_loadmeshes},
   {1, 1, "LOADMODEL", cmd_loadmodel},
-  //{1, 1, "LOADMODELFROMMESH", cmd_loadmodelfrommesh},
+  {1, 1, "LOADMODELFROMMESH", cmd_loadmodelfrommesh},
   {1, 1, "LOADMUSICSTREAM", cmd_loadmusicstream},
   {2, 2, "LOADRENDERTEXTURE", cmd_loadrendertexture},
   {2, 2, "LOADSHADER", cmd_loadshader},
@@ -4660,7 +4689,7 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "ENDTEXTUREMODE", cmd_endtexturemode},
   {2, 2, "EXPORTIMAGE", cmd_exportimage},
   {2, 2, "EXPORTIMAGEASCODE", cmd_exportimageascode},
-  //{2, 2, "EXPORTMESH", cmd_exportmesh},
+  {2, 2, "EXPORTMESH", cmd_exportmesh},
   {1, 1, "GENTEXTUREMIPMAPS", cmd_gentexturemipmaps},
   {0, 0, "GETWINDOWHANDLE", cmd_getwindowhandle},
   {0, 0, "HIDECURSOR", cmd_hidecursor},
@@ -4700,9 +4729,9 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "INITAUDIODEVICE", cmd_initaudiodevice},
   {3, 3, "INITWINDOW", cmd_initwindow},
   {0, 0, "MAXIMIZEWINDOW", cmd_maximizewindow},
-  //{1, 1, "MESHBINORMALS", cmd_meshbinormals},
-  //{1, 1, "MESHNORMALSSMOOTH", cmd_meshnormalssmooth},
-  //{1, 1, "MESHTANGENTS", cmd_meshtangents},
+  {1, 1, "MESHBINORMALS", cmd_meshbinormals},
+  {1, 1, "MESHNORMALSSMOOTH", cmd_meshnormalssmooth},
+  {1, 1, "MESHTANGENTS", cmd_meshtangents},
   {1, 1, "OPENURL", cmd_openurl},
   {1, 1, "PAUSEMUSICSTREAM", cmd_pausemusicstream},
   {1, 1, "PAUSESOUND", cmd_pausesound},
@@ -4714,7 +4743,7 @@ FUNC_SIG lib_proc[] = {
   {1, 1, "RESUMESOUND", cmd_resumesound},
   {1, 1, "SETCAMERAALTCONTROL", cmd_setcameraaltcontrol},
   {2, 2, "SETCAMERAMODE", cmd_setcameramode},
-  //{6, 6, "SETCAMERAMOVECONTROLS", cmd_setcameramovecontrols},
+  {6, 6, "SETCAMERAMOVECONTROLS", cmd_setcameramovecontrols},
   {1, 1, "SETCAMERAPANCONTROL", cmd_setcamerapancontrol},
   {1, 1, "SETCAMERASMOOTHZOOMCONTROL", cmd_setcamerasmoothzoomcontrol},
   {1, 1, "SETCLIPBOARDTEXT", cmd_setclipboardtext},
@@ -4756,7 +4785,7 @@ FUNC_SIG lib_proc[] = {
   {2, 2, "TRACELOG", cmd_tracelog},
   {1, 1, "UNLOADFONT", cmd_unloadfont},
   {1, 1, "UNLOADIMAGE", cmd_unloadimage},
-  //{1, 1, "UNLOADMESH", cmd_unloadmesh},
+  {1, 1, "UNLOADMESH", cmd_unloadmesh},
   {1, 1, "UNLOADMODEL", cmd_unloadmodel},
   {1, 1, "UNLOADMUSICSTREAM", cmd_unloadmusicstream},
   {1, 1, "UNLOADRENDERTEXTURE", cmd_unloadrendertexture},
@@ -4873,6 +4902,7 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
 void sblib_close(void) {
   _fontMap.clear();
   _imageMap.clear();
+  _meshMap.clear();
   _modelMap.clear();
   _musicMap.clear();
   _renderMap.clear();
