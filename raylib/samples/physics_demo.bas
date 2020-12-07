@@ -24,23 +24,23 @@ needsReset = false
 rl.InitPhysics()
 
 ' Create floor rectangle physics body
-phy_floor = rl.CreatePhysicsBodyRectangle([screenWidth/2, screenHeight], 500, 100, 10)
+_floor = rl.CreatePhysicsBodyRectangle([screenWidth/2, screenHeight], 500, 100, 10)
 
 ' Create obstacle circle physics body
-phy_circle = rl.CreatePhysicsBodyCircle([screenWidth / 2, screenHeight / 2], 45, 10)
+_circle = rl.CreatePhysicsBodyCircle([screenWidth / 2, screenHeight / 2], 45, 10)
 
 ' Disable body state to convert it to static (no dynamics, but collisions)
-rl.enablePhysicsBody(phy_floor, false)
-rl.enablePhysicsBody(phy_circle, false)
+rl.SetPhysBodyEnabled(_floor, false)
+rl.SetPhysBodyEnabled(_circle, false)
 
 rl.SetTargetFPS(60)                ' Set our game to run at 60 frames-per-second
 while (!rl.WindowShouldClose())
   rl.RunPhysicsStep()
   if (needsReset) then
-    phy_floor = rl.CreatePhysicsBodyRectangle([screenWidth/2, screenHeight], 500, 100, 10)
-    phy_circle = rl.CreatePhysicsBodyCircle([screenWidth/2, screenHeight/2], 45, 10)
-    rl.enablePhysicsBody(phy_floor, false)
-    rl.enablePhysicsBody(phy_circle, false)
+    _floor = rl.CreatePhysicsBodyRectangle([screenWidth/2, screenHeight], 500, 100, 10)
+    _circle = rl.CreatePhysicsBodyCircle([screenWidth/2, screenHeight/2], 45, 10)
+    rl.SetPhysBodyEnabled(_floor, false)
+    rl.SetPhysBodyEnabled(_circle, false)
     needsReset = false
   endif
 

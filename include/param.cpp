@@ -224,10 +224,10 @@ var_p_t map_add_var(var_p_t base, const char *name, int value) {
 
 var_p_t map_get(var_p_t base, const char *name) {
   var_p_t result;
-  if (base != NULL && base->type == V_MAP) {
+  if (base != nullptr && base->type == V_MAP) {
     result = hashmap_get(base, name);
   } else {
-    result = NULL;
+    result = nullptr;
   }
   return result;
 }
@@ -253,6 +253,14 @@ void map_set_int(var_p_t base, const char *name, var_int_t n) {
 int map_get_int(var_p_t base, const char *name, int def) {
   var_p_t var = map_get(base, name);
   return var != nullptr ? get_int(var) : def;
+}
+
+bool is_array(var_p_t var, uint32_t size) {
+  return var != nullptr && v_is_type(var, V_ARRAY) && v_asize(var) == size;
+}
+
+bool is_map(var_p_t var) {
+  return var != nullptr && v_is_type(var, V_MAP);
 }
 
 bool is_param_int_byref(int argc, slib_par_t *params, int arg) {
