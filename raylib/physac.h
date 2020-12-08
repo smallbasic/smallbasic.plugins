@@ -11,6 +11,9 @@
 #pragma once
 
 void create(PhysicsBody body, var_p_t map);
+bool isUseGravity(PhysicsBody body);
+bool isGrounded(PhysicsBody body);
+bool isFreezeOrient(PhysicsBody body);
 void setEnabled(PhysicsBody body, bool value);
 void setPosition(PhysicsBody body, Vector2 value);
 void setVelocity(PhysicsBody body, Vector2 value);
@@ -28,4 +31,3 @@ void setRestitution(PhysicsBody body, float value);
 void setUseGravity(PhysicsBody body, bool value);
 void setIsGrounded(PhysicsBody body, bool value);
 void setFreezeOrient(PhysicsBody body, bool value);
-

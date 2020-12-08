@@ -4535,6 +4535,42 @@ static int cmdsetphysbodyfreezeorient(int argc, slib_par_t *params, var_t *retva
   return result;
 }
 
+static int cmd_isphysbodyusegravity(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    v_setint(retval, isUseGravity(_physicsMap.at(id)));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_isphysbodygrounded(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    v_setint(retval, isGrounded(_physicsMap.at(id)));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_isphysbodyfreezeorient(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    v_setint(retval, isFreezeOrient(_physicsMap.at(id)));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
 static FUNC_SIG lib_func[] = {
   {1, 1, "CHANGEDIRECTORY", cmd_changedirectory},
   {2, 2, "CHECKCOLLISIONBOXES", cmd_checkcollisionboxes},
@@ -4721,6 +4757,9 @@ static FUNC_SIG lib_func[] = {
   {1, 1, "GETPHYSICSSHAPEVERTICESCOUNT", cmd_getphysicsshapeverticescount},
   {0, 0, "ISPHYSICSENABLED", cmd_isphysicsenabled},
   {0, 0, "PHYSICSSHAPETYPE", cmd_physicsshapetype},
+  {1, 1, "ISPHYSBODYUSEGRAVITY", cmd_isphysbodyusegravity},
+  {1, 1, "ISPHYSBODYGROUNDED", cmd_isphysbodygrounded},
+  {1, 1, "ISPHYSBODYFREEZEORIENT", cmd_isphysbodyfreezeorient},
 };
 
 static FUNC_SIG lib_proc[] = {

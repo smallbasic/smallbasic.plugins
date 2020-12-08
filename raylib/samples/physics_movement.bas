@@ -62,7 +62,7 @@ while (!rl.WindowShouldClose())
   endif
   
   ' Vertical movement input checking if player physics body is grounded
-  if (rl.IsKeyDown(c.KEY_UP) && body.isGrounded) then 
+  if (rl.IsKeyDown(c.KEY_UP) && rl.isPhysBodyGrounded(body)) then 
     body.velocity.y = -VELOCITY * 4
     rl.SetPhysBodyVelocity(body, body.velocity)
   endif

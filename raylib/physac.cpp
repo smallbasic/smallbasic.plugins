@@ -46,6 +46,9 @@ void create(PhysicsBody body, var_p_t var) {
   v_setint(map_add_var(var, "freezeOrient", 0), body->freezeOrient);
 }
 
+bool isUseGravity(PhysicsBody body) { return body->useGravity; }
+bool isGrounded(PhysicsBody body) { return body->isGrounded; }
+bool isFreezeOrient(PhysicsBody body) { return body->freezeOrient; }
 void setEnabled(PhysicsBody body, bool value) { body->enabled = value; }
 void setPosition(PhysicsBody body, Vector2 position) { body->position = position; }
 void setVelocity(PhysicsBody body, Vector2 velocity) { body->velocity = velocity;}
@@ -63,3 +66,4 @@ void setRestitution(PhysicsBody body, float restitution) { body->restitution = r
 void setUseGravity(PhysicsBody body, bool useGravity) { body->useGravity = useGravity;}
 void setIsGrounded(PhysicsBody body, bool isGrounded) { body->isGrounded = isGrounded;}
 void setFreezeOrient(PhysicsBody body, bool freezeOrient) { body->freezeOrient = freezeOrient;}
+
