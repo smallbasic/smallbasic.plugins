@@ -49,6 +49,9 @@ void create(PhysicsBody body, var_p_t var) {
 bool isUseGravity(PhysicsBody body) { return body->useGravity; }
 bool isGrounded(PhysicsBody body) { return body->isGrounded; }
 bool isFreezeOrient(PhysicsBody body) { return body->freezeOrient; }
+Vector2 getPosition(PhysicsBody body) { return body->position; }
+Vector2 getVelocity(PhysicsBody body) { return body->velocity; }
+Vector2 getForce(PhysicsBody body) { return body->force; }
 void setEnabled(PhysicsBody body, bool value) { body->enabled = value; }
 void setPosition(PhysicsBody body, Vector2 position) { body->position = position; }
 void setVelocity(PhysicsBody body, Vector2 velocity) { body->velocity = velocity;}

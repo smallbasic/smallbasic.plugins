@@ -4326,7 +4326,7 @@ static int cmd_setphysicsgravity(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_setphysicstimestep(int argc, slib_par_t *params, var_t *retval) {
-  auto delta = get_param_int(argc, params, 0, 0);
+  auto delta = get_param_num(argc, params, 0, 0);
   SetPhysicsTimeStep(delta);
   return 1;
 }
@@ -4571,6 +4571,45 @@ static int cmd_isphysbodyfreezeorient(int argc, slib_par_t *params, var_t *retva
   return result;
 }
 
+static int cmd_getphysbodyposition(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto fnResult = getPosition(_physicsMap.at(id));
+    v_setvec2(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_getphysbodyvelocity(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto fnResult = getVelocity(_physicsMap.at(id));
+    v_setvec2(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_getphysbodyforce(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_physics_body_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto fnResult = getForce(_physicsMap.at(id));
+    v_setvec2(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
 static FUNC_SIG lib_func[] = {
   {1, 1, "CHANGEDIRECTORY", cmd_changedirectory},
   {2, 2, "CHECKCOLLISIONBOXES", cmd_checkcollisionboxes},
@@ -4760,6 +4799,9 @@ static FUNC_SIG lib_func[] = {
   {1, 1, "ISPHYSBODYUSEGRAVITY", cmd_isphysbodyusegravity},
   {1, 1, "ISPHYSBODYGROUNDED", cmd_isphysbodygrounded},
   {1, 1, "ISPHYSBODYFREEZEORIENT", cmd_isphysbodyfreezeorient},
+  {1, 1, "GETPHYSBODYPOSITION", cmd_getphysbodyposition},
+  {1, 1, "GETPHYSBODYVELOCITY", cmd_getphysbodyvelocity},
+  {1, 1, "GETPHYSBODYFORCE", cmd_getphysbodyforce},
 };
 
 static FUNC_SIG lib_proc[] = {
