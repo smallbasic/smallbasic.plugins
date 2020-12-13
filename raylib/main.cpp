@@ -17,7 +17,6 @@
 
 #include "robin-hood-hashing/src/include/robin_hood.h"
 #include "include/var.h"
-#include "include/var_map.h"
 #include "include/module.h"
 #include "include/param.h"
 #include "physac.h"
@@ -32,7 +31,21 @@ robin_hood::unordered_map<int, RenderTexture2D> _renderMap;
 robin_hood::unordered_map<int, Sound> _soundMap;
 robin_hood::unordered_map<int, Texture2D> _textureMap;
 int _nextId = 1;
-const char *mapID = "_ID";
+
+PhysicsBody get_physics_body(var_p_t var) {
+  PhysicsBody result;
+  int id = var->v.fn.id;
+  if (id != -1 && _physicsMap.find(id) != _physicsMap.end()) {
+    result = _physicsMap.at(id);
+  } else {
+    result = nullptr;
+  }
+  return result;
+}
+
+static int get_id(slib_par_t *params, int n) {
+  return params[n].var_p->v.m.id;
+}
 
 static Vector3 get_array_elem_vec3(var_p_t array, int index) {
   Vector3 result;
@@ -190,16 +203,16 @@ static Vector3 get_param_vec3(int argc, slib_par_t *params, int n) {
   return result;
 }
 
-static Shader get_param_shader(int argc, slib_par_t *params, int n) {
+static Shader get_param_shader(int argc, slib_par_t *params, int arg) {
   Shader result;
-  if (is_param_map(argc, params, n)) {
-    var_p_t var = map_get(params[n].var_p, "locs");
+  if (is_param_map(argc, params, arg)) {
+    result.id = get_id(params, arg);
+    var_p_t var = map_get(params[arg].var_p, "locs");
     if (v_is_type(var, V_INT)) {
       result.locs = (int *)(var->v.i);
     } else {
       result.locs = nullptr;
     }
-    result.id = map_get_int(params[n].var_p, mapID, -1);
   } else {
     TraceLog(LOG_FATAL, "Shader not found");
   }
@@ -300,7 +313,7 @@ static int get_font_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
     // the passed in variable is a map
-    int id = map_get_int(params[arg].var_p, mapID, -1);
+    int id = get_id(params, arg);
     if (id != -1 && _fontMap.find(id) != _fontMap.end()) {
       // the map contained an ID field with a live value
       result = id;
@@ -315,7 +328,7 @@ static int get_font_id(int argc, slib_par_t *params, int arg, var_t *retval) {
 static int get_image_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
-    int id = map_get_int(params[arg].var_p, mapID, -1);
+    int id = get_id(params, arg);
     if (id != -1 && _imageMap.find(id) != _imageMap.end()) {
       result = id;
     }
@@ -329,7 +342,7 @@ static int get_image_id(int argc, slib_par_t *params, int arg, var_t *retval) {
 static int get_mesh_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
-    int id = map_get_int(params[arg].var_p, mapID, -1);
+    int id = get_id(params, arg);
     if (id != -1 && _meshMap.find(id) != _meshMap.end()) {
       result = id;
     }
@@ -343,7 +356,7 @@ static int get_mesh_id(int argc, slib_par_t *params, int arg, var_t *retval) {
 static int get_texture_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
-    int id = map_get_int(params[arg].var_p, mapID, -1);
+    int id = get_id(params, arg);
     if (id != -1 && _textureMap.find(id) != _textureMap.end()) {
       result = id;
     }
@@ -357,7 +370,7 @@ static int get_texture_id(int argc, slib_par_t *params, int arg, var_t *retval) 
 static int get_model_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
-    int id = map_get_int(params[arg].var_p, mapID, -1);
+    int id = get_id(params, arg);
     if (id != -1 && _modelMap.find(id) != _modelMap.end()) {
       result = id;
     }
@@ -371,7 +384,7 @@ static int get_model_id(int argc, slib_par_t *params, int arg, var_t *retval) {
 static int get_physics_body_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
-    int id = map_get_int(params[arg].var_p, mapID, -1);
+    int id = get_id(params, arg);
     if (id != -1 && _physicsMap.find(id) != _physicsMap.end()) {
       result = id;
     }
@@ -382,10 +395,10 @@ static int get_physics_body_id(int argc, slib_par_t *params, int arg, var_t *ret
   return result;
 }
 
-static int get_render_texture_id(int argc, slib_par_t *params, int n) {
+static int get_render_texture_id(int argc, slib_par_t *params, int arg) {
   int result = 0;
-  if (is_param_map(argc, params, n)) {
-    int id = map_get_int(params[n].var_p, mapID, -1);
+  if (is_param_map(argc, params, arg)) {
+    int id = get_id(params, arg);
     if (id != -1 && _renderMap.find(id) != _renderMap.end()) {
       result = id;
     }
@@ -401,17 +414,15 @@ static void v_setcolor(var_t *var, Color &c) {
 static void v_setfont(var_t *var, Font &font) {
   auto id = ++_nextId;
   _fontMap[id] = font;
-  map_init(var);
+  map_init_id(var, id);
   v_setint(map_add_var(var, "baseSize", 0), font.baseSize);
   v_setint(map_add_var(var, "charsCount", 0), font.charsCount);
-  v_setint(map_add_var(var, mapID, 0), id);
 }
 
 static void v_setrect(var_t *var, int width, int height, int id) {
-  map_init(var);
+  map_init_id(var, id);
   v_setint(map_add_var(var, "width", 0), width);
   v_setint(map_add_var(var, "height", 0), height);
-  v_setint(map_add_var(var, mapID, 0), id);
 }
 
 static void v_setrect(var_t *var, Rectangle &rect) {
@@ -439,17 +450,15 @@ static void v_setphysics(var_t *var, PhysicsBody &physics) {
   if (physics != NULL) {
     auto id = ++_nextId;
     _physicsMap[id] = physics;
-    create(physics, var);
-    v_setint(map_add_var(var, mapID, 0), id);
+    create(physics, var, id);
   } else {
     v_setint(var, 0);
   }
 }
 
 static void v_setshader(var_t *var, Shader &shader) {
-  map_init(var);
+  map_init_id(var, shader.id);
   v_setint(map_add_var(var, "locs", 0), (var_int_t)shader.locs);
-  v_setint(map_add_var(var, mapID, 0), shader.id);
 }
 
 static void v_settexture2d(var_t *var, Texture2D &texture) {
@@ -467,20 +476,18 @@ static void v_setimage(var_t *var, Image &image) {
 static void v_setmesh(var_t *var, Mesh &mesh) {
   int id = ++_nextId;
   _meshMap[id] = mesh;
-  map_init(var);
+  map_init_id(var, id);
   v_setint(map_add_var(var, "vertexCount", 0), mesh.vertexCount);
   v_setint(map_add_var(var, "triangleCount", 0), mesh.triangleCount);
-  v_setint(map_add_var(var, mapID, 0), id);
 }
 
 static void v_setmodel(var_t *var, Model &model) {
   auto id = ++_nextId;
   _modelMap[id] = model;
-  map_init(var);
+  map_init_id(var, id);
   v_setint(map_add_var(var, "meshCount", 0), model.meshCount);
   v_setint(map_add_var(var, "materialCount", 0), model.materialCount);
   v_setint(map_add_var(var, "boneCount", 0), model.boneCount);
-  v_setint(map_add_var(var, mapID, 0), id);
 }
 
 static void v_setrayhit(var_t *var, RayHitInfo &info) {
@@ -974,6 +981,19 @@ static int cmd_getimagealphaborder(int argc, slib_par_t *params, var_t *retval) 
     auto threshold = get_param_num(argc, params, 1, 0);
     auto fnResult = GetImageAlphaBorder(_imageMap.at(id), threshold);
     v_setrect(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_getimagedata(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_image_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto fnResult = GetImageData(_imageMap.at(id));
+    v_setint(retval, (var_int_t)fnResult);
     result = 1;
   } else {
     result = 0;
@@ -1591,10 +1611,7 @@ static int cmd_loadrendertexture(int argc, slib_par_t *params, var_t *retval) {
   auto renderId = ++_nextId;
   auto renderTexture = LoadRenderTexture(width, height);
   _renderMap[renderId] = renderTexture;
-
-  map_init(retval);
-  map_add_var(retval, mapID, renderId);
-
+  map_init_id(retval, renderId);
   auto textureId = ++_nextId;
   _textureMap[textureId] = renderTexture.texture;
   var_p_t texture = map_add_var(retval, "texture", 0);
@@ -2454,7 +2471,7 @@ static int cmd_drawtexturequad(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_drawtexturerec(int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (is_param_map(argc, params, 0)) {
-    int id = map_get_int(params[0].var_p, mapID, -1);
+    int id = get_id(params, 0);
     if (id != -1 && _textureMap.find(id) != _textureMap.end()) {
       auto sourceRec = get_param_rect(argc, params, 1);
       auto position = get_param_vec2(argc, params, 2);
@@ -3690,7 +3707,7 @@ static int cmd_unloadsound(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_unloadtexture(int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (is_param_map(argc, params, 0)) {
-    int id = map_get_int(params[0].var_p, mapID, -1);
+    int id = get_id(params, 0);
     if (id != -1 && _textureMap.find(id) != _textureMap.end()) {
       UnloadTexture(_textureMap.at(id));
       _textureMap.erase(id);
@@ -4331,7 +4348,7 @@ static int cmd_setphysicstimestep(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmdsetphysbodyenabled(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyenabled(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4343,7 +4360,7 @@ static int cmdsetphysbodyenabled(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmdsetphysbodyposition(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyposition(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4355,7 +4372,7 @@ static int cmdsetphysbodyposition(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmdsetphysbodyvelocity(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyvelocity(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4367,7 +4384,7 @@ static int cmdsetphysbodyvelocity(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmdsetphysbodyforce(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyforce(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4379,7 +4396,7 @@ static int cmdsetphysbodyforce(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmdsetphysbodyangularvelocity(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyangularvelocity(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4391,7 +4408,7 @@ static int cmdsetphysbodyangularvelocity(int argc, slib_par_t *params, var_t *re
   return result;
 }
 
-static int cmdsetphysbodytorque(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodytorque(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4403,7 +4420,7 @@ static int cmdsetphysbodytorque(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmdsetphysbodyorient(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyorient(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4415,7 +4432,7 @@ static int cmdsetphysbodyorient(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmdsetphysbodyinertia(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyinertia(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4427,7 +4444,7 @@ static int cmdsetphysbodyinertia(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmdsetphysbodyinverseinertia(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyinverseinertia(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4439,7 +4456,7 @@ static int cmdsetphysbodyinverseinertia(int argc, slib_par_t *params, var_t *ret
   return result;
 }
 
-static int cmdsetphysbodymass(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodymass(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4451,7 +4468,7 @@ static int cmdsetphysbodymass(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmdsetphysbodyinversemass(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyinversemass(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4463,7 +4480,7 @@ static int cmdsetphysbodyinversemass(int argc, slib_par_t *params, var_t *retval
   return result;
 }
 
-static int cmdsetphysbodystaticfriction(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodystaticfriction(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4475,7 +4492,7 @@ static int cmdsetphysbodystaticfriction(int argc, slib_par_t *params, var_t *ret
   return result;
 }
 
-static int cmdsetphysbodydynamicfriction(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodydynamicfriction(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4487,7 +4504,7 @@ static int cmdsetphysbodydynamicfriction(int argc, slib_par_t *params, var_t *re
   return result;
 }
 
-static int cmdsetphysbodyrestitution(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyrestitution(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4499,7 +4516,7 @@ static int cmdsetphysbodyrestitution(int argc, slib_par_t *params, var_t *retval
   return result;
 }
 
-static int cmdsetphysbodyusegravity(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyusegravity(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4511,7 +4528,7 @@ static int cmdsetphysbodyusegravity(int argc, slib_par_t *params, var_t *retval)
   return result;
 }
 
-static int cmdsetphysbodyisgrounded(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyisgrounded(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
@@ -4523,86 +4540,11 @@ static int cmdsetphysbodyisgrounded(int argc, slib_par_t *params, var_t *retval)
   return result;
 }
 
-static int cmdsetphysbodyfreezeorient(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_setphysbodyfreezeorient(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_physics_body_id(argc, params, 0, retval);
   if (id != -1) {
     setFreezeOrient(_physicsMap.at(id), get_param_int(argc, params, 1, 0) == 1);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_isphysbodyusegravity(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int id = get_physics_body_id(argc, params, 0, retval);
-  if (id != -1) {
-    v_setint(retval, isUseGravity(_physicsMap.at(id)));
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_isphysbodygrounded(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int id = get_physics_body_id(argc, params, 0, retval);
-  if (id != -1) {
-    v_setint(retval, isGrounded(_physicsMap.at(id)));
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_isphysbodyfreezeorient(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int id = get_physics_body_id(argc, params, 0, retval);
-  if (id != -1) {
-    v_setint(retval, isFreezeOrient(_physicsMap.at(id)));
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_getphysbodyposition(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int id = get_physics_body_id(argc, params, 0, retval);
-  if (id != -1) {
-    auto fnResult = getPosition(_physicsMap.at(id));
-    v_setvec2(retval, fnResult);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_getphysbodyvelocity(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int id = get_physics_body_id(argc, params, 0, retval);
-  if (id != -1) {
-    auto fnResult = getVelocity(_physicsMap.at(id));
-    v_setvec2(retval, fnResult);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_getphysbodyforce(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int id = get_physics_body_id(argc, params, 0, retval);
-  if (id != -1) {
-    auto fnResult = getForce(_physicsMap.at(id));
-    v_setvec2(retval, fnResult);
     result = 1;
   } else {
     result = 0;
@@ -4667,6 +4609,7 @@ static FUNC_SIG lib_func[] = {
   {0, 0, "GETGESTUREPINCHVECTOR", cmd_getgesturepinchvector},
   {2, 2, "GETGLYPHINDEX", cmd_getglyphindex},
   {2, 2, "GETIMAGEALPHABORDER", cmd_getimagealphaborder},
+  {1, 1, "GETIMAGEDATA", cmd_getimagedata},  
   {0, 0, "GETKEYPRESSED", cmd_getkeypressed},
   {0, 0, "GETMONITORCOUNT", cmd_getmonitorcount},
   {1, 1, "GETMONITORHEIGHT", cmd_getmonitorheight},
@@ -4756,7 +4699,7 @@ static FUNC_SIG lib_func[] = {
   {2, 2, "MEASURETEXT", cmd_measuretext},
   {4, 4, "MEASURETEXTEX", cmd_measuretextex},
   {1, 1, "MESHBOUNDINGBOX", cmd_meshboundingbox},
-  {1, 1, "TEXTFORMAT", cmd_textformat},
+  {1, 20,"TEXTFORMAT", cmd_textformat},
   {0, 0, "WINDOWSHOULDCLOSE", cmd_windowshouldclose},
   {2, 2, "GUIBUTTON", cmd_guibutton},
   {3, 3, "GUICHECKBOX", cmd_guicheckbox},
@@ -4796,12 +4739,6 @@ static FUNC_SIG lib_func[] = {
   {1, 1, "GETPHYSICSSHAPEVERTICESCOUNT", cmd_getphysicsshapeverticescount},
   {0, 0, "ISPHYSICSENABLED", cmd_isphysicsenabled},
   {0, 0, "PHYSICSSHAPETYPE", cmd_physicsshapetype},
-  {1, 1, "ISPHYSBODYUSEGRAVITY", cmd_isphysbodyusegravity},
-  {1, 1, "ISPHYSBODYGROUNDED", cmd_isphysbodygrounded},
-  {1, 1, "ISPHYSBODYFREEZEORIENT", cmd_isphysbodyfreezeorient},
-  {1, 1, "GETPHYSBODYPOSITION", cmd_getphysbodyposition},
-  {1, 1, "GETPHYSBODYVELOCITY", cmd_getphysbodyvelocity},
-  {1, 1, "GETPHYSBODYFORCE", cmd_getphysbodyforce},
 };
 
 static FUNC_SIG lib_proc[] = {
@@ -4970,7 +4907,7 @@ static FUNC_SIG lib_proc[] = {
   {2, 2, "SETMUSICPITCH", cmd_setmusicpitch},
   {2, 2, "SETMUSICVOLUME", cmd_setmusicvolume},
   {3, 3, "SETSHADERVALUETEXTURE", cmd_setshadervaluetexture},
-  {4, 5, "SETSHADERVALUEV", cmd_setshadervaluev},
+  {4, 5, "SETSHADERVALUE", cmd_setshadervaluev},
   {2, 2, "SETSHAPESTEXTURE", cmd_setshapestexture},
   {2, 2, "SETSOUNDPITCH", cmd_setsoundpitch},
   {2, 2, "SETSOUNDVOLUME", cmd_setsoundvolume},
@@ -5035,23 +4972,23 @@ static FUNC_SIG lib_proc[] = {
   {2, 2, "SETPHYSICSBODYROTATION", cmd_setphysicsbodyrotation},
   {2, 2, "SETPHYSICSGRAVITY", cmd_setphysicsgravity},
   {1, 1, "SETPHYSICSTIMESTEP", cmd_setphysicstimestep},
-  {2, 2, "SETPHYSBODYENABLED", cmdsetphysbodyenabled},
-  {2, 2, "SETPHYSBODYPOSITION", cmdsetphysbodyposition},
-  {2, 2, "SETPHYSBODYVELOCITY", cmdsetphysbodyvelocity},
-  {2, 2, "SETPHYSBODYFORCE", cmdsetphysbodyforce},
-  {2, 2, "SETPHYSBODYANGULARVELOCITY", cmdsetphysbodyangularvelocity},
-  {2, 2, "SETPHYSBODYTORQUE", cmdsetphysbodytorque},
-  {2, 2, "SETPHYSBODYORIENT", cmdsetphysbodyorient},
-  {2, 2, "SETPHYSBODYINERTIA", cmdsetphysbodyinertia},
-  {2, 2, "SETPHYSBODYINVERSEINERTIA", cmdsetphysbodyinverseinertia},
-  {2, 2, "SETPHYSBODYMASS", cmdsetphysbodymass},
-  {2, 2, "SETPHYSBODYINVERSEMASS", cmdsetphysbodyinversemass},
-  {2, 2, "SETPHYSBODYSTATICFRICTION", cmdsetphysbodystaticfriction},
-  {2, 2, "SETPHYSBODYDYNAMICFRICTION", cmdsetphysbodydynamicfriction},
-  {2, 2, "SETPHYSBODYRESTITUTION", cmdsetphysbodyrestitution},
-  {2, 2, "SETPHYSBODYUSEGRAVITY", cmdsetphysbodyusegravity},
-  {2, 2, "SETPHYSBODYISGROUNDED", cmdsetphysbodyisgrounded},
-  {2, 2, "SETPHYSBODYFREEZEORIENT", cmdsetphysbodyfreezeorient}
+  {2, 2, "SETPHYSICSBODYENABLED", cmd_setphysbodyenabled},
+  {2, 2, "SETPHYSICSBODYPOSITION", cmd_setphysbodyposition},
+  {2, 2, "SETPHYSICSBODYVELOCITY", cmd_setphysbodyvelocity},
+  {2, 2, "SETPHYSICSBODYFORCE", cmd_setphysbodyforce},
+  {2, 2, "SETPHYSICSBODYANGULARVELOCITY", cmd_setphysbodyangularvelocity},
+  {2, 2, "SETPHYSICSBODYTORQUE", cmd_setphysbodytorque},
+  {2, 2, "SETPHYSICSBODYORIENT", cmd_setphysbodyorient},
+  {2, 2, "SETPHYSICSBODYINERTIA", cmd_setphysbodyinertia},
+  {2, 2, "SETPHYSICSBODYINVERSEINERTIA", cmd_setphysbodyinverseinertia},
+  {2, 2, "SETPHYSICSBODYMASS", cmd_setphysbodymass},
+  {2, 2, "SETPHYSICSBODYINVERSEMASS", cmd_setphysbodyinversemass},
+  {2, 2, "SETPHYSICSBODYSTATICFRICTION", cmd_setphysbodystaticfriction},
+  {2, 2, "SETPHYSICSBODYDYNAMICFRICTION", cmd_setphysbodydynamicfriction},
+  {2, 2, "SETPHYSICSBODYRESTITUTION", cmd_setphysbodyrestitution},
+  {2, 2, "SETPHYSICSBODYUSEGRAVITY", cmd_setphysbodyusegravity},
+  {2, 2, "SETPHYSICSBODYISGROUNDED", cmd_setphysbodyisgrounded},
+  {2, 2, "SETPHYSICSBODYFREEZEORIENT", cmd_setphysbodyfreezeorient}
 };
 
 int sblib_proc_count() {

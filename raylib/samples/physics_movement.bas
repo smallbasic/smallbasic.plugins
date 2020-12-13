@@ -31,15 +31,15 @@ wallLeft = rl.CreatePhysicsBodyRectangle([ -5, screenHeight/2], 10, screenHeight
 wallRight = rl.CreatePhysicsBodyRectangle([ screenWidth + 5, screenHeight/2], 10, screenHeight, 10)
 
 ' Disable dynamics to ground and walls physics bodies
-rl.SetPhysBodyEnabled(ground, false)
-rl.SetPhysBodyEnabled(platformleft, false)
-rl.SetPhysBodyEnabled(platformright, false)
-rl.SetPhysBodyEnabled(wallLeft, false)
-rl.SetPhysBodyEnabled(wallRight, false)
+rl.SetPhysicsBodyEnabled(ground, false)
+rl.SetPhysicsBodyEnabled(platformleft, false)
+rl.SetPhysicsBodyEnabled(platformright, false)
+rl.SetPhysicsBodyEnabled(wallLeft, false)
+rl.SetPhysicsBodyEnabled(wallRight, false)
  
 ' Create movement physics body
 body = rl.CreatePhysicsBodyRectangle([screenWidth/2, screenHeight/2], 50, 50, 1) 
-rl.SetPhysBodyFreezeOrient(body, true)       ' Constrain body rotation to avoid little collision torque amounts
+rl.SetPhysicsBodyFreezeOrient(body, true)       ' Constrain body rotation to avoid little collision torque amounts
 
 rl.SetTargetFPS(60)                ' Set our game to run at 60 frames-per-second
 while (!rl.WindowShouldClose())
@@ -47,24 +47,24 @@ while (!rl.WindowShouldClose())
 
   if (rl.IsKeyPressed(asc("R"))) then   ' Reset physics input
     ' Reset movement physics body position, velocity and rotation
-    rl.setPhysBodyPosition(body, [screenWidth/2, screenHeight/2])
-    rl.setPhysBodyVelocity(body, [ 0, 0 ])
+    rl.setPhysicsBodyPosition(body, [screenWidth/2, screenHeight/2])
+    rl.setPhysicsBodyVelocity(body, [ 0, 0 ])
     rl.SetPhysicsBodyRotation(body, 0)
   endif
 
   ' Horizontal movement input
   if (rl.IsKeyDown(c.KEY_RIGHT)) then
     body.velocity.x = VELOCITY 
-    rl.SetPhysBodyVelocity(body, body.velocity)
+    rl.SetPhysicsBodyVelocity(body, body.velocity)
   else if (rl.IsKeyDown(c.KEY_LEFT)) then
     body.velocity.x = -VELOCITY 
-    rl.SetPhysBodyVelocity(body, body.velocity)
+    rl.SetPhysicsBodyVelocity(body, body.velocity)
   endif
   
   ' Vertical movement input checking if player physics body is grounded
-  if (rl.IsKeyDown(c.KEY_UP) && rl.isPhysBodyGrounded(body)) then 
+  if (rl.IsKeyDown(c.KEY_UP) && body.isGrounded) then 
     body.velocity.y = -VELOCITY * 4
-    rl.SetPhysBodyVelocity(body, body.velocity)
+    rl.SetPhysicsBodyVelocity(body, body.velocity)
   endif
 
   rl.BeginDrawing() 

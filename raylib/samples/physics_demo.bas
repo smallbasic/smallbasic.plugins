@@ -30,8 +30,8 @@ _floor = rl.CreatePhysicsBodyRectangle([screenWidth/2, screenHeight], 500, 100, 
 _circle = rl.CreatePhysicsBodyCircle([screenWidth / 2, screenHeight / 2], 45, 10)
 
 ' Disable body state to convert it to static (no dynamics, but collisions)
-rl.SetPhysBodyEnabled(_floor, false)
-rl.SetPhysBodyEnabled(_circle, false)
+rl.SetPhysicsBodyEnabled(_floor, false)
+rl.SetPhysicsBodyEnabled(_circle, false)
 
 rl.SetTargetFPS(60)                ' Set our game to run at 60 frames-per-second
 while (!rl.WindowShouldClose())
@@ -39,8 +39,8 @@ while (!rl.WindowShouldClose())
   if (needsReset) then
     _floor = rl.CreatePhysicsBodyRectangle([screenWidth/2, screenHeight], 500, 100, 10)
     _circle = rl.CreatePhysicsBodyCircle([screenWidth/2, screenHeight/2], 45, 10)
-    rl.SetPhysBodyEnabled(_floor, false)
-    rl.SetPhysBodyEnabled(_circle, false)
+    rl.SetPhysicsBodyEnabled(_floor, false)
+    rl.SetPhysicsBodyEnabled(_circle, false)
     needsReset = false
   endif
 

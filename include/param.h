@@ -25,6 +25,8 @@ typedef struct FUNC_SIG {
 void error(var_p_t var, const char *field, int nMin, int nMax);
 void error(var_p_t var, const char *field, int n);
 void error(var_p_t var, const char *text);
+void map_init(var_p_t map);
+void map_init_id(var_p_t map, int id);
 bool get_bool(var_p_t var);
 bool is_array(var_p_t var, uint32_t size);
 bool is_map(var_p_t var);
@@ -41,6 +43,8 @@ var_num_t get_param_num(int argc, slib_par_t *params, int n, var_num_t def);
 var_num_t get_param_num_field(int argc, slib_par_t *params, int n, const char *field);
 var_num_t get_map_num(var_p_t map, const char *name);
 var_num_t get_array_elem_num(var_p_t array, int index);
+var_p_t map_add_var(var_p_t base, const char *name, int value);
+var_p_t map_get(var_p_t base, const char *name);
 const char *get_param_str(int argc, slib_par_t *params, int n, const char *def);
 const char *get_param_str_field(int argc, slib_par_t *params, int n, const char *field);
 const char *format_text(int argc, slib_par_t *params, int n);

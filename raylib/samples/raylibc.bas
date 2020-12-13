@@ -1,5 +1,8 @@
 unit raylibc
 
+export DEG2RAD = PI / 180.0
+export RAD2DEG = 180.0 / PI
+
 export UNIFORM_FLOAT = 0
 export UNIFORM_VEC2  = 1
 export UNIFORM_VEC3  = 2

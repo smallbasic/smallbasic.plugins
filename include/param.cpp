@@ -14,7 +14,6 @@
 #include "config.h"
 #include "param.h"
 #include "hashmap.h"
-#include "var_map.h"
 #include "var.h"
 
 #define MAX_TEXT_BUFFER_LENGTH 1024
@@ -236,6 +235,11 @@ void map_init(var_p_t map) {
   assert(map->type == V_INT);
   v_init(map);
   hashmap_create(map, 0);
+}
+
+void map_init_id(var_p_t map, int id) {
+  map_init(map);
+  map->v.m.id = id;
 }
 
 int map_get_bool(var_p_t base, const char *name) {
@@ -537,3 +541,11 @@ const char *format_text(int argc, slib_par_t *params, int param) {
 
   return buffer;
 }
+
+void v_create_func(var_p_t map, const char *name, method cb) {
+  var_p_t v_func = map_add_var(map, name, 0);
+  v_func->type = V_FUNC;
+  v_func->v.fn.cb = cb;
+  v_func->v.fn.id = map->v.m.id;
+}
+

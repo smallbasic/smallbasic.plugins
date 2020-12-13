@@ -25,17 +25,17 @@ rl.InitPhysics()
 ' Create ground rectangle physics body
 ground = rl.CreatePhysicsBodyRectangle([screenWidth/2, screenHeight], screenWidth, 100, 10)
 
-rl.setPhysBodyEnabled(ground, false) ' Disable body state to convert it to static (no dynamics, but collisions)
-rl.setPhysBodyRestitution(ground, 1)
+rl.setPhysicsBodyEnabled(ground, false) ' Disable body state to convert it to static (no dynamics, but collisions)
+rl.setPhysicsBodyRestitution(ground, 1)
 
 ' Create circles physics body
 circleA = rl.CreatePhysicsBodyCircle([screenWidth * 0.25, screenHeight / 2], 30, 10)
 circleB = rl.CreatePhysicsBodyCircle([screenWidth * 0.5, screenHeight / 2], 30, 10)
 circleC = rl.CreatePhysicsBodyCircle([screenWidth * 0.75, screenHeight / 2], 30, 10)
 
-rl.setPhysBodyRestitution(circleA, 0)
-rl.setPhysBodyRestitution(circleB, .5)
-rl.setPhysBodyRestitution(circleC, 1)
+rl.setPhysicsBodyRestitution(circleA, 0)
+rl.setPhysicsBodyRestitution(circleB, .5)
+rl.setPhysicsBodyRestitution(circleC, 1)
 
 ' Restitution demo needs a very tiny physics time step for a proper simulation
 rl.SetPhysicsTimeStep(.25)
@@ -47,12 +47,12 @@ while (!rl.WindowShouldClose())
   
   if (rl.IsKeyPressed(asc("R"))) then    ' Reset physics input
     ' Reset circles physics bodies position and velocity
-    rl.setPhysBodyPosition(circleA, [screenWidth * 0.25, screenHeight / 2])
-    rl.setPhysBodyVelocity(circleA, [0, 0])
-    rl.setPhysBodyPosition(circleB, [screenWidth * 0.5, screenHeight / 2])
-    rl.setPhysBodyVelocity(circleB, [0, 0])
-    rl.setPhysBodyPosition(circleC, [screenWidth * 0.75, screenHeight / 2])
-    rl.setPhysBodyVelocity(circleC, [0, 0])
+    rl.setPhysicsBodyPosition(circleA, [screenWidth * 0.25, screenHeight / 2])
+    rl.setPhysicsBodyVelocity(circleA, [0, 0])
+    rl.setPhysicsBodyPosition(circleB, [screenWidth * 0.5, screenHeight / 2])
+    rl.setPhysicsBodyVelocity(circleB, [0, 0])
+    rl.setPhysicsBodyPosition(circleC, [screenWidth * 0.75, screenHeight / 2])
+    rl.setPhysicsBodyVelocity(circleC, [0, 0])
   endif
 
   rl.BeginDrawing()
@@ -74,9 +74,9 @@ while (!rl.WindowShouldClose())
     next j
   next i
   
-  posA = rl.getPhysBodyPosition(circleA)
-  posB = rl.getPhysBodyPosition(circleB)
-  posC = rl.getPhysBodyPosition(circleC)
+  posA = circleA.position
+  posB = circleB.position
+  posC = circleC.position
   
   rl.DrawText("Restitution amount", (screenWidth - rl.MeasureText("Restitution amount", 30)) / 2, 75, 30, c.WHITE)
   rl.DrawText("0", posA.x - rl.MeasureText("0", 20)/2, posA.y - 7, 20, c.WHITE)

@@ -7,16 +7,15 @@
 //
 // Copyright(C) 2020 Chris Warren-Smith
 
-
 #pragma once
 
-void create(PhysicsBody body, var_p_t map);
-bool isUseGravity(PhysicsBody body);
-bool isGrounded(PhysicsBody body);
-bool isFreezeOrient(PhysicsBody body);
-Vector2 getPosition(PhysicsBody body);
-Vector2 getVelocity(PhysicsBody body);
-Vector2 getForce(PhysicsBody body);
+// in main.cpp
+PhysicsBody get_physics_body(var_p_t var);
+
+// create new PhysicsBody
+void create(PhysicsBody body, var_p_t map, int id);
+
+// PhysicsBody setters
 void setEnabled(PhysicsBody body, bool value);
 void setPosition(PhysicsBody body, Vector2 value);
 void setVelocity(PhysicsBody body, Vector2 value);
