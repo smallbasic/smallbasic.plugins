@@ -9,8 +9,8 @@
 #include <string.h>
 
 #include "libclipboard/include/libclipboard.h"
-#include "var.h"
-#include "param.h"
+#include "include/var.h"
+#include "include/param.h"
 
 clipboard_c *clipboard;
 

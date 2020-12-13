@@ -17,7 +17,6 @@
 #include <unordered_map>
 
 #include "include/var.h"
-#include "include/var_map.h"
 #include "include/module.h"
 #include "include/param.h"
 

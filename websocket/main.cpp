@@ -11,9 +11,8 @@
 #include <string>
 
 #include "mongoose/mongoose.h"
-#include "var.h"
-#include "var_map.h"
-#include "param.h"
+#include "include/var.h"
+#include "include/param.h"
 
 #define MAX_POLL_SLEEP 100
 
@@ -22,7 +21,7 @@ mg_mgr manager;
 int nextHandle = 0;
 struct Session;
 std::map<int, Session *> sessions;
-mg_serve_http_opts s_http_server_opts;
+bool web_directory = false;
 
 enum ConnectionState {
   kInit = 0,
@@ -58,26 +57,25 @@ static void session_close(Session *session) {
   }
 }
 
-static void server_frame(mg_connection *conn, websocket_message *message, Session *session) {
+static void server_frame(mg_connection *conn, mg_ws_message *message, Session *session) {
   if (session != nullptr) {
     session->_recv.clear();
-    session->_recv.append((char *)message->data, message->size);
+    session->_recv.append((char *)message->data.ptr, message->data.len);
   }
-  for (mg_connection *c = mg_next(conn->mgr, nullptr); c != nullptr; c = mg_next(conn->mgr, c)) {
-    if (c != conn) {
-      mg_send_websocket_frame(c, WEBSOCKET_OP_TEXT, message->data, message->size);
-    }
-  }
+  mg_ws_send(conn, message->data.ptr, message->data.len, WEBSOCKET_OP_TEXT);
+  mg_iobuf_delete(&conn->recv, conn->recv.len);
 }
 
 static void server_handler(mg_connection *conn, int event, void *eventData, void *session) {
   switch (event) {
-  case MG_EV_WEBSOCKET_FRAME:
-    server_frame(conn, (websocket_message *)eventData, (Session *)session);
+  case MG_EV_WS_MSG:
+    server_frame(conn, (mg_ws_message *)eventData, (Session *)session);
     break;
 
-  case MG_EV_HTTP_REQUEST:
-    mg_serve_http(conn, (http_message *)eventData, s_http_server_opts);
+  case MG_EV_HTTP_MSG:
+    if (web_directory) {
+      mg_http_serve_dir(conn, (mg_http_message *)eventData, ".");
+    }
     break;
 
   default:
@@ -91,29 +89,15 @@ static void client_connect(Session *session, int status) {
   }
 }
 
-static void client_handshake(Session *session, http_message *message) {
-  if (session != nullptr && session->_state == kConnect && message->resp_code == 101) {
-    session->_state = kOpen;
-  }
-}
-
-static void client_receive_frame(Session *session, websocket_message *message) {
-  if (session != nullptr) {
-    session->_recv.clear();
-    session->_recv.append((char *)message->data, message->size);
-  }
-}
-
 static void client_receive(Session *session, mg_connection *conn) {
-  if (session != nullptr && conn->recv_mbuf.len && session->_state == kOpen) {
+  if (session != nullptr && conn->recv.len && session->_state == kOpen) {
     session->_recv.clear();
-    if ((unsigned char)conn->recv_mbuf.buf[0] > 128) {
+    if ((unsigned char)conn->recv.buf[0] > 128) {
       // spurious first char?
-      session->_recv.append((char *)conn->recv_mbuf.buf + 1, conn->recv_mbuf.len - 1);
+      session->_recv.append((char *)conn->recv.buf + 1, conn->recv.len - 1);
     } else {
-      session->_recv.append((char *)conn->recv_mbuf.buf, conn->recv_mbuf.len);
+      session->_recv.append((char *)conn->recv.buf, conn->recv.len);
     }
-    mbuf_remove(&conn->recv_mbuf, conn->recv_mbuf.len);
   }
 }
 
@@ -123,7 +107,7 @@ static void client_handler(mg_connection *conn, int event, void *eventData, void
     client_connect((Session *)session, *((int *)eventData));
     break;
 
-  case MG_EV_RECV:
+  case MG_EV_READ:
     client_receive((Session *)session, conn);
     break;
 
@@ -131,15 +115,7 @@ static void client_handler(mg_connection *conn, int event, void *eventData, void
     session_close((Session *)session);
     break;
 
-  case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
-    client_handshake((Session *)session, (http_message *)eventData);
-    break;
-
-  case MG_EV_WEBSOCKET_FRAME:
-    client_receive_frame((Session *)session, (websocket_message *)eventData);
-    break;
-
-  case MG_EV_WEBSOCKET_CONTROL_FRAME:
+  case MG_EV_ERROR:
     break;
 
   default:
@@ -157,7 +133,7 @@ Session *get_session(int argc, slib_par_t *params) {
 int cmd_close(int argc, slib_par_t *params, var_t *retval) {
   auto session = get_session(argc, params);
   if (session != nullptr) {
-    session->_conn->flags |= MG_F_CLOSE_IMMEDIATELY;
+    session->_conn->is_closing = 1;
   }
   return argc == 1;
 }
@@ -196,7 +172,7 @@ int cmd_send(int argc, slib_par_t *params, var_t *retval) {
   if (session != nullptr) {
     const char *message = get_param_str(argc, params, 1, nullptr);
     if (message != nullptr && message[0] != '\0') {
-      mg_send_websocket_frame(session->_conn, WEBSOCKET_OP_TEXT, message, strlen(message));
+      mg_ws_send(session->_conn, message, strlen(message), WEBSOCKET_OP_TEXT);
     } else {
       v_setstr(retval, "Send failed");
       result = 0;
@@ -214,7 +190,7 @@ int cmd_create(int argc, slib_par_t *params, var_t *retval) {
   const char *protocol = get_param_str(argc, params, 1, nullptr);
   if (url != nullptr) {
     auto session = new Session();
-    mg_connection *conn = mg_connect_ws(&manager, client_handler, session, url, protocol, nullptr);
+    mg_connection *conn = mg_ws_connect(&manager, url, client_handler, session, protocol);
     if (conn == nullptr) {
       delete session;
       v_setstr(retval, "Connection failed");
@@ -237,18 +213,12 @@ int cmd_listen(int argc, slib_par_t *params, var_t *retval) {
   const char *port = get_param_str(argc, params, 0, nullptr);
   if (port != nullptr) {
     auto session = new Session();
-    mg_connection *conn = mg_bind(&manager, port, server_handler, session);
+    mg_connection *conn = mg_http_listen(&manager, port, server_handler, session);
     if (conn == nullptr) {
       delete session;
       v_setstr(retval, "Listen failed");
     } else {
-      mg_set_protocol_http_websocket(conn);
-      if (get_param_int(argc, params, 1, 0) == 1) {
-        s_http_server_opts.document_root = ".";
-        s_http_server_opts.enable_directory_listing = "yes";
-      } else {
-        s_http_server_opts.enable_directory_listing = "no";
-      }
+      web_directory = (get_param_int(argc, params, 1, 0) == 1);
       v_setint(retval, session->_handle);
       session->_conn = conn;
       result = 1;
@@ -329,7 +299,7 @@ int sblib_events(int wait_flag, int *w, int *h) {
 int sblib_init(const char *sourceFile) {
   signal(SIGTERM, signal_handler);
   signal(SIGINT, signal_handler);
-  mg_mgr_init(&manager, nullptr);
+  mg_mgr_init(&manager);
   return 1;
 }
 

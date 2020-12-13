@@ -24,10 +24,9 @@
 #include <cstring>
 
 #include "Nuklear/nuklear.h"
-#include "var.h"
-#include "var_map.h"
-#include "module.h"
-#include "param.h"
+#include "include/var.h"
+#include "include/module.h"
+#include "include/param.h"
 
 nk_context *nkp_create_window(const char *title, int width, int height);
 bool nkp_process_events();
