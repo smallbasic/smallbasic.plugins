@@ -10,8 +10,12 @@
 #include <map>
 #include <string>
 
-#include "mongoose/mongoose.h"
+extern "C" {
+  #include "mongoose/mongoose.h"
+}
+
 #include "include/var.h"
+#include "include/module.h"
 #include "include/param.h"
 
 #define MAX_POLL_SLEEP 100
@@ -25,7 +29,6 @@ bool web_directory = false;
 
 enum ConnectionState {
   kInit = 0,
-  kConnect,
   kOpen,
   kClose
 };
@@ -85,7 +88,7 @@ static void server_handler(mg_connection *conn, int event, void *eventData, void
 
 static void client_connect(Session *session, int status) {
   if (session != nullptr && session->_state == kInit) {
-    session->_state = kConnect;
+    session->_state = kOpen;
   }
 }
 
@@ -123,14 +126,14 @@ static void client_handler(mg_connection *conn, int event, void *eventData, void
   }
 }
 
-Session *get_session(int argc, slib_par_t *params) {
+static Session *get_session(int argc, slib_par_t *params) {
   return sessions[get_param_int(argc, params, 0, 0)];
 }
 
 //
 // ws.close(conn)
 //
-int cmd_close(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_close(int argc, slib_par_t *params, var_t *retval) {
   auto session = get_session(argc, params);
   if (session != nullptr) {
     session->_conn->is_closing = 1;
@@ -141,7 +144,7 @@ int cmd_close(int argc, slib_par_t *params, var_t *retval) {
 //
 // msg = ws.receive(conn)
 //
-int cmd_receive(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_receive(int argc, slib_par_t *params, var_t *retval) {
   auto session = get_session(argc, params);
   if (session != nullptr && !session->_recv.empty())  {
     v_setstr(retval, session->_recv.c_str());
@@ -155,7 +158,7 @@ int cmd_receive(int argc, slib_par_t *params, var_t *retval) {
 //
 // while ws.open(conn)
 //
-int cmd_open(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_open(int argc, slib_par_t *params, var_t *retval) {
   auto session = get_session(argc, params);
   if (session != nullptr) {
     v_setint(retval, session->_state != kClose && signalReceived == 0);
@@ -166,7 +169,7 @@ int cmd_open(int argc, slib_par_t *params, var_t *retval) {
 //
 // ws.send(conn, "hello")
 //
-int cmd_send(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_send(int argc, slib_par_t *params, var_t *retval) {
   int result = argc == 2;
   auto session = get_session(argc, params);
   if (session != nullptr) {
@@ -184,7 +187,7 @@ int cmd_send(int argc, slib_par_t *params, var_t *retval) {
 //
 // conn = ws.create("ws://127.0.0.1:8000", "ws_chat")
 //
-int cmd_create(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_create(int argc, slib_par_t *params, var_t *retval) {
   int result = 0;
   const char *url = get_param_str(argc, params, 0, nullptr);
   const char *protocol = get_param_str(argc, params, 1, nullptr);
@@ -208,7 +211,7 @@ int cmd_create(int argc, slib_par_t *params, var_t *retval) {
 //
 // conn = ws.listen(8080 [, enabled_http])
 //
-int cmd_listen(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_listen(int argc, slib_par_t *params, var_t *retval) {
   int result = 0;
   const char *port = get_param_str(argc, params, 0, nullptr);
   if (port != nullptr) {

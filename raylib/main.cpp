@@ -992,7 +992,7 @@ static int cmd_getimagedata(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_image_id(argc, params, 0, retval);
   if (id != -1) {
-    auto fnResult = GetImageData(_imageMap.at(id));
+    auto fnResult = LoadImageColors(_imageMap.at(id));
     v_setint(retval, (var_int_t)fnResult);
     result = 1;
   } else {
@@ -3748,7 +3748,7 @@ static int cmd_updatetexture(int argc, slib_par_t *params, var_t *retval) {
     UpdateTexture(_textureMap.at(id), pixels);
 
     // cleanup for rl.GetImageData(img)
-    free(pixels);
+    UnloadImageColors(pixels);
     result = 1;
   } else {
     result = 0;
