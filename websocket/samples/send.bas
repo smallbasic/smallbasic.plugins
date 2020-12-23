@@ -7,6 +7,7 @@ while ws.open(conn) == 1
   if (len(msg) > 0) then
     print msg
   endif
+  ws.send(conn, time)
   delay 10
 wend
 

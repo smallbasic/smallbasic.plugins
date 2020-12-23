@@ -7,7 +7,8 @@
 
 #include "config.h"
 #include <string.h>
-#include <map>
+#include <unordered_map>
+#include <vector>
 #include <string>
 
 extern "C" {
@@ -24,17 +25,18 @@ sig_atomic_t signalReceived = 0;
 mg_mgr manager;
 int nextHandle = 0;
 struct Session;
-std::map<int, Session *> sessions;
+std::unordered_map<int, Session *> sessions;
 bool web_directory = false;
 
 enum ConnectionState {
   kInit = 0,
-  kOpen,
+  kClient,
+  kServer,
   kClose
 };
 
 struct Session {
-  Session() : _state(kInit) {
+  Session() : _conn(nullptr), _state(kInit) {
     _handle = ++nextHandle;
     sessions[_handle] = this;
   }
@@ -43,7 +45,9 @@ struct Session {
     sessions.erase(_handle);
   }
 
+  std::string _send;
   std::string _recv;
+  std::vector<mg_connection *> _clients;
   mg_connection *_conn;
   ConnectionState _state;
   int _handle;
@@ -54,134 +58,172 @@ static void signal_handler(int sig_num) {
   signalReceived = sig_num;
 }
 
-static void session_close(Session *session) {
-  if (session != nullptr) {
-    delete session;
+static void server_http_msg(mg_connection *conn, mg_http_message *message, Session *session) {
+  if (mg_http_match_uri(message, "/websocket")) {
+    mg_ws_upgrade(conn, message);
+  } else if (mg_http_match_uri(message, "/rest")) {
+    mg_http_reply(conn, 200, "", session->_send.c_str());
+  } else if (web_directory) {
+    mg_http_serve_dir(conn, message, ".");
   }
 }
 
-static void server_frame(mg_connection *conn, mg_ws_message *message, Session *session) {
-  if (session != nullptr) {
-    session->_recv.clear();
-    session->_recv.append((char *)message->data.ptr, message->data.len);
+static void server_send(Session *session, const char *buf, size_t len) {
+  for (auto it = session->_clients.begin(); it != session->_clients.end();) {
+    mg_ws_send(*it, buf, len, WEBSOCKET_OP_TEXT);
+    it++;
   }
-  mg_ws_send(conn, message->data.ptr, message->data.len, WEBSOCKET_OP_TEXT);
+}
+
+static void server_ws_msg(mg_connection *conn, mg_ws_message *message, Session *session) {
+  session->_recv.append((char *)message->data.ptr, message->data.len);
+  server_send(session, message->data.ptr, message->data.len);
   mg_iobuf_delete(&conn->recv, conn->recv.len);
 }
 
-static void server_handler(mg_connection *conn, int event, void *eventData, void *session) {
-  switch (event) {
-  case MG_EV_WS_MSG:
-    server_frame(conn, (mg_ws_message *)eventData, (Session *)session);
-    break;
-
-  case MG_EV_HTTP_MSG:
-    if (web_directory) {
-      mg_http_serve_dir(conn, (mg_http_message *)eventData, ".");
-    }
-    break;
-
-  default:
-    break;
-  }
-}
-
-static void client_connect(Session *session, int status) {
-  if (session != nullptr && session->_state == kInit) {
-    session->_state = kOpen;
-  }
-}
-
-static void client_receive(Session *session, mg_connection *conn) {
-  if (session != nullptr && conn->recv.len && session->_state == kOpen) {
-    session->_recv.clear();
-    if ((unsigned char)conn->recv.buf[0] > 128) {
-      // spurious first char?
-      session->_recv.append((char *)conn->recv.buf + 1, conn->recv.len - 1);
+static void server_ev_close(mg_connection *conn, Session *session) {
+  for (auto it = session->_clients.begin(); it != session->_clients.end();) {
+    if (*it == conn) {
+      it = session->_clients.erase(it);
     } else {
-      session->_recv.append((char *)conn->recv.buf, conn->recv.len);
+      it++;
     }
   }
 }
 
-static void client_handler(mg_connection *conn, int event, void *eventData, void *session) {
+static void server_handler(struct mg_connection *conn, int event, void *eventData, void *session) {
   switch (event) {
-  case MG_EV_CONNECT:
-    client_connect((Session *)session, *((int *)eventData));
+  case MG_EV_HTTP_MSG:
+    server_http_msg(conn, (mg_http_message *)eventData, (Session *)session);
     break;
-
-  case MG_EV_READ:
-    client_receive((Session *)session, conn);
+  case MG_EV_WS_MSG:
+    server_ws_msg(conn, (mg_ws_message *)eventData, (Session *)session);
     break;
-
+  case MG_EV_ACCEPT:
+    ((Session *)session)->_clients.push_back(conn);
+    break;
   case MG_EV_CLOSE:
-    session_close((Session *)session);
+    server_ev_close(conn, (Session *)session);
     break;
-
-  case MG_EV_ERROR:
+  case MG_EV_POLL:
     break;
-
   default:
     break;
   }
 }
 
-static Session *get_session(int argc, slib_par_t *params) {
-  return sessions[get_param_int(argc, params, 0, 0)];
+static void client_ws_open(mg_connection *conn, Session *session) {
+  session->_state = kClient;
+  if (!session->_send.empty()) {
+    mg_ws_send(conn, session->_send.c_str(), session->_send.length(), WEBSOCKET_OP_TEXT);
+    session->_send.clear();
+  }
+}
+
+static void client_ws_msg(mg_connection *conn, mg_ws_message *message, Session *session) {
+  if (message->data.len && session->_state == kClient) {
+    session->_recv.append((char *)message->data.ptr, message->data.len);
+  }
+}
+
+static void client_handler(mg_connection *conn, int event, void *eventData, void *fnData) {
+  switch (event) {
+  case MG_EV_ERROR:
+    fprintf(stderr, "ERROR: [%p] %s", conn->fd, (char *)eventData);
+    break;
+  case MG_EV_WS_OPEN:
+    client_ws_open(conn, (Session *)fnData);
+    break;
+  case MG_EV_WS_MSG:
+    client_ws_msg(conn, (mg_ws_message *)eventData, (Session *)fnData);
+    break;
+  case MG_EV_CLOSE:
+    delete (Session *)fnData;
+    break;
+  default:
+    break;
+  }
+}
+
+static Session *get_session(int argc, slib_par_t *params, var_t *retval) {
+  Session *result;
+  int handle = get_param_int(argc, params, 0, -1);
+  if (handle != -1) {
+    result = sessions[handle];
+  } else {
+    result = nullptr;
+  }
+  if (result == nullptr) {
+    v_setstr(retval, "Invalid connection identifier");
+  }
+  return result;
 }
 
 //
 // ws.close(conn)
 //
 static int cmd_close(int argc, slib_par_t *params, var_t *retval) {
-  auto session = get_session(argc, params);
-  if (session != nullptr) {
+  auto session = get_session(argc, params, retval);
+  if (session != nullptr && session->_conn != nullptr) {
     session->_conn->is_closing = 1;
   }
-  return argc == 1;
+  return session != nullptr;
 }
 
 //
 // msg = ws.receive(conn)
 //
 static int cmd_receive(int argc, slib_par_t *params, var_t *retval) {
-  auto session = get_session(argc, params);
+  auto session = get_session(argc, params, retval);
   if (session != nullptr && !session->_recv.empty())  {
     v_setstr(retval, session->_recv.c_str());
     session->_recv.clear();
   } else {
     v_setstr(retval, "");
   }
-  return argc == 1;
+  return session != nullptr;
 }
 
 //
 // while ws.open(conn)
 //
 static int cmd_open(int argc, slib_par_t *params, var_t *retval) {
-  auto session = get_session(argc, params);
+  auto session = get_session(argc, params, retval);
   if (session != nullptr) {
     v_setint(retval, session->_state != kClose && signalReceived == 0);
   }
-  return argc == 1;
+  return session != nullptr;
 }
 
 //
 // ws.send(conn, "hello")
 //
 static int cmd_send(int argc, slib_par_t *params, var_t *retval) {
-  int result = argc == 2;
-  auto session = get_session(argc, params);
+  auto session = get_session(argc, params, retval);
   if (session != nullptr) {
     const char *message = get_param_str(argc, params, 1, nullptr);
     if (message != nullptr && message[0] != '\0') {
-      mg_ws_send(session->_conn, message, strlen(message), WEBSOCKET_OP_TEXT);
+      switch (session->_state) {
+      case kInit:
+        session->_send.append(message);
+        break;
+      case kClient:
+        mg_ws_send(session->_conn, message, strlen(message), WEBSOCKET_OP_TEXT);
+        break;
+      case kServer:
+        server_send(session, message, strlen(message));
+        break;
+      case kClose:
+        v_setstr(retval, "Connection closed");
+        session = nullptr;
+        break;
+      }
     } else {
       v_setstr(retval, "Send failed");
-      result = 0;
+      session = nullptr;
     }
   }
-  return result;
+  return session != nullptr;
 }
 
 //
@@ -224,6 +266,7 @@ static int cmd_listen(int argc, slib_par_t *params, var_t *retval) {
       web_directory = (get_param_int(argc, params, 1, 0) == 1);
       v_setint(retval, session->_handle);
       session->_conn = conn;
+      session->_state = kServer;
       result = 1;
     }
   }
