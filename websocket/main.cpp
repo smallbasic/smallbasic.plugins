@@ -26,13 +26,12 @@ mg_mgr manager;
 int nextHandle = 0;
 struct Session;
 std::unordered_map<int, Session *> sessions;
-bool web_directory = false;
 
 enum ConnectionState {
   kInit = 0,
   kClient,
   kServer,
-  kClose
+  kClosed
 };
 
 struct Session {
@@ -59,12 +58,11 @@ static void signal_handler(int sig_num) {
 }
 
 static void server_http_msg(mg_connection *conn, mg_http_message *message, Session *session) {
-  if (mg_http_match_uri(message, "/websocket")) {
+  if (mg_http_match_uri(message, "/")) {
     mg_ws_upgrade(conn, message);
-  } else if (mg_http_match_uri(message, "/rest")) {
+    session->_clients.push_back(conn);
+  } else {
     mg_http_reply(conn, 200, "", session->_send.c_str());
-  } else if (web_directory) {
-    mg_http_serve_dir(conn, message, ".");
   }
 }
 
@@ -100,7 +98,6 @@ static void server_handler(struct mg_connection *conn, int event, void *eventDat
     server_ws_msg(conn, (mg_ws_message *)eventData, (Session *)session);
     break;
   case MG_EV_ACCEPT:
-    ((Session *)session)->_clients.push_back(conn);
     break;
   case MG_EV_CLOSE:
     server_ev_close(conn, (Session *)session);
@@ -122,7 +119,12 @@ static void client_ws_open(mg_connection *conn, Session *session) {
 
 static void client_ws_msg(mg_connection *conn, mg_ws_message *message, Session *session) {
   if (message->data.len && session->_state == kClient) {
-    session->_recv.append((char *)message->data.ptr, message->data.len);
+    if (!session->_recv.empty()) {
+      session->_recv.insert(0, "|");
+      session->_recv.insert(0, (char *)message->data.ptr, message->data.len);
+    } else {
+      session->_recv.append((char *)message->data.ptr, message->data.len);
+    }
   }
 }
 
@@ -138,7 +140,7 @@ static void client_handler(mg_connection *conn, int event, void *eventData, void
     client_ws_msg(conn, (mg_ws_message *)eventData, (Session *)fnData);
     break;
   case MG_EV_CLOSE:
-    delete (Session *)fnData;
+    ((Session *)fnData)->_state = kClosed;
     break;
   default:
     break;
@@ -155,6 +157,10 @@ static Session *get_session(int argc, slib_par_t *params, var_t *retval) {
   }
   if (result == nullptr) {
     v_setstr(retval, "Invalid connection identifier");
+  } else if (result->_state == kClosed) {
+    v_setstr(retval, "Connection closed");
+    delete result;
+    result = nullptr;
   }
   return result;
 }
@@ -190,7 +196,7 @@ static int cmd_receive(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_open(int argc, slib_par_t *params, var_t *retval) {
   auto session = get_session(argc, params, retval);
   if (session != nullptr) {
-    v_setint(retval, session->_state != kClose && signalReceived == 0);
+    v_setint(retval, session->_state != kClosed && signalReceived == 0);
   }
   return session != nullptr;
 }
@@ -213,7 +219,7 @@ static int cmd_send(int argc, slib_par_t *params, var_t *retval) {
       case kServer:
         server_send(session, message, strlen(message));
         break;
-      case kClose:
+      case kClosed:
         v_setstr(retval, "Connection closed");
         session = nullptr;
         break;
@@ -227,15 +233,14 @@ static int cmd_send(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// conn = ws.create("ws://127.0.0.1:8000", "ws_chat")
+// conn = ws.create("ws://127.0.0.1:8000")
 //
 static int cmd_create(int argc, slib_par_t *params, var_t *retval) {
   int result = 0;
   const char *url = get_param_str(argc, params, 0, nullptr);
-  const char *protocol = get_param_str(argc, params, 1, nullptr);
   if (url != nullptr) {
     auto session = new Session();
-    mg_connection *conn = mg_ws_connect(&manager, url, client_handler, session, protocol);
+    mg_connection *conn = mg_ws_connect(&manager, url, client_handler, session, nullptr);
     if (conn == nullptr) {
       delete session;
       v_setstr(retval, "Connection failed");
@@ -251,7 +256,7 @@ static int cmd_create(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// conn = ws.listen(8080 [, enabled_http])
+// conn = ws.listen("http://localhost:8000/websocket")
 //
 static int cmd_listen(int argc, slib_par_t *params, var_t *retval) {
   int result = 0;
@@ -263,7 +268,6 @@ static int cmd_listen(int argc, slib_par_t *params, var_t *retval) {
       delete session;
       v_setstr(retval, "Listen failed");
     } else {
-      web_directory = (get_param_int(argc, params, 1, 0) == 1);
       v_setint(retval, session->_handle);
       session->_conn = conn;
       session->_state = kServer;

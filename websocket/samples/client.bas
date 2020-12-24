@@ -1,6 +1,6 @@
 import websocket as ws
 
-conn = ws.create("ws://127.0.0.1:8000/websocket")
+conn = ws.create("ws://127.0.0.1:8000/")
 if (ws.open(conn) == 1) then
   ws.send(conn, "Hello WebSocket server")
 else
