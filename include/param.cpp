@@ -118,6 +118,16 @@ var_t *v_new() {
   return result;
 }
 
+void v_array_free(var_t *var) {
+  uint32_t v_size = v_capacity(var);
+  if (v_size && v_data(var)) {
+    for (uint32_t i = 0; i < v_size; i++) {
+      v_free(v_elem(var, i));
+    }
+    free(var->v.a.data);
+  }
+}
+
 void v_free(var_t *var) {
   switch (var->type) {
   case V_STR:
@@ -126,8 +136,10 @@ void v_free(var_t *var) {
     }
     break;
   case V_ARRAY:
+    v_array_free(var);
+    break;
   case V_MAP:
-    assert("cannot free map or array");
+    assert("cannot free map");
     break;
   }
 }

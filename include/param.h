@@ -28,6 +28,7 @@ void error(var_p_t var, const char *text);
 void map_init(var_p_t map);
 void map_init_id(var_p_t map, int id);
 void map_set_int(var_p_t base, const char *name, var_int_t n);
+void v_free(var_t *var);
 bool get_bool(var_p_t var);
 bool is_array(var_p_t var, uint32_t size);
 bool is_map(var_p_t var);

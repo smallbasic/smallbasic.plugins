@@ -19,11 +19,10 @@ extern "C" {
 #include "include/module.h"
 #include "include/param.h"
 
-#define MAX_POLL_SLEEP 100
+#define MAX_POLL_SLEEP 40
 
 sig_atomic_t signalReceived = 0;
 mg_mgr manager;
-int nextHandle = 0;
 struct Session;
 std::unordered_map<int, Session *> sessions;
 
@@ -35,18 +34,34 @@ enum ConnectionState {
 };
 
 struct Session {
-  Session() : _conn(nullptr), _state(kInit) {
-    _handle = ++nextHandle;
+  Session() :
+    _conn(nullptr),
+    _state(kInit),
+    _handle(-1) {
+  }
+
+  Session(mg_connection *conn) :
+    _conn(conn),
+    _state(kInit),
+    _handle(conn->id) {
     sessions[_handle] = this;
   }
 
   virtual ~Session() {
-    sessions.erase(_handle);
+    if (_handle != -1) {
+      sessions.erase(_handle);
+    }
+  }
+
+  void setConnection(mg_connection *conn) {
+    _conn = conn;
+    _handle = _conn->id;
+    sessions[_handle] = this;
   }
 
   std::string _send;
   std::string _recv;
-  std::vector<mg_connection *> _clients;
+  std::vector<Session *> _conns;
   mg_connection *_conn;
   ConnectionState _state;
   int _handle;
@@ -57,35 +72,53 @@ static void signal_handler(int sig_num) {
   signalReceived = sig_num;
 }
 
+static void send(mg_connection *conn, const char *msg, int len) {
+  mg_ws_send(conn, msg, len, WEBSOCKET_OP_TEXT);
+}
+
 static void server_http_msg(mg_connection *conn, mg_http_message *message, Session *session) {
   if (mg_http_match_uri(message, "/")) {
     mg_ws_upgrade(conn, message);
-    session->_clients.push_back(conn);
+    session->_conns.push_back(new Session(conn));
   } else {
     mg_http_reply(conn, 200, "", session->_send.c_str());
   }
 }
 
-static void server_send(Session *session, const char *buf, size_t len) {
-  for (auto it = session->_clients.begin(); it != session->_clients.end();) {
-    mg_ws_send(*it, buf, len, WEBSOCKET_OP_TEXT);
-    it++;
+static void server_send(Session *session, const char *buf, size_t len, int id) {
+  if (id != -1) {
+    Session *target = sessions[id];
+    if (target != nullptr) {
+      send(target->_conn, buf, len);
+    }
+  } else {
+    for (auto it = session->_conns.begin(); it != session->_conns.end();) {
+      send((*it)->_conn, buf, len);
+      it++;
+    }
   }
 }
 
-static void server_ws_msg(mg_connection *conn, mg_ws_message *message, Session *session) {
-  session->_recv.append((char *)message->data.ptr, message->data.len);
-  server_send(session, message->data.ptr, message->data.len);
+static void server_ws_msg(mg_connection *conn, mg_ws_message *message) {
+  Session *session = sessions[conn->id];
+  if (session != nullptr) {
+    session->_recv.append((char *)message->data.ptr, message->data.len);
+  }
   mg_iobuf_delete(&conn->recv, conn->recv.len);
 }
 
 static void server_ev_close(mg_connection *conn, Session *session) {
-  for (auto it = session->_clients.begin(); it != session->_clients.end();) {
-    if (*it == conn) {
-      it = session->_clients.erase(it);
+  for (auto it = session->_conns.begin(); it != session->_conns.end();) {
+    if ((*it)->_conn == conn) {
+      Session *next = *it;
+      delete next;
+      it = session->_conns.erase(it);
     } else {
       it++;
     }
+  }
+  if (session->_handle == conn->id) {
+    delete session;
   }
 }
 
@@ -95,24 +128,34 @@ static void server_handler(struct mg_connection *conn, int event, void *eventDat
     server_http_msg(conn, (mg_http_message *)eventData, (Session *)session);
     break;
   case MG_EV_WS_MSG:
-    server_ws_msg(conn, (mg_ws_message *)eventData, (Session *)session);
-    break;
-  case MG_EV_ACCEPT:
+    server_ws_msg(conn, (mg_ws_message *)eventData);
     break;
   case MG_EV_CLOSE:
     server_ev_close(conn, (Session *)session);
-    break;
-  case MG_EV_POLL:
     break;
   default:
     break;
   }
 }
 
+static void server_receive(var_t *retval, Session *session) {
+  for (auto it = session->_conns.begin(); it != session->_conns.end();) {
+    Session *next = *it;
+    if (!next->_recv.empty()) {
+      map_init(retval);
+      v_setint(map_add_var(retval, "id", 0), next->_handle);
+      v_setstr(map_add_var(retval, "data", 0), next->_recv.c_str());
+      next->_recv.clear();
+      break;
+    }
+    it++;
+  }
+}
+
 static void client_ws_open(mg_connection *conn, Session *session) {
   session->_state = kClient;
   if (!session->_send.empty()) {
-    mg_ws_send(conn, session->_send.c_str(), session->_send.length(), WEBSOCKET_OP_TEXT);
+    send(conn, session->_send.c_str(), session->_send.length());
     session->_send.clear();
   }
 }
@@ -120,7 +163,6 @@ static void client_ws_open(mg_connection *conn, Session *session) {
 static void client_ws_msg(mg_connection *conn, mg_ws_message *message, Session *session) {
   if (message->data.len && session->_state == kClient) {
     if (!session->_recv.empty()) {
-      session->_recv.insert(0, "|");
       session->_recv.insert(0, (char *)message->data.ptr, message->data.len);
     } else {
       session->_recv.append((char *)message->data.ptr, message->data.len);
@@ -147,16 +189,22 @@ static void client_handler(mg_connection *conn, int event, void *eventData, void
   }
 }
 
+static void set_session(var_p_t var, Session *session, mg_connection *conn) {
+  session->setConnection(conn);
+  map_init_id(var, conn->id);
+  v_setint(map_add_var(var, "port", 0), conn->peer.port);
+  v_setint(map_add_var(var, "ip", 0), conn->peer.ip);
+}
+
 static Session *get_session(int argc, slib_par_t *params, var_t *retval) {
   Session *result;
-  int handle = get_param_int(argc, params, 0, -1);
-  if (handle != -1) {
-    result = sessions[handle];
+  if (is_param_map(argc, params, 0)) {
+    result = sessions[params[0].var_p->v.m.id];
   } else {
     result = nullptr;
   }
   if (result == nullptr) {
-    v_setstr(retval, "Invalid connection identifier");
+    v_setstr(retval, "Invalid connection");
   } else if (result->_state == kClosed) {
     v_setstr(retval, "Connection closed");
     delete result;
@@ -181,11 +229,13 @@ static int cmd_close(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_receive(int argc, slib_par_t *params, var_t *retval) {
   auto session = get_session(argc, params, retval);
-  if (session != nullptr && !session->_recv.empty())  {
-    v_setstr(retval, session->_recv.c_str());
+  if (session != nullptr) {
+    if (session->_state == kServer) {
+      server_receive(retval, session);
+    } else {
+      v_setstr(retval, session->_recv.c_str());
+    }
     session->_recv.clear();
-  } else {
-    v_setstr(retval, "");
   }
   return session != nullptr;
 }
@@ -202,22 +252,23 @@ static int cmd_open(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// ws.send(conn, "hello")
+// ws.send(conn, "hello", [clientId])
 //
 static int cmd_send(int argc, slib_par_t *params, var_t *retval) {
   auto session = get_session(argc, params, retval);
   if (session != nullptr) {
     const char *message = get_param_str(argc, params, 1, nullptr);
     if (message != nullptr && message[0] != '\0') {
+      int id = get_param_int(argc, params, 2, -1);
       switch (session->_state) {
       case kInit:
         session->_send.append(message);
         break;
       case kClient:
-        mg_ws_send(session->_conn, message, strlen(message), WEBSOCKET_OP_TEXT);
+        send(session->_conn, message, strlen(message));
         break;
       case kServer:
-        server_send(session, message, strlen(message));
+        server_send(session, message, strlen(message), id);
         break;
       case kClosed:
         v_setstr(retval, "Connection closed");
@@ -245,8 +296,7 @@ static int cmd_create(int argc, slib_par_t *params, var_t *retval) {
       delete session;
       v_setstr(retval, "Connection failed");
     } else {
-      v_setint(retval, session->_handle);
-      session->_conn = conn;
+      set_session(retval, session, conn);
       result = 1;
     }
   } else {
@@ -268,9 +318,8 @@ static int cmd_listen(int argc, slib_par_t *params, var_t *retval) {
       delete session;
       v_setstr(retval, "Listen failed");
     } else {
-      v_setint(retval, session->_handle);
-      session->_conn = conn;
       session->_state = kServer;
+      set_session(retval, session, conn);
       result = 1;
     }
   }
@@ -343,7 +392,7 @@ int sblib_events(int wait_flag, int *w, int *h) {
   if (!signalReceived) {
     mg_mgr_poll(&manager, MAX_POLL_SLEEP);
   }
-  return signalReceived ? 2 : 0;
+  return signalReceived ? -2 : 0;
 }
 
 int sblib_init(const char *sourceFile) {
