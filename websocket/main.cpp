@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include <string.h>
+#include <signal.h>
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -117,7 +118,7 @@ static void server_ev_close(mg_connection *conn, Session *session) {
       it++;
     }
   }
-  if (session->_handle == conn->id) {
+  if (session->_handle == (int)conn->id) {
     delete session;
   }
 }
@@ -310,10 +311,10 @@ static int cmd_create(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_listen(int argc, slib_par_t *params, var_t *retval) {
   int result = 0;
-  const char *port = get_param_str(argc, params, 0, nullptr);
-  if (port != nullptr) {
+  const char *url = get_param_str(argc, params, 0, nullptr);
+  if (url != nullptr) {
     auto session = new Session();
-    mg_connection *conn = mg_http_listen(&manager, port, server_handler, session);
+    mg_connection *conn = mg_http_listen(&manager, url, server_handler, session);
     if (conn == nullptr) {
       delete session;
       v_setstr(retval, "Listen failed");

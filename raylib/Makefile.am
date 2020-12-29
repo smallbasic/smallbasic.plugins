@@ -5,8 +5,6 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 #
 
-LIB_VERSION=1:0:0
-
 AM_CXXFLAGS=-fno-rtti -std=c++14
 AM_CPPFLAGS = -Iraylib/src -Iraylib/src/external/glfw/include -Iraylib/src/external/glfw/deps/mingw \
   -DPLATFORM_DESKTOP=1 -DSUPPORT_BUSY_WAIT_LOOP=1 -DSUPPORT_SCREEN_CAPTURE=1 \
@@ -39,4 +37,4 @@ else
    main.cpp
 endif
 
-libraylib_la_LDFLAGS = -version-info ${LIB_VERSION} -module -rpath '$(libdir)' @RAYLIB_LDFLAGS@ @PLATFORM_LDFLAGS@
+libraylib_la_LDFLAGS = -module -rpath '$(libdir)' @RAYLIB_LDFLAGS@ @PLATFORM_LDFLAGS@

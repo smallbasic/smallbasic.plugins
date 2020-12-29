@@ -1,6 +1,7 @@
 rem Simple calculator example, adapted from the original nuklear demo.
 rem adapted from love-nuklear example, see: https://github.com/keharriso/love-nuklear.git
 
+option predef grmode 300x250
 import nuklear as nk
 
 local ops = ["+","-","*","/"]
@@ -39,7 +40,7 @@ sub operator(o)
 end
 
 sub main
-  if nk.windowBegin("Calculator", 10, 10, 180, 250, "border", "movable", "title", "no_scrollbar") then
+  if nk.windowBegin("Calculator", 5, 5, "100% - 10", "100% - 10", "border", "movable", "title", "no_scrollbar") then
     nk.layoutRow("dynamic", 35, 1)
     nk.label(c, "right")
     nk.layoutRow("dynamic", 35, 4)

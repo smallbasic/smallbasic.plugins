@@ -39,7 +39,7 @@ AC_ARG_WITH(static-include,
 case "${host_os}" in
   *mingw*)
     AC_DEFINE(_WIN32, 1, [building for win32])
-    PLATFORM_LDFLAGS="-no-undefined -Wl,-static"
+    PLATFORM_LDFLAGS="-no-undefined -Wl,-static -avoid-version"
     RAYLIB_LDFLAGS="-pthread -lgdi32 -mwindows"
     CLIPBOARD_LDFLAGS=""
     IMGUI_LDFLAGS="-pthread -lgdi32 -mwindows"
@@ -50,7 +50,7 @@ case "${host_os}" in
     ;;
 
   *)
-    PLATFORM_LDFLAGS="-Wl,--no-undefined"
+    PLATFORM_LDFLAGS="-Wl,--no-undefined -avoid-version"
     CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
     IMGUI_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
     NUKLEAR_LDFLAGS="-lGL `sdl2-config --libs`"

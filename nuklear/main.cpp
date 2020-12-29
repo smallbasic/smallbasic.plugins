@@ -38,7 +38,7 @@ void nkp_close();
 #define MAX_FLOATS 40
 #define MAX_COMBOBOX_ITEMS 10
 #define MAX_EDIT_BUFFER_LEN 2048
-#define LOOP_DELAY 100
+#define LOOP_DELAY 10
 
 static struct nk_context *_ctx;
 static float _floats[MAX_FLOATS];
