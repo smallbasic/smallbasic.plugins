@@ -964,10 +964,11 @@ nk_context *nkp_create_window(const char *title, int width, int height) {
   DWORD exstyle = WS_EX_APPWINDOW;
 
   size_t size = strlen(title);
-  wchar_t *wideTitle = new wchar_t[size];
+  wchar_t *wideTitle = new wchar_t[size + 1];
   for (size_t i = 0; i < size; i++) {
     wideTitle[i] = title[i];
   }
+  wideTitle[size] = '\0';
   AdjustWindowRectEx(&rc, style, FALSE, exstyle);
   wnd = CreateWindowExW(exstyle, wc.lpszClassName, wideTitle,
                         style | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -977,7 +978,7 @@ nk_context *nkp_create_window(const char *title, int width, int height) {
   delete [] wideTitle;
 
   font = nk_gdifont_create("Arial", 14);
-  return nk_gdi_init(font, dc, WINDOW_WIDTH, WINDOW_HEIGHT);
+  return nk_gdi_init(font, dc, rc.right, rc.bottom);
 }
 
 bool nkp_process_events() {

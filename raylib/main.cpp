@@ -4991,15 +4991,15 @@ static FUNC_SIG lib_proc[] = {
   {2, 2, "SETPHYSICSBODYFREEZEORIENT", cmd_setphysbodyfreezeorient}
 };
 
-int sblib_proc_count() {
+SBLIB_API int sblib_proc_count() {
   return (sizeof(lib_proc) / sizeof(lib_proc[0]));
 }
 
-int sblib_func_count() {
+SBLIB_API int sblib_func_count() {
   return (sizeof(lib_func) / sizeof(lib_func[0]));
 }
 
-int sblib_proc_getname(int index, char *proc_name) {
+SBLIB_API int sblib_proc_getname(int index, char *proc_name) {
   int result;
   if (index < sblib_proc_count()) {
     strcpy(proc_name, lib_proc[index]._name);
@@ -5010,7 +5010,7 @@ int sblib_proc_getname(int index, char *proc_name) {
   return result;
 }
 
-int sblib_func_getname(int index, char *proc_name) {
+SBLIB_API int sblib_func_getname(int index, char *proc_name) {
   int result;
   if (index < sblib_func_count()) {
     strcpy(proc_name, lib_func[index]._name);
@@ -5021,7 +5021,7 @@ int sblib_func_getname(int index, char *proc_name) {
   return result;
 }
 
-int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
+SBLIB_API int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (index >= 0 && index < sblib_proc_count()) {
     if (argc < lib_proc[index]._min || argc > lib_proc[index]._max) {
@@ -5041,7 +5041,7 @@ int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
+SBLIB_API int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (index >= 0 && index < sblib_func_count()) {
     if (argc < lib_func[index]._min || argc > lib_func[index]._max) {
@@ -5061,7 +5061,7 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-void sblib_close(void) {
+SBLIB_API void sblib_close(void) {
   _fontMap.clear();
   _imageMap.clear();
   _meshMap.clear();

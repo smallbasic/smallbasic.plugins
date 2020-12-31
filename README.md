@@ -30,3 +30,13 @@ Cross-compiling for windows
 $ sudo apt install mingw-w64 gcc-mingw-w64
 $ ./configure --host=x86_64-w64-mingw32
 ```
+
+Required windows support DLLs:
+
+- libgcc_s_seh-1.dll
+- libstdc++-6.dll
+- libwinpthread-1.dll
+
+These can be obtained here: `https://sourceforge.net/projects/mingw-w64/files/`
+
+Click the link: `x86_64-posix-seh`, then extract the files from the downloaded package.

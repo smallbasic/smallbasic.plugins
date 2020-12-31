@@ -81,7 +81,7 @@ struct GLColor get_color(long c) {
   return result;
 }
 
-GLFWwindow *get_window(int argc, slib_par_t *params) {
+static GLFWwindow *get_window(int argc, slib_par_t *params) {
   GLFWwindow *window;
   int windowId = get_param_int(argc, params, 0, -1);
   if (windowId != -1) {
@@ -92,11 +92,11 @@ GLFWwindow *get_window(int argc, slib_par_t *params) {
   return window;
 }
 
-float scaleX(int x) {
+static float scaleX(int x) {
   return ((2 * x) / _width) - 1;
 }
 
-float scaleY(int y) {
+static float scaleY(int y) {
   return ((2 * (_height - y)) / _height) - 1;
 }
 
@@ -110,13 +110,13 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
   }
 }
 
-void window_size_callback(GLFWwindow* window, int width, int height) {
+static void window_size_callback(GLFWwindow* window, int width, int height) {
   _width = width;
   _height = height;
 }
 
 // if not glfw.init() then throw "error"
-int cmd_init(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_init(int argc, slib_par_t *params, var_t *retval) {
   int result = glfwInit();
   if (result) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
@@ -128,7 +128,7 @@ int cmd_init(int argc, slib_par_t *params, var_t *retval) {
 }
 
 // window = glfw.create_window(640, 480, "Hello World")
-int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
   int width = get_param_int(argc, params, 0, 640);
   int height = get_param_int(argc, params, 1, 480);
   const char *title = get_param_str(argc, params, 2, "SmallBASIC");
@@ -183,7 +183,7 @@ int cmd_create_window(int argc, slib_par_t *params, var_t *retval) {
 }
 
 // n = glfw.window_should_close(window)
-int cmd_window_should_close(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_window_should_close(int argc, slib_par_t *params, var_t *retval) {
   int result;
   GLFWwindow *window = get_window(argc, params);
   if (window != nullptr) {
@@ -206,19 +206,19 @@ int cmd_window_should_close(int argc, slib_par_t *params, var_t *retval) {
 }
 
 // glfw.line_width(10)
-int cmd_line_width(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_line_width(int argc, slib_par_t *params, var_t *retval) {
   glLineWidth(get_param_int(argc, params, 0, 1));
   return argc == 1;
 }
 
 // glfw.poll_events()
-int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
   glfwPollEvents();
   return argc == 0;
 }
 
 // glfw.wait_events(n)
-int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
   int waitMillis = get_param_int(argc, params, 0, -1);
   if (waitMillis > 0) {
     glfwWaitEventsTimeout(waitMillis / 1000);
@@ -229,7 +229,7 @@ int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
 }
 
 // glfw.swap_buffers(window)
-int cmd_swap_buffers(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_swap_buffers(int argc, slib_par_t *params, var_t *retval) {
   int result;
   GLFWwindow *window = get_window(argc, params);
   if (window != nullptr) {
@@ -242,7 +242,7 @@ int cmd_swap_buffers(int argc, slib_par_t *params, var_t *retval) {
 }
 
 // glfw.terminate()
-int cmd_terminate(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_terminate(int argc, slib_par_t *params, var_t *retval) {
   glfwTerminate();
   return argc == 0;
 }
@@ -261,15 +261,15 @@ API lib_func[] = {
   {"WINDOW_SHOULD_CLOSE", cmd_window_should_close},
 };
 
-int sblib_proc_count() {
+SBLIB_API int sblib_proc_count() {
   return (sizeof(lib_proc) / sizeof(lib_proc[0]));
 }
 
-int sblib_func_count() {
+SBLIB_API int sblib_func_count() {
   return (sizeof(lib_func) / sizeof(lib_func[0]));
 }
 
-int sblib_proc_getname(int index, char *proc_name) {
+SBLIB_API int sblib_proc_getname(int index, char *proc_name) {
   int result;
   if (index < sblib_proc_count()) {
     strcpy(proc_name, lib_proc[index].name);
@@ -280,7 +280,7 @@ int sblib_proc_getname(int index, char *proc_name) {
   return result;
 }
 
-int sblib_func_getname(int index, char *proc_name) {
+SBLIB_API int sblib_func_getname(int index, char *proc_name) {
   int result;
   if (index < sblib_func_count()) {
     strcpy(proc_name, lib_func[index].name);
@@ -291,7 +291,7 @@ int sblib_func_getname(int index, char *proc_name) {
   return result;
 }
 
-int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
+SBLIB_API int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (index < sblib_proc_count()) {
     result = lib_proc[index].command(argc, params, retval);
@@ -301,7 +301,7 @@ int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
+SBLIB_API int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (index < sblib_func_count()) {
     result = lib_func[index].command(argc, params, retval);
@@ -311,7 +311,7 @@ int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int sblib_events(int wait_flag, int *w, int *h) {
+SBLIB_API int sblib_events(int wait_flag, int *w, int *h) {
   switch (wait_flag) {
   case 1:
     glfwWaitEvents();
@@ -329,15 +329,15 @@ int sblib_events(int wait_flag, int *w, int *h) {
   return 0;
 }
 
-void sblib_close(void) {
+SBLIB_API void sblib_close(void) {
   glfwTerminate();
 }
 
-void sblib_cls() {
+SBLIB_API void sblib_cls() {
   glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void sblib_settextcolor(long fg, long bg) {
+SBLIB_API void sblib_settextcolor(long fg, long bg) {
   _fg_color = get_color(fg);
   _bg_color = get_color(bg);
 
@@ -345,12 +345,12 @@ void sblib_settextcolor(long fg, long bg) {
     glClearColor(_bg_color._r, _bg_color._g, _bg_color._b, 1.0f);
   }
 }
-void sblib_setcolor(long fg) {
+SBLIB_API void sblib_setcolor(long fg) {
   _fg_color = get_color(fg);
 }
 
 // draw a line
-void sblib_line(int x1, int y1, int x2, int y2) {
+SBLIB_API void sblib_line(int x1, int y1, int x2, int y2) {
   glColor3f(_fg_color._r, _fg_color._g, _fg_color._b);
   glBegin(GL_LINES);
   glVertex2f(scaleX(x1), scaleY(y1));
@@ -359,7 +359,7 @@ void sblib_line(int x1, int y1, int x2, int y2) {
 }
 
 // draw a pixel
-void sblib_setpixel(int x, int y) {
+SBLIB_API void sblib_setpixel(int x, int y) {
   glColor3f(_fg_color._r, _fg_color._g, _fg_color._b);
   glBegin(GL_POINTS);
   glVertex2f(scaleX(x), scaleY(y));
@@ -367,7 +367,7 @@ void sblib_setpixel(int x, int y) {
 }
 
 // draw rectangle
-void sblib_rect(int x1, int y1, int x2, int y2, int fill) {
+SBLIB_API void sblib_rect(int x1, int y1, int x2, int y2, int fill) {
   glColor3f(_fg_color._r, _fg_color._g, _fg_color._b);
   glBegin(fill ? GL_POLYGON : GL_LINE_LOOP);
   glVertex2f(scaleX(x1), scaleY(y1));
@@ -379,7 +379,7 @@ void sblib_rect(int x1, int y1, int x2, int y2, int fill) {
 
 // draw ellipse
 // see: https://stackoverflow.com/questions/5886628/effecient-way-to-draw-ellipse-with-opengl-or-d3d
-void sblib_ellipse(int xc, int yc, int xr, int yr, int fill) {
+SBLIB_API void sblib_ellipse(int xc, int yc, int xr, int yr, int fill) {
   // precalculate the sine and cosine
   double theta = (2.0 * M_PI) / ellipse_segments;
   float s = sin(theta);

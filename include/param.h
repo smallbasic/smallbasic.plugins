@@ -7,6 +7,8 @@
 
 #pragma once
 
+
+#include "config.h"
 #include "var.h"
 #include "module.h"
 
@@ -51,3 +53,11 @@ var_p_t map_get(var_p_t base, const char *name);
 const char *get_param_str(int argc, slib_par_t *params, int n, const char *def);
 const char *get_param_str_field(int argc, slib_par_t *params, int n, const char *field);
 const char *format_text(int argc, slib_par_t *params, int n);
+
+#if !defined(SBLIB_API)
+ #if defined(_WIN32)
+   #define SBLIB_API __declspec(dllexport)
+ #else
+   #define SBLIB_API
+ #endif
+#endif

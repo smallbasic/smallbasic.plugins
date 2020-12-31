@@ -37,7 +37,7 @@ AC_ARG_WITH(static-include,
   [STATIC_INCLUDE="no"])
 
 case "${host_os}" in
-  *mingw*)
+  *mingw* | *msys*)
     AC_DEFINE(_WIN32, 1, [building for win32])
     PLATFORM_LDFLAGS="-no-undefined -Wl,-static -avoid-version"
     RAYLIB_LDFLAGS="-pthread -lgdi32 -mwindows"
@@ -50,6 +50,10 @@ case "${host_os}" in
     ;;
 
   *)
+    AC_CHECK_PROG(have_sdl, sdl2-config, [yes], [no])
+    if test "${have_sdl}" = "no" ; then
+      AC_MSG_ERROR([libsdl2-dev not installed: configure failed.])
+    fi
     PLATFORM_LDFLAGS="-Wl,--no-undefined -avoid-version"
     CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
     IMGUI_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
@@ -72,12 +76,6 @@ AC_SUBST(NUKLEAR_CPPFLAGS)
 AC_SUBST(NUKLEAR_LDFLAGS)
 AC_SUBST(WEBSOCKET_LDFLAGS)
 AC_SUBST(PLATFORM_LDFLAGS)
-
-# checks for nuklear
-AC_CHECK_PROG(have_sdl, sdl2-config, [yes], [no])
-if test "${have_sdl}" = "no" ; then
-  AC_MSG_ERROR([libsdl2-dev not installed: configure failed.])
-fi
 
 dnl change default aru setting to avoid warning
 ARFLAGS=cr
