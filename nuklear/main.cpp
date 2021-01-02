@@ -30,6 +30,7 @@
 
 nk_context *nkp_create_window(const char *title, int width, int height);
 bool nkp_process_events();
+void nkp_set_window_title(const char *title);
 void nkp_windowend();
 void nkp_close();
 
@@ -73,13 +74,13 @@ const nk_color _colors[] = {
   {255,255,255,255}  // 15 bright white
 };
 
-int is_hex(char c) {
+static int is_hex(char c) {
   return ((c >= '0' && c <= '9') ||
           (c >= 'a' && c <= 'f') ||
           (c >= 'A' && c <= 'F'));
 }
 
-int is_color(const char *str, size_t len) {
+static int is_color(const char *str, size_t len) {
   int result = 0;
   if ((len == 7 || len == 9) && str[0] == '#') {
     result = 1;
@@ -90,7 +91,7 @@ int is_color(const char *str, size_t len) {
   return result;
 }
 
-nk_flags get_alignment(const char *s) {
+static nk_flags get_alignment(const char *s) {
   nk_flags result;
   if (!strcasecmp(s, "left")) {
     result = NK_TEXT_LEFT;
@@ -116,7 +117,7 @@ nk_flags get_alignment(const char *s) {
   return result;
 }
 
-struct nk_color get_color(long c) {
+static struct nk_color get_color(long c) {
   nk_color result;
   if (c >= 0 && c < 16) {
     result = _colors[c];
@@ -132,7 +133,7 @@ struct nk_color get_color(long c) {
   return result;
 }
 
-void get_rgba_str(struct nk_color c, char *str) {
+static void get_rgba_str(struct nk_color c, char *str) {
   if (c.a < 255) {
     sprintf(str, "#%02x%02x%02x%02x", c.r, c.g, c.b, c.a);
   } else {
@@ -140,7 +141,7 @@ void get_rgba_str(struct nk_color c, char *str) {
   }
 }
 
-int get_value(const char *str, int range) {
+static int get_value(const char *str, int range) {
   const char *end;
   int result = nk_strtoi(str, &end);
   if (*end == '%') {
@@ -158,7 +159,7 @@ int get_value(const char *str, int range) {
   return result;
 }
 
-nk_color get_param_color(int argc, slib_par_t *params, int n) {
+static nk_color get_param_color(int argc, slib_par_t *params, int n) {
   nk_color result;
   const char *color = get_param_str(argc, params, n, nullptr);
   if (color != nullptr && is_color(color, v_strlen(params[n].var_p))) {
@@ -169,7 +170,7 @@ nk_color get_param_color(int argc, slib_par_t *params, int n) {
   return result;
 }
 
-struct nk_rect get_param_rect(int argc, slib_par_t *params, int n) {
+static struct nk_rect get_param_rect(int argc, slib_par_t *params, int n) {
   int w, h;
   int x = get_param_int(argc, params, n, 0);
   int y = get_param_int(argc, params, n + 1, 0);
@@ -194,7 +195,7 @@ struct nk_rect get_param_rect(int argc, slib_par_t *params, int n) {
   return nk_rect(x, y, w, h);
 }
 
-enum drawmode get_param_draw_mode(int argc, slib_par_t *params, int n) {
+static enum drawmode get_param_draw_mode(int argc, slib_par_t *params, int n) {
   const char *mode = get_param_str(argc, params, n, "none");
   drawmode result;
   if (!strcasecmp(mode, "fill")) {
@@ -207,7 +208,7 @@ enum drawmode get_param_draw_mode(int argc, slib_par_t *params, int n) {
   return result;
 }
 
-nk_flags get_param_window_flags(int argc, slib_par_t *params, int n) {
+static nk_flags get_param_window_flags(int argc, slib_par_t *params, int n) {
   nk_flags flags = 0;
   for (int i = n; i < argc; i++) {
     const char *flag = get_param_str(argc, params, i, nullptr);
@@ -240,7 +241,7 @@ nk_flags get_param_window_flags(int argc, slib_par_t *params, int n) {
   return flags;
 }
 
-int cmd_arc(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_arc(int argc, slib_par_t *params, var_t *retval) {
   enum drawmode mode = get_param_draw_mode(argc, params, 0);
   float cx = get_param_num(argc, params, 1, 0);
   float cy = get_param_num(argc, params, 2, 0);
@@ -252,10 +253,10 @@ int cmd_arc(int argc, slib_par_t *params, var_t *retval) {
   } else if (mode == DRAW_LINE) {
     nk_stroke_arc(&_ctx->current->buffer, cx, cy, r, a0, a1, _line_thickness, _fg_color);
   }
-  return (argc == 6);
+  return 1;
 }
 
-int cmd_button(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_button(int argc, slib_par_t *params, var_t *retval) {
   const char *title = get_param_str(argc, params, 0, nullptr);
   int result;
   if (title != nullptr) {
@@ -272,7 +273,7 @@ int cmd_button(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
   const char *label = get_param_str(argc, params, 0, nullptr);
   if (label != nullptr && is_param_map(argc, params, 1)) {
     var_t *map = params[1].var_p;
@@ -285,10 +286,10 @@ int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
   } else {
     v_setstr(retval, "Invalid checkbox input");
   }
-  return (argc == 2);
+  return 1;
 }
 
-int cmd_circle(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_circle(int argc, slib_par_t *params, var_t *retval) {
   enum drawmode mode = get_param_draw_mode(argc, params, 0);
   float x = get_param_num(argc, params, 1, 0);
   float y = get_param_num(argc, params, 2, 0);
@@ -298,10 +299,10 @@ int cmd_circle(int argc, slib_par_t *params, var_t *retval) {
   } else if (mode == DRAW_LINE) {
     nk_stroke_circle(&_ctx->current->buffer, nk_rect(x - r, y - r, r * 2, r * 2), _line_thickness, _fg_color);
   }
-  return (argc == 4);
+  return 1;
 }
 
-int cmd_colorpicker(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_colorpicker(int argc, slib_par_t *params, var_t *retval) {
   int result = 1;
   char new_color_string[10];
   if (is_param_str(argc, params, 0)) {
@@ -328,7 +329,7 @@ int cmd_colorpicker(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_combobox(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_combobox(int argc, slib_par_t *params, var_t *retval) {
   int success = 0;
   if (is_param_map(argc, params, 0)) {
     var_t *map = params[0].var_p;
@@ -358,30 +359,30 @@ int cmd_combobox(int argc, slib_par_t *params, var_t *retval) {
   return success;
 }
 
-int cmd_contextualbegin(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_contextualbegin(int argc, slib_par_t *params, var_t *retval) {
   struct nk_vec2 size;
   size.x = get_param_num(argc, params, 0, 0);
   size.y = get_param_num(argc, params, 1, 0);
   struct nk_rect trigger = get_param_rect(argc, params, 2);
   nk_flags flags = NK_WINDOW_NO_SCROLLBAR;
   v_setint(retval, nk_contextual_begin(_ctx, flags, size, trigger));
-  return (argc == 6);
+  return 1;
 }
 
-int cmd_contextualend(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_contextualend(int argc, slib_par_t *params, var_t *retval) {
   nk_contextual_end(_ctx);
   return 1;
 }
 
-int cmd_contextualitem(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_contextualitem(int argc, slib_par_t *params, var_t *retval) {
   const char *text = get_param_str(argc, params, 0, nullptr);
   if (text != nullptr) {
     nk_contextual_item_symbol_label(_ctx, NK_SYMBOL_NONE, text, NK_TEXT_LEFT);
   }
-  return (argc >= 1 && argc <= 3);
+  return 1;
 }
 
-int cmd_curve(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_curve(int argc, slib_par_t *params, var_t *retval) {
   float ax = get_param_num(argc, params, 0, 0);
   float ay = get_param_num(argc, params, 1, 0);
   float ctrl0x = get_param_num(argc, params, 2, 0);
@@ -391,10 +392,10 @@ int cmd_curve(int argc, slib_par_t *params, var_t *retval) {
   float bx = get_param_num(argc, params, 6, 0);
   float by = get_param_num(argc, params, 7, 0);
   nk_stroke_curve(&_ctx->current->buffer, ax, ay, ctrl0x, ctrl0y, ctrl1x, ctrl1y, bx, by, _line_thickness, _fg_color);
-  return argc == 8;
+  return 1;
 }
 
-int cmd_edit(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_edit(int argc, slib_par_t *params, var_t *retval) {
   int success = 0;
   const char *styleStr = get_param_str(argc, params, 0, nullptr);
   if (styleStr != nullptr && is_param_map(argc, params, 1)) {
@@ -424,24 +425,18 @@ int cmd_edit(int argc, slib_par_t *params, var_t *retval) {
   return success;
 }
 
-int cmd_image(int argc, slib_par_t *params, var_t *retval) {
-  return 1;
-}
-
-int cmd_text(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_text(int argc, slib_par_t *params, var_t *retval) {
   const char *text = get_param_str(argc, params, 0, nullptr);
   float x = get_param_num(argc, params, 1, 0);
   float y = get_param_num(argc, params, 2, 0);
   float w = get_param_num(argc, params, 3, 0);
   float h = get_param_num(argc, params, 4, 0);
-  if (argc == 5) {
-    nk_draw_text(&_ctx->current->buffer, nk_rect(x, y, w, h), text, strlen(text),
-                 _ctx->style.font, nk_rgba(0, 0, 0, 0), _fg_color);
-  }
-  return (argc == 5);
+  nk_draw_text(&_ctx->current->buffer, nk_rect(x, y, w, h), text, strlen(text),
+               _ctx->style.font, nk_rgba(0, 0, 0, 0), _fg_color);
+  return 1;
 }
 
-int cmd_ellipse(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ellipse(int argc, slib_par_t *params, var_t *retval) {
   enum drawmode mode = get_param_draw_mode(argc, params, 0);
   float x = get_param_num(argc, params, 1, 0);
   float y = get_param_num(argc, params, 2, 0);
@@ -452,21 +447,21 @@ int cmd_ellipse(int argc, slib_par_t *params, var_t *retval) {
   } else if (mode == DRAW_LINE) {
     nk_stroke_circle(&_ctx->current->buffer, nk_rect(x - rx, y - ry, rx * 2, ry * 2), _line_thickness, _fg_color);
   }
-  return (argc == 5);
+  return 1;
 }
 
-int cmd_groupbegin(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_groupbegin(int argc, slib_par_t *params, var_t *retval) {
   const char *title = get_param_str(argc, params, 0, nullptr);
   nk_flags flags = get_param_window_flags(argc, params, 1);
   return nk_group_begin(_ctx, title, flags);
 }
 
-int cmd_groupend(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_groupend(int argc, slib_par_t *params, var_t *retval) {
   nk_group_end(_ctx);
   return 1;
 }
 
-int cmd_label(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_label(int argc, slib_par_t *params, var_t *retval) {
   const char *label = get_param_str(argc, params, 0, nullptr);
   const char *position = get_param_str(argc, params, 1, "left");
   int result;
@@ -502,21 +497,51 @@ int cmd_label(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_layoutrow(int argc, slib_par_t *params, var_t *retval) {
-  const char *format = get_param_str(argc, params, 0, nullptr);
+static int cmd_layoutrow(int argc, slib_par_t *params, var_t *retval) {
+  const char *format = get_param_str(argc, params, 0, "_invalid");
   var_num_t height = get_param_num(argc, params, 1, 0);
   int cols = get_param_int(argc, params, 2, 0);
-  if (format != nullptr) {
-    if (!strcasecmp(format, "dynamic")) {
-      nk_row_layout(_ctx, NK_DYNAMIC, height, cols, 0);
-    } else if (!strcasecmp(format, "static")) {
-      nk_row_layout(_ctx, NK_STATIC, height, cols, 0);
-    }
+  int width = get_param_int(argc, params, 3, 0);
+  int result = 1;
+  if (!strcasecmp("dynamic", format)) {
+    nk_row_layout(_ctx, NK_DYNAMIC, height, cols, width);
+  } else if (!strcasecmp("static", format)) {
+    nk_row_layout(_ctx, NK_STATIC, height, width, cols);
+  } else {
+    v_setstr(retval, "Invalid layout format");
+    result = 0;
   }
-  return argc == 3;
+  return result;
 }
 
-int cmd_line(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_layoutrowbegin(int argc, slib_par_t *params, var_t *retval) {
+  const char *format = get_param_str(argc, params, 0, "_invalid");
+  var_num_t height = get_param_num(argc, params, 1, 0);
+  int cols = get_param_int(argc, params, 2, 0);
+  int result = 1;
+  if (!strcasecmp("static", format)) {
+    nk_layout_row_begin(_ctx, NK_STATIC, height, cols);
+  } else if (!strcasecmp("dynamic", format)) {
+    nk_layout_row_begin(_ctx, NK_DYNAMIC, height, cols);
+  } else {
+    v_setstr(retval, "Invalid layout format");
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_layoutrowpush(int argc, slib_par_t *params, var_t *retval) {
+  var_num_t ratio_or_width = get_param_num(argc, params, 0, 0);
+  nk_layout_row_push(_ctx, ratio_or_width);
+  return 1;
+}
+
+static int cmd_layoutrowend(int argc, slib_par_t *params, var_t *retval) {
+  nk_layout_row_end(_ctx);
+  return 1;
+}
+
+static int cmd_line(int argc, slib_par_t *params, var_t *retval) {
   for (int i = 0; i < argc && i < MAX_FLOATS; ++i) {
     _floats[i] = get_param_num(argc, params, i, 0);
   }
@@ -524,7 +549,7 @@ int cmd_line(int argc, slib_par_t *params, var_t *retval) {
   return (argc >= 4 && argc % 2 == 0);
 }
 
-int cmd_menubegin(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_menubegin(int argc, slib_par_t *params, var_t *retval) {
   int result;
   const char *text = get_param_str(argc, params, 0, nullptr);
   if (text != nullptr) {
@@ -540,12 +565,12 @@ int cmd_menubegin(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_menuend(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_menuend(int argc, slib_par_t *params, var_t *retval) {
   nk_menu_end(_ctx);
   return 1;
 }
 
-int cmd_menuitem(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_menuitem(int argc, slib_par_t *params, var_t *retval) {
   int result;
   const char *text = get_param_str(argc, params, 0, nullptr);
   if (text != nullptr) {
@@ -558,17 +583,17 @@ int cmd_menuitem(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_menubarbegin(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_menubarbegin(int argc, slib_par_t *params, var_t *retval) {
   nk_menubar_begin(_ctx);
   return 1;
 }
 
-int cmd_menubarend(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_menubarend(int argc, slib_par_t *params, var_t *retval) {
   nk_menubar_end(_ctx);
   return 1;
 }
 
-int cmd_polygon(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_polygon(int argc, slib_par_t *params, var_t *retval) {
   enum drawmode mode = get_param_draw_mode(argc, params, 0);
   for (int i = 0; i < argc - 1 && i < MAX_FLOATS; ++i) {
     _floats[i] = get_param_num(argc, params, i + 1, 0);
@@ -581,7 +606,7 @@ int cmd_polygon(int argc, slib_par_t *params, var_t *retval) {
   return (argc >= 2);
 }
 
-int cmd_progress(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_progress(int argc, slib_par_t *params, var_t *retval) {
   nk_size max = get_param_num(argc, params, 1, 0);
   int modifiable = get_param_int(argc, params, 2, 0);
   if (is_param_map(argc, params, 0)) {
@@ -593,10 +618,10 @@ int cmd_progress(int argc, slib_par_t *params, var_t *retval) {
   } else {
     v_setstr(retval, "Invalid progress input");
   }
-  return (argc >= 2 || argc <= 3);
+  return 1;
 }
 
-int cmd_property(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_property(int argc, slib_par_t *params, var_t *retval) {
   const char *name = get_param_str(argc, params, 0, nullptr);
   double min = get_param_num(argc, params, 1, 0);
   double max = get_param_num(argc, params, 3, 0);
@@ -618,7 +643,7 @@ int cmd_property(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_radio(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_radio(int argc, slib_par_t *params, var_t *retval) {
   int result;
   const char *name = get_param_str(argc, params, 0, nullptr);
   if (name != nullptr && is_param_map(argc, params, 1)) {
@@ -636,7 +661,7 @@ int cmd_radio(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_rectmulticolor(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_rectmulticolor(int argc, slib_par_t *params, var_t *retval) {
   float x = get_param_num(argc, params, 0, 0);
   float y = get_param_num(argc, params, 1, 0);
   float w = get_param_num(argc, params, 2, 0);
@@ -646,10 +671,10 @@ int cmd_rectmulticolor(int argc, slib_par_t *params, var_t *retval) {
   struct nk_color bottomLeft = get_param_color(argc, params, 6);
   struct nk_color bottomRight = get_param_color(argc, params, 7);
   nk_fill_rect_multi_color(&_ctx->current->buffer, nk_rect(x, y, w, h), topLeft, topRight, bottomLeft, bottomRight);
-  return (argc == 8);
+  return 1;
 }
 
-int cmd_selectable(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_selectable(int argc, slib_par_t *params, var_t *retval) {
   const char *text = get_param_str(argc, params, 0, nullptr);
   if (text != nullptr && is_param_map(argc, params, 1)) {
     int value = get_param_num_field(argc, params, 1, "value");
@@ -661,10 +686,10 @@ int cmd_selectable(int argc, slib_par_t *params, var_t *retval) {
   } else {
     v_setstr(retval, "Invalid selectable input");
   }
-  return (argc >= 2 && argc <= 4);
+  return 1;
 }
 
-int cmd_slider(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_slider(int argc, slib_par_t *params, var_t *retval) {
   float min = get_param_num(argc, params, 0, 0);
   float max = get_param_num(argc, params, 2, 0);
   float step = get_param_num(argc, params, 3, 0);
@@ -682,12 +707,12 @@ int cmd_slider(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_spacing(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_spacing(int argc, slib_par_t *params, var_t *retval) {
   nk_spacing(_ctx, get_param_int(argc, params, 0, 0));
   return 1;
 }
 
-int cmd_textinput(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_textinput(int argc, slib_par_t *params, var_t *retval) {
   int len;
   char buf[256];
   const char *text = get_param_str(argc, params, 0, nullptr);
@@ -698,20 +723,20 @@ int cmd_textinput(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_tooltip(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_tooltip(int argc, slib_par_t *params, var_t *retval) {
   const char *text = get_param_str(argc, params, 0, nullptr);
   if (text) {
     nk_tooltip(_ctx, text);
   }
-  return (argc == 1);
+  return 1;
 }
 
-int cmd_treepop(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_treepop(int argc, slib_par_t *params, var_t *retval) {
   nk_tree_pop(_ctx);
-  return (argc == 0);
+  return 1;
 }
 
-int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
   const char *typeStr = get_param_str(argc, params, 0, nullptr);
   const char *title = get_param_str(argc, params, 1, nullptr);
   enum nk_tree_type type = NK_TREE_NODE;
@@ -734,7 +759,7 @@ int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
   return (argc == 2);
 }
 
-int cmd_widgetbounds(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_widgetbounds(int argc, slib_par_t *params, var_t *retval) {
   struct nk_rect rc = nk_widget_bounds(_ctx);
   v_toarray1(retval, 4);
   v_setint(v_elem(retval, 0), rc.x);
@@ -744,12 +769,12 @@ int cmd_widgetbounds(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_widgetishovered(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_widgetishovered(int argc, slib_par_t *params, var_t *retval) {
   v_setint(retval, nk_widget_is_hovered(_ctx));
   return 1;
 }
 
-int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
   nk_input_begin(_ctx);
   _dirty = nkp_process_events();
   nk_input_end(_ctx);
@@ -758,6 +783,9 @@ int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
     struct nk_rect rc = get_param_rect(argc, params, 1);
     nk_flags flags = get_param_window_flags(argc, params, 5);
     v_setint(retval, nk_begin(_ctx, title, rc, flags));
+    if ((flags & NK_WINDOW_TITLE) == 0) {
+      nkp_set_window_title(title);
+    }
   } else {
     // no UI updates required
     v_setint(retval, 0);
@@ -765,16 +793,16 @@ int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-int cmd_windowend(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_windowend(int argc, slib_par_t *params, var_t *retval) {
   if (_dirty) {
     nk_end(_ctx);
     nkp_windowend();
     _dirty = false;
   }
-  return argc == 0;
+  return 1;
 }
 
-int cmd_windowgetbounds(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_windowgetbounds(int argc, slib_par_t *params, var_t *retval) {
   struct nk_rect rc = nk_window_get_bounds(_ctx);
   v_toarray1(retval, 4);
   v_setint(v_elem(retval, 0), rc.x);
@@ -784,55 +812,57 @@ int cmd_windowgetbounds(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-API lib_proc[] = {
-  {"BUTTON", cmd_button},
-  {"ARC", cmd_arc},
-  {"CHECKBOX", cmd_checkbox},
-  {"CIRCLE", cmd_circle},
-  {"COLORPICKER", cmd_colorpicker},
-  {"COMBOBOX", cmd_combobox},
-  {"CONTEXTUALEND", cmd_contextualend},
-  {"CONTEXTUALITEM", cmd_contextualitem},
-  {"CURVE", cmd_curve},
-  {"EDIT", cmd_edit},
-  {"ELLIPSE", cmd_ellipse},
-  {"GROUPBEGIN", cmd_groupbegin},
-  {"GROUPEND", cmd_groupend},
-  {"IMAGE", cmd_image},
-  {"LABEL", cmd_label},
-  {"LAYOUTROW", cmd_layoutrow},
-  {"LINE", cmd_line},
-  {"MENUBARBEGIN", cmd_menubarbegin},
-  {"MENUBAREND", cmd_menubarend},
-  {"MENUEND", cmd_menuend},
-  {"MENUITEM", cmd_menuitem},
-  {"POLYGON", cmd_polygon},
-  {"PROGRESS", cmd_progress},
-  {"PROPERTY", cmd_property},
-  {"RADIO", cmd_radio},
-  {"RECTMULTICOLOR", cmd_rectmulticolor},
-  {"SELECTABLE", cmd_selectable},
-  {"SLIDER", cmd_slider},
-  {"SPACING", cmd_spacing},
-  {"TEXT", cmd_text},
-  {"TEXTINPUT", cmd_textinput},
-  {"TOOLTIP", cmd_tooltip},
-  {"TREEPOP", cmd_treepop},
-  {"WINDOWEND", cmd_windowend},
+FUNC_SIG lib_proc[] = {
+  {1, 1,  "BUTTON", cmd_button},
+  {6, 6,  "ARC", cmd_arc},
+  {2, 2,  "CHECKBOX", cmd_checkbox},
+  {4, 4,  "CIRCLE", cmd_circle},
+  {1, 1,  "COLORPICKER", cmd_colorpicker},
+  {1, 10, "COMBOBOX", cmd_combobox},
+  {0, 0,  "CONTEXTUALEND", cmd_contextualend},
+  {1, 3,  "CONTEXTUALITEM", cmd_contextualitem},
+  {8, 8,  "CURVE", cmd_curve},
+  {2, 2,  "EDIT", cmd_edit},
+  {5, 5,  "ELLIPSE", cmd_ellipse},
+  {2, 2,  "GROUPBEGIN", cmd_groupbegin},
+  {0, 0,  "GROUPEND", cmd_groupend},
+  {1, 10, "LABEL", cmd_label},
+  {3, 4,  "LAYOUTROW", cmd_layoutrow},
+  {1, 1,  "LAYOUTROWPUSH", cmd_layoutrowpush},
+  {3, 3,  "LAYOUTROWBEGIN", cmd_layoutrowbegin},
+  {0, 0,  "LAYOUTROWEND", cmd_layoutrowend},
+  {2, 40, "LINE", cmd_line},
+  {0, 0,  "MENUBARBEGIN", cmd_menubarbegin},
+  {0, 0,  "MENUBAREND", cmd_menubarend},
+  {0, 0,  "MENUEND", cmd_menuend},
+  {1, 1,  "MENUITEM", cmd_menuitem},
+  {2, 40, "POLYGON", cmd_polygon},
+  {2, 3,  "PROGRESS", cmd_progress},
+  {6, 6,  "PROPERTY", cmd_property},
+  {2, 2,  "RADIO", cmd_radio},
+  {8, 8,  "RECTMULTICOLOR", cmd_rectmulticolor},
+  {2, 4,  "SELECTABLE", cmd_selectable},
+  {4, 4,  "SLIDER", cmd_slider},
+  {1, 1,  "SPACING", cmd_spacing},
+  {5, 5,  "TEXT", cmd_text},
+  {1, 1,  "TEXTINPUT", cmd_textinput},
+  {1, 1,  "TOOLTIP", cmd_tooltip},
+  {0, 0,  "TREEPOP", cmd_treepop},
+  {0, 0,  "WINDOWEND", cmd_windowend},
 };
 
-API lib_func[] = {
-  {"BUTTON", cmd_button},
-  {"CONTEXTUALBEGIN", cmd_contextualbegin},
-  {"MENUBEGIN", cmd_menubegin},
-  {"TREEPUSH", cmd_treepush},
-  {"WIDGETBOUNDS", cmd_widgetbounds},
-  {"WIDGETISHOVERED", cmd_widgetishovered},
-  {"WINDOWBEGIN", cmd_windowbegin},
-  {"WINDOWGETBOUNDS", cmd_windowgetbounds}
+FUNC_SIG lib_func[] = {
+  {1, 1,  "BUTTON", cmd_button},
+  {6, 6,  "CONTEXTUALBEGIN", cmd_contextualbegin},
+  {4, 4,  "MENUBEGIN", cmd_menubegin},
+  {2, 2,  "TREEPUSH", cmd_treepush},
+  {0, 0,  "WIDGETBOUNDS", cmd_widgetbounds},
+  {0, 0,  "WIDGETISHOVERED", cmd_widgetishovered},
+  {2, 10, "WINDOWBEGIN", cmd_windowbegin},
+  {0, 0,  "WINDOWGETBOUNDS", cmd_windowgetbounds}
 };
 
-void sblib_devinit(const char *prog, int width, int height) {
+SBLIB_API void sblib_devinit(const char *prog, int width, int height) {
   _bg_color = nk_black;
   _fg_color = nk_white;
   _line_thickness = 1;
@@ -851,18 +881,18 @@ void sblib_devinit(const char *prog, int width, int height) {
   delete [] title;
 }
 
-int sblib_proc_count() {
+SBLIB_API int sblib_proc_count() {
   return (sizeof(lib_proc) / sizeof(lib_proc[0]));
 }
 
-int sblib_func_count() {
+SBLIB_API int sblib_func_count() {
   return (sizeof(lib_func) / sizeof(lib_func[0]));
 }
 
-int sblib_proc_getname(int index, char *proc_name) {
+SBLIB_API int sblib_proc_getname(int index, char *proc_name) {
   int result;
   if (index < sblib_proc_count()) {
-    strcpy(proc_name, lib_proc[index].name);
+    strcpy(proc_name, lib_proc[index]._name);
     result = 1;
   } else {
     result = 0;
@@ -870,10 +900,10 @@ int sblib_proc_getname(int index, char *proc_name) {
   return result;
 }
 
-int sblib_func_getname(int index, char *proc_name) {
+SBLIB_API int sblib_func_getname(int index, char *proc_name) {
   int result;
   if (index < sblib_func_count()) {
-    strcpy(proc_name, lib_func[index].name);
+    strcpy(proc_name, lib_func[index]._name);
     result = 1;
   } else {
     result = 0;
@@ -881,39 +911,59 @@ int sblib_func_getname(int index, char *proc_name) {
   return result;
 }
 
-int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
+SBLIB_API int sblib_proc_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   int result;
-  if (index < sblib_proc_count()) {
-    result = lib_proc[index].command(argc, params, retval);
+  if (index >= 0 && index < sblib_proc_count()) {
+    if (argc < lib_proc[index]._min || argc > lib_proc[index]._max) {
+      if (lib_proc[index]._min == lib_proc[index]._max) {
+        error(retval, lib_proc[index]._name, lib_proc[index]._min);
+      } else {
+        error(retval, lib_proc[index]._name, lib_proc[index]._min, lib_proc[index]._max);
+      }
+      result = 0;
+    } else {
+      result = lib_proc[index]._command(argc, params, retval);
+    }
   } else {
+    fprintf(stderr, "Nuklear: PROC index error [%d]\n", index);
     result = 0;
   }
   return result;
 }
 
-int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
+SBLIB_API int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *retval) {
   int result;
-  if (index < sblib_func_count()) {
-    result = lib_func[index].command(argc, params, retval);
+  if (index >= 0 && index < sblib_func_count()) {
+    if (argc < lib_func[index]._min || argc > lib_func[index]._max) {
+      if (lib_func[index]._min == lib_func[index]._max) {
+        error(retval, lib_func[index]._name, lib_func[index]._min);
+      } else {
+        error(retval, lib_func[index]._name, lib_func[index]._min, lib_func[index]._max);
+      }
+      result = 0;
+    } else {
+      result = lib_func[index]._command(argc, params, retval);
+    }
   } else {
+    fprintf(stderr, "Nuklear: FUNC index error [%d]\n", index);
     result = 0;
   }
   return result;
 }
 
-void sblib_close() {
+SBLIB_API void sblib_close() {
   if (_ctx) {
     nkp_close();
   }
 }
 
-int sblib_events(int wait_flag, int *w, int *h) {
+SBLIB_API int sblib_events(int wait_flag, int *w, int *h) {
   *w = _width;
   *h = _height;
   return _isExit ? -2 : 0;
 }
 
-void sblib_setcolor(long fg) {
+SBLIB_API void sblib_setcolor(long fg) {
   _fg_color = get_color(fg);
 }
 
@@ -1001,6 +1051,10 @@ bool nkp_process_events() {
     _dirty = true;
   }
   return _dirty;
+}
+
+void nkp_set_window_title(const char *title) {
+  SetWindowTextA(wnd, title);
 }
 
 void nkp_windowend() {
@@ -1098,6 +1152,10 @@ bool nkp_process_events() {
     }
   }
   return _dirty;
+}
+
+void nkp_set_window_title(const char *title) {
+  SDL_SetWindowTitle(_window, title);
 }
 
 void nkp_windowend() {
