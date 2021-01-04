@@ -39,7 +39,6 @@ void nkp_close();
 #define MAX_FLOATS 40
 #define MAX_COMBOBOX_ITEMS 10
 #define MAX_EDIT_BUFFER_LEN 2048
-#define LOOP_DELAY 10
 
 static struct nk_context *_ctx;
 static float _floats[MAX_FLOATS];
@@ -1074,101 +1073,80 @@ void sblib_settextcolor(long fg, long bg) {
 
 #else
 
-//
-// SDL platform
-//
+#define NK_GLFW_GL4_IMPLEMENTATION
+#define MAX_VERTEX_BUFFER 512 * 1024
+#define MAX_ELEMENT_BUFFER 128 * 1024
 
-#define NK_SDL_GL2_IMPLEMENTATION
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_opengl.h>
-#include "Nuklear/demo/sdl_opengl2/nuklear_sdl_gl2.h"
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include "Nuklear/demo/glfw_opengl4/nuklear_glfw_gl4.h"
 
-static SDL_Window *_window;
-static SDL_GLContext _glContext;
+static GLFWwindow *_window;
+
+static void error_callback(int e, const char *d) {
+  printf("Error %d: %s\n", e, d);
+}
 
 nk_context *nkp_create_window(const char *title, int width, int height) {
-  SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
-  SDL_Init(SDL_INIT_VIDEO);
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-  _window = SDL_CreateWindow(title,
-                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                             (width < 10) ? WINDOW_WIDTH : width,
-                             (height < 10) ? WINDOW_HEIGHT : height,
-                             SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|
-                             SDL_WINDOW_ALLOW_HIGHDPI|SDL_WINDOW_RESIZABLE);
-  _glContext = SDL_GL_CreateContext(_window);
-  glClearColor(0.10f, 0.18f, 0.24f, 1.0f);
-  SDL_GetWindowSize(_window, &_width, &_height);
-  _isExit = false;
+  glfwSetErrorCallback(error_callback);
+  if (!glfwInit()) {
+    fprintf(stdout, "[GFLW] failed to init!\n");
+    exit(1);
+  }
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  nk_context *result = nk_sdl_init(_window);
+  _window = glfwCreateWindow((width < 10) ? WINDOW_WIDTH : width,
+                             (height < 10) ? WINDOW_HEIGHT : height,
+                             title, nullptr, nullptr);
+
+  glfwMakeContextCurrent(_window);
+  glfwGetWindowSize(_window, &_width, &_height);
+  glViewport(0, 0, _width, _height);
+  glewExperimental = 1;
+  if (glewInit() != GLEW_OK) {
+    fprintf(stderr, "Failed to setup GLEW\n");
+    exit(1);
+  }
+
+  nk_context *result = nk_glfw3_init(_window, NK_GLFW3_INSTALL_CALLBACKS, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
   struct nk_font_atlas *atlas;
-  nk_sdl_font_stash_begin(&atlas);
-  nk_sdl_font_stash_end();
+  nk_glfw3_font_stash_begin(&atlas);
+  nk_glfw3_font_stash_end();
+  _isExit = false;
 
   return result;
 }
 
 bool nkp_process_events() {
-  SDL_Event event;
-  while (!_isExit) {
-    if (SDL_PollEvent(&event)) {
-      nk_sdl_handle_event(&event);
-      switch (event.type) {
-      case SDL_WINDOWEVENT:
-        if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-          _width = event.window.data1;
-          _height = event.window.data2;
-        }
-        _dirty = true;
-        break;
-      case SDL_QUIT:
-        _isExit = true;
-        break;
-      case SDL_TEXTINPUT:
-      case SDL_KEYDOWN:
-      case SDL_KEYUP:
-      case SDL_MOUSEBUTTONDOWN:
-      case SDL_MOUSEBUTTONUP:
-      case SDL_MOUSEWHEEL:
-        _dirty = true;
-        break;
-      case SDL_MOUSEMOTION:
-        if (SDL_GetMouseState(nullptr, nullptr) &&
-            (SDL_BUTTON(SDL_BUTTON_LEFT) || SDL_BUTTON(SDL_BUTTON_RIGHT))) {
-          _dirty = true;
-        }
-        break;
-      default:
-        break;
-      }
-      break;
-    } else {
-      SDL_Delay(LOOP_DELAY);
-    }
+  if (glfwWindowShouldClose(_window)) {
+    _isExit = true;
+  } else {
+    glfwPollEvents();
+    nk_glfw3_new_frame();
+    glfwGetWindowSize(_window, &_width, &_height);
   }
-  return _dirty;
+  return true;
 }
 
 void nkp_set_window_title(const char *title) {
-  SDL_SetWindowTitle(_window, title);
+  glfwSetWindowTitle(_window, title);
 }
 
 void nkp_windowend() {
+  glfwGetWindowSize(_window, &_width, &_height);
   glViewport(0, 0, _width, _height);
   glClear(GL_COLOR_BUFFER_BIT);
-  nk_sdl_render(NK_ANTI_ALIASING_ON);
-  SDL_GL_SwapWindow(_window);
+  struct nk_colorf c = nk_color_cf(_bg_color);
+  glClearColor(c.r, c.g, c.b, c.a);
+  nk_glfw3_render(NK_ANTI_ALIASING_ON);
+  glfwSwapBuffers(_window);
 }
 
 void nkp_close() {
-  nk_sdl_shutdown();
-  SDL_GL_DeleteContext(_glContext);
-  SDL_DestroyWindow(_window);
+  nk_glfw3_shutdown();
+  glfwTerminate();
 }
 
 void sblib_settextcolor(long fg, long bg) {

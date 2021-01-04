@@ -50,15 +50,11 @@ case "${host_os}" in
     ;;
 
   *)
-    AC_CHECK_PROG(have_sdl, sdl2-config, [yes], [no])
-    if test "${have_sdl}" = "no" ; then
-      AC_MSG_ERROR([libsdl2-dev not installed: configure failed.])
-    fi
     PLATFORM_LDFLAGS="-Wl,--no-undefined -avoid-version"
     CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
     IMGUI_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
-    NUKLEAR_LDFLAGS="-lGL `sdl2-config --libs`"
-    NUKLEAR_CPPFLAGS="`sdl2-config --cflags`"
+    NUKLEAR_LDFLAGS="`pkg-config --libs glfw3` -lGL -lm -lGLU -lGLEW"
+    NUKLEAR_CPPFLAGS=""
     WEBSOCKET_LDFLAGS=""
     if test "${STATIC_INCLUDE}" = "yes"
     then
