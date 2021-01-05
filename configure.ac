@@ -42,9 +42,7 @@ case "${host_os}" in
     PLATFORM_LDFLAGS="-no-undefined -Wl,-static -avoid-version"
     RAYLIB_LDFLAGS="-pthread -lgdi32 -mwindows"
     CLIPBOARD_LDFLAGS=""
-    IMGUI_LDFLAGS="-pthread -lgdi32 -mwindows"
-    NUKLEAR_LDFLAGS="-lgdi32 -lmsimg32 -mwindows"
-    NUKLEAR_CPPFLAGS=""
+    NUKLEAR_LDFLAGS="-pthread -lgdi32 -mwindows"
     WEBSOCKET_LDFLAGS="-lwsock32"
     STATIC_INCLUDE="yes"
     ;;
@@ -52,9 +50,7 @@ case "${host_os}" in
   *)
     PLATFORM_LDFLAGS="-Wl,--no-undefined -avoid-version"
     CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
-    IMGUI_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
-    NUKLEAR_LDFLAGS="`pkg-config --libs glfw3` -lGL -lm -lGLU -lGLEW"
-    NUKLEAR_CPPFLAGS=""
+    NUKLEAR_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
     WEBSOCKET_LDFLAGS=""
     if test "${STATIC_INCLUDE}" = "yes"
     then
@@ -68,8 +64,6 @@ AM_CONDITIONAL(WITH_STATIC_INCLUDE, test "${STATIC_INCLUDE}" = "yes")
 AC_SUBST(DEBUG_LDFLAGS)
 AC_SUBST(CLIPBOARD_LDFLAGS)
 AC_SUBST(RAYLIB_LDFLAGS)
-AC_SUBST(IMGUI_LDFLAGS)
-AC_SUBST(NUKLEAR_CPPFLAGS)
 AC_SUBST(NUKLEAR_LDFLAGS)
 AC_SUBST(WEBSOCKET_LDFLAGS)
 AC_SUBST(PLATFORM_LDFLAGS)
@@ -93,7 +87,6 @@ AC_CONFIG_FILES([
 Makefile
 debug/Makefile
 nuklear/Makefile
-imgui/Makefile
 glfw/Makefile
 clipboard/Makefile
 websocket/Makefile

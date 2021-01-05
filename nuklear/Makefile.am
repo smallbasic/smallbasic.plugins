@@ -5,14 +5,15 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 # 
 
-#
-# cross-compile sdl: ./configure --host=x86_64-w64-mingw32 --prefix=/home/chrisws/mingw64 --disable-static
-# use built sdl2-config: export PATH=~/mingw64/bin:${PATH}
-# 
-
 AM_CXXFLAGS=-fno-rtti -std=c++14
-AM_CPPFLAGS = -I../include @NUKLEAR_CPPFLAGS@
+AM_CPPFLAGS = -D_GLFW_BUILD_DLL=1 \
+  -I../raylib/raylib/src/external/glfw/include \
+  -I../raylib/raylib/src/external/glfw/deps
 lib_LTLIBRARIES = libnuklear.la
-libnuklear_la_SOURCES =  ../include/param.cpp ../include/hashmap.cpp main.cpp
+libnuklear_la_SOURCES = \
+  ../include/param.cpp \
+  ../include/hashmap.cpp \
+  ../raylib/raylib/src/rglfw.c \
+  ../raylib/raylib/src/external/glfw/deps/glad_gl.c \
+  main.cpp
 libnuklear_la_LDFLAGS = -module -rpath '$(libdir)' @NUKLEAR_LDFLAGS@ @PLATFORM_LDFLAGS@
-

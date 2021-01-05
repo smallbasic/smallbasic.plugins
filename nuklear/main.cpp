@@ -966,120 +966,16 @@ SBLIB_API void sblib_setcolor(long fg) {
   _fg_color = get_color(fg);
 }
 
-#if defined(_WIN32)
-
-//
-// GDI platform
-//
-
-#define NK_GDI_IMPLEMENTATION
-#include "Nuklear/demo/gdi/nuklear_gdi.h"
-
-GdiFont* font;
-WNDCLASSW wc;
-HWND wnd;
-HDC dc;
-
-static LRESULT CALLBACK WindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
-  switch (msg) {
-  case WM_DESTROY:
-    PostQuitMessage(0);
-    return 0;
-
-  case WM_SIZE:
-    _width = LOWORD(lparam);
-    _height = HIWORD(lparam);
-    break;
-  }
-
-  if (nk_gdi_handle_event(wnd, msg, wparam, lparam)) {
-    return 0;
-  }
-  return DefWindowProcW(wnd, msg, wparam, lparam);
-}
-
-nk_context *nkp_create_window(const char *title, int width, int height) {
-  memset(&wc, 0, sizeof(wc));
-  wc.style = CS_DBLCLKS;
-  wc.lpfnWndProc = WindowProc;
-  wc.hInstance = GetModuleHandleW(0);
-  wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
-  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-  wc.lpszClassName = L"NuklearWindowClass";
-  RegisterClassW(&wc);
-
-  RECT rc = {0, 0, (width < 10) ? WINDOW_WIDTH : width, (height < 10) ? WINDOW_HEIGHT : height};
-  DWORD style = WS_OVERLAPPEDWINDOW;
-  DWORD exstyle = WS_EX_APPWINDOW;
-
-  size_t size = strlen(title);
-  wchar_t *wideTitle = new wchar_t[size + 1];
-  for (size_t i = 0; i < size; i++) {
-    wideTitle[i] = title[i];
-  }
-  wideTitle[size] = '\0';
-  AdjustWindowRectEx(&rc, style, FALSE, exstyle);
-  wnd = CreateWindowExW(exstyle, wc.lpszClassName, wideTitle,
-                        style | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT,
-                        rc.right - rc.left, rc.bottom - rc.top,
-                        nullptr, nullptr, wc.hInstance, nullptr);
-  dc = GetDC(wnd);
-  delete [] wideTitle;
-
-  font = nk_gdifont_create("Arial", 14);
-  return nk_gdi_init(font, dc, rc.right, rc.bottom);
-}
-
-bool nkp_process_events() {
-  MSG msg;
-  if (!_dirty) {
-    if (GetMessageW(&msg, nullptr, 0, 0) <= 0) {
-      _isExit = true;
-    } else {
-      TranslateMessage(&msg);
-      DispatchMessageW(&msg);
-    }
-    _dirty = true;
-  }
-  while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
-    if (msg.message == WM_QUIT) {
-      _isExit = true;
-    }
-    TranslateMessage(&msg);
-    DispatchMessageW(&msg);
-    _dirty = true;
-  }
-  return _dirty;
-}
-
-void nkp_set_window_title(const char *title) {
-  SetWindowTextA(wnd, title);
-}
-
-void nkp_windowend() {
-  nk_gdi_render(_bg_color);
-}
-
-void nkp_close() {
-  nk_gdifont_del(font);
-  ReleaseDC(wnd, dc);
-  UnregisterClassW(wc.lpszClassName, wc.hInstance);
-}
-
-void sblib_settextcolor(long fg, long bg) {
+SBLIB_API void sblib_settextcolor(long fg, long bg) {
   _fg_color = get_color(fg);
   _bg_color = get_color(bg);
 }
 
-#else
+#define NK_GLFW_GL2_IMPLEMENTATION
 
-#define NK_GLFW_GL4_IMPLEMENTATION
-#define MAX_VERTEX_BUFFER 512 * 1024
-#define MAX_ELEMENT_BUFFER 128 * 1024
-
-#include <GL/glew.h>
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include "Nuklear/demo/glfw_opengl4/nuklear_glfw_gl4.h"
+#include "Nuklear/demo/glfw_opengl2/nuklear_glfw_gl2.h"
 
 static GLFWwindow *_window;
 
@@ -1087,30 +983,32 @@ static void error_callback(int e, const char *d) {
   printf("Error %d: %s\n", e, d);
 }
 
+static void window_size_callback(GLFWwindow* window, int width, int height) {
+  _width = width;
+  _height = height;
+}
+
 nk_context *nkp_create_window(const char *title, int width, int height) {
-  glfwSetErrorCallback(error_callback);
   if (!glfwInit()) {
     fprintf(stdout, "[GFLW] failed to init!\n");
     exit(1);
   }
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
   _window = glfwCreateWindow((width < 10) ? WINDOW_WIDTH : width,
                              (height < 10) ? WINDOW_HEIGHT : height,
                              title, nullptr, nullptr);
 
   glfwMakeContextCurrent(_window);
+  gladLoadGL((GLADloadfunc) glfwGetProcAddress);
+  glfwSetErrorCallback(error_callback);
+  glfwSetWindowSizeCallback(_window, window_size_callback);
   glfwGetWindowSize(_window, &_width, &_height);
   glViewport(0, 0, _width, _height);
-  glewExperimental = 1;
-  if (glewInit() != GLEW_OK) {
-    fprintf(stderr, "Failed to setup GLEW\n");
-    exit(1);
-  }
 
-  nk_context *result = nk_glfw3_init(_window, NK_GLFW3_INSTALL_CALLBACKS, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
+  nk_context *result = nk_glfw3_init(_window, NK_GLFW3_INSTALL_CALLBACKS);//, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
   struct nk_font_atlas *atlas;
   nk_glfw3_font_stash_begin(&atlas);
   nk_glfw3_font_stash_end();
@@ -1125,7 +1023,6 @@ bool nkp_process_events() {
   } else {
     glfwPollEvents();
     nk_glfw3_new_frame();
-    glfwGetWindowSize(_window, &_width, &_height);
   }
   return true;
 }
@@ -1135,7 +1032,6 @@ void nkp_set_window_title(const char *title) {
 }
 
 void nkp_windowend() {
-  glfwGetWindowSize(_window, &_width, &_height);
   glViewport(0, 0, _width, _height);
   glClear(GL_COLOR_BUFFER_BIT);
   struct nk_colorf c = nk_color_cf(_bg_color);
@@ -1149,11 +1045,3 @@ void nkp_close() {
   glfwTerminate();
 }
 
-void sblib_settextcolor(long fg, long bg) {
-  _fg_color = get_color(fg);
-  _bg_color = get_color(bg);
-  struct nk_colorf c = nk_color_cf(_bg_color);
-  glClearColor(c.r, c.g, c.b, c.a);
-}
-
-#endif
