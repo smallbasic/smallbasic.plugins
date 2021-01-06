@@ -17,6 +17,7 @@
 #define NK_INCLUDE_DEFAULT_FONT
 #define NK_INCLUDE_FONT_BAKING
 #define NK_IMPLEMENTATION
+#define NK_GLFW_GL2_IMPLEMENTATION
 
 #include <cstddef>
 #include <cstdio>
@@ -28,18 +29,22 @@
 #include "include/module.h"
 #include "include/param.h"
 
-nk_context *nkp_create_window(const char *title, int width, int height);
-bool nkp_process_events();
-void nkp_set_window_title(const char *title);
-void nkp_windowend();
-void nkp_close();
+#include <glad/gl.h>
+#include <GLFW/glfw3.h>
+#include "Nuklear/demo/glfw_opengl2/nuklear_glfw_gl2.h"
+
+static GLFWwindow *_window;
 
 #define WINDOW_WIDTH 600
 #define WINDOW_HEIGHT 480
 #define MAX_FLOATS 40
 #define MAX_COMBOBOX_ITEMS 10
 #define MAX_EDIT_BUFFER_LEN 2048
+#define WAIT_INTERVAL_MILLIS 5
+#define WAIT_INTERVAL (WAIT_INTERVAL_MILLIS/1000)
+#define M_PI 3.14159265358979323846
 
+static double ellipse_segments = 20.0;
 static struct nk_context *_ctx;
 static float _floats[MAX_FLOATS];
 static const char *_comboboxItems[MAX_COMBOBOX_ITEMS];
@@ -72,6 +77,77 @@ const nk_color _colors[] = {
   {255,255,0  ,255}, // 14 light yellow
   {255,255,255,255}  // 15 bright white
 };
+
+static void error_callback(int e, const char *d) {
+  _isExit = true;
+  printf("Error %d: %s\n", e, d);
+}
+
+static void window_size_callback(GLFWwindow* window, int width, int height) {
+  _width = width;
+  _height = height;
+}
+
+nk_context *nkp_create_window(const char *title, int width, int height) {
+  if (!glfwInit()) {
+    fprintf(stdout, "[GFLW] failed to init!\n");
+    exit(1);
+  }
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
+  _window = glfwCreateWindow((width < 10) ? WINDOW_WIDTH : width,
+                             (height < 10) ? WINDOW_HEIGHT : height,
+                             title, nullptr, nullptr);
+
+  glfwMakeContextCurrent(_window);
+  gladLoadGL((GLADloadfunc) glfwGetProcAddress);
+  glfwSetErrorCallback(error_callback);
+  glfwSetWindowSizeCallback(_window, window_size_callback);
+  glfwGetWindowSize(_window, &_width, &_height);
+  glViewport(0, 0, _width, _height);
+
+  nk_context *result = nk_glfw3_init(_window, NK_GLFW3_INSTALL_CALLBACKS);
+  glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+  glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+  glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+
+  struct nk_font_atlas *atlas;
+  nk_glfw3_font_stash_begin(&atlas);
+  nk_glfw3_font_stash_end();
+  _isExit = false;
+
+  return result;
+}
+
+bool nkp_process_events() {
+  if (glfwWindowShouldClose(_window)) {
+    _isExit = true;
+  } else {
+    glfwPollEvents();
+    nk_glfw3_new_frame();
+  }
+  return true;
+}
+
+void nkp_set_window_title(const char *title) {
+  glfwSetWindowTitle(_window, title);
+}
+
+void nkp_windowend() {
+  glViewport(0, 0, _width, _height);
+  glClear(GL_COLOR_BUFFER_BIT);
+  struct nk_colorf c = nk_color_cf(_bg_color);
+  glClearColor(c.r, c.g, c.b, c.a);
+  nk_glfw3_render(NK_ANTI_ALIASING_ON);
+  glfwSwapBuffers(_window);
+}
+
+void nkp_close() {
+  nk_glfw3_shutdown();
+  glfwTerminate();
+}
 
 static int is_hex(char c) {
   return ((c >= '0' && c <= '9') ||
@@ -716,7 +792,7 @@ static int cmd_textinput(int argc, slib_par_t *params, var_t *retval) {
   char buf[256];
   const char *text = get_param_str(argc, params, 0, nullptr);
   strcpy(buf, text);
-  nk_edit_string(_ctx, NK_EDIT_SIMPLE, buf, &len, sizeof(buf) - 1, nk_filter_float);
+  nk_edit_string(_ctx, NK_EDIT_EDITOR, buf, &len, sizeof(buf) - 1, nk_filter_float);
   buf[len] = 0;
   v_setstr(retval, buf);
   return 1;
@@ -755,7 +831,7 @@ static int cmd_treepush(int argc, slib_par_t *params, var_t *retval) {
   } else {
     v_setstr(retval, "Invalid treepush input");
   }
-  return (argc == 2);
+  return 1;
 }
 
 static int cmd_widgetbounds(int argc, slib_par_t *params, var_t *retval) {
@@ -811,6 +887,35 @@ static int cmd_windowgetbounds(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
+// nk.line_width(10)
+static int cmd_line_width(int argc, slib_par_t *params, var_t *retval) {
+  glLineWidth(get_param_int(argc, params, 0, 1));
+  return 1;
+}
+
+// nk.poll_events()
+static int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
+  glfwPollEvents();
+  return 1;
+}
+
+// nk.wait_events(n)
+static int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
+  int waitMillis = get_param_int(argc, params, 0, -1);
+  if (waitMillis > 0) {
+    glfwWaitEventsTimeout(waitMillis / 1000);
+  } else {
+    glfwWaitEvents();
+  }
+  return 1;
+}
+
+// nk.swap_buffers()
+static int cmd_swap_buffers(int argc, slib_par_t *params, var_t *retval) {
+  glfwSwapBuffers(_window);
+  return 1;
+}
+
 FUNC_SIG lib_proc[] = {
   {1, 1,  "BUTTON", cmd_button},
   {6, 6,  "ARC", cmd_arc},
@@ -848,6 +953,10 @@ FUNC_SIG lib_proc[] = {
   {1, 1,  "TOOLTIP", cmd_tooltip},
   {0, 0,  "TREEPOP", cmd_treepop},
   {0, 0,  "WINDOWEND", cmd_windowend},
+  {1, 1,  "LINE_WIDTH", cmd_line_width},
+  {0, 0,  "POLL_EVENTS", cmd_poll_events},
+  {0, 1,  "WAIT_EVENTS", cmd_wait_events},
+  {0, 0,  "SWAP_BUFFERS", cmd_swap_buffers},
 };
 
 FUNC_SIG lib_func[] = {
@@ -957,9 +1066,21 @@ SBLIB_API void sblib_close() {
 }
 
 SBLIB_API int sblib_events(int wait_flag, int *w, int *h) {
+  switch (wait_flag) {
+  case 1:
+    glfwWaitEvents();
+    break;
+  case 2:
+    glfwWaitEventsTimeout(WAIT_INTERVAL);
+    break;
+  default:
+    glfwPollEvents();
+    break;
+  }
+
   *w = _width;
   *h = _height;
-  return _isExit ? -2 : 0;
+  return _isExit || glfwWindowShouldClose(_window) ? -2 : 0;
 }
 
 SBLIB_API void sblib_setcolor(long fg) {
@@ -971,77 +1092,77 @@ SBLIB_API void sblib_settextcolor(long fg, long bg) {
   _bg_color = get_color(bg);
 }
 
-#define NK_GLFW_GL2_IMPLEMENTATION
-
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
-#include "Nuklear/demo/glfw_opengl2/nuklear_glfw_gl2.h"
-
-static GLFWwindow *_window;
-
-static void error_callback(int e, const char *d) {
-  printf("Error %d: %s\n", e, d);
-}
-
-static void window_size_callback(GLFWwindow* window, int width, int height) {
-  _width = width;
-  _height = height;
-}
-
-nk_context *nkp_create_window(const char *title, int width, int height) {
-  if (!glfwInit()) {
-    fprintf(stdout, "[GFLW] failed to init!\n");
-    exit(1);
-  }
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-
-  _window = glfwCreateWindow((width < 10) ? WINDOW_WIDTH : width,
-                             (height < 10) ? WINDOW_HEIGHT : height,
-                             title, nullptr, nullptr);
-
-  glfwMakeContextCurrent(_window);
-  gladLoadGL((GLADloadfunc) glfwGetProcAddress);
-  glfwSetErrorCallback(error_callback);
-  glfwSetWindowSizeCallback(_window, window_size_callback);
-  glfwGetWindowSize(_window, &_width, &_height);
-  glViewport(0, 0, _width, _height);
-
-  nk_context *result = nk_glfw3_init(_window, NK_GLFW3_INSTALL_CALLBACKS);//, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
-  struct nk_font_atlas *atlas;
-  nk_glfw3_font_stash_begin(&atlas);
-  nk_glfw3_font_stash_end();
-  _isExit = false;
-
-  return result;
-}
-
-bool nkp_process_events() {
-  if (glfwWindowShouldClose(_window)) {
-    _isExit = true;
-  } else {
-    glfwPollEvents();
-    nk_glfw3_new_frame();
-  }
-  return true;
-}
-
-void nkp_set_window_title(const char *title) {
-  glfwSetWindowTitle(_window, title);
-}
-
-void nkp_windowend() {
-  glViewport(0, 0, _width, _height);
+SBLIB_API void sblib_cls() {
+  nk_colorf c = nk_color_cf(_bg_color);
+  glClearColor(c.r, c.g, c.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
-  struct nk_colorf c = nk_color_cf(_bg_color);
-  glClearColor(c.r, c.g, c.b, c.a);
-  nk_glfw3_render(NK_ANTI_ALIASING_ON);
-  glfwSwapBuffers(_window);
 }
 
-void nkp_close() {
-  nk_glfw3_shutdown();
-  glfwTerminate();
+void drawBegin(int mode) {
+  glMatrixMode(GL_PROJECTION);
+  glPushMatrix();
+  glLoadIdentity();
+  glOrtho(0.0f, _width, _height, 0.0f, -1.0f, 1.0f);
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+  glBegin(mode);
+  nk_colorf c = nk_color_cf(_fg_color);
+  glColor3f(c.r, c.g, c.b);
+}
+
+void drawEnd() {
+  glEnd();
+  glMatrixMode(GL_MODELVIEW);
+  glPopMatrix();
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+}
+
+// draw a line
+SBLIB_API void sblib_line(int x1, int y1, int x2, int y2) {
+  drawBegin(GL_LINES);
+  glVertex2f(x1, y1);
+  glVertex2f(x2, y2);
+  drawEnd();
+}
+
+// draw a pixel
+SBLIB_API void sblib_setpixel(int x, int y) {
+  drawBegin(GL_POINTS);
+  glVertex2f(x, y);
+  drawEnd();
+}
+
+// draw rectangle
+SBLIB_API void sblib_rect(int x1, int y1, int x2, int y2, int fill) {
+  drawBegin(fill ? GL_POLYGON : GL_LINE_LOOP);
+  glVertex2f(x1, y1);
+  glVertex2f(x2, y1);
+  glVertex2f(x2, y2);
+  glVertex2f(x1, y2);
+  drawEnd();
+}
+
+SBLIB_API void sblib_ellipse(int xc, int yc, int xr, int yr, int fill) {
+  // precalculate the sine and cosine
+  double theta = (2.0 * M_PI) / ellipse_segments;
+  float s = sin(theta);
+  float c = cos(theta);
+  float x = 1;
+  float y = 0;
+
+  drawBegin(fill ? GL_POLYGON : GL_LINE_LOOP);
+
+  for (int i = 0; i < ellipse_segments; i++)  {
+    // apply radius and offset
+    glVertex2f(x * xr + xc, y * yr + yc);
+
+    // apply the rotation matrix
+    float t = x;
+    x = c * x - s * y;
+    y = s * t + c * y;
+  }
+  drawEnd();
 }
 

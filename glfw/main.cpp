@@ -345,6 +345,7 @@ SBLIB_API void sblib_settextcolor(long fg, long bg) {
     glClearColor(_bg_color._r, _bg_color._g, _bg_color._b, 1.0f);
   }
 }
+
 SBLIB_API void sblib_setcolor(long fg) {
   _fg_color = get_color(fg);
 }
