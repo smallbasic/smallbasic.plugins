@@ -2503,12 +2503,18 @@ static int cmd_drawtexturetiled(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_drawtexturev(int argc, slib_par_t *params, var_t *retval) {
-  //auto texture = get_param_str(argc, params, 0, NULL);
-  //auto position = get_param_vec3(argc, params, 1, NULL);
-  //auto tint = get_param_color(argc, params, 2, NULL);
-  //DrawTextureV(texture, position, tint);
-  return 1;
+static int cmd_drawtexturev(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_texture_id(argc, params, 0, retval);
+  if (id != -1) {
+    auto position = get_param_vec2(argc, params, 1);
+    auto tint = get_param_color(argc, params, 2);
+    DrawTextureV(_textureMap.at(id), position, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_drawtriangle(int argc, slib_par_t *params, var_t *retval) {
