@@ -887,19 +887,19 @@ static int cmd_windowgetbounds(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-// nk.line_width(10)
+// nk.lineWidth(10)
 static int cmd_line_width(int argc, slib_par_t *params, var_t *retval) {
   glLineWidth(get_param_int(argc, params, 0, 1));
   return 1;
 }
 
-// nk.poll_events()
+// nk.pollEvents()
 static int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
   glfwPollEvents();
   return 1;
 }
 
-// nk.wait_events(n)
+// nk.waitEvents(n)
 static int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
   int waitMillis = get_param_int(argc, params, 0, -1);
   if (waitMillis > 0) {
@@ -910,7 +910,7 @@ static int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-// nk.swap_buffers()
+// nk.swapBuffers()
 static int cmd_swap_buffers(int argc, slib_par_t *params, var_t *retval) {
   glfwSwapBuffers(_window);
   return 1;
@@ -953,10 +953,10 @@ FUNC_SIG lib_proc[] = {
   {1, 1,  "TOOLTIP", cmd_tooltip},
   {0, 0,  "TREEPOP", cmd_treepop},
   {0, 0,  "WINDOWEND", cmd_windowend},
-  {1, 1,  "LINE_WIDTH", cmd_line_width},
-  {0, 0,  "POLL_EVENTS", cmd_poll_events},
-  {0, 1,  "WAIT_EVENTS", cmd_wait_events},
-  {0, 0,  "SWAP_BUFFERS", cmd_swap_buffers},
+  {1, 1,  "LINEWIDTH", cmd_line_width},
+  {0, 0,  "POLLEVENTS", cmd_poll_events},
+  {0, 1,  "WAITEVENTS", cmd_wait_events},
+  {0, 0,  "SWAPBUFFERS", cmd_swap_buffers}
 };
 
 FUNC_SIG lib_func[] = {

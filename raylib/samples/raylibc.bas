@@ -1,5 +1,12 @@
 unit raylibc
 
+export FILTER_POINT = 0
+export FILTER_BILINEAR = 1
+export FILTER_TRILINEAR = 2
+export FILTER_ANISOTROPIC_4X = 3
+export FILTER_ANISOTROPIC_8X = 4
+export FILTER_ANISOTROPIC_16X = 5
+
 export DEG2RAD = PI / 180.0
 export RAD2DEG = 180.0 / PI
 

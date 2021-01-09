@@ -62,10 +62,10 @@ sub printNumber(n)
   dn(floor(n mod 1000/100), 1)
   dn(floor(n mod 100/10), 2)
   dn(floor(n mod 10/1), 3)
-  nk.swap_buffers()
+  nk.swapBuffers()
 end
 
-nk.line_width(1)
+nk.lineWidth(1)
 color c1,c2
 
 while 1
@@ -76,6 +76,7 @@ while 1
         printNumber(i)
         delay 100
       next i
+      delay 1000
     endif
 
     nk.layoutRow("dynamic", 0, 2)
