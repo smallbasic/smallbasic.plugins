@@ -79,7 +79,7 @@ static void send(mg_connection *conn, const char *msg, int len) {
 
 static void server_http_msg(mg_connection *conn, mg_http_message *message, Session *session) {
   if (mg_http_match_uri(message, "/")) {
-    mg_ws_upgrade(conn, message);
+    mg_ws_upgrade(conn, message, NULL);
     session->_conns.push_back(new Session(conn));
   } else {
     mg_http_reply(conn, 200, "", session->_send.c_str());
