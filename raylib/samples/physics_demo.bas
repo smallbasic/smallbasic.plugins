@@ -35,7 +35,7 @@ rl.SetPhysicsBodyEnabled(_circle, false)
 
 rl.SetTargetFPS(60)                ' Set our game to run at 60 frames-per-second
 while (!rl.WindowShouldClose())
-  rl.RunPhysicsStep()
+  rl.UpdatePhysics()
   if (needsReset) then
     _floor = rl.CreatePhysicsBodyRectangle([screenWidth/2, screenHeight], 500, 100, 10)
     _circle = rl.CreatePhysicsBodyCircle([screenWidth/2, screenHeight/2], 45, 10)

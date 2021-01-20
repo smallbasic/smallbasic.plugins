@@ -43,7 +43,7 @@ rl.SetPhysicsTimeStep(.25)
 rl.SetTargetFPS(60)                ' Set our game to run at 60 frames-per-second
 
 while (!rl.WindowShouldClose())
-  rl.RunPhysicsStep()
+  rl.UpdatePhysics()
   
   if (rl.IsKeyPressed(asc("R"))) then    ' Reset physics input
     ' Reset circles physics bodies position and velocity

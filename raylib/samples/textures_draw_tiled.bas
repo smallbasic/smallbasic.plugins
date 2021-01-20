@@ -133,7 +133,7 @@ while (!rl.WindowShouldClose())
   rl.DrawText("Press [SPACE] to reset", 2 + MARGIN_SIZE, 164 + 256 + MARGIN_SIZE, 10, c.DARKBLUE)
 
   ' Draw FPS
-  rl.DrawText(rl.TextFormat("%i FPS", GetFPS()), 2 + MARGIN_SIZE, 2 + MARGIN_SIZE, 20, c.BLACK)
+  rl.DrawText(rl.TextFormat("%i FPS", rl.GetFPS()), 2 + MARGIN_SIZE, 2 + MARGIN_SIZE, 20, c.BLACK)
   rl.EndDrawing()
 wend
 

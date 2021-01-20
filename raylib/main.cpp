@@ -4244,12 +4244,6 @@ static int cmd_getphysicsshapeverticescount(int argc, slib_par_t *params, var_t 
   return 1;
 }
 
-static int cmd_isphysicsenabled(int argc, slib_par_t *params, var_t *retval) {
-  auto fnResult = IsPhysicsEnabled();
-  v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_physicsshapetype(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = PhysicsShapeType();
   v_setint(retval, fnResult);
@@ -4323,8 +4317,8 @@ static int cmd_resetphysics(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_runphysicsstep(int argc, slib_par_t *params, var_t *retval) {
-  RunPhysicsStep();
+static int cmd_updatephysics(int argc, slib_par_t *params, var_t *retval) {
+  UpdatePhysics();
   return 1;
 }
 
@@ -4743,7 +4737,6 @@ static FUNC_SIG lib_func[] = {
   {1, 1, "GETPHYSICSSHAPETYPE", cmd_getphysicsshapetype},
   {2, 2, "GETPHYSICSSHAPEVERTEX", cmd_getphysicsshapevertex},
   {1, 1, "GETPHYSICSSHAPEVERTICESCOUNT", cmd_getphysicsshapeverticescount},
-  {0, 0, "ISPHYSICSENABLED", cmd_isphysicsenabled},
   {0, 0, "PHYSICSSHAPETYPE", cmd_physicsshapetype},
 };
 
@@ -4974,7 +4967,7 @@ static FUNC_SIG lib_proc[] = {
   {2, 2, "PHYSICSADDTORQUE", cmd_physicsaddtorque},
   {3, 3, "PHYSICSSHATTER", cmd_physicsshatter},
   {0, 0, "RESETPHYSICS", cmd_resetphysics},
-  {0, 0, "RUNPHYSICSSTEP", cmd_runphysicsstep},
+  {0, 0, "UPDATEPHYSICS", cmd_updatephysics},
   {2, 2, "SETPHYSICSBODYROTATION", cmd_setphysicsbodyrotation},
   {2, 2, "SETPHYSICSGRAVITY", cmd_setphysicsgravity},
   {1, 1, "SETPHYSICSTIMESTEP", cmd_setphysicstimestep},
