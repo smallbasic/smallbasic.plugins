@@ -3158,18 +3158,6 @@ static int cmd_meshbinormals(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmd_meshnormalssmooth(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int id = get_mesh_id(argc, params, 0, retval);
-  if (id != -1) {
-    MeshNormalsSmooth(&_meshMap.at(id));
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
 static int cmd_meshtangents(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_mesh_id(argc, params, 0, retval);
@@ -3519,12 +3507,6 @@ static int cmd_settexturewrap(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
-}
-
-static int cmd_settracelogexit(int argc, slib_par_t *params, var_t *retval) {
-  auto logType = get_param_int(argc, params, 0, 0);
-  SetTraceLogExit(logType);
-  return 1;
 }
 
 static int cmd_settraceloglevel(int argc, slib_par_t *params, var_t *retval) {
@@ -4877,7 +4859,6 @@ static FUNC_SIG lib_proc[] = {
   {3, 3, "INITWINDOW", cmd_initwindow},
   {0, 0, "MAXIMIZEWINDOW", cmd_maximizewindow},
   {1, 1, "MESHBINORMALS", cmd_meshbinormals},
-  {1, 1, "MESHNORMALSSMOOTH", cmd_meshnormalssmooth},
   {1, 1, "MESHTANGENTS", cmd_meshtangents},
   {1, 1, "OPENURL", cmd_openurl},
   {1, 1, "PAUSEMUSICSTREAM", cmd_pausemusicstream},
@@ -4913,7 +4894,6 @@ static FUNC_SIG lib_proc[] = {
   {1, 1, "SETTARGETFPS", cmd_settargetfps},
   {2, 2, "SETTEXTUREFILTER", cmd_settexturefilter},
   {2, 2, "SETTEXTUREWRAP", cmd_settexturewrap},
-  {1, 1, "SETTRACELOGEXIT", cmd_settracelogexit},
   {1, 1, "SETTRACELOGLEVEL", cmd_settraceloglevel},
   {2, 2, "SETWINDOWMINSIZE", cmd_setwindowminsize},
   {1, 1, "SETWINDOWMONITOR", cmd_setwindowmonitor},
