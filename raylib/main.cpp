@@ -5,7 +5,7 @@
 // This program is distributed under the terms of the GPL v2.0 or later
 // Download the GNU Public License (GPL) from www.gnu.org
 //
-// Copyright(C) 2020 Chris Warren-Smith
+// Copyright(C) 2021 Chris Warren-Smith
 
 #include "config.h"
 
@@ -25,6 +25,7 @@ robin_hood::unordered_map<int, Font> _fontMap;
 robin_hood::unordered_map<int, Image> _imageMap;
 robin_hood::unordered_map<int, Mesh> _meshMap;
 robin_hood::unordered_map<int, Model> _modelMap;
+robin_hood::unordered_map<int, ModelAnimation> _modelAnimationMap;
 robin_hood::unordered_map<int, Music> _musicMap;
 robin_hood::unordered_map<int, PhysicsBody> _physicsMap;
 robin_hood::unordered_map<int, RenderTexture2D> _renderMap;
@@ -381,6 +382,20 @@ static int get_model_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   return result;
 }
 
+static int get_model_animation_id(int argc, slib_par_t *params, int arg, var_t *retval) {
+  int result = -1;
+  if (is_param_map(argc, params, arg)) {
+    int id = get_id(params, arg);
+    if (id != -1 && _modelAnimationMap.find(id) != _modelAnimationMap.end()) {
+      result = id;
+    }
+  }
+  if (result == -1) {
+    error(retval, "Model Animation not found");
+  }
+  return result;
+}
+
 static int get_physics_body_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
@@ -488,6 +503,18 @@ static void v_setmodel(var_t *var, Model &model) {
   v_setint(map_add_var(var, "meshCount", 0), model.meshCount);
   v_setint(map_add_var(var, "materialCount", 0), model.materialCount);
   v_setint(map_add_var(var, "boneCount", 0), model.boneCount);
+}
+
+static void v_setmodel_animation(var_t *var, ModelAnimation *anims, int animsCount) {
+  v_toarray1(var, animsCount);
+  for (int i = 0; i < animsCount; i++) {
+    var_t *v_anim = v_elem(var, i);
+    auto id = ++_nextId;
+    _modelAnimationMap[id] = anims[i];
+    map_init_id(v_anim, id);
+    v_setint(map_add_var(v_anim, "boneCount", 0), anims[i].boneCount);
+    v_setint(map_add_var(v_anim, "frameCount", 0), anims[i].frameCount);
+  }
 }
 
 static void v_setrayhit(var_t *var, RayHitInfo &info) {
@@ -1581,6 +1608,15 @@ static int cmd_loadmodel(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
   auto model = LoadModel(fileName);
   v_setmodel(retval, model);
+  return 1;
+}
+
+static int cmd_loadmodelanimations(int argc, slib_par_t *params, var_t *retval) {
+  auto fileName = get_param_str(argc, params, 0, NULL);
+  int animsCount = 0;
+  auto anims = LoadModelAnimations(fileName, &animsCount);
+  v_setmodel_animation(retval, anims, animsCount);
+  RL_FREE(anims);
   return 1;
 }
 
@@ -3650,6 +3686,19 @@ static int cmd_unloadmodel(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
+static int cmd_unloadmodelanimation(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_model_animation_id(argc, params, 0, retval);
+  if (id != -1) {
+    UnloadModelAnimation(_modelAnimationMap.at(id));
+    _modelAnimationMap.erase(id);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
 static int cmd_unloadmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (_musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
@@ -3713,6 +3762,16 @@ static int cmd_updatecamera(int argc, slib_par_t *params, var_t *retval) {
   auto camera = get_camera_3d(argc, params, 0);
   UpdateCamera(&camera);
   set_camera_3d(params[0].var_p, &camera);
+  return 1;
+}
+
+static int cmd_updatemodelanimation(int argc, slib_par_t *params, var_t *retval) {
+  int model_id = get_model_id(argc, params, 0, retval);
+  int anim_id = get_model_animation_id(argc, params, 1, retval);
+  auto frame = get_param_int(argc, params, 2, 0);
+  if (model_id != -1 && anim_id != -1) {
+    UpdateModelAnimation(_modelMap.at(model_id), _modelAnimationMap.at(anim_id), frame);
+  }
   return 1;
 }
 
@@ -4591,7 +4650,7 @@ static FUNC_SIG lib_func[] = {
   {0, 0, "GETGESTUREPINCHVECTOR", cmd_getgesturepinchvector},
   {2, 2, "GETGLYPHINDEX", cmd_getglyphindex},
   {2, 2, "GETIMAGEALPHABORDER", cmd_getimagealphaborder},
-  {1, 1, "GETIMAGEDATA", cmd_getimagedata},  
+  {1, 1, "GETIMAGEDATA", cmd_getimagedata},
   {0, 0, "GETKEYPRESSED", cmd_getkeypressed},
   {0, 0, "GETMONITORCOUNT", cmd_getmonitorcount},
   {1, 1, "GETMONITORHEIGHT", cmd_getmonitorheight},
@@ -4670,6 +4729,7 @@ static FUNC_SIG lib_func[] = {
   {1, 1, "LOADIMAGE", cmd_loadimage},
   {5, 5, "LOADIMAGERAW", cmd_loadimageraw},
   {1, 1, "LOADMODEL", cmd_loadmodel},
+  {1, 1, "LOADMODELANIMATIONS", cmd_loadmodelanimations},
   {1, 1, "LOADMODELFROMMESH", cmd_loadmodelfrommesh},
   {1, 1, "LOADMUSICSTREAM", cmd_loadmusicstream},
   {2, 2, "LOADRENDERTEXTURE", cmd_loadrendertexture},
@@ -4911,12 +4971,14 @@ static FUNC_SIG lib_proc[] = {
   {1, 1, "UNLOADIMAGE", cmd_unloadimage},
   {1, 1, "UNLOADMESH", cmd_unloadmesh},
   {1, 1, "UNLOADMODEL", cmd_unloadmodel},
+  {1, 1, "UNLOADMODELANIMATION", cmd_unloadmodelanimation},
   {1, 1, "UNLOADMUSICSTREAM", cmd_unloadmusicstream},
   {1, 1, "UNLOADRENDERTEXTURE", cmd_unloadrendertexture},
   {1, 1, "UNLOADSHADER", cmd_unloadshader},
   {1, 1, "UNLOADSOUND", cmd_unloadsound},
   {1, 1, "UNLOADTEXTURE", cmd_unloadtexture},
   {1, 1, "UPDATECAMERA", cmd_updatecamera},
+  {1, 1, "UPDATEMODELANIMATION", cmd_updatemodelanimation},
   {1, 1, "UPDATEMUSICSTREAM", cmd_updatemusicstream},
   {2, 2, "UPDATETEXTURE", cmd_updatetexture},
   {0, 0, "GUICLEARTOOLTIP", cmd_guicleartooltip},
@@ -5045,6 +5107,7 @@ SBLIB_API void sblib_close(void) {
   _imageMap.clear();
   _meshMap.clear();
   _modelMap.clear();
+  _modelAnimationMap.clear();
   _musicMap.clear();
   _renderMap.clear();
   _soundMap.clear();

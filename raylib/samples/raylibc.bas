@@ -1,18 +1,21 @@
 unit raylibc
 
-export FILTER_POINT = 0
-export FILTER_BILINEAR = 1
-export FILTER_TRILINEAR = 2
-export FILTER_ANISOTROPIC_4X = 3
-export FILTER_ANISOTROPIC_8X = 4
-export FILTER_ANISOTROPIC_16X = 5
+export const CAMERA_PERSPECTIVE = 0
+export const CAMERA_ORTHOGRAPHIC = 1
 
-export DEG2RAD = PI / 180.0
-export RAD2DEG = 180.0 / PI
+export const FILTER_POINT = 0
+export const FILTER_BILINEAR = 1
+export const FILTER_TRILINEAR = 2
+export const FILTER_ANISOTROPIC_4X = 3
+export const FILTER_ANISOTROPIC_8X = 4
+export const FILTER_ANISOTROPIC_16X = 5
 
-export UNIFORM_FLOAT = 0
-export UNIFORM_VEC2  = 1
-export UNIFORM_VEC3  = 2
+export const DEG2RAD = PI / 180.0
+export const RAD2DEG = 180.0 / PI
+
+export const UNIFORM_FLOAT = 0
+export const UNIFORM_VEC2  = 1
+export const UNIFORM_VEC3  = 2
 
 export const GESTURE_NONE        = 0
 export const GESTURE_TAP         = 1
