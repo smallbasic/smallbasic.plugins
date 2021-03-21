@@ -31,7 +31,7 @@ camera.position = [10, 10, 10] ' Camera position
 camera.target =   [0, 0, 0]    ' Camera looking at point
 camera.up     =   [0, 1, 0]    ' Camera up vector (rotation towards target)
 camera.fovy   =   45.0         ' Camera field-of-view Y
-camera.type   =   c.CAMERA_PERSPECTIVE   ' Camera mode type
+camera.projection = c.CAMERA_PERSPECTIVE   ' Camera mode type
 
 const resources = CWD + "raylib/examples/models/resources/"
 model = rl.LoadModel(resources + "guy/guy.iqm")               ' Load the animated model mesh and basic data

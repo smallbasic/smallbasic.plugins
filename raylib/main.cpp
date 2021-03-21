@@ -255,14 +255,14 @@ static Camera3D get_camera_3d(int argc, slib_par_t *params, int n) {
     result.target = get_array_elem_vec3(array, 1);
     result.up = get_array_elem_vec3(array, 2);
     result.fovy = get_array_elem_num(array, 3);
-    result.type = get_array_elem_num(array, 4);
+    result.projection = get_array_elem_num(array, 4);
   } else if (is_param_map(argc, params, n)) {
     var_p_t map = params[n].var_p;
     result.position = get_map_vec3(map, "position");
     result.target = get_map_vec3(map, "target");
     result.up = get_map_vec3(map, "up");
     result.fovy = get_map_num(map, "fovy");
-    result.type = get_map_num(map, "type");
+    result.projection = get_map_num(map, "projection");
   } else {
     TraceLog(LOG_FATAL, "Camera3D not found");
   }
@@ -1078,12 +1078,6 @@ static int cmd_getmonitorrefreshrate(int argc, slib_par_t *params, var_t *retval
 static int cmd_getmonitorwidth(int argc, slib_par_t *params, var_t *retval) {
   auto monitor = get_param_int(argc, params, 0, 0);
   auto fnResult = GetMonitorWidth(monitor);
-  v_setint(retval, fnResult);
-  return 1;
-}
-
-static int cmd_getmousecursor(int argc, slib_par_t *params, var_t *retval) {
-  auto fnResult = GetMouseCursor();
   v_setint(retval, fnResult);
   return 1;
 }
@@ -3449,21 +3443,21 @@ static int cmd_setshadervaluetexture(int argc, slib_par_t *params, var_t *retval
 static int cmd_setshadervaluev(int argc, slib_par_t *params, var_t *retval) {
   auto shader = get_param_shader(argc, params, 0);
   auto uniformLoc = get_param_int(argc, params, 1, 0);
-  auto uniformType = get_param_int(argc, params, 3, UNIFORM_FLOAT);
+  auto uniformType = get_param_int(argc, params, 3, SHADER_UNIFORM_FLOAT);
   auto count = get_param_int(argc, params, 4, 1);
   Vector3 vec3;
   Vector2 vec2;
   float num;
   switch (uniformType) {
-  case UNIFORM_FLOAT:
+  case SHADER_UNIFORM_FLOAT:
     num = get_param_num(argc, params, 2, 0);
     SetShaderValueV(shader, uniformLoc, &num, uniformType, count);
     break;
-  case UNIFORM_VEC2:
+  case SHADER_UNIFORM_VEC2:
     vec2 = get_param_vec2(argc, params, 2);
     SetShaderValueV(shader, uniformLoc, &vec2, uniformType, count);
     break;
-  case UNIFORM_VEC3:
+  case SHADER_UNIFORM_VEC3:
     vec3 = get_param_vec3(argc, params, 2);
     SetShaderValueV(shader, uniformLoc, &vec3, uniformType, count);
     break;
@@ -4087,18 +4081,8 @@ static int cmd_guiwindowbox(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_guicleartooltip(int argc, slib_par_t *params, var_t *retval) {
-  GuiClearTooltip();
-  return 1;
-}
-
 static int cmd_guidisable(int argc, slib_par_t *params, var_t *retval) {
   GuiDisable();
-  return 1;
-}
-
-static int cmd_guidisabletooltip(int argc, slib_par_t *params, var_t *retval) {
-  GuiDisableTooltip();
   return 1;
 }
 
@@ -4111,11 +4095,6 @@ static int cmd_guidummyrec(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_guienable(int argc, slib_par_t *params, var_t *retval) {
   GuiEnable();
-  return 1;
-}
-
-static int cmd_guienabletooltip(int argc, slib_par_t *params, var_t *retval) {
-  GuiEnableTooltip();
   return 1;
 }
 
@@ -4179,12 +4158,6 @@ static int cmd_guisetstyle(int argc, slib_par_t *params, var_t *retval) {
   auto property = get_param_int(argc, params, 1, 0);
   auto value = get_param_int(argc, params, 2, 0);
   GuiSetStyle(control, property, value);
-  return 1;
-}
-
-static int cmd_guisettooltip(int argc, slib_par_t *params, var_t *retval) {
-  auto tooltip = get_param_str(argc, params, 0, 0);
-  GuiSetTooltip(tooltip);
   return 1;
 }
 
@@ -4659,7 +4632,6 @@ static FUNC_SIG lib_func[] = {
   {1, 1, "GETMONITORPHYSICALWIDTH", cmd_getmonitorphysicalwidth},
   {1, 1, "GETMONITORREFRESHRATE", cmd_getmonitorrefreshrate},
   {1, 1, "GETMONITORWIDTH", cmd_getmonitorwidth},
-  {0, 0, "GETMOUSECURSOR", cmd_getmousecursor},
   {0, 0, "GETMOUSEPOSITION", cmd_getmouseposition},
   {2, 2, "GETMOUSERAY", cmd_getmouseray},
   {0, 0, "GETMOUSEWHEELMOVE", cmd_getmousewheelmove},
@@ -4981,12 +4953,9 @@ static FUNC_SIG lib_proc[] = {
   {1, 1, "UPDATEMODELANIMATION", cmd_updatemodelanimation},
   {1, 1, "UPDATEMUSICSTREAM", cmd_updatemusicstream},
   {2, 2, "UPDATETEXTURE", cmd_updatetexture},
-  {0, 0, "GUICLEARTOOLTIP", cmd_guicleartooltip},
   {0, 0, "GUIDISABLE", cmd_guidisable},
-  {0, 0, "GUIDISABLETOOLTIP", cmd_guidisabletooltip},
   {2, 2, "GUIDUMMYREC", cmd_guidummyrec},
   {0, 0, "GUIENABLE", cmd_guienable},
-  {0, 0, "GUIENABLETOOLTIP", cmd_guienabletooltip},
   {1, 1, "GUIFADE", cmd_guifade},
   {2, 2, "GUIGROUPBOX", cmd_guigroupbox},
   {2, 2, "GUILABEL", cmd_guilabel},
@@ -4997,7 +4966,6 @@ static FUNC_SIG lib_proc[] = {
   {1, 1, "GUIPANEL", cmd_guipanel},
   {1, 1, "GUISETSTATE", cmd_guisetstate},
   {3, 3, "GUISETSTYLE", cmd_guisetstyle},
-  {1, 1, "GUISETTOOLTIP", cmd_guisettooltip},
   {2, 2, "GUISTATUSBAR", cmd_guistatusbar},
   {0, 0, "GUIUNLOCK", cmd_guiunlock},
   {0, 0, "POLLEVENTS", cmd_poll_events},
