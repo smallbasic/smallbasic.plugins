@@ -512,8 +512,22 @@ static void v_setmodel_animation(var_t *var, ModelAnimation *anims, int animsCou
     auto id = ++_nextId;
     _modelAnimationMap[id] = anims[i];
     map_init_id(v_anim, id);
-    v_setint(map_add_var(v_anim, "boneCount", 0), anims[i].boneCount);
-    v_setint(map_add_var(v_anim, "frameCount", 0), anims[i].frameCount);
+
+    int frameCount = anims[i].frameCount;
+    int boneCount = anims[i].boneCount;
+    map_add_var(v_anim, "frameCount", frameCount);
+    map_add_var(v_anim, "boneCount", boneCount);
+
+    var_t *v_framePoses = map_add_var(v_anim, "framePoses", 0);
+    v_tomatrix(v_framePoses, frameCount, boneCount);
+    for (int frame = 0; frame < frameCount; frame++) {
+      for (int bone = 0; bone < boneCount; bone++) {
+        var_t *v_transform = v_elem(v_framePoses, ((boneCount * frame) + bone));
+        map_init(v_transform);
+        v_setvec3(map_add_var(v_transform, "translation", 0), anims[0].framePoses[frame][bone].translation);
+        v_setvec3(map_add_var(v_transform, "scale", 0), anims[0].framePoses[frame][bone].scale);
+      }
+    }
   }
 }
 
@@ -4950,7 +4964,7 @@ static FUNC_SIG lib_proc[] = {
   {1, 1, "UNLOADSOUND", cmd_unloadsound},
   {1, 1, "UNLOADTEXTURE", cmd_unloadtexture},
   {1, 1, "UPDATECAMERA", cmd_updatecamera},
-  {1, 1, "UPDATEMODELANIMATION", cmd_updatemodelanimation},
+  {3, 3, "UPDATEMODELANIMATION", cmd_updatemodelanimation},
   {1, 1, "UPDATEMUSICSTREAM", cmd_updatemusicstream},
   {2, 2, "UPDATETEXTURE", cmd_updatetexture},
   {0, 0, "GUIDISABLE", cmd_guidisable},

@@ -34,24 +34,26 @@ camera.fovy   =   45.0         ' Camera field-of-view Y
 camera.projection = c.CAMERA_PERSPECTIVE   ' Camera mode type
 
 const resources = CWD + "raylib/examples/models/resources/"
-model = rl.LoadModel(resources + "guy/guy.iqm")               ' Load the animated model mesh and basic data
-texture = rl.LoadTexture(resources + "guy/guytex.png")        ' Load model texture and set material
-rl.SetModelDiffuseTexture(model, texture)                         ' Set model material map texture
-
-position = [0, 0, 0]       ' Set model position
 
 ' Load animation data
 anims = rl.LoadModelAnimations(resources + "guy/guyanim.iqm")
 animFrameCounter = 0
 
+model = rl.LoadModel(resources + "guy/guy.iqm")               ' Load the animated model mesh and basic data
+
+texture = rl.LoadTexture(resources + "guy/guytex.png")        ' Load model texture and set material
+rl.SetModelDiffuseTexture(model, texture)                         ' Set model material map texture
+
+position = [0, 0, 0]       ' Set model position
+
 rl.SetCameraMode(camera, c.CAMERA_FREE) ' Set free camera mode
-rl.SetTargetFPS(60)                   ' Set our game to run at 60 frames-per-second
+rl.SetTargetFPS(60)                     ' Set our game to run at 60 frames-per-second
 
 while (!rl.WindowShouldClose())
   rl.UpdateCamera(camera)
 
   ' Play animation when spacebar is held down
-  if (r.IsKeyDown(c.KEY_SPACE)) then
+  if (rl.IsKeyDown(c.KEY_SPACE)) then
     animFrameCounter++
     rl.UpdateModelAnimation(model, anims[0], animFrameCounter)
     if (animFrameCounter >= anims[0].frameCount) then animFrameCounter = 0
@@ -61,8 +63,9 @@ while (!rl.WindowShouldClose())
   rl.ClearBackground(c.RAYWHITE)
   rl.BeginMode3D(camera)
   rl.DrawModelEx(model, position, [1, 0, 0], -90, [1, 1, 1], c.WHITE)
-  for i = 0 to model.boneCount
-    'rl.DrawCube(anims[0].framePoses[animFrameCounter][i].translation, 0.2, 0.2, 0.2, c.RED)
+  for i = 0 to model.boneCount - 1
+    'SB Bug: can't use square brakets for framePoses
+    rl.DrawCube(anims[0].framePoses(animFrameCounter,i).translation, 0.2, 0.2, 0.2, c.RED)
   next i
   rl.DrawGrid(10, 1.0)         ' Draw a grid
   rl.EndMode3D()
