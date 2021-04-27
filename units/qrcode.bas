@@ -415,8 +415,8 @@ func getNumRawDataModules(ver)
   assert(qrcodegen_VERSION_MIN <= ver && ver <= qrcodegen_VERSION_MAX, PROGLINE)
   local result = (16 * ver + 128) * ver + 64
   if (ver >= 2)
-    local numAlign = ver / 7 + 2
-    result -= (25 * numAlign - 10) * numAlign - 55
+    local numAlign = int(ver / 7) + 2
+    result -= int((25 * numAlign - 10) * numAlign - 55)
     if (ver >= 7) then result -= 36
   endif
   assert(208 <= result && result <= 29648, PROGLINE)
@@ -513,7 +513,6 @@ sub initializeFunctionModules(version, byref qrcode)
   ' Fill numerous alignment patterns
   dim alignPatPos(7)
   local numAlign = getAlignmentPatternPositions(version, alignPatPos)
-
   local i, j
 
   for i = 0 to numAlign - 1
@@ -651,7 +650,7 @@ func getAlignmentPatternPositions(version, byref result)
     return 0
   endif
 
-  local numAlign = version / 7 + 2
+  local numAlign = int(version / 7) + 2
   local qstep = iff(version == 32, 26, (version * 4 + numAlign * 2 + 1) / (numAlign * 2 - 2) * 2)
   local pos = version * 4 + 10
   local i
@@ -706,7 +705,7 @@ sub drawCodewords(byref _data, dataLen, byref qrcode)
       next j
     next vert
   next xright
-  assert(i == round(dataLen * 8), PROGLINE)
+  assert(i == dataLen * 8, PROGLINE)
 end
 
 REM
