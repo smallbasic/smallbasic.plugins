@@ -82,7 +82,11 @@ const qrcodegen_Mask_7 = 7
 const INT16_MAX = maxint / 2
 
 sub assert(t, l)
-  if (!t) then throw "Assertion failed at line: " + l
+  if (!t) then throw "Assertion failed at line:" + l
+end
+
+sub assertEq(a, b, l)
+  if (a != b) then throw "Assertion failed at line:" + l + " expected:" + a + " actual:" + b
 end
 
 def qrcodegen_BUFFER_LEN_FOR_VERSION(n) = ((((n) * 4 + 17) * ((n) * 4 + 17) + 7) / 8 + 1)
@@ -294,7 +298,7 @@ func qrcodegen_encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxV
     next j
   next i
 
-  assert(bitLen == dataUsedBits, PROGLINE)
+  assertEq(bitLen, dataUsedBits, PROGLINE)
 
   ' Add terminator and pad up to a byte if applicable
   local dataCapacityBits = getNumDataCodewords(version, ecl) * 8
@@ -303,7 +307,7 @@ func qrcodegen_encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxV
   if (terminatorBits > 4) then terminatorBits = 4
   bitLen = appendBitsToBuffer(0, terminatorBits, qrcode, bitLen)
   bitLen = appendBitsToBuffer(0, (8 - bitLen % 8) % 8, qrcode, bitLen)
-  assert(bitLen % 8 == 0, PROGLINE)
+  assertEq(bitLen % 8, 0, PROGLINE)
 
   ' Pad with alternating bytes until data capacity is reached
   local padByte = 0xEC
@@ -511,6 +515,7 @@ sub initializeFunctionModules(version, byref qrcode)
   fillRectangle(0, qrsize - 8, 9, 8, qrcode)
 
   ' Fill numerous alignment patterns
+  local alignPatPos
   dim alignPatPos(7)
   local numAlign = getAlignmentPatternPositions(version, alignPatPos)
   local i, j
@@ -585,7 +590,7 @@ sub drawWhiteFunctionModules(byref qrcode, version)
       vrem = (vrem lshift 1) xor ((vrem rshift 11) * 0x1F25)
     next i
     local bits = version lshift 12 | vrem  ' uint18
-    assert(bits rshift 18 == 0, PROGLINE)
+    assertEq(bits rshift 18, 0, PROGLINE)
 
     ' Draw two copies
     for i = 0 to 5
@@ -616,7 +621,7 @@ sub drawFormatBits(ecl, mask, byref qrcode)
     qrem = (qrem lshift 1) xor ((qrem rshift 9) * 0x537)
   next i
   local bits = (qdata lshift 10 | qrem) xor 0x5412  ' uint15
-  assert(bits rshift 15 == 0, PROGLINE)
+  assertEq(bits rshift 15, 0, PROGLINE)
 
   ' Draw first copy
   for i = 0 to 5
@@ -705,7 +710,7 @@ sub drawCodewords(byref _data, dataLen, byref qrcode)
       next j
     next vert
   next xright
-  assert(i == dataLen * 8, PROGLINE)
+  assertEq(i, dataLen * 8, PROGLINE)
 end
 
 REM
@@ -735,7 +740,7 @@ sub applyMask(byref functionModules, byref qrcode, mask)
         case else assert(false, PROGLINE)
         end select
         _val = getModule(qrcode, x, y)
-        setModule(qrcode, x, y, _val xor invert)
+        setModule(qrcode, x, y, _val xor int(invert))
       endif
     next x
   next y
@@ -818,7 +823,7 @@ func getPenaltyScore(byref qrcode)
 
   local total = qrsize * qrsize  ' Note that size is odd, so black/total != 1/2
   ' Compute the smallest integer k >= 0 such that (45-5k)% <= black/total <= (55+5k)%
-  local k = ((abs(black * 20 - total * 10) + total - 1) / total) - 1
+  local k = int((abs(black * 20 - total * 10) + total - 1) / total) - 1
   result += k * PENALTY_N4
   return result
 end
@@ -976,7 +981,7 @@ func qrcodegen_calcSegmentBufferSize(mode, numChars)
   local temp = calcSegmentBitLength(mode, numChars)
   if (temp == -1) then return maxint
   assert(0 <= temp && temp <= maxint, PROGLINE)
-  return (temp + 7) / 8
+  return int((temp + 7) / 8)
 end
 
 REM
@@ -1071,7 +1076,7 @@ func qrcodegen_makeNumeric(digits, byref buf)
     ' 1 or 2 digits remaining
     result.bitLength = appendBitsToBuffer(accumData, accumCount * 3 + 1, buf, result.bitLength)
   endif
-  assert(result.bitLength == bitLen, PROGLINE)
+  assertEq(result.bitLength, bitLen, PROGLINE)
   result._data = buf
   return result
 end
@@ -1118,7 +1123,7 @@ func qrcodegen_makeAlphanumeric(text, byref buf)
     result.bitLength = appendBitsToBuffer(accumData, 6, buf, result.bitLength)
   endif
 
-  assert(result.bitLength == round(bitLen), PROGLINE)
+  assertEq(result.bitLength, bitLen, PROGLINE)
   result._data = buf
   return result
 end
@@ -1185,7 +1190,7 @@ REM in a QR Code at the given version number. The result is in the range [0, 16]
 REM
 func numCharCountBits(mode, version)
   assert(qrcodegen_VERSION_MIN <= version && version <= qrcodegen_VERSION_MAX, PROGLINE)
-  local i = (version + 7) / 17
+  local i = int((version + 7) / 17)
   local m
   select case mode
   case qrcodegen_Mode_NUMERIC     : m = [10, 12, 14]: return m[i]

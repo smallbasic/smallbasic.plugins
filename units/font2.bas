@@ -1,6 +1,6 @@
 REM
 REM ROUTINE TO DRAW CHARACTERS WITH DRAW COMMANDREM By Miguel A. MAroto 2019 (from routines of TurboBasic of 2001)
-REM 
+REM
 REM The text are in variable letters
 REM  xc1 and yc1  are the initial position of the text
 REM  Escala is the scale of the text (NO OPERATIVE NOW !!!!!!!)
@@ -13,7 +13,7 @@ REM   DEFINITION OF THE MOVEMENTS NEEDED TO DRAW EACH CHARACTER WITH THE DRAW CO
 REM the number of each chararter in the array car(n) is the same of the ASCII code
 REM
 
-Unit Fonts2
+Unit Font2
 
 Export drawtext
 
@@ -77,13 +77,13 @@ separator = .4
 sub _draw(s)
   if (s != "0") then
     draw(s)
-  endif     
+  endif
 end
 
 sub drawtext(xc, yc, scale, bold, text)
   REM set the initial point for the drawing
   local S, position, moverse, bit
-  
+
   for S = 1 to len(text)
     REM Set the initial position that will be moved to the right for each character
     position ="bm" + str(xc) + "," + str(yc)
@@ -91,20 +91,20 @@ sub drawtext(xc, yc, scale, bold, text)
 
     REM Extract each character one by one and I draw it
     bit = mid(text, S, 1)
-    
+
     REM Draw the first stroke of the character
     _draw(car[asc(bit)])
-    
+
     REM Go back the width  of a character plus 1 (with scale 1:1)
     xc += 1
     REM origin of the characters plus 1
 
-    if (bold) then 
+    if (bold) then
       moverse="bm" + str(xc) + "," + str(yc)
       _draw(moverse)
       _draw(car[asc(bit)])
     endif
-    
+
     xc = int(xc + 1 + separator * (scale / 4))
   next S
 end
