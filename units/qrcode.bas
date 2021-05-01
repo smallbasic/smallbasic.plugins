@@ -25,6 +25,7 @@ export qrcodegen_encodeText
 export qrcodegen_BUFFER_LEN_FOR_VERSION
 export qrcodegen_getSize
 export qrcodegen_getModule
+export getAlignmentPatternPositions
 
 ' The set of all legal characters in alphanumeric mode, where each character
 ' value maps to the index in the string. For checking text and encoding segments.
@@ -99,6 +100,13 @@ sub memset(byref a, v, n)
   next i
 end
 
+sub printArray(byref a)
+  for i = 0 to 80
+    print a[i]; " ";
+  next i
+  print
+end
+
 REM
 REM copies n bytes from memory area src to memory area dest. The memory areas may overlap: copying takes place as
 REM though the bytes in src are first copied into a temporary array that does not overlap src or dest, and the
@@ -120,7 +128,7 @@ end
 ' The worst-case number of bytes needed to store one QR Code, up to and including
 ' version 40. This value equals 3918, which is just under 4 kilobytes.
 ' Use this more convenient value to avoid calculating tighter memory bounds for buffers.
-const qrcodegen_BUFFER_LEN_MAX  = qrcodegen_BUFFER_LEN_FOR_VERSION(qrcodegen_VERSION_MAX)
+const qrcodegen_BUFFER_LEN_MAX = qrcodegen_BUFFER_LEN_FOR_VERSION(qrcodegen_VERSION_MAX)
 
 '---- High-level QR Code encoding functions ----
 
@@ -534,7 +542,6 @@ sub initializeFunctionModules(version, byref qrcode)
     fillRectangle(qrsize - 11, 0, 3, 6, qrcode)
     fillRectangle(0, qrsize - 11, 6, 3, qrcode)
   endif
-
 end
 
 REM
@@ -656,7 +663,7 @@ func getAlignmentPatternPositions(version, byref result)
   endif
 
   local numAlign = int(version / 7) + 2
-  local qstep = iff(version == 32, 26, (version * 4 + numAlign * 2 + 1) / (numAlign * 2 - 2) * 2)
+  local qstep = iff(version == 32, 26, (int((version * 4 + numAlign * 2 + 1) / (numAlign * 2 - 2)) * 2))
   local pos = version * 4 + 10
   local i
 
@@ -1202,63 +1209,3 @@ func numCharCountBits(mode, version)
   end select
 end
 
-'sub test_reedSolomonMultiply
-'  for x = 0 to 9
-'    for y = 0 to 9
-'      print reedSolomonMultiply(x, y) +  " ";
-'    next y
-'    print "\n"
-'  next x
-'  pause
-'end
-'
-'sub test_numCharCountBits
-'  print numCharCountBits(qrcodegen_Mode_BYTE, qrcodegen_VERSION_MIN)
-'end
-'
-'sub test_memmove
-'  local v = [1,2,3,4,5,6,7,8]
-'  local expected = [5,6,7,8,5,6,7,8]
-'  memmove(v, 0, 4, 4)
-'  local i
-'  for i = 0 to 7
-'    assert(v[i] == expected[i], PROGLINE)
-'  next i
-'  memset(v, 777, 8)
-'  for i = 0 to 7
-'    assert(v[i] == 777, PROGLINE)
-'  next i
-'end
-'
-'test_memmove
-'test_reedSolomonMultiply
-'test_numCharCountBits
-'assert(qrcodegen_isNumeric("1234"), PROGLINE)
-'assert(qrcodegen_isAlphanumeric("abc123") == false, PROGLINE)
-'assert(qrcodegen_isAlphanumeric("ABC123"), PROGLINE)
-'pause
-
-'sub main(text)
-'  local bufLen = qrcodegen_BUFFER_LEN_FOR_VERSION(qrcodegen_VERSION_MAX)
-'  dim qrcode(bufLen)
-'  dim tempBuffer(bufLen)
-'  local errCorLvl = qrcodegen_Ecc_LOW
-'  if (!qrcodegen_encodeText(text, tempBuffer, qrcode, errCorLvl, qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true)) then
-'    print "Failed to create QR code"
-'  else
-'    local size = qrcodegen_getSize(qrcode)
-'    local border = 4
-'    local x, y
-'    for y = -border to size + border - 1
-'      for x = -border to  size + border - 1
-'        print iff(qrcodegen_getModule(qrcode, x, y), "##", "  ");
-'      next x
-'      print
-'    next y
-'    print
-'  endif
-'end
-'
-'main("123")
-'main("123ABC")
-'main("cats")
