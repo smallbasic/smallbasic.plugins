@@ -101,7 +101,9 @@ sub memset(byref a, v, n)
 end
 
 sub printArray(byref a)
-  for i = 0 to 80
+  local i
+  local n = min(180, len(a) - 1)
+  for i = 0 to n
     print a[i]; " ";
   next i
   print
@@ -151,11 +153,15 @@ REM   These numbers represent the hard upper limit of the QR Code standard.
 REM - Please consult the QR Code specification for information on
 REM   data capacities per version, ECC level, and text encoding mode.
 REM
-func qrcodegen_encodeText(text, byref tempBuffer, byref qrcode, ecl, minVersion, maxVersion, mask, boostEcl)
+func qrcodegen_encodeText(text, byref qrcode, ecl, minVersion, maxVersion, mask, boostEcl)
   local textLen = len(text)
-  if (textLen == 0) then return qrcodegen_encodeSegmentsAdvanced(0, 0, ecl, minVersion, maxVersion, mask, boostEcl, tempBuffer, qrcode)
+  if (textLen == 0) then return qrcodegen_encodeSegmentsAdvanced(0, 0, ecl, minVersion, maxVersion, mask, boostEcl, qrcode)
+
   local bufLen = qrcodegen_BUFFER_LEN_FOR_VERSION(maxVersion)
   local seg = {}
+  local i
+  local tempBuffer
+
   if (qrcodegen_isNumeric(text))
     if (qrcodegen_calcSegmentBufferSize(qrcodegen_Mode_NUMERIC, textLen) > bufLen) then throw "fail"
     seg = qrcodegen_makeNumeric(text, tempBuffer)
@@ -164,6 +170,7 @@ func qrcodegen_encodeText(text, byref tempBuffer, byref qrcode, ecl, minVersion,
     seg = qrcodegen_makeAlphanumeric(text, tempBuffer)
   else
     if (textLen > bufLen) then throw "fail"
+    dim tempBuffer(textLen)
     for i = 0 to textLen - 1
       tempBuffer[i] = asc(mid(text, i + 1, 1))
     next i
@@ -175,7 +182,7 @@ func qrcodegen_encodeText(text, byref tempBuffer, byref qrcode, ecl, minVersion,
   endif
   dim segs(1)
   segs[0] = seg
-  return qrcodegen_encodeSegmentsAdvanced(segs, 1, ecl, minVersion, maxVersion, mask, boostEcl, tempBuffer, qrcode)
+  return qrcodegen_encodeSegmentsAdvanced(segs, 1, ecl, minVersion, maxVersion, mask, boostEcl, qrcode)
 end
 
 REM
@@ -208,7 +215,7 @@ func qrcodegen_encodeBinary(byref dataAndTemp, dataLen, byref qrcode, byref ecl,
   seg.numChars = dataLen
   seg._data = dataAndTemp
   segs[0] = seg
-  return qrcodegen_encodeSegmentsAdvanced(seg, 1, ecl, minVersion, maxVersion, mask, boostEcl, dataAndTemp, qrcode)
+  return qrcodegen_encodeSegmentsAdvanced(seg, 1, ecl, minVersion, maxVersion, mask, boostEcl, qrcode)
 end
 
 REM
@@ -241,7 +248,7 @@ REM result in them being clobbered, but the QR Code output will still be correct
 REM But the qrcode array must not overlap tempBuffer or any segments data buffer.
 REM
 func qrcodegen_encodeSegments(byref segs, lenSegs, ecl, byref tempBuffer, byref qrcode)
-  return qrcodegen_encodeSegmentsAdvanced(segs, lenSegs, ecl, qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true, tempBuffer, qrcode)
+  return qrcodegen_encodeSegmentsAdvanced(segs, lenSegs, ecl, qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true, qrcode)
 end
 
 REM
@@ -259,7 +266,7 @@ REM To save memory, the segments data buffers can alias/overlap tempBuffer, and 
 REM result in them being clobbered, but the QR Code output will still be correct.
 REM But the qrcode array must not overlap tempBuffer or any segments data buffer.
 REM
-func qrcodegen_encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxVersion, mask, boostEcl, byref tempBuffer, byref qrcode)
+func qrcodegen_encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxVersion, mask, boostEcl, byref qrcode)
   assert(isarray(segs) && lenSegs > 0, PROGLINE)
   assert(qrcodegen_VERSION_MIN <= minVersion && minVersion <= maxVersion && maxVersion <= qrcodegen_VERSION_MAX, PROGLINE)
   assert(0 <= ecl && ecl <= 3 && -1 <= mask && mask <= 7, PROGLINE)
@@ -324,14 +331,15 @@ func qrcodegen_encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxV
     padByte = (padByte xor 0xEC) xor 0x11
   wend
 
-
   ' Draw function and data codeword modules
-  addEccAndInterleave(qrcode, version, ecl, tempBuffer)
+  local _data
+  dim _data(qrcodegen_BUFFER_LEN_FOR_VERSION(version))
+  addEccAndInterleave(qrcode, version, ecl, _data)
 
   initializeFunctionModules(version, qrcode)
-  drawCodewords(tempBuffer, getNumRawDataModules(version) / 8, qrcode)
+  drawCodewords(_data, getNumRawDataModules(version) / 8, qrcode)
   drawWhiteFunctionModules(qrcode, version)
-  initializeFunctionModules(version, tempBuffer)
+  initializeFunctionModules(version, _data)
 
   ' Handle masking
   if (mask == qrcodegen_Mask_AUTO) then
@@ -339,19 +347,19 @@ func qrcodegen_encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxV
     local minPenalty = maxint
     for i = 0 to 7
       local msk = i
-      applyMask(tempBuffer, qrcode, msk)
+      applyMask(_data, qrcode, msk)
       drawFormatBits(ecl, msk, qrcode)
       local penalty = getPenaltyScore(qrcode)
       if (penalty < minPenalty) then
         mask = msk
         minPenalty = penalty
       endif
-      applyMask(tempBuffer, qrcode, msk)  ' Undoes the mask due to XOR
+      applyMask(_data, qrcode, msk)  ' Undoes the mask due to XOR
     next i
   endif
 
   assert(0 <= mask && mask <= 7, PROGLINE)
-  applyMask(tempBuffer, qrcode, mask)
+  applyMask(_data, qrcode, mask)
   drawFormatBits(ecl, mask, qrcode)
   return true
 end
@@ -380,12 +388,11 @@ sub addEccAndInterleave(byref segData, version, ecl, byref result)
   dim rsdiv(qrcodegen_REED_SOLOMON_DEGREE_MAX)
   reedSolomonComputeDivisor(blockEccLen, rsdiv)
 
-  local i, j, k, datIndex, jdataLen, ecc
-  datIndex = 0
+  local i, j, k, datLen, ecc
+  local datIndex = 0
+
   for i = 0 to numBlocks - 1
     datLen = shortBlockDataLen + iff(i < numShortBlocks, 0, 1)
-    dim ecc(len(segData))  ' Temporary storage
-    reedSolomonComputeRemainder(segData, datIndex, datLen, rsdiv, blockEccLen, ecc)
 
     ' Copy data
     k = i
@@ -398,6 +405,8 @@ sub addEccAndInterleave(byref segData, version, ecl, byref result)
     next j
 
     ' Copy ECC
+    dim ecc(blockEccLen)
+    reedSolomonComputeRemainder(segData, datIndex, datLen, rsdiv, blockEccLen, ecc)
     k = dataLen + i
     for j = 0 to blockEccLen -1
       result[k] = ecc[j]
@@ -474,9 +483,9 @@ REM
 sub reedSolomonComputeRemainder(byref dataSeg, datIndex, dataLen, byref generator, degree, byref result)
   assert(1 <= degree && degree <= qrcodegen_REED_SOLOMON_DEGREE_MAX, PROGLINE)
   memset(result, 0, degree)
-  local i, j
+  local i, j, factor
   for i = 0 to dataLen - 1  ' Polynomial division
-    factor = dataSeg[datIndex + i] xor result[datIndex]
+    factor = dataSeg[datIndex + i] xor result[0]
     memmove(result, 0, 1, degree - 1)
     result[degree - 1] = 0
     for j = 0 to degree - 1
@@ -702,7 +711,7 @@ sub drawCodewords(byref _data, dataLen, byref qrcode)
   ' Do the funny zigzag scan
   for xright = qrsize - 1 to 1 step -2  ' Index of right column in each column pair
     if (xright == 6) then xright = 5
-    for vert = 0 to qrsize -1  ' Vertical counter
+    for vert = 0 to qrsize - 1  ' Vertical counter
       for j = 0 to 1
         x = xright - j  ' Actual x coordinate
         upward = ((xright + 1) & 2) == 0
