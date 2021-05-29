@@ -21,10 +21,10 @@ REM   Software.
 
 unit qrcode
 
-export qrcodegen_encodeText
-export qrcodegen_BUFFER_LEN_FOR_VERSION
-export qrcodegen_getSize
-export qrcodegen_getModule
+export encodeText
+export bufferLenForVersion
+export getSize
+export getModule
 export getAlignmentPatternPositions
 
 ' The set of all legal characters in alphanumeric mode, where each character
@@ -41,7 +41,7 @@ ECC_CODEWORDS_PER_BLOCK = [
   [-1, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],  ' High
 ]
 
-const qrcodegen_REED_SOLOMON_DEGREE_MAX = 30  ' Based on the table above
+const REED_SOLOMON_DEGREE_MAX = 30  ' Based on the table above
 
 ' For generating error correction codes.
 NUM_ERROR_CORRECTION_BLOCKS = [
@@ -53,32 +53,32 @@ NUM_ERROR_CORRECTION_BLOCKS = [
   [-1, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81],  ' High
 ]
 
-export const qrcodegen_Ecc_LOW = 0
-export const qrcodegen_Ecc_MEDIUM  = 1
-export const qrcodegen_Ecc_QUARTILE = 2
-export const qrcodegen_Ecc_HIGH = 3
-export const qrcodegen_Mask_AUTO = -1
-export const qrcodegen_Mode_NUMERIC      = 0x1
-export const qrcodegen_Mode_ALPHANUMERIC = 0x2
-export const qrcodegen_Mode_BYTE         = 0x4
-export const qrcodegen_Mode_KANJI        = 0x8
-export const qrcodegen_Mode_ECI          = 0x7
-export const qrcodegen_VERSION_MIN = 1
-export const qrcodegen_VERSION_MAX = 40
+export const Ecc_LOW = 0
+export const Ecc_MEDIUM  = 1
+export const Ecc_QUARTILE = 2
+export const Ecc_HIGH = 3
+export const Mask_AUTO = -1
+export const Mode_NUMERIC      = 0x1
+export const Mode_ALPHANUMERIC = 0x2
+export const Mode_BYTE         = 0x4
+export const Mode_KANJI        = 0x8
+export const Mode_ECI          = 0x7
+export const VERSION_MIN = 1
+export const VERSION_MAX = 40
 
 ' For automatic mask pattern selection.
 const PENALTY_N1 =  3
 const PENALTY_N2 =  3
 const PENALTY_N3 = 40
 const PENALTY_N4 = 10
-const qrcodegen_Mask_0 = 0
-const qrcodegen_Mask_1 = 1
-const qrcodegen_Mask_2 = 2
-const qrcodegen_Mask_3 = 3
-const qrcodegen_Mask_4 = 4
-const qrcodegen_Mask_5 = 5
-const qrcodegen_Mask_6 = 6
-const qrcodegen_Mask_7 = 7
+const Mask_0 = 0
+const Mask_1 = 1
+const Mask_2 = 2
+const Mask_3 = 3
+const Mask_4 = 4
+const Mask_5 = 5
+const Mask_6 = 6
+const Mask_7 = 7
 
 const INT16_MAX = maxint / 2
 
@@ -90,7 +90,7 @@ sub assertEq(a, b, l)
   if (a != b) then throw "Assertion failed at line:" + l + " expected:" + a + " actual:" + b
 end
 
-def qrcodegen_BUFFER_LEN_FOR_VERSION(n) = ((((n) * 4 + 17) * ((n) * 4 + 17) + 7) / 8 + 1)
+def bufferLenForVersion(n) = ((((n) * 4 + 17) * ((n) * 4 + 17) + 7) / 8 + 1)
 
 sub memset(byref a, v, n)
   assert(isarray(a), PROGLINE)
@@ -130,7 +130,7 @@ end
 ' The worst-case number of bytes needed to store one QR Code, up to and including
 ' version 40. This value equals 3918, which is just under 4 kilobytes.
 ' Use this more convenient value to avoid calculating tighter memory bounds for buffers.
-const qrcodegen_BUFFER_LEN_MAX = qrcodegen_BUFFER_LEN_FOR_VERSION(qrcodegen_VERSION_MAX)
+const BUFFER_LEN_MAX = bufferLenForVersion(VERSION_MAX)
 
 '---- High-level QR Code encoding functions ----
 
@@ -142,7 +142,7 @@ REM - The input text must be encoded in UTF-8 and contain no NULs.
 REM - The variables ecl and mask must correspond to enum constant values.
 REM - Requires 1 <= minVersion <= maxVersion <= 40.
 REM - The arrays tempBuffer and qrcode must each have a length
-REM   of at least qrcodegen_BUFFER_LEN_FOR_VERSION(maxVersion).
+REM   of at least bufferLenForVersion(maxVersion).
 REM - After the function returns, tempBuffer contains no useful data.
 REM - If successful, the resulting QR Code may use numeric,
 REM   alphanumeric, or byte mode to encode the text.
@@ -153,28 +153,28 @@ REM   These numbers represent the hard upper limit of the QR Code standard.
 REM - Please consult the QR Code specification for information on
 REM   data capacities per version, ECC level, and text encoding mode.
 REM
-func qrcodegen_encodeText(text, byref qrcode, ecl, minVersion, maxVersion, mask, boostEcl)
+func encodeText(text, byref qrcode, ecl, minVersion, maxVersion, mask, boostEcl)
   local textLen = len(text)
-  if (textLen == 0) then return qrcodegen_encodeSegmentsAdvanced(0, 0, ecl, minVersion, maxVersion, mask, boostEcl, qrcode)
+  if (textLen == 0) then return encodeSegmentsAdvanced(0, 0, ecl, minVersion, maxVersion, mask, boostEcl, qrcode)
 
-  local bufLen = qrcodegen_BUFFER_LEN_FOR_VERSION(maxVersion)
+  local bufLen = bufferLenForVersion(maxVersion)
   local seg = {}
   local i
   local tempBuffer
 
-  if (qrcodegen_isNumeric(text))
-    if (qrcodegen_calcSegmentBufferSize(qrcodegen_Mode_NUMERIC, textLen) > bufLen) then throw "fail"
-    seg = qrcodegen_makeNumeric(text, tempBuffer)
-  else if (qrcodegen_isAlphanumeric(text))
-    if (qrcodegen_calcSegmentBufferSize(qrcodegen_Mode_ALPHANUMERIC, textLen) > bufLen) then throw "fail"
-    seg = qrcodegen_makeAlphanumeric(text, tempBuffer)
+  if (isNumeric(text))
+    if (calcSegmentBufferSize(Mode_NUMERIC, textLen) > bufLen) then throw "fail"
+    seg = makeNumeric(text, tempBuffer)
+  else if (isAlphanumeric(text))
+    if (calcSegmentBufferSize(Mode_ALPHANUMERIC, textLen) > bufLen) then throw "fail"
+    seg = makeAlphanumeric(text, tempBuffer)
   else
     if (textLen > bufLen) then throw "fail"
     dim tempBuffer(textLen)
     for i = 0 to textLen - 1
       tempBuffer[i] = asc(mid(text, i + 1, 1))
     next i
-    seg.mode = qrcodegen_Mode_BYTE
+    seg.mode = Mode_BYTE
     seg.bitLength = calcSegmentBitLength(seg.mode, textLen)
     if (seg.bitLength == -1) then throw "fail"
     seg.numChars = textLen
@@ -182,7 +182,7 @@ func qrcodegen_encodeText(text, byref qrcode, ecl, minVersion, maxVersion, mask,
   endif
   dim segs(1)
   segs[0] = seg
-  return qrcodegen_encodeSegmentsAdvanced(segs, 1, ecl, minVersion, maxVersion, mask, boostEcl, qrcode)
+  return encodeSegmentsAdvanced(segs, 1, ecl, minVersion, maxVersion, mask, boostEcl, qrcode)
 end
 
 REM
@@ -194,7 +194,7 @@ REM   valid UTF-8 text, but is not required by the QR Code standard.
 REM - The variables ecl and mask must correspond to enum constant values.
 REM - Requires 1 <= minVersion <= maxVersion <= 40.
 REM - The arrays dataAndTemp and qrcode must each have a length
-REM   of at least qrcodegen_BUFFER_LEN_FOR_VERSION(maxVersion).
+REM   of at least bufferLenForVersion(maxVersion).
 REM - After the function returns, the contents of dataAndTemp may have changed,
 REM   and does not represent useful data anymore.
 REM - If successful, the resulting QR Code will use byte mode to encode the data.
@@ -203,10 +203,10 @@ REM   sequence up to length 2953. This is the hard upper limit of the QR Code st
 REM - Please consult the QR Code specification for information on
 REM   data capacities per version, ECC level, and text encoding mode.
 REM
-func qrcodegen_encodeBinary(byref dataAndTemp, dataLen, byref qrcode, byref ecl, minVersion, maxVersion, mask, boostEcl)
+func encodeBinary(byref dataAndTemp, dataLen, byref qrcode, byref ecl, minVersion, maxVersion, mask, boostEcl)
   dim segs(1)
   local seg = {}
-  seg.mode = qrcodegen_Mode_BYTE
+  seg.mode = Mode_BYTE
   seg.bitLength = calcSegmentBitLength(seg.mode, dataLen)
   if (seg.bitLength == -1)
     qrcode[0] = 0  ' Set size to invalid value for safety
@@ -215,7 +215,7 @@ func qrcodegen_encodeBinary(byref dataAndTemp, dataLen, byref qrcode, byref ecl,
   seg.numChars = dataLen
   seg._data = dataAndTemp
   segs[0] = seg
-  return qrcodegen_encodeSegmentsAdvanced(seg, 1, ecl, minVersion, maxVersion, mask, boostEcl, qrcode)
+  return encodeSegmentsAdvanced(seg, 1, ecl, minVersion, maxVersion, mask, boostEcl, qrcode)
 end
 
 REM
@@ -242,13 +242,13 @@ REM QR Code creation succeeded, or false if the data is too long to fit in any v
 REM of the result may be higher than the ecl argument if it can be done without increasing the version.
 REM This function allows the user to create a custom sequence of segments that switches
 REM between modes (such as alphanumeric and byte) to encode text in less space.
-REM This is a low-level API; the high-level API is qrcodegen_encodeText() and qrcodegen_encodeBinary().
+REM This is a low-level API; the high-level API is encodeText() and encodeBinary().
 REM To save memory, the segments data buffers can alias/overlap tempBuffer, and will
 REM result in them being clobbered, but the QR Code output will still be correct.
 REM But the qrcode array must not overlap tempBuffer or any segments data buffer.
 REM
-func qrcodegen_encodeSegments(byref segs, lenSegs, ecl, byref tempBuffer, byref qrcode)
-  return qrcodegen_encodeSegmentsAdvanced(segs, lenSegs, ecl, qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true, qrcode)
+func encodeSegments(byref segs, lenSegs, ecl, byref tempBuffer, byref qrcode)
+  return encodeSegmentsAdvanced(segs, lenSegs, ecl, VERSION_MIN, VERSION_MAX, Mask_AUTO, true, qrcode)
 end
 
 REM
@@ -257,18 +257,18 @@ REM Returns true if QR Code creation succeeded, or false if the data is too long
 REM The smallest possible QR Code version within the given range is automatically
 REM chosen for the output. Iff boostEcl is true, then the ECC level of the result
 REM may be higher than the ecl argument if it can be done without increasing the
-REM version. The mask is either between qrcodegen_Mask_0 to 7 to force that mask, or
-REM qrcodegen_Mask_AUTO to automatically choose an appropriate mask (which may be slow).
+REM version. The mask is either between Mask_0 to 7 to force that mask, or
+REM Mask_AUTO to automatically choose an appropriate mask (which may be slow).
 REM This function allows the user to create a custom sequence of segments that switches
 REM between modes (such as alphanumeric and byte) to encode text in less space.
-REM This is a low-level API; the high-level API is qrcodegen_encodeText() and qrcodegen_encodeBinary().
+REM This is a low-level API; the high-level API is encodeText() and encodeBinary().
 REM To save memory, the segments data buffers can alias/overlap tempBuffer, and will
 REM result in them being clobbered, but the QR Code output will still be correct.
 REM But the qrcode array must not overlap tempBuffer or any segments data buffer.
 REM
-func qrcodegen_encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxVersion, mask, boostEcl, byref qrcode)
+func encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxVersion, mask, boostEcl, byref qrcode)
   assert(isarray(segs) && lenSegs > 0, PROGLINE)
-  assert(qrcodegen_VERSION_MIN <= minVersion && minVersion <= maxVersion && maxVersion <= qrcodegen_VERSION_MAX, PROGLINE)
+  assert(VERSION_MIN <= minVersion && minVersion <= maxVersion && maxVersion <= VERSION_MAX, PROGLINE)
   assert(0 <= ecl && ecl <= 3 && -1 <= mask && mask <= 7, PROGLINE)
 
   ' Find the minimal version number to use
@@ -295,7 +295,7 @@ func qrcodegen_encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxV
 
   ' Increase the error correction level while the data still fits in the current version number
   local i
-  for i = qrcodegen_Ecc_MEDIUM to qrcodegen_Ecc_HIGH  ' From low to high
+  for i = Ecc_MEDIUM to Ecc_HIGH  ' From low to high
     if (boostEcl && dataUsedBits <= getNumDataCodewords(version, i) * 8) then
       ecl = i
     endif
@@ -333,7 +333,7 @@ func qrcodegen_encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxV
 
   ' Draw function and data codeword modules
   local _data
-  dim _data(qrcodegen_BUFFER_LEN_FOR_VERSION(version))
+  dim _data(bufferLenForVersion(version))
   addEccAndInterleave(qrcode, version, ecl, _data)
 
   initializeFunctionModules(version, qrcode)
@@ -342,7 +342,7 @@ func qrcodegen_encodeSegmentsAdvanced(byref segs, lenSegs, ecl, minVersion, maxV
   initializeFunctionModules(version, _data)
 
   ' Handle masking
-  if (mask == qrcodegen_Mask_AUTO) then
+  if (mask == Mask_AUTO) then
     ' Automatically choose best mask
     local minPenalty = maxint
     for i = 0 to 7
@@ -374,7 +374,7 @@ REM be clobbered by this function. The final answer is stored in result[0 : rawC
 REM
 sub addEccAndInterleave(byref segData, version, ecl, byref result)
   ' Calculate parameter numbers
-  assert(0 <= ecl && ecl < 4 && qrcodegen_VERSION_MIN <= version && version <= qrcodegen_VERSION_MAX, PROGLINE)
+  assert(0 <= ecl && ecl < 4 && VERSION_MIN <= version && version <= VERSION_MAX, PROGLINE)
 
   local numBlocks = NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
   local blockEccLen = ECC_CODEWORDS_PER_BLOCK  [ecl][version]
@@ -385,7 +385,7 @@ sub addEccAndInterleave(byref segData, version, ecl, byref result)
 
   ' Split data into blocks, calculate ECC, and interleave
   ' (not concatenate) the bytes into a single sequence
-  dim rsdiv(qrcodegen_REED_SOLOMON_DEGREE_MAX)
+  dim rsdiv(REED_SOLOMON_DEGREE_MAX)
   reedSolomonComputeDivisor(blockEccLen, rsdiv)
 
   local i, j, k, datLen, ecc
@@ -433,7 +433,7 @@ REM all function modules are excluded. This includes remainder bits, so it might
 REM The result is in the range [208, 29648]. This could be implemented as a 40-entry lookup table.
 REM
 func getNumRawDataModules(ver)
-  assert(qrcodegen_VERSION_MIN <= ver && ver <= qrcodegen_VERSION_MAX, PROGLINE)
+  assert(VERSION_MIN <= ver && ver <= VERSION_MAX, PROGLINE)
   local result = (16 * ver + 128) * ver + 64
   if (ver >= 2)
     local numAlign = int(ver / 7) + 2
@@ -451,7 +451,7 @@ REM Computes a Reed-Solomon ECC generator polynomial for the given degree, stori
 REM This could be implemented as a lookup table over all possible parameter values, instead of as an algorithm.
 REM
 sub reedSolomonComputeDivisor(degree, byref result)
-  assert(1 <= degree && degree <= qrcodegen_REED_SOLOMON_DEGREE_MAX, PROGLINE)
+  assert(1 <= degree && degree <= REED_SOLOMON_DEGREE_MAX, PROGLINE)
   ' Polynomial coefficients are stored from highest to lowest power, excluding the leading term which is always 1.
   ' For example the polynomial x^3 + 255x^2 + 8x + 93 is stored as the uint8 array {255, 8, 93}.
   memset(result, 0, degree)
@@ -481,7 +481,7 @@ REM The remainder when data[0 : dataLen] is divided by divisor[0 : degree] is st
 REM All polynomials are in big endian, and the generator has an implicit leading 1 term.
 REM
 sub reedSolomonComputeRemainder(byref dataSeg, datIndex, dataLen, byref generator, degree, byref result)
-  assert(1 <= degree && degree <= qrcodegen_REED_SOLOMON_DEGREE_MAX, PROGLINE)
+  assert(1 <= degree && degree <= REED_SOLOMON_DEGREE_MAX, PROGLINE)
   memset(result, 0, degree)
   local i, j, factor
   for i = 0 to dataLen - 1  ' Polynomial division
@@ -560,7 +560,7 @@ REM marked black (namely by initializeFunctionModules()), because this may skip 
 REM
 sub drawWhiteFunctionModules(byref qrcode, version)
   ' Draw horizontal and vertical timing patterns
-  local qrsize = qrcodegen_getSize(qrcode)
+  local qrsize = getSize(qrcode)
   local i, j, dx, dy, dist, alignPatPos
 
   for i = 7 to (qrsize - 7) step 2
@@ -650,7 +650,7 @@ sub drawFormatBits(ecl, mask, byref qrcode)
     setModule(qrcode, 14 - i, 8, getBit(bits, i))
   next i
   ' Draw second copy
-  local qrsize = qrcodegen_getSize(qrcode)
+  local qrsize = getSize(qrcode)
   for i = 0 to 7
     setModule(qrcode, qrsize - 1 - i, 8, getBit(bits, i))
   next i
@@ -704,7 +704,7 @@ REM Draws the raw codewords (including data and ECC) onto the given QR Code. Thi
 REM the QR Code to be black at function modules and white at codeword modules (including unused remainder bits).
 REM
 sub drawCodewords(byref _data, dataLen, byref qrcode)
-  local qrsize = qrcodegen_getSize(qrcode)
+  local qrsize = getSize(qrcode)
   local i = 0  ' Bit index into the data
   local j, x, y, xright, black, vert, upward
 
@@ -737,8 +737,8 @@ REM the same mask value a second time will undo the mask. A final well-formed
 REM QR Code needs exactly one (not zero, two, etc.) mask applied.
 REM
 sub applyMask(byref functionModules, byref qrcode, mask)
-  assert(0 <= mask && mask <= 7, PROGLINEO)  ' Disallows qrcodegen_Mask_AUT
-  local qrsize = qrcodegen_getSize(qrcode)
+  assert(0 <= mask && mask <= 7, PROGLINEO)  ' Disallows Mask_AUT
+  local qrsize = getSize(qrcode)
   local invert, x, y, _val
 
   for y = 0 to qrsize - 1
@@ -767,7 +767,7 @@ REM Calculates and returns the penalty score based on state of the given QR Code
 REM This is used by the automatic mask choice algorithm to find the mask pattern that yields the lowest score.
 REM
 func getPenaltyScore(byref qrcode)
-  local qrsize = qrcodegen_getSize(qrcode)
+  local qrsize = getSize(qrcode)
   local result = 0
   local runHistory, x, y
 
@@ -885,12 +885,12 @@ REM
 REM Returns the side length of the given QR Code, assuming that encoding succeeded.
 REM The result is in the range [21, 177]. Note that the length of the array buffer
 REM is related to the side length - every qrcode must have length at least
-REM qrcodegen_BUFFER_LEN_FOR_VERSION(version), which equals ceil(size^2 / 8 + 1).
+REM bufferLenForVersion(version), which equals ceil(size^2 / 8 + 1).
 REM
-func qrcodegen_getSize(byref qrcode)
+func getSize(byref qrcode)
   assert(isarray(qrcode), PROGLINE)
   local result = qrcode[0]
-  assert((qrcodegen_VERSION_MIN * 4 + 17) <= result && result <= (qrcodegen_VERSION_MAX * 4 + 17), PROGLINE)
+  assert((VERSION_MIN * 4 + 17) <= result && result <= (VERSION_MAX * 4 + 17), PROGLINE)
   return result
 end
 
@@ -899,16 +899,16 @@ REM Returns the color of the module (pixel) at the given coordinates, which is f
 REM for white or true for black. The top left corner has the coordinates (x=0, y=0).
 REM If the given coordinates are out of bounds, then false (white) is returned.
 REM
-func qrcodegen_getModule(byref qrcode, x, y)
+func getModule(byref qrcode, x, y)
   assert(isarray(qrcode), PROGLINE)
   local qrsize = qrcode[0]
-  return (0 <= x && x < qrsize && 0 <= y && y < qrsize) && getModule(qrcode, x, y)
+  return (0 <= x && x < qrsize && 0 <= y && y < qrsize) && _getModule(qrcode, x, y)
 end
 
 REM
 REM Gets the module at the given coordinates, which must be in bounds.
 REM
-func getModule(byref qrcode, x, y)
+func _getModule(byref qrcode, x, y)
   local qrsize = qrcode[0]
   assert(21 <= qrsize && qrsize <= 177 && 0 <= x && x < qrsize && 0 <= y && y < qrsize, PROGLINE)
   local index = y * qrsize + x
@@ -956,7 +956,7 @@ REM Tests whether the given string can be encoded as a segment in alphanumeric m
 REM A string is encodable iff each character is in the following set: 0 to 9, A to Z
 REM (uppercase only), space, dollar, percent, asterisk, plus, hyphen, period, slash, colon.
 REM
-func qrcodegen_isAlphanumeric(text)
+func isAlphanumeric(text)
   assert(text != 0, PROGLINE)
   local i, c
   for i = 0 to len(text) - 1
@@ -972,7 +972,7 @@ REM
 REM Tests whether the given string can be encoded as a segment in numeric mode.
 REM A string is encodable iff each character is in the range 0 to 9.
 REM
-func qrcodegen_isNumeric(text)
+func isNumeric(text)
   assert(text != 0, PROGLINE)
   local i, c
   for i = 0 to len(text) - 1
@@ -993,7 +993,7 @@ REM - For byte mode, numChars measures the number of bytes, not Unicode code poi
 REM - For ECI mode, numChars must be 0, and the worst-case number of bytes is returned.
 REM   An actual ECI segment can have shorter data. For non-ECI modes, the result is exact.
 REM
-func qrcodegen_calcSegmentBufferSize(mode, numChars)
+func calcSegmentBufferSize(mode, numChars)
   local temp = calcSegmentBitLength(mode, numChars)
   if (temp == -1) then return maxint
   assert(0 <= temp && temp <= maxint, PROGLINE)
@@ -1014,15 +1014,15 @@ func calcSegmentBitLength(mode, numChars)
   ' All calculations are designed to avoid overflow on all platforms
   if (numChars > maxint) then return -1
   local result = numChars
-  if (mode == qrcodegen_Mode_NUMERIC) then
+  if (mode == Mode_NUMERIC) then
     result = floor((result * 10 + 2) / 3)  ' ceil(10/3 * n)
-  else if (mode == qrcodegen_Mode_ALPHANUMERIC)
+  else if (mode == Mode_ALPHANUMERIC)
     result = floor((result * 11 + 1) / 2)  ' ceil(11/2 * n)
-  else if (mode == qrcodegen_Mode_BYTE)
+  else if (mode == Mode_BYTE)
     result *= 8
-  else if (mode == qrcodegen_Mode_KANJI)
+  else if (mode == Mode_KANJI)
     result *= 13
-  else if (mode == qrcodegen_Mode_ECI && numChars == 0)
+  else if (mode == Mode_ECI && numChars == 0)
     result = 3 * 8
   else
     ' Invalid argument
@@ -1039,10 +1039,10 @@ REM Returns a segment representing the given binary data encoded in
 REM byte mode. All input byte arrays are acceptable. Any text string
 REM can be converted to UTF-8 bytes and encoded as a byte mode segment.
 REM
-func qrcodegen_makeBytes(byref _data, dataLen, byref buf)
+func makeBytes(byref _data, dataLen, byref buf)
   assert(_data != 0 || dataLen == 0, PROGLINE)
   local result = {}
-  result.mode = qrcodegen_Mode_BYTE
+  result.mode = Mode_BYTE
   result.bitLength = calcSegmentBitLength(result.mode, dataLen)
   assert(result.bitLength != -1, PROGLINE)
   result.numChars = dataLen
@@ -1057,12 +1057,12 @@ end
 REM
 REM Returns a segment representing the given string of decimal digits encoded in numeric mode.
 REM
-func qrcodegen_makeNumeric(digits, byref buf)
+func makeNumeric(digits, byref buf)
   assert(digits != 0, PROGLINE)
   local result = {}
   local dataLen = len(digits)
 
-  result.mode = qrcodegen_Mode_NUMERIC
+  result.mode = Mode_NUMERIC
   local bitLen = calcSegmentBitLength(result.mode, dataLen)
   assert(bitLen != -1, PROGLINE)
   result.numChars = dataLen
@@ -1102,12 +1102,12 @@ REM Returns a segment representing the given text string encoded in alphanumeric
 REM The characters allowed are: 0 to 9, A to Z (uppercase only), space,
 REM dollar, percent, asterisk, plus, hyphen, period, slash, colon.
 REM
-func qrcodegen_makeAlphanumeric(text, byref buf)
+func makeAlphanumeric(text, byref buf)
   assert(text != 0, PROGLINE)
   local result = {}
   local dataLen = len(text)
 
-  result.mode = qrcodegen_Mode_ALPHANUMERIC
+  result.mode = Mode_ALPHANUMERIC
   local bitLen = calcSegmentBitLength(result.mode, dataLen)
 
   assert(bitLen != -1, PROGLINE)
@@ -1148,10 +1148,10 @@ REM
 REM Returns a segment representing an Extended Channel Interpretation
 REM (ECI) designator with the given assignment value.
 REM
-func qrcodegen_makeEci(assignVal, byref buf)
+func makeEci(assignVal, byref buf)
   local result = {}
 
-  result.mode = qrcodegen_Mode_ECI
+  result.mode = Mode_ECI
   result.numChars = 0
   result.bitLength = 0
   if (assignVal < 0) then
@@ -1205,15 +1205,15 @@ REM Returns the bit width of the character count field for a segment in the give
 REM in a QR Code at the given version number. The result is in the range [0, 16].
 REM
 func numCharCountBits(mode, version)
-  assert(qrcodegen_VERSION_MIN <= version && version <= qrcodegen_VERSION_MAX, PROGLINE)
+  assert(VERSION_MIN <= version && version <= VERSION_MAX, PROGLINE)
   local i = int((version + 7) / 17)
   local m
   select case mode
-  case qrcodegen_Mode_NUMERIC     : m = [10, 12, 14]: return m[i]
-  case qrcodegen_Mode_ALPHANUMERIC: m = [9, 11, 13]:  return m[i]
-  case qrcodegen_Mode_BYTE        : m = [8, 16, 16]:  return m[i]
-  case qrcodegen_Mode_KANJI       : m = [8, 10, 12]:  return m[i]
-  case qrcodegen_Mode_ECI         : return 0
+  case Mode_NUMERIC     : m = [10, 12, 14]: return m[i]
+  case Mode_ALPHANUMERIC: m = [9, 11, 13]:  return m[i]
+  case Mode_BYTE        : m = [8, 16, 16]:  return m[i]
+  case Mode_KANJI       : m = [8, 10, 12]:  return m[i]
+  case Mode_ECI         : return 0
   case else: print "Invalid mode: " + mode: assert(false, PROGLINE)
   end select
 end
