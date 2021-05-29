@@ -1198,12 +1198,6 @@ static int cmd_getscreenwidth(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_getshaderdefault(int argc, slib_par_t *params, var_t *retval) {
-  auto fnResult = GetShaderDefault();
-  v_setshader(retval, fnResult);
-  return 1;
-}
-
 static int cmd_getshaderlocation(int argc, slib_par_t *params, var_t *retval) {
   auto shader = get_param_shader(argc, params, 0);
   auto uniformName = get_param_str(argc, params, 1, NULL);
@@ -1217,18 +1211,6 @@ static int cmd_getshaderlocationattrib(int argc, slib_par_t *params, var_t *retv
   auto attribName = get_param_str(argc, params, 1, NULL);
   auto fnResult = GetShaderLocationAttrib(shader, attribName);
   v_setint(retval, fnResult);
-  return 1;
-}
-
-static int cmd_getshapestexture(int argc, slib_par_t *params, var_t *retval) {
-  auto texture = GetShapesTexture();
-  v_settexture2d(retval, texture);
-  return 1;
-}
-
-static int cmd_getshapestexturerec(int argc, slib_par_t *params, var_t *retval) {
-  auto fnResult = GetShapesTextureRec();
-  v_setrect(retval, fnResult);
   return 1;
 }
 
@@ -1249,12 +1231,6 @@ static int cmd_gettexturedata(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
-}
-
-static int cmd_gettexturedefault(int argc, slib_par_t *params, var_t *retval) {
-  auto texture = GetTextureDefault();
-  v_settexture2d(retval, texture);
-  return 1;
 }
 
 static int cmd_gettime(int argc, slib_par_t *params, var_t *retval) {
@@ -1514,7 +1490,7 @@ static int cmd_ismusicplaying(int argc, slib_par_t *params, var_t *retval) {
   int result;
   if (_musicMap.find(get_param_int(argc, params, 0, 0)) != _musicMap.end()) {
     auto music = _musicMap.at(get_param_int(argc, params, 0, 0));
-    auto fnResult = IsMusicPlaying(music);
+    auto fnResult = IsMusicStreamPlaying(music);
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -1677,10 +1653,10 @@ static int cmd_loadshader(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmd_loadshadercode(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_loadshaderfrommemory(int argc, slib_par_t *params, var_t *retval) {
   auto vsCode = get_param_str(argc, params, 0, NULL);
   auto fsCode = get_param_str(argc, params, 1, NULL);
-  auto fnResult = LoadShaderCode(vsCode, fsCode);
+  auto fnResult = LoadShaderFromMemory(vsCode, fsCode);
   v_setshader(retval, fnResult);
   return 1;
 }
@@ -1741,7 +1717,7 @@ static int cmd_meshboundingbox(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_mesh_id(argc, params, 0, retval);
   if (id != -1) {
-    auto mesh = MeshBoundingBox(_meshMap.at(id));
+    auto mesh = GetMeshBoundingBox(_meshMap.at(id));
     map_init(retval);
     v_setvec3(map_add_var(retval, "min", 0), mesh.min);
     v_setvec3(map_add_var(retval, "max", 0), mesh.max);
@@ -1860,7 +1836,7 @@ static int cmd_drawbillboardrec(int argc, slib_par_t *params, var_t *retval) {
     auto camera = get_camera_3d(argc, params, 0);
     auto sourceRec = get_param_rect(argc, params, 2);
     auto center = get_param_vec3(argc, params, 3);
-    auto size = get_param_num(argc, params, 4, 0);
+    auto size = get_param_vec2(argc, params, 4);
     auto tint = get_param_color(argc, params, 5);
     DrawBillboardRec(camera, _textureMap.at(id), sourceRec, center, size, tint);
     result = 1;
@@ -2044,11 +2020,6 @@ static int cmd_drawfps(int argc, slib_par_t *params, var_t *retval) {
   auto posX = get_param_int(argc, params, 0, 0);
   auto posY = get_param_int(argc, params, 1, 0);
   DrawFPS(posX, posY);
-  return 1;
-}
-
-static int cmd_drawgizmo(int argc, slib_par_t *params, var_t *retval) {
-  DrawGizmo(get_param_vec3(argc, params, 0));
   return 1;
 }
 
@@ -4659,14 +4630,10 @@ static FUNC_SIG lib_func[] = {
   {0, 0, "GETSCREENHEIGHT", cmd_getscreenheight},
   {2, 2, "GETSCREENTOWORLD2D", cmd_getscreentoworld2d},
   {0, 0, "GETSCREENWIDTH", cmd_getscreenwidth},
-  {0, 0, "GETSHADERDEFAULT", cmd_getshaderdefault},
   {2, 2, "GETSHADERLOCATION", cmd_getshaderlocation},
   {2, 2, "GETSHADERLOCATIONATTRIB", cmd_getshaderlocationattrib},
-  {0, 0, "GETSHAPESTEXTURE", cmd_getshapestexture},
-  {0, 0, "GETSHAPESTEXTUREREC", cmd_getshapestexturerec},
   {0, 0, "GETSOUNDSPLAYING", cmd_getsoundsplaying},
   {1, 1, "GETTEXTUREDATA", cmd_gettexturedata},
-  {0, 0, "GETTEXTUREDEFAULT", cmd_gettexturedefault},
   {0, 0, "GETTIME", cmd_gettime},
   {0, 0, "GETTOUCHPOINTSCOUNT", cmd_gettouchpointscount},
   {1, 1, "GETTOUCHPOSITION", cmd_gettouchposition},
@@ -4720,7 +4687,7 @@ static FUNC_SIG lib_func[] = {
   {1, 1, "LOADMUSICSTREAM", cmd_loadmusicstream},
   {2, 2, "LOADRENDERTEXTURE", cmd_loadrendertexture},
   {2, 2, "LOADSHADER", cmd_loadshader},
-  {2, 2, "LOADSHADERCODE", cmd_loadshadercode},
+  {2, 2, "LOADSHADERFROMMEMORY", cmd_loadshaderfrommemory},
   {1, 1, "LOADSOUND", cmd_loadsound},
   {1, 1, "LOADTEXTURE", cmd_loadtexture},
   {1, 1, "LOADTEXTUREFROMIMAGE", cmd_loadtexturefromimage},
@@ -4802,7 +4769,6 @@ static FUNC_SIG lib_proc[] = {
   {5, 5, "DRAWELLIPSE", cmd_drawellipse},
   {5, 5, "DRAWELLIPSELINES", cmd_drawellipselines},
   {2, 2, "DRAWFPS", cmd_drawfps},
-  {1, 1, "DRAWGIZMO", cmd_drawgizmo},
   {2, 2, "DRAWGRID", cmd_drawgrid},
   {5, 5, "DRAWLINE", cmd_drawline},
   {3, 3, "DRAWLINE3D", cmd_drawline3d},
