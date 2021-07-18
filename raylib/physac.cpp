@@ -14,7 +14,7 @@
 #include <raylib/raylib/src/raylib.h>
 #define PHYSAC_IMPLEMENTATION
 #define PHYSAC_NO_THREADS
-#include <raylib/src/physac.h>
+#include <raylib/src/extras/physac.h>
 
 #include "include/var.h"
 #include "include/module.h"

@@ -11,7 +11,7 @@
 
 #include <raylib/raylib/src/raylib.h>
 #include <raygui/src/raygui.h>
-#include <raylib/src/physac.h>
+#include <raylib/src/extras/physac.h>
 #include <GLFW/glfw3.h>
 #include <cstring>
 
@@ -531,11 +531,11 @@ static void v_setmodel_animation(var_t *var, ModelAnimation *anims, int animsCou
   }
 }
 
-static void v_setrayhit(var_t *var, RayHitInfo &info) {
+static void v_setraycollision(var_t *var, RayCollision &info) {
   map_init(var);
   v_setint(map_add_var(var, "hit", 0), info.hit);
   v_setint(map_add_var(var, "distance", 0), info.distance);
-  v_setvec3(map_add_var(var, "position", 0), info.position);
+  v_setvec3(map_add_var(var, "point", 0), info.point);
   v_setvec3(map_add_var(var, "normal", 0), info.normal);
 }
 
@@ -582,6 +582,17 @@ static int cmd_checkcollisioncircles(int argc, slib_par_t *params, var_t *retval
   return 1;
 }
 
+static int cmd_checkcollisionlines(int argc, slib_par_t *params, var_t *retval) {
+  auto startPos1 = get_param_vec2(argc, params, 0);
+  auto endPos1 = get_param_vec2(argc, params, 1);
+  auto startPos2 = get_param_vec2(argc, params, 2);
+  auto endPos2 = get_param_vec2(argc, params, 3);
+  auto collisionPoint = get_param_vec2(argc, params, 4);
+  auto fnResult = CheckCollisionLines(startPos1, endPos1, startPos2, endPos2, &collisionPoint);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
 static int cmd_checkcollisionpointcircle(int argc, slib_par_t *params, var_t *retval) {
   auto point = get_param_vec2(argc, params, 0);
   auto center = get_param_vec2(argc, params, 1);
@@ -609,23 +620,6 @@ static int cmd_checkcollisionpointtriangle(int argc, slib_par_t *params, var_t *
   return 1;
 }
 
-static int cmd_checkcollisionraybox(int argc, slib_par_t *params, var_t *retval) {
-  auto ray = get_param_ray(argc, params, 0);
-  auto box = get_param_bounding_box(argc, params, 1);
-  auto fnResult = CheckCollisionRayBox(ray, box);
-  v_setint(retval, fnResult);
-  return 1;
-}
-
-static int cmd_checkcollisionraysphere(int argc, slib_par_t *params, var_t *retval) {
-  auto ray = get_param_ray(argc, params, 0);
-  auto center = get_param_vec3(argc, params, 1);
-  auto radius = get_param_num(argc, params, 2, 0);
-  auto fnResult = CheckCollisionRaySphere(ray, center, radius);
-  v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_checkcollisionrecs(int argc, slib_par_t *params, var_t *retval) {
   auto rec1 = get_param_rect(argc, params, 0);
   auto rec2 = get_param_rect(argc, params, 1);
@@ -635,11 +629,11 @@ static int cmd_checkcollisionrecs(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_checkcollisionspheres(int argc, slib_par_t *params, var_t *retval) {
-  auto centerA = get_param_vec3(argc, params, 0);
-  auto radiusA = get_param_num(argc, params, 1, 0);
-  auto centerB = get_param_vec3(argc, params, 2);
-  auto radiusB = get_param_num(argc, params, 3, 0);
-  auto fnResult = CheckCollisionSpheres(centerA, radiusA, centerB, radiusB);
+  auto center1 = get_param_vec3(argc, params, 0);
+  auto radius1 = get_param_num(argc, params, 1, 0);
+  auto center2 = get_param_vec3(argc, params, 2);
+  auto radius2 = get_param_num(argc, params, 3, 0);
+  auto fnResult = CheckCollisionSpheres(center1, radius1, center2, radius2);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -874,21 +868,30 @@ static int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_getcollisionrayground(int argc, slib_par_t *params, var_t *retval) {
-  auto ray = get_param_ray(argc, params, 0);
-  auto groundHeight = get_param_num(argc, params, 1, 0);
-  auto fnResult = GetCollisionRayGround(ray, groundHeight);
-  v_setrayhit(retval, fnResult);
+static int cmd_getcollisionrec(int argc, slib_par_t *params, var_t *retval) {
+  auto rec1 = get_param_rect(argc, params, 0);
+  auto rec2 = get_param_rect(argc, params, 1);
+  auto fnResult = GetCollisionRec(rec1, rec2);
+  v_setrect(retval, fnResult);
   return 1;
 }
 
-static int cmd_getcollisionraymodel(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getraycollisionbox(int argc, slib_par_t *params, var_t *retval) {
+  auto ray = get_param_ray(argc, params, 0);
+  auto box = get_param_bounding_box(argc, params, 1);
+  auto fnResult = GetRayCollisionBox(ray, box);
+  v_setraycollision(retval, fnResult);
+  return 1;
+}
+
+static int cmd_getraycollisionmesh(int argc, slib_par_t *params, var_t *retval) {
   int result;
-  int id = get_model_id(argc, params, 1, retval);
+  int id = get_mesh_id(argc, params, 1, retval);
   if (id != -1) {
     auto ray = get_param_ray(argc, params, 0);
-    auto fnResult = GetCollisionRayModel(ray, _modelMap.at(id));
-    v_setrayhit(retval, fnResult);
+    Matrix matrix;
+    auto fnResult = GetRayCollisionMesh(ray, _meshMap.at(id), matrix);
+    v_setraycollision(retval, fnResult);
     result = 1;
   } else {
     result = 0;
@@ -896,21 +899,41 @@ static int cmd_getcollisionraymodel(int argc, slib_par_t *params, var_t *retval)
   return result;
 }
 
-static int cmd_getcollisionraytriangle(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getraycollisionmodel(int argc, slib_par_t *params, var_t *retval) {
+  auto ray = get_param_ray(argc, params, 0);
+  //auto model = get_param_int(argc, params, 1, 0);
+  //  auto fnResult = GetRayCollisionModel(ray, model);
+  //  v_setraycollision(retval, fnResult);
+  return 1;
+}
+
+static int cmd_getraycollisionquad(int argc, slib_par_t *params, var_t *retval) {
   auto ray = get_param_ray(argc, params, 0);
   auto p1 = get_param_vec3(argc, params, 1);
   auto p2 = get_param_vec3(argc, params, 2);
   auto p3 = get_param_vec3(argc, params, 3);
-  auto fnResult = GetCollisionRayTriangle(ray, p1, p2, p3);
-  v_setrayhit(retval, fnResult);
+  auto p4 = get_param_vec3(argc, params, 4);
+  auto fnResult = GetRayCollisionQuad(ray, p1, p2, p3, p4);
+  v_setraycollision(retval, fnResult);
   return 1;
 }
 
-static int cmd_getcollisionrec(int argc, slib_par_t *params, var_t *retval) {
-  auto rec1 = get_param_rect(argc, params, 0);
-  auto rec2 = get_param_rect(argc, params, 1);
-  Rectangle rect = GetCollisionRec(rec1, rec2);
-  v_setrect(retval, rect);
+static int cmd_getraycollisionsphere(int argc, slib_par_t *params, var_t *retval) {
+  auto ray = get_param_ray(argc, params, 0);
+  auto center = get_param_vec3(argc, params, 1);
+  auto radius = get_param_num(argc, params, 2, 0);
+  auto fnResult = GetRayCollisionSphere(ray, center, radius);
+  v_setraycollision(retval, fnResult);
+  return 1;
+}
+
+static int cmd_getraycollisiontriangle(int argc, slib_par_t *params, var_t *retval) {
+  auto ray = get_param_ray(argc, params, 0);
+  auto p1 = get_param_vec3(argc, params, 1);
+  auto p2 = get_param_vec3(argc, params, 2);
+  auto p3 = get_param_vec3(argc, params, 3);
+  auto fnResult = GetRayCollisionTriangle(ray, p1, p2, p3);
+  v_setraycollision(retval, fnResult);
   return 1;
 }
 
@@ -1172,12 +1195,6 @@ static int cmd_getrandomvalue(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_getscreendata(int argc, slib_par_t *params, var_t *retval) {
-  auto fnResult = GetScreenData();
-  v_setimage(retval, fnResult);
-  return 1;
-}
-
 static int cmd_getscreenheight(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetScreenHeight();
   v_setint(retval, fnResult);
@@ -1218,19 +1235,6 @@ static int cmd_getsoundsplaying(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetSoundsPlaying();
   v_setint(retval, fnResult);
   return 1;
-}
-
-static int cmd_gettexturedata(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int id = get_texture_id(argc, params, 0, retval);
-  if (id != -1) {
-    Image image = GetTextureData(_textureMap.at(id));
-    v_setimage(retval, image);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
 }
 
 static int cmd_gettime(int argc, slib_par_t *params, var_t *retval) {
@@ -3165,7 +3169,7 @@ static int cmd_meshbinormals(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_mesh_id(argc, params, 0, retval);
   if (id != -1) {
-    MeshBinormals(&_meshMap.at(id));
+    GenMeshBinormals(&_meshMap.at(id));
     result = 1;
   } else {
     result = 0;
@@ -3177,7 +3181,7 @@ static int cmd_meshtangents(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_mesh_id(argc, params, 0, retval);
   if (id != -1) {
-    MeshTangents(&_meshMap.at(id));
+    GenMeshTangents(&_meshMap.at(id));
     result = 1;
   } else {
     result = 0;
@@ -3282,7 +3286,7 @@ static int cmd_resumesound(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_setcameraaltcontrol(int argc, slib_par_t *params, var_t *retval) {
   auto altKey = get_param_int(argc, params, 0, 0);
-   SetCameraAltControl(altKey);
+  SetCameraAltControl(altKey);
   return 1;
 }
 
@@ -4557,11 +4561,10 @@ static FUNC_SIG lib_func[] = {
   {3, 3, "CHECKCOLLISIONBOXSPHERE", cmd_checkcollisionboxsphere},
   {3, 3, "CHECKCOLLISIONCIRCLEREC", cmd_checkcollisioncirclerec},
   {4, 4, "CHECKCOLLISIONCIRCLES", cmd_checkcollisioncircles},
+  {5, 5, "CHECKCOLLISIONLINES", cmd_checkcollisionlines},
   {3, 3, "CHECKCOLLISIONPOINTCIRCLE", cmd_checkcollisionpointcircle},
   {2, 2, "CHECKCOLLISIONPOINTREC", cmd_checkcollisionpointrec},
   {4, 4, "CHECKCOLLISIONPOINTTRIANGLE", cmd_checkcollisionpointtriangle},
-  {2, 2, "CHECKCOLLISIONRAYBOX", cmd_checkcollisionraybox},
-  {3, 3, "CHECKCOLLISIONRAYSPHERE", cmd_checkcollisionraysphere},
   {2, 2, "CHECKCOLLISIONRECS", cmd_checkcollisionrecs},
   {4, 4, "CHECKCOLLISIONSPHERES", cmd_checkcollisionspheres},
   {2, 2, "COLORALPHA", cmd_coloralpha},
@@ -4588,10 +4591,13 @@ static FUNC_SIG lib_func[] = {
   {3, 3, "GENMESHSPHERE", cmd_genmeshsphere},
   {4, 4, "GENMESHTORUS", cmd_genmeshtorus},
   {0, 0, "GETCLIPBOARDTEXT", cmd_getclipboardtext},
-  {2, 2, "GETCOLLISIONRAYGROUND", cmd_getcollisionrayground},
-  {2, 2, "GETCOLLISIONRAYMODEL", cmd_getcollisionraymodel},
-  {4, 4, "GETCOLLISIONRAYTRIANGLE", cmd_getcollisionraytriangle},
   {2, 2, "GETCOLLISIONREC", cmd_getcollisionrec},
+  {2, 2, "GETRAYCOLLISIONBOX", cmd_getraycollisionbox},
+  {3, 3, "GETRAYCOLLISIONMESH", cmd_getraycollisionmesh},
+  {2, 2, "GETRAYCOLLISIONMODEL", cmd_getraycollisionmodel},
+  {5, 5, "GETRAYCOLLISIONQUAD", cmd_getraycollisionquad},
+  {3, 3, "GETRAYCOLLISIONSPHERE", cmd_getraycollisionsphere},
+  {4, 4, "GETRAYCOLLISIONTRIANGLE", cmd_getraycollisiontriangle},
   {1, 1, "GETCOLOR", cmd_getcolor},
   {0, 0, "GETFONTDEFAULT", cmd_getfontdefault},
   {0, 0, "GETFPS", cmd_getfps},
@@ -4626,14 +4632,12 @@ static FUNC_SIG lib_func[] = {
   {1, 1, "GETMUSICTIMEPLAYED", cmd_getmusictimeplayed},
   {1, 1, "GETPREVDIRECTORYPATH", cmd_getprevdirectorypath},
   {2, 2, "GETRANDOMVALUE", cmd_getrandomvalue},
-  {0, 0, "GETSCREENDATA", cmd_getscreendata},
   {0, 0, "GETSCREENHEIGHT", cmd_getscreenheight},
   {2, 2, "GETSCREENTOWORLD2D", cmd_getscreentoworld2d},
   {0, 0, "GETSCREENWIDTH", cmd_getscreenwidth},
   {2, 2, "GETSHADERLOCATION", cmd_getshaderlocation},
   {2, 2, "GETSHADERLOCATIONATTRIB", cmd_getshaderlocationattrib},
   {0, 0, "GETSOUNDSPLAYING", cmd_getsoundsplaying},
-  {1, 1, "GETTEXTUREDATA", cmd_gettexturedata},
   {0, 0, "GETTIME", cmd_gettime},
   {0, 0, "GETTOUCHPOINTSCOUNT", cmd_gettouchpointscount},
   {1, 1, "GETTOUCHPOSITION", cmd_gettouchposition},
