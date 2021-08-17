@@ -9,8 +9,20 @@
 
 #include "config.h"
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic push
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#pragma GCC diagnostic ignored "-Wenum-compare"
+#pragma GCC diagnostic ignored "-Wdouble-promotion"
 #include <raylib/raylib/src/raylib.h>
 #include <raygui/src/raygui.h>
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 #include <raylib/src/extras/physac.h>
 #include <GLFW/glfw3.h>
 #include <cstring>
@@ -900,11 +912,18 @@ static int cmd_getraycollisionmesh(int argc, slib_par_t *params, var_t *retval) 
 }
 
 static int cmd_getraycollisionmodel(int argc, slib_par_t *params, var_t *retval) {
-  auto ray = get_param_ray(argc, params, 0);
-  //auto model = get_param_int(argc, params, 1, 0);
-  //  auto fnResult = GetRayCollisionModel(ray, model);
-  //  v_setraycollision(retval, fnResult);
-  return 1;
+
+  int result;
+  int id = get_model_id(argc, params, 1, retval);
+  if (id != -1) {
+    auto ray = get_param_ray(argc, params, 0);
+    auto fnResult = GetRayCollisionModel(ray, _modelMap.at(id));
+    v_setraycollision(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 static int cmd_getraycollisionquad(int argc, slib_par_t *params, var_t *retval) {
@@ -2405,17 +2424,18 @@ static int cmd_drawtextex(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-static int cmd_drawtextrec(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_drawtextpro(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_font_id(argc, params, 0, retval);
   if (id != -1) {
     auto text = get_param_str(argc, params, 1, NULL);
-    auto rec = get_param_rect(argc, params, 2);
-    auto fontSize = get_param_num(argc, params, 3, 0);
-    auto spacing = get_param_num(argc, params, 4, 0);
-    bool wordWrap = get_param_int(argc, params, 5, 0) == 1;
-    auto tint = get_param_color(argc, params, 6);
-    DrawTextRec(_fontMap[id], text, rec, fontSize, spacing, wordWrap, tint);
+    auto position = get_param_vec2(argc, params, 2);
+    auto origin = get_param_vec2(argc, params, 3);
+    auto fontSize = get_param_num(argc, params, 4, 0);
+    auto rotation = get_param_num(argc, params, 5, 0);
+    auto spacing = get_param_num(argc, params, 6, 0);
+    auto tint = get_param_color(argc, params, 7);
+    DrawTextPro(_fontMap[id], text, position, origin, rotation, fontSize, spacing, tint);
     result = 1;
   } else {
     result = 0;
@@ -4810,7 +4830,7 @@ static FUNC_SIG lib_proc[] = {
   {5, 5, "DRAWTEXT", cmd_drawtext},
   {5, 5, "DRAWTEXTCODEPOINT", cmd_drawtextcodepoint},
   {6, 6, "DRAWTEXTEX", cmd_drawtextex},
-  {6, 6, "DRAWTEXTREC", cmd_drawtextrec},
+  {6, 6, "DRAWTEXTPRO", cmd_drawtextpro},
   {4, 4, "DRAWTEXTURE", cmd_drawtexture},
   {5, 5, "DRAWTEXTUREEX", cmd_drawtextureex},
   {6, 6, "DRAWTEXTUREPRO", cmd_drawtexturepro},

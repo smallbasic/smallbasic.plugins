@@ -10,4 +10,8 @@
 #include "config.h"
 
 #define RAYGUI_IMPLEMENTATION
+#pragma GCC diagnostic ignored "-Wunused-result"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#pragma GCC diagnostic ignored "-Wenum-compare"
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <raygui/src/raygui.h>
