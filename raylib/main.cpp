@@ -3374,7 +3374,7 @@ static int cmd_setmodeldiffusetexture(int argc, slib_par_t *params, var_t *retva
   int modelId = get_model_id(argc, params, 0, retval);
   int textureId = get_texture_id(argc, params, 1, retval);
   if (modelId != -1 && textureId != -1) {
-    _modelMap.at(modelId).materials[0].maps[MAP_DIFFUSE].texture = _textureMap.at(textureId);
+    _modelMap.at(modelId).materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = _textureMap.at(textureId);
     result = 1;
   } else {
     result = 0;
