@@ -1,5 +1,7 @@
 REM QR Code generator library (C)
 REM
+REM Ported to SmallBASIC by chrisws
+REM
 REM Copyright (c) Project Nayuki. (MIT License)
 REM https://www.nayuki.io/page/qr-code-generator-library
 REM
