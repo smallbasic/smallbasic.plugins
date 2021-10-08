@@ -105,7 +105,7 @@ static void server_ws_msg(mg_connection *conn, mg_ws_message *message) {
   if (session != nullptr) {
     session->_recv.append((char *)message->data.ptr, message->data.len);
   }
-  mg_iobuf_delete(&conn->recv, conn->recv.len);
+  mg_iobuf_del(&conn->recv, 0, conn->recv.len);
 }
 
 static void server_ev_close(mg_connection *conn, Session *session) {

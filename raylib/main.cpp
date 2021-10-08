@@ -9,7 +9,6 @@
 
 #include "config.h"
 
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic push
 #pragma GCC diagnostic push
