@@ -442,7 +442,7 @@ static void v_setfont(var_t *var, Font &font) {
   _fontMap[id] = font;
   map_init_id(var, id);
   v_setint(map_add_var(var, "baseSize", 0), font.baseSize);
-  v_setint(map_add_var(var, "charsCount", 0), font.charsCount);
+  v_setint(map_add_var(var, "charsCount", 0), font.glyphCount);
 }
 
 static void v_setrect(var_t *var, int width, int height, int id) {
@@ -747,17 +747,6 @@ static int cmd_genimagegradientv(int argc, slib_par_t *params, var_t *retval) {
   auto top = get_param_color(argc, params, 2);
   auto bottom = get_param_color(argc, params, 3);
   auto image = GenImageGradientV(width, height, top, bottom);
-  v_setimage(retval, image);
-  return 1;
-}
-
-static int cmd_genimageperlinnoise(int argc, slib_par_t *params, var_t *retval) {
-  auto width = get_param_int(argc, params, 0, 0);
-  auto height = get_param_int(argc, params, 1, 0);
-  auto offsetX = get_param_int(argc, params, 2, 0);
-  auto offsetY = get_param_int(argc, params, 3, 0);
-  auto scale = get_param_num(argc, params, 4, 0);
-  auto image = GenImagePerlinNoise(width, height, offsetX, offsetY, scale);
   v_setimage(retval, image);
   return 1;
 }
@@ -1262,7 +1251,7 @@ static int cmd_gettime(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_gettouchpointscount(int argc, slib_par_t *params, var_t *retval) {
-  auto fnResult = GetTouchPointsCount();
+  auto fnResult = GetTouchPointCount();
   v_setint(retval, fnResult);
   return 1;
 }
@@ -1433,14 +1422,6 @@ static int cmd_isgamepadbuttonup(int argc, slib_par_t *params, var_t *retval) {
   auto gamepad = get_param_int(argc, params, 0, 0);
   auto button = get_param_int(argc, params, 1, 0);
   auto fnResult = IsGamepadButtonUp(gamepad, button);
-  v_setint(retval, fnResult);
-  return 1;
-}
-
-static int cmd_isgamepadname(int argc, slib_par_t *params, var_t *retval) {
-  auto gamepad = get_param_int(argc, params, 0, 0);
-  auto name = get_param_str(argc, params, 1, NULL);
-  auto fnResult = IsGamepadName(gamepad, name);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -1619,7 +1600,7 @@ static int cmd_loadmodel(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_loadmodelanimations(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
-  int animsCount = 0;
+  unsigned int animsCount = 0;
   auto anims = LoadModelAnimations(fileName, &animsCount);
   v_setmodel_animation(retval, anims, animsCount);
   RL_FREE(anims);
@@ -3882,37 +3863,6 @@ static int cmd_guigrid(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_guiimagebutton(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int id = get_texture_id(argc, params, 2, retval);
-  if (id != -1) {
-    auto bounds = get_param_rect(argc, params, 0);
-    auto text = get_param_str(argc, params, 1, 0);
-    auto fnResult = GuiImageButton(bounds, text, _textureMap.at(id));
-    v_setint(retval, fnResult);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_guiimagebuttonex(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int id = get_texture_id(argc, params, 2, retval);
-  if (id != -1) {
-    auto bounds = get_param_rect(argc, params, 0);
-    auto text = get_param_str(argc, params, 1, 0);
-    auto texSource = get_param_rect(argc, params, 3);
-    auto fnResult = GuiImageButtonEx(bounds, text, _textureMap.at(id), texSource);
-    v_setint(retval, fnResult);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
 static int cmd_guilabelbutton(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
@@ -4597,7 +4547,6 @@ static FUNC_SIG lib_func[] = {
   {4, 4, "GENIMAGEGRADIENTH", cmd_genimagegradienth},
   {5, 5, "GENIMAGEGRADIENTRADIAL", cmd_genimagegradientradial},
   {4, 4, "GENIMAGEGRADIENTV", cmd_genimagegradientv},
-  {5, 5, "GENIMAGEPERLINNOISE", cmd_genimageperlinnoise},
   {3, 3, "GENIMAGEWHITENOISE", cmd_genimagewhitenoise},
   {3, 3, "GENMESHCUBE", cmd_genmeshcube},
   {2, 2, "GENMESHCUBICMAP", cmd_genmeshcubicmap},
@@ -4681,7 +4630,6 @@ static FUNC_SIG lib_func[] = {
   {2, 2, "ISGAMEPADBUTTONPRESSED", cmd_isgamepadbuttonpressed},
   {2, 2, "ISGAMEPADBUTTONRELEASED", cmd_isgamepadbuttonreleased},
   {2, 2, "ISGAMEPADBUTTONUP", cmd_isgamepadbuttonup},
-  {2, 2, "ISGAMEPADNAME", cmd_isgamepadname},
   {1, 1, "ISGESTUREDETECTED", cmd_isgesturedetected},
   {1, 1, "ISKEYDOWN", cmd_iskeydown},
   {1, 1, "ISKEYPRESSED", cmd_iskeypressed},
@@ -4728,8 +4676,6 @@ static FUNC_SIG lib_func[] = {
   {4, 4, "GUIDROPDOWNBOX", cmd_guidropdownbox},
   {2, 2, "GUIGETSTYLE", cmd_guigetstyle},
   {3, 3, "GUIGRID", cmd_guigrid},
-  {2, 2, "GUIIMAGEBUTTON", cmd_guiimagebutton},
-  {2, 2, "GUIIMAGEBUTTONEX", cmd_guiimagebuttonex},
   {2, 2, "GUILABELBUTTON", cmd_guilabelbutton},
   {4, 4, "GUILISTVIEW", cmd_guilistview},
   {6, 6, "GUILISTVIEWEX", cmd_guilistviewex},

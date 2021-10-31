@@ -12,7 +12,7 @@ REM ----------------------------------------------------------------------------
 import raylib as rl
 import raylibc as c
 
-NUM_TEXTURES = 7
+NUM_TEXTURES = 6
 
 const screenWidth = 800
 const screenHeight = 450
@@ -24,7 +24,6 @@ horizontalGradient = rl.GenImageGradientH(screenWidth, screenHeight, c.RED, c.BL
 radialGradient = rl.GenImageGradientRadial(screenWidth, screenHeight, 0.0, c.WHITE, c.BLACK)
 checked = rl.GenImageChecked(screenWidth, screenHeight, 32, 32, c.RED, c.BLUE)
 whiteNoise = rl.GenImageWhiteNoise(screenWidth, screenHeight, 0.5)
-perlinNoise = rl.GenImagePerlinNoise(screenWidth, screenHeight, 50, 50, 4.0)
 cellular = rl.GenImageCellular(screenWidth, screenHeight, 32)
 
 dim textures(NUM_TEXTURES)
@@ -33,15 +32,13 @@ textures[1] = rl.LoadTextureFromImage(horizontalGradient)
 textures[2] = rl.LoadTextureFromImage(radialGradient)
 textures[3] = rl.LoadTextureFromImage(checked)
 textures[4] = rl.LoadTextureFromImage(whiteNoise)
-textures[5] = rl.LoadTextureFromImage(perlinNoise)
-textures[6] = rl.LoadTextureFromImage(cellular)
+textures[5] = rl.LoadTextureFromImage(cellular)
 
 rl.UnloadImage(verticalGradient)
 rl.UnloadImage(horizontalGradient)
 rl.UnloadImage(radialGradient)
 rl.UnloadImage(checked)
 rl.UnloadImage(whiteNoise)
-rl.UnloadImage(perlinNoise)
 rl.UnloadImage(cellular)
 
 currentTexture = 0

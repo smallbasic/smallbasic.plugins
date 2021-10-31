@@ -16,12 +16,12 @@ lib_LTLIBRARIES = libraylib.la
 if WITH_STATIC_INCLUDE
   libraylib_la_SOURCES = \
    raylib/src/rglfw.c \
-   raylib/src/models.c \
+   raylib/src/rmodels.c \
    raylib/src/raudio.c \
-   raylib/src/core.c \
-   raylib/src/shapes.c \
-   raylib/src/textures.c \
-   raylib/src/text.c \
+   raylib/src/rcore.c \
+   raylib/src/rshapes.c \
+   raylib/src/rtextures.c \
+   raylib/src/rtext.c \
    raylib/src/utils.c \
    ../include/param.cpp \
    ../include/hashmap.cpp \

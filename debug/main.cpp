@@ -29,13 +29,19 @@ uint32_t get_modified_time() {
   return result;
 }
 
-int cmd_issourcemodified(int argc, slib_par_t *params, var_t *retval) {
-  v_setint(retval, modifiedTime < get_modified_time());  
+static int cmd_textformat(int argc, slib_par_t *params, var_t *retval) {
+  v_setstr(retval, format_text(argc, params, 0));
+  return 1;
+}
+
+static int cmd_issourcemodified(int argc, slib_par_t *params, var_t *retval) {
+  v_setint(retval, modifiedTime < get_modified_time());
   return 1;
 }
 
 FUNC_SIG lib_func[] = {
   {0, 0, "ISSOURCEMODIFIED", cmd_issourcemodified},
+  {1, 20,"TEXTFORMAT", cmd_textformat},
 };
 
 int sblib_func_count() {
