@@ -2100,7 +2100,7 @@ static int cmd_drawmodel(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_drawmodelex(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_drawmodelex(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_model_id(argc, params, 0, retval);
   if (id != -1) {
@@ -2117,7 +2117,7 @@ int cmd_drawmodelex(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_drawmodelwires(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_drawmodelwires(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_model_id(argc, params, 0, retval);
   if (id != -1) {
@@ -2132,7 +2132,7 @@ int cmd_drawmodelwires(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
-int cmd_drawmodelwiresex(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_drawmodelwiresex(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int id = get_model_id(argc, params, 0, retval);
   if (id != -1) {
