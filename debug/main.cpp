@@ -46,7 +46,9 @@ static int cmd_bload(int argc, slib_par_t *params, var_t *retval) {
           if (offset + length < size) {
             // [0 | 1 | 2 | 3 | 4]
             //    --^     --^
-            size = length;
+            if (length) {
+              size = length;
+            }
           } else {
             // [0 | 1 | 2 | 3 | 4]
             //    --^             --^
@@ -93,7 +95,7 @@ static int cmd_issourcemodified(int argc, slib_par_t *params, var_t *retval) {
 }
 
 FUNC_SIG lib_func[] = {
-  {3, 3, "BLOAD", cmd_bload},
+  {1, 3, "BLOAD", cmd_bload},
   {0, 0, "ISSOURCEMODIFIED", cmd_issourcemodified},
   {1, 20,"TEXTFORMAT", cmd_textformat},
 };
