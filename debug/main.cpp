@@ -30,13 +30,50 @@ uint32_t get_modified_time() {
   return result;
 }
 
+static void bload_read(int bitSize, size_t size, FILE *file, var_t *retval) {
+  size_t count;
+  uint8_t *data8;
+  uint16_t *data16;
+  uint32_t *data32;
+  switch (bitSize) {
+  case 8:
+    data8 = (uint8_t *)malloc(size * sizeof(uint8_t));
+    count = fread(data8, sizeof(uint8_t), size, file);
+    v_toarray1(retval, count);
+    for (unsigned i = 0; i < count; i++) {
+      v_setint(v_elem(retval, i), data8[i]);
+    }
+    free(data8);
+    break;
+  case 16:
+    data16 = (uint16_t *)malloc(size * sizeof(uint16_t));
+    count = fread(data16, sizeof(uint16_t), size, file);
+    v_toarray1(retval, count);
+    for (unsigned i = 0; i < count; i++) {
+      v_setint(v_elem(retval, i), data16[i]);
+    }
+    free(data16);
+    break;
+  case 32:
+    data32 = (uint32_t *)malloc(size * sizeof(uint32_t));
+    count = fread(data32, sizeof(uint32_t), size, file);
+    v_toarray1(retval, count);
+    for (unsigned i = 0; i < count; i++) {
+      v_setint(v_elem(retval, i), data32[i]);
+    }
+    free(data32);
+    break;
+  }
+}
+
 static int cmd_bload(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, nullptr);
   auto offset = get_param_int(argc, params, 1, 0);
   auto length = get_param_int(argc, params, 2, 0);
+  auto bitSize = get_param_int(argc, params, 3, 8);
   char message[256] = {0};
 
-  if (fileName != nullptr && offset >= 0 && length >= 0) {
+  if (fileName != nullptr && offset >= 0 && length >= 0 && (bitSize == 8 || bitSize == 16 || bitSize == 32)) {
     auto file = fopen(fileName, "rb");
     if (file != nullptr) {
       fseek(file, 0, SEEK_END);
@@ -55,13 +92,7 @@ static int cmd_bload(int argc, slib_par_t *params, var_t *retval) {
             size -= offset;
           }
           fseek(file, offset, SEEK_SET);
-          auto data = (uint8_t *)malloc(size * sizeof(uint8_t));
-          auto count = fread(data, sizeof(uint8_t), size, file);
-          v_toarray1(retval, count);
-          for (unsigned i = 0; i < count; i++) {
-            v_setint(v_elem(retval, i), data[i]);
-          }
-          free(data);
+          bload_read(bitSize, size, file, retval);
         }
         else {
           // [0 | 1 | 2 | 3 | 4]
@@ -76,7 +107,7 @@ static int cmd_bload(int argc, slib_par_t *params, var_t *retval) {
       snprintf(message, sizeof(message), "BLOAD: [%s] Failed to open file", fileName);
     }
   } else {
-    snprintf(message, sizeof(message), "BLOAD: Invalid arguments: [fileName, offset, length]");
+    snprintf(message, sizeof(message), "BLOAD: fileName [offset [length [bitSize]]]");
   }
   if (message[0] != '\0') {
     v_setstr(retval, message);
@@ -95,7 +126,7 @@ static int cmd_issourcemodified(int argc, slib_par_t *params, var_t *retval) {
 }
 
 FUNC_SIG lib_func[] = {
-  {1, 3, "BLOAD", cmd_bload},
+  {1, 4, "BLOAD", cmd_bload},
   {0, 0, "ISSOURCEMODIFIED", cmd_issourcemodified},
   {1, 20,"TEXTFORMAT", cmd_textformat},
 };
