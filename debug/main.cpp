@@ -93,8 +93,7 @@ static int cmd_bload(int argc, slib_par_t *params, var_t *retval) {
           }
           fseek(file, offset, SEEK_SET);
           bload_read(bitSize, size, file, retval);
-        }
-        else {
+        } else {
           // [0 | 1 | 2 | 3 | 4]
           //                   --^  --^
           v_setint(retval, 0);
@@ -107,7 +106,7 @@ static int cmd_bload(int argc, slib_par_t *params, var_t *retval) {
       snprintf(message, sizeof(message), "BLOAD: [%s] Failed to open file", fileName);
     }
   } else {
-    snprintf(message, sizeof(message), "BLOAD: fileName [offset [length [bitSize]]]");
+    snprintf(message, sizeof(message), "BLOAD: fileName [offset [length [bitSize 8|16|32]]]");
   }
   if (message[0] != '\0') {
     v_setstr(retval, message);
