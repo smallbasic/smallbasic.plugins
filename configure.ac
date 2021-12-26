@@ -1,7 +1,7 @@
 dnl
 dnl Configure script for SmallBASIC plugins
 dnl
-dnl Copyright(C) 2001-2020 Chris Warren-Smith.
+dnl Copyright(C) 2001-2021 Chris Warren-Smith.
 dnl
 dnl This program is distributed under the terms of the GPL v2.0
 dnl Download the GNU Public License (GPL) from www.gnu.org
@@ -77,7 +77,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CXX
 LT_PREREQ([2.2])
 
-BUILD_SUBDIRS="debug nuklear glfw clipboard websocket raylib"
+BUILD_SUBDIRS="debug nuklear gifenc glfw clipboard websocket raylib"
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
 
@@ -87,6 +87,7 @@ AC_CONFIG_FILES([
 Makefile
 debug/Makefile
 nuklear/Makefile
+gifenc/Makefile
 glfw/Makefile
 clipboard/Makefile
 websocket/Makefile

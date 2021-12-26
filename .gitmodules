@@ -22,3 +22,6 @@
 [submodule "robin-hood-hashing"]
 	path = robin-hood-hashing
 	url = https://github.com/martinus/robin-hood-hashing.git
+[submodule "gifenc/gifenc"]
+	path = gifenc/gifenc
+	url = https://github.com/lecram/gifenc
