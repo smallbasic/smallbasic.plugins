@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include <stdint.h>
+#include <math.h>
 
 #include "gifenc/gifenc.h"
 #include "robin-hood-hashing/src/include/robin_hood.h"
@@ -43,9 +44,11 @@ static uint8_t *get_param_byte_p(int argc, slib_par_t *params, int n) {
   uint8_t *result = nullptr;
   if (is_param_array(argc, params, n)) {
     int size = v_asize(params[n].var_p);
-    result = new uint8_t[size];
-    for (int i = 0; i < size; i++) {
-      result[i] = get_array_elem_num(params[n].var_p, i);
+    if (size) {
+      result = new uint8_t[size + 1];
+      for (int i = 0; i < size; i++) {
+        result[i] = get_array_elem_num(params[n].var_p, i);
+      }
     }
   }
   return result;
@@ -68,36 +71,55 @@ static int cmd_new_gif(int argc, slib_par_t *params, var_t *retval) {
   auto width = get_param_int(argc, params, 1, 0);
   auto height = get_param_int(argc, params, 2, 0);
   auto palette = get_param_byte_p(argc, params, 3);
-  auto depth = get_param_int(argc, params, 4, 0);
-  auto bgindex = get_param_int(argc, params, 5, 0);
-  auto loop = get_param_int(argc, params, 6, 0);
-  auto fnResult = ge_new_gif(fname, width, height, palette, depth, bgindex, loop);
-  int result;
-  if (fnResult != nullptr) {
-    v_setgif(retval, fnResult);
-    result = 1;
-  } else {
-    result = 0;
+  auto bgindex = get_param_int(argc, params, 4, 0);
+  auto loop = get_param_int(argc, params, 5, 0);
+
+  int depth = 8;
+  int result = 1;
+  if (palette) {
+    int size = v_asize(params[3].var_p);
+    if (size % 3 != 0) {
+      error(retval, "Invalid pallete");
+      result = 0;
+    } else {
+      depth = log2(size / 3);
+    }
+  }
+
+  if (result) {
+    auto fnResult = ge_new_gif(fname, width, height, palette, depth, bgindex, loop);
+    if (fnResult != nullptr) {
+      v_setgif(retval, fnResult);
+    } else {
+      result = 0;
+    }
   }
   delete [] palette;
   return result;
 }
 
 static int cmd_add_frame(int argc, slib_par_t *params, var_t *retval) {
-  int result;
+  int result = 0;
   int id = get_gif_id(argc, params, 0, retval);
   if (id != -1) {
-    auto pixels = get_param_byte_p(argc, params, 1);
-    auto delay = get_param_int(argc, params, 2, 0);
-    int size = v_asize(params[1].var_p);
-
     ge_GIF* gif = _gifMap[id];
-    memcpy(gif->frame, pixels, size);
-    ge_add_frame(gif, delay);
-    v_setint(retval, 1);
-    result = 1;
-  } else {
-    result = 0;
+    auto pixels = get_param_byte_p(argc, params, 2);
+    if (pixels) {
+      int maxFrame = gif->w * gif->h;
+      int size = v_asize(params[2].var_p) - 1;
+      if (size > maxFrame) {
+        error(retval, "Pixel array too large");
+      } else {
+        memcpy(gif->frame, pixels, size);
+        auto delay = get_param_int(argc, params, 1, 0);
+        ge_add_frame(gif, delay);
+        v_setint(retval, 1);
+        result = 1;
+      }
+      delete [] pixels;
+    } else {
+      error(retval, "Pixel array empty");
+    }
   }
   return result;
 }
@@ -116,11 +138,11 @@ static int cmd_close_gif(int argc, slib_par_t *params, var_t *retval) {
 }
 
 FUNC_SIG lib_func[] = {
-  {7, 7, "CREATE", cmd_new_gif},
+  {6, 6, "CREATE", cmd_new_gif},
 };
 
 FUNC_SIG lib_proc[] = {
-  {2, 2, "ADD_FRAME", cmd_add_frame},
+  {3, 3, "ADD_FRAME", cmd_add_frame},
   {1, 1, "CLOSE", cmd_close_gif},
 };
 
