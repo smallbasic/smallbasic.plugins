@@ -335,6 +335,10 @@ bool is_param_nil(int argc, slib_par_t *params, int n) {
   return result;
 }
 
+int get_id(slib_par_t *params, int n) {
+  return params[n].var_p->v.m.id;
+}
+
 int get_param_int(int argc, slib_par_t *params, int n, int def) {
   int result;
   if (n >= 0 && n < argc) {

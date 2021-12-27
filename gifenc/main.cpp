@@ -17,12 +17,8 @@
 #include "include/module.h"
 #include "include/param.h"
 
-robin_hood::unordered_map<int, ge_GIF*> _gifMap;
+robin_hood::unordered_map<int, ge_GIF *> _gifMap;
 int _nextId = 1;
-
-static int get_id(slib_par_t *params, int n) {
-  return params[n].var_p->v.m.id;
-}
 
 static int get_gif_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
@@ -102,7 +98,7 @@ static int cmd_add_frame(int argc, slib_par_t *params, var_t *retval) {
   int result = 0;
   int id = get_gif_id(argc, params, 0, retval);
   if (id != -1) {
-    ge_GIF* gif = _gifMap[id];
+    ge_GIF *gif = _gifMap[id];
     auto pixels = get_param_byte_p(argc, params, 2);
     if (pixels) {
       int maxFrame = gif->w * gif->h;

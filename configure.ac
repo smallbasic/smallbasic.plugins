@@ -77,7 +77,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CXX
 LT_PREREQ([2.2])
 
-BUILD_SUBDIRS="debug nuklear gifenc glfw clipboard websocket raylib"
+BUILD_SUBDIRS="debug nuklear canvas gifenc glfw clipboard websocket raylib"
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
 
@@ -87,6 +87,7 @@ AC_CONFIG_FILES([
 Makefile
 debug/Makefile
 nuklear/Makefile
+canvas/Makefile
 gifenc/Makefile
 glfw/Makefile
 clipboard/Makefile

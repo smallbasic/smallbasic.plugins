@@ -55,10 +55,6 @@ PhysicsBody get_physics_body(var_p_t var) {
   return result;
 }
 
-static int get_id(slib_par_t *params, int n) {
-  return params[n].var_p->v.m.id;
-}
-
 static Vector3 get_array_elem_vec3(var_p_t array, int index) {
   Vector3 result;
   int size = v_asize(array);
