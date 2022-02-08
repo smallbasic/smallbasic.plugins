@@ -19,6 +19,7 @@ func get_param_name(byref param)
   case "alpha": result = "get_param_num"
   case "color": result = "get_param_color"
   case "text": result = "get_param_str"
+  case "const char *": result = "get_param_str"
   case "bounds": result = "get_param_rect"
   case "label": result = "get_param_str"
   case "camera3d": result = "get_camera_3d"
@@ -31,8 +32,22 @@ func get_param_name(byref param)
   case "rendertexture2d": result = "get_render_texture_id"
   case "sound": result = "get_sound_id"
   case "texture2d": result = "get_texture_id"
+  case "boundingbox": result = "get_param_bounding_box"
   case else
    result = "get_param_int"
+  end select
+  return result
+end
+
+func has_default_param(byref param)
+  local result
+  select case lower(trim(param.type))
+  case "int": result = true
+  case "int *": result = true
+  case "text": result = true
+  case "const char *": result = true
+  case else
+   result = false
   end select
   return result
 end
@@ -54,18 +69,44 @@ func get_map_name(byref param)
   return result
 end
 
-sub print_func_map(byref fun, map_param)
+func get_v_set_name(byref fun)
+  local result
+  select case lower(trim(fun.returnType))
+  case "color": result = "v_setcolor"
+  case "font": result = "v_setfont"
+  case "image": result = "v_setimage"
+  case "int": result = "v_setint"
+  case "mesh": result = "v_setmesh"
+  case "model": result = "v_setmodel"
+  case "modelanimation": result = "v_setmodel_animation"
+  case "physicsbody": result = "v_setphysics"
+  case "raycollision": result = "v_setraycollision"
+  case "float": result = "v_setreal"
+  case "rectangle": result = "v_setrect"
+  case "Shader": result = "v_setshader"
+  case "char": result = "v_setstr"
+  case "texture2d": result = "v_settexture2d"
+  case "vector2": result = "v_setvec2"
+  case "vector3": result = "v_setvec3"
+  case else: result = "unknown name" + fun.name
+  end select
+  return result
+end
+
+sub print_proc_map(byref fun, map_param)
   print "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
   print "  int result;"
-  print "  int id = " + get_param_name(fun.params[map_param]) + "(argc, params," + map_param + ");"
+  print "  int id = " + get_param_name(fun.params[map_param]) + "(argc, params, " + map_param + ", retval);"
   print "  if (id != -1) {"
   local i = 0
   local args = ""
   local param
+  local def_arg
   for param in fun.params
     if (i > 0) then args += ", "
     if (i != map_param) then
-      print "    auto " + lower(param.name) + " = " + get_param_name(param) + "(argc, params, " + i + ", 0);"
+      def_arg = iff(has_default_param(param), ", 0", "")
+      print "    auto " + lower(param.name) + " = " + get_param_name(param) + "(argc, params, " + i + def_arg + ");"
       args += param.name
     else
       args += get_map_name(fun.params[map_param]) + ".at(id)"
@@ -82,13 +123,15 @@ sub print_func_map(byref fun, map_param)
   print
 end
 
-sub print_func(byref fun)
+sub print_proc(byref fun)
   print "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
   local i = 0
   local args = ""
   local param
+  local def_arg
   for param in fun.params
-    print "  auto " + lower(param.name) + " = " + get_param_name(param) + "(argc, params, " + i + ", 0);"
+    def_arg = iff(has_default_param(param), ", 0", "")
+    print "  auto " + lower(param.name) + " = " + get_param_name(param) + "(argc, params, " + i + def_arg + ");"
     if (i > 0) then args += ", "
     args += param.name
     i++
@@ -125,7 +168,7 @@ func has_ptr_arg(byref fun)
   local i = 0
   local param
   for param in fun.params
-    if (instr(param.type, "*") > 0) then
+    if (instr(param.type, "*") > 0 and not param.type == "const char *") then
       result = true
       exit for
     endif
@@ -133,14 +176,32 @@ func has_ptr_arg(byref fun)
   return result
 end
 
-for fun in api("functions")
-  if (fun.returnType == "void" and not has_ptr_arg(fun)) then
-    map_param = get_map_param(fun)
-    if (map_param != -1) then
-      print_func_map(fun, map_param)
-    else
-      print_func(fun)
+sub print_proc_main
+  local fun, map_param
+  for fun in api("functions")
+    if (fun.returnType == "void" and not has_ptr_arg(fun)) then
+      map_param = get_map_param(fun)
+      if (map_param != -1) then
+        print_proc_map(fun, map_param)
+      else
+        print_proc(fun)
+      endif
     endif
-  endif
-next
+  next
+end
+
+sub print_proc_def
+  local fun, n
+  for fun in api("functions")
+    if (fun.returnType == "void" and not has_ptr_arg(fun)) then
+      print "  {" + len(fun.params) + ", " + len(fun.params) + ", \"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + "},"
+    endif
+  next
+end
+
+if trim(command) == "proc" then
+  print_proc_main
+else if trim(command) == "proc-def" then
+  print_proc_def
+endif
 
