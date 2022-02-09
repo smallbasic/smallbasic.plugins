@@ -3801,24 +3801,27 @@ static int cmd_guicheckbox(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_guicolorbaralpha(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
-  auto alpha = get_param_num(argc, params, 1, 0);
-  auto fnResult = GuiColorBarAlpha(bounds, alpha);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto alpha = get_param_num(argc, params, 2, 0);
+  auto fnResult = GuiColorBarAlpha(bounds, text, alpha);
   v_setreal(retval, fnResult);
   return 1;
 }
 
 static int cmd_guicolorbarhue(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
-  auto value = get_param_num(argc, params, 1, 0);
-  auto fnResult = GuiColorBarHue(bounds, value);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto value = get_param_num(argc, params, 2, 0);
+  auto fnResult = GuiColorBarHue(bounds, text, value);
   v_setreal(retval, fnResult);
   return 1;
 }
 
 static int cmd_guicolorpicker(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
-  auto color = get_param_color(argc, params, 1);
-  auto fnResult = GuiColorPicker(bounds, color);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto color = get_param_color(argc, params, 2);
+  auto fnResult = GuiColorPicker(bounds, text, color);
   v_setcolor(retval, fnResult);
   return 1;
 }
@@ -3923,9 +3926,10 @@ static int cmd_guiscrollbar(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_guiscrollpanel(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
-  auto content = get_param_rect(argc, params, 1);
-  auto scroll = get_param_vec2(argc, params, 2);
-  auto fnResult = GuiScrollPanel(bounds, content, &scroll);
+  auto text = get_param_str(argc, params, 1, 0);
+  auto content = get_param_rect(argc, params, 2);
+  auto scroll = get_param_vec2(argc, params, 3);
+  auto fnResult = GuiScrollPanel(bounds, text, content, &scroll);
   v_setrect(retval, fnResult);
   return 1;
 }
@@ -4097,7 +4101,8 @@ static int cmd_guilock(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_guipanel(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
-  GuiPanel(bounds);
+  auto text = get_param_str(argc, params, 1, 0);
+  GuiPanel(bounds, text);
   return 1;
 }
 

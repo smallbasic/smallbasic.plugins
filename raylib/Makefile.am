@@ -5,6 +5,15 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 #
 
+sbasic = /home/chrisws/src/SmallBASIC/src/platform/console/sbasic
+
+generated = func-def.inc proc-def.inc proc.inc func.inc
+
+main.cpp: $(generated)
+
+$(generated): raylib/parser/raylib_api.json
+	$(sbasic) mkraylib.bas $(patsubst %.inc, %, $@) > $@
+
 AM_CXXFLAGS=-fno-rtti -std=c++14
 AM_CPPFLAGS = -Iraylib/src -Iraylib/src/external/glfw/include -Iraylib/src/external/glfw/deps/mingw \
   -DPLATFORM_DESKTOP=1 -DSUPPORT_BUSY_WAIT_LOOP=1 -DSUPPORT_SCREEN_CAPTURE=1 \
@@ -38,3 +47,4 @@ else
 endif
 
 libraylib_la_LDFLAGS = -module -rpath '$(libdir)' @RAYLIB_LDFLAGS@ @PLATFORM_LDFLAGS@
+

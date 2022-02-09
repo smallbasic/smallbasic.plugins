@@ -190,10 +190,24 @@ sub print_proc_main
   next
 end
 
-sub print_proc_def
-  local fun, n
+sub print_func_main
+  local fun, map_param
   for fun in api("functions")
     if (fun.returnType == "void" and not has_ptr_arg(fun)) then
+      map_param = get_map_param(fun)
+      if (map_param != -1) then
+        print_proc_map(fun, map_param)
+      else
+        print_proc(fun)
+      endif
+    endif
+  next
+end
+
+sub print_def(proc_def)
+  local fun, n
+  for fun in api("functions")
+    if (((fun.returnType == "void") == proc_def) and not has_ptr_arg(fun)) then
       print "  {" + len(fun.params) + ", " + len(fun.params) + ", \"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + "},"
     endif
   next
@@ -202,6 +216,11 @@ end
 if trim(command) == "proc" then
   print_proc_main
 else if trim(command) == "proc-def" then
-  print_proc_def
+  print_def(true)
+elseif trim(command) == "func" then
+  print_func_main
+else if trim(command) == "func-def" then
+  print_def(false)
 endif
+
 
