@@ -72,13 +72,19 @@ end
 func get_v_set_name(byref fun)
   local result
   select case lower(trim(fun.returnType))
+  case "const char *": result = "v_setstr"
+  case "char *": result = "v_setstr"
+  case "unsigned char *": result = "v_setstr"
   case "color": result = "v_setcolor"
   case "font": result = "v_setfont"
   case "image": result = "v_setimage"
+  case "unsigned int": result = "v_setint"
   case "int": result = "v_setint"
+  case "long": result = "v_setint"
+  case "bool": result = "v_setint"
+  case "double": result = "v_setreal"
   case "mesh": result = "v_setmesh"
   case "model": result = "v_setmodel"
-  case "modelanimation": result = "v_setmodel_animation"
   case "physicsbody": result = "v_setphysics"
   case "raycollision": result = "v_setraycollision"
   case "float": result = "v_setreal"
@@ -88,9 +94,86 @@ func get_v_set_name(byref fun)
   case "texture2d": result = "v_settexture2d"
   case "vector2": result = "v_setvec2"
   case "vector3": result = "v_setvec3"
-  case else: result = "unknown name" + fun.name
+  case "vector4": result = "v_setvec4"
+  case "shader": result = "v_setshader"
+  case else: result = "unknown return [" + fun.returnType + "] "
   end select
   return result
+end
+
+#  unknown return [AudioStream] (retval, fnResult);
+#  unknown return [Material *] (retval, fnResult);
+#  unknown return [Material] (retval, fnResult);
+#  unknown return [Matrix] (retval, fnResult);
+#  unknown return [Music] (retval, fnResult);
+#  unknown return [Ray] (retval, fnResult);
+#  unknown return [RenderTexture2D] (retval, fnResult);
+#  unknown return [Sound] (retval, fnResult);
+#  unknown return [VrStereoConfig] (retval, fnResult);
+#  unknown return [Wave] (retval, fnResult);
+
+
+func get_map_param(byref fun)
+  local result = -1
+  local i = 0
+  local param
+  for param in fun.params
+    if (param.type == "Font" || &
+        param.type == "Image" || &
+        param.type == "Mesh" || &
+        param.type == "Model" || &
+        param.type == "ModelAnimation" || &
+        param.type == "RenderTexture2D" || &
+        param.type == "Sound" || &
+        param.type == "Texture2D") then
+      result = i
+      exit for
+    endif
+    i++
+  next
+  return result
+end
+
+func is_unsupported(byref fun)
+  local result = false
+  local i = 0
+  local param
+  for param in fun.params
+    if (instr(param.type, "*") > 0 and not param.type == "const char *") then
+      result = true
+      exit for
+    endif
+  next
+  if (fun.returnType == "char **" || &
+      fun.returnType == "const char **" || &
+      fun.returnType == "void *" || &
+      fun.returnType == "float *" || &
+      fun.returnType == "int *" || &
+      fun.returnType == "GlyphInfo *" || &
+      fun.returnType == "ModelAnimation *") then
+    rem main.cpp includes non-generated cmd_loadmodelanimations
+    result = true
+  endif
+  return result
+end
+
+sub print_proc(byref fun)
+  print "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
+  local i = 0
+  local args = ""
+  local param
+  local def_arg
+  for param in fun.params
+    def_arg = iff(has_default_param(param), ", 0", "")
+    print "  auto " + lower(param.name) + " = " + get_param_name(param) + "(argc, params, " + i + def_arg + ");"
+    if (i > 0) then args += ", "
+    args += param.name
+    i++
+  next
+  print "  " + fun.name + "(" + args + ");"
+  print "  return 1;"
+  print "}"
+  print
 end
 
 sub print_proc_map(byref fun, map_param)
@@ -123,7 +206,21 @@ sub print_proc_map(byref fun, map_param)
   print
 end
 
-sub print_proc(byref fun)
+sub print_proc_main
+  local fun, map_param
+  for fun in api("functions")
+    if (fun.returnType == "void" and not is_unsupported(fun)) then
+      map_param = get_map_param(fun)
+      if (map_param != -1) then
+        print_proc_map(fun, map_param)
+      else
+        print_proc(fun)
+      endif
+    endif
+  next
+end
+
+sub print_func(byref fun)
   print "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
   local i = 0
   local args = ""
@@ -136,69 +233,52 @@ sub print_proc(byref fun)
     args += param.name
     i++
   next
-  print "  " + fun.name + "(" + args + ");"
+  print "  auto fnResult = " + fun.name + "(" + args + ");"
+  print "  " + get_v_set_name(fun) + "(retval, fnResult);"
   print "  return 1;"
   print "}"
   print
 end
 
-func get_map_param(byref fun)
-  local result = -1
+sub print_func_map(byref fun, map_param)
+  print "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
+  print "  int result;"
+  print "  int id = " + get_param_name(fun.params[map_param]) + "(argc, params, " + map_param + ", retval);"
+  print "  if (id != -1) {"
   local i = 0
+  local args = ""
   local param
+  local def_arg
   for param in fun.params
-    if (param.type == "Font" || &
-        param.type == "Image" || &
-        param.type == "Mesh" || &
-        param.type == "Model" || &
-        param.type == "ModelAnimation" || &
-        param.type == "RenderTexture2D" || &
-        param.type == "Sound" || &
-        param.type == "Texture2D") then
-      result = i
-      exit for
+    if (i > 0) then args += ", "
+    if (i != map_param) then
+      def_arg = iff(has_default_param(param), ", 0", "")
+      print "    auto " + lower(param.name) + " = " + get_param_name(param) + "(argc, params, " + i + def_arg + ");"
+      args += param.name
+    else
+      args += get_map_name(fun.params[map_param]) + ".at(id)"
     endif
     i++
   next
-  return result
-end
-
-func has_ptr_arg(byref fun)
-  local result = false
-  local i = 0
-  local param
-  for param in fun.params
-    if (instr(param.type, "*") > 0 and not param.type == "const char *") then
-      result = true
-      exit for
-    endif
-  next
-  return result
-end
-
-sub print_proc_main
-  local fun, map_param
-  for fun in api("functions")
-    if (fun.returnType == "void" and not has_ptr_arg(fun)) then
-      map_param = get_map_param(fun)
-      if (map_param != -1) then
-        print_proc_map(fun, map_param)
-      else
-        print_proc(fun)
-      endif
-    endif
-  next
+  print "    " + fun.name + "(" + args + ");"
+  print "    result = 1;"
+  print "  } else {"
+  print "    result = 0;"
+  print "  }"
+  print "  return result;"
+  print "}"
+  print
 end
 
 sub print_func_main
   local fun, map_param
   for fun in api("functions")
-    if (fun.returnType == "void" and not has_ptr_arg(fun)) then
+    if (fun.returnType != "void" and not is_unsupported(fun)) then
       map_param = get_map_param(fun)
       if (map_param != -1) then
-        print_proc_map(fun, map_param)
+        print_func_map(fun, map_param)
       else
-        print_proc(fun)
+        print_func(fun)
       endif
     endif
   next
@@ -207,7 +287,7 @@ end
 sub print_def(proc_def)
   local fun, n
   for fun in api("functions")
-    if (((fun.returnType == "void") == proc_def) and not has_ptr_arg(fun)) then
+    if (((fun.returnType == "void") == proc_def) and not is_unsupported(fun)) then
       print "  {" + len(fun.params) + ", " + len(fun.params) + ", \"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + "},"
     endif
   next
@@ -222,5 +302,3 @@ elseif trim(command) == "func" then
 else if trim(command) == "func-def" then
   print_def(false)
 endif
-
-

@@ -11,7 +11,7 @@ generated = func-def.inc proc-def.inc proc.inc func.inc
 
 main.cpp: $(generated)
 
-$(generated): raylib/parser/raylib_api.json
+$(generated): raylib/parser/raylib_api.json mkraylib.bas
 	$(sbasic) mkraylib.bas $(patsubst %.inc, %, $@) > $@
 
 AM_CXXFLAGS=-fno-rtti -std=c++14
