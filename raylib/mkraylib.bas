@@ -33,6 +33,8 @@ func get_param_name(byref param)
   case "sound": result = "get_sound_id"
   case "texture2d": result = "get_texture_id"
   case "boundingbox": result = "get_param_bounding_box"
+  case "rectangle": result = "get_param_rect"
+  case "ray": result = "get_param_ray"
   case else
    result = "get_param_int"
   end select
@@ -293,12 +295,13 @@ sub print_def(proc_def)
   next
 end
 
-if trim(command) == "proc" then
+if trim(command) == "proc.h" then
   print_proc_main
-else if trim(command) == "proc-def" then
+else if trim(command) == "proc-def.h" then
   print_def(true)
-elseif trim(command) == "func" then
+elseif trim(command) == "func.h" then
   print_func_main
-else if trim(command) == "func-def" then
+else if trim(command) == "func-def.h" then
   print_def(false)
 endif
+

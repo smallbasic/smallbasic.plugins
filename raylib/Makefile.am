@@ -1,5 +1,5 @@
 # SmallBASIC
-# Copyright(C) 2001-2020 Chris Warren-Smith.
+# Copyright(C) 2001-2022 Chris Warren-Smith.
 #
 # This program is distributed under the terms of the GPL v2.0 or later
 # Download the GNU Public License (GPL) from www.gnu.org
@@ -7,12 +7,16 @@
 
 sbasic = /home/chrisws/src/SmallBASIC/src/platform/console/sbasic
 
-generated = func-def.inc proc-def.inc proc.inc func.inc
+generated = func-def.h proc-def.h proc.h func.h
 
-main.cpp: $(generated)
+CLEANFILES = $(generated)
 
 $(generated): raylib/parser/raylib_api.json mkraylib.bas
-	$(sbasic) mkraylib.bas $(patsubst %.inc, %, $@) > $@
+	$(sbasic) mkraylib.bas $@ > $@
+	@touch main.cpp
+
+gen: $(generated)
+	@make all -j 32
 
 AM_CXXFLAGS=-fno-rtti -std=c++14
 AM_CPPFLAGS = -Iraylib/src -Iraylib/src/external/glfw/include -Iraylib/src/external/glfw/deps/mingw \
