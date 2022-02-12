@@ -16,6 +16,8 @@ $(generated): raylib/parser/raylib_api.json mkraylib.bas
 	@touch main.cpp
 
 gen: $(generated)
+
+build: $(generated)
 	@make all -j 32
 
 AM_CXXFLAGS=-fno-rtti -std=c++14
