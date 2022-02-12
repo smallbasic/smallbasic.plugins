@@ -57,11 +57,9 @@ end
 
 func has_default_param(byref param)
   local result
-  select case lower(trim(param.type))
-  case "int": result = true
-  case "int *": result = true
-  case "text": result = true
-  case "const char *": result = true
+  select case get_param_name(param)
+  case "get_param_int", "get_param_num", "get_param_str"
+    result = true
   case else
    result = false
   end select
@@ -187,6 +185,7 @@ func is_unsupported(byref fun)
   local param
   for param in fun.params
     if (is_unsupported_type(param.type) || (instr(param.type, "*") > 0 and not param.type == "const char *")) then
+      rem print "  // not generated: " + fun.name + " " + param.type
       result = true
       exit for
     endif
@@ -198,7 +197,14 @@ func is_unsupported(byref fun)
   return result
 end
 
+sub print_description
+  print "//"
+  print "// " + fun.description
+  print "//"
+end
+
 sub print_proc(byref fun)
+  print_description
   print "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
   local i = 0
   local args = ""
@@ -218,6 +224,7 @@ sub print_proc(byref fun)
 end
 
 sub print_proc_map(byref fun, map_param)
+  print_description
   print "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
   print "  int result;"
   print "  int id = " + get_param_name(fun.params[map_param]) + "(argc, params, " + map_param + ", retval);"
@@ -262,6 +269,7 @@ sub print_proc_main
 end
 
 sub print_func(byref fun)
+  print_description
   print "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
   local i = 0
   local args = ""
@@ -282,6 +290,7 @@ sub print_func(byref fun)
 end
 
 sub print_func_map(byref fun, map_param)
+  print_description
   print "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
   print "  int result;"
   print "  int id = " + get_param_name(fun.params[map_param]) + "(argc, params, " + map_param + ", retval);"
@@ -330,7 +339,8 @@ sub print_def(proc_def)
   local fun, n
   for fun in api("functions")
     if (((fun.returnType == "void") == proc_def) and not is_unsupported(fun)) then
-      print "  {" + len(fun.params) + ", " + len(fun.params) + ", \"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + "},"
+      n = iff(isarray(fun.params), len(fun.params), 0)
+      print "  {" + n + ", " + n + ", \"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + "},"
     endif
   next
 end
