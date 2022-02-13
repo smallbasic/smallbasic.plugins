@@ -152,6 +152,33 @@ func get_v_set_name(byref fun)
   return result
 end
 
+func get_result_cast(byref fun)
+  local result
+  select case lower(trim(fun.returnType))
+  case "char *": result = "(const char *)"
+  case "const char *": result = "(const char *)"
+  case "unsigned char *": result = "(const char *)"
+  case "camera *": result = "(var_int_t)"
+  case "color *": result = "(var_int_t)"
+  case "image *": result = "(var_int_t)"
+  case "mesh *": result = "(var_int_t)"
+  case "model *": result = "(var_int_t)"
+  case "modelanimation *": result = "(var_int_t)"
+  case "modelanimation*": result = "(var_int_t)"
+  case "texture2d *": result = "(var_int_t)"
+  case "vector2 *": result = "(var_int_t)"
+  case "vector3 *": result = "(var_int_t)"
+  case "wave *": result = "(var_int_t)"
+  case "const void *": result = "(var_int_t)"
+  case "float *": result = "(var_int_t)"
+  case "unsigned int *": result = "(var_int_t)"
+  case "int *": result = "(var_int_t)"
+  case "void *": result = "(var_int_t)"
+  case else: result = ""
+  end select
+  return result
+end
+
 func is_map_param(type)
   return type == "Font" || &
          type == "Image" || &
@@ -246,7 +273,6 @@ sub print_func_map(byref fun)
   i = 0
   local args = ""
   local def_arg
-  local v_set
 
   for param in fun.params
     if (i > 0) then args += ", "
@@ -263,13 +289,8 @@ sub print_func_map(byref fun)
   if (fun.returnType == "void") then
     print "    " + fun.name + "(" + args + ");"
   else
-    print "    auto fnResult = " + fun.name + "(" + args + ");"
-    v_set = get_v_set_name(fun)
-    if (v_set == "v_setint") then
-      print "    " + v_set + "(retval, (var_int_t)fnResult);"
-    else
-      print "    " + v_set + "(retval, fnResult);"
-    endif
+    print "    auto fnResult = " + get_result_cast(fun) + fun.name + "(" + args + ");"
+    print "    " + get_v_set_name(fun) + "(retval, " + "fnResult);"
   endif
   print "    result = 1;"
   print "  } else {"
@@ -298,7 +319,7 @@ sub print_func(byref fun)
   if (fun.returnType == "void") then
     print "  " + fun.name + "(" + args + ");"
   else
-    print "  auto fnResult = " + fun.name + "(" + args + ");"
+    print "  auto fnResult = " + get_result_cast(fun) + fun.name + "(" + args + ");"
     print "  " + get_v_set_name(fun) + "(retval, fnResult);"
   endif
   print "  return 1;"
