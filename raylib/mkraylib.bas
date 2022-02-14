@@ -51,22 +51,22 @@ func get_param_name(byref param)
   case "vector3": result = "get_param_vec3"
   case "vector4": result = "get_param_vec4"
   case "wave": result = "get_wave_id"
-  case "camera *": result = "(Camera *)get_param_int"
-  case "color *": result = "(Color *)get_param_int"
-  case "image *": result = "(Image *)get_param_int"
-  case "mesh *": result = "(Mesh *)get_param_int"
-  case "model *": result = "(Model *)get_param_int"
-  case "modelanimation *": result = "(ModelAnimation *)get_param_int"
-  case "modelanimation*": result = "(ModelAnimation *)get_param_int"
-  case "texture2d *": result = "(Texture2D *)get_param_int"
-  case "vector2 *": result = "(Vector2 *)get_param_int"
-  case "vector3 *": result = "(Vector3 *)get_param_int"
-  case "wave *": result = "(Wave *)get_param_int"
-  case "const void *": result = "(const void *)get_param_int"
-  case "float *": result = "(float *)get_param_int"
-  case "unsigned int *": result = "(unsigned int *)get_param_int"
-  case "int *": result = "(int *)get_param_int"
-  case "void *": result = "(void *)get_param_int"
+  case "camera *": result = "(Camera *)get_param_int_t"
+  case "color *": result = "(Color *)get_param_int_t"
+  case "image *": result = "get_image_id"
+  case "mesh *": result = "(Mesh *)get_param_int_t"
+  case "model *": result = "(Model *)get_param_int_t"
+  case "modelanimation *": result = "(ModelAnimation *)get_param_int_t"
+  case "modelanimation*": result = "(ModelAnimation *)get_param_int_t"
+  case "texture2d *": result = "(Texture2D *)get_param_int_t"
+  case "vector2 *": result = "(Vector2 *)get_param_int_t"
+  case "vector3 *": result = "(Vector3 *)get_param_int_t"
+  case "wave *": result = "(Wave *)get_param_int_t"
+  case "const void *": result = "(const void *)get_param_int_t"
+  case "float *": result = "(float *)get_param_int_t"
+  case "unsigned int *": result = "(unsigned int *)get_param_int_t"
+  case "int *": result = "(int *)get_param_int_t"
+  case "void *": result = "(void *)get_param_int_t"
   case else: throw "unknown param [" + param.type + "]"
   end select
   return result
@@ -84,6 +84,7 @@ func get_map_name(byref param)
   select case lower(trim(param.type))
   case "font": result = "_fontMap"
   case "image": result = "_imageMap"
+  case "image *": result = "&_imageMap"
   case "matrix": result = "_matrixMap"
   case "mesh": result = "_meshMap"
   case "model": result = "_modelMap"
@@ -103,6 +104,7 @@ func get_v_set_name(byref fun)
   local result
   select case lower(trim(fun.returnType))
   case "bool": result = "v_setint"
+  case "boundingbox": result = "v_setboundingbox"
   case "char *": result = "v_setstr"
   case "color": result = "v_setcolor"
   case "const char *": result = "v_setstr"
@@ -182,6 +184,7 @@ end
 func is_map_param(type)
   return type == "Font" || &
          type == "Image" || &
+         type == "Image *" || &
          type == "Matrix" || &
          type == "Mesh" || &
          type == "Model" || &
@@ -207,7 +210,6 @@ end
 
 func is_unsupported_type(type)
   return type == "AudioStream" || &
-         type == "BoundingBox" || &
          type == "const GlyphInfo *" || &
          type == "GlyphInfo *" || &
          type == "GlyphInfo" || &
@@ -239,6 +241,16 @@ func is_unsupported(byref fun)
   next
   if (is_unsupported_type(fun.returnType)) then
     rem NOTE: main.cpp includes non-generated cmd_loadmodelanimations
+    result = true
+  endif
+  if (fun.name == "GetMeshBoundingBox" || &
+      fun.name == "LoadModelAnimations" || &
+      fun.name == "LoadRenderTexture" || &
+      fun.name == "LoadShader" || &
+      fun.name == "SetShaderValue" || &
+      fun.name == "UpdateCamera" || &
+      fun.name == "UpdateTexture") then
+    ' non-generated version in main.cpp
     result = true
   endif
   return result

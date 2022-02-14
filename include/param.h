@@ -42,6 +42,7 @@ bool is_param_nil(int argc, slib_par_t *params, int n);
 int map_get_bool(var_p_t base, const char *name);
 int get_id(slib_par_t *params, int n);
 int get_param_int(int argc, slib_par_t *params, int n, int def);
+var_int_t get_param_int_t(int argc, slib_par_t *params, int n, int def);
 int set_param_int(int argc, slib_par_t *params, int n, int value, var_t *retval);
 var_num_t get_num(var_p_t var);
 var_num_t get_param_num(int argc, slib_par_t *params, int n, var_num_t def);

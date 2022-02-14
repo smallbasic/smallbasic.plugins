@@ -87,7 +87,7 @@ while (!rl.WindowShouldClose())
       rl.ImageFlipHorizontal(img)
     end select
 
-    pixels = rl.GetImageData(img)
+    pixels = rl.LoadImageColors(img)
     rl.UpdateTexture(texture, pixels)
     textureReload = false
   endif

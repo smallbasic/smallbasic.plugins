@@ -358,6 +358,25 @@ int get_param_int(int argc, slib_par_t *params, int n, int def) {
   return result;
 }
 
+var_int_t get_param_int_t(int argc, slib_par_t *params, int n, int def) {
+  int result;
+  if (n >= 0 && n < argc) {
+    switch (params[n].var_p->type) {
+    case V_INT:
+      result = params[n].var_p->v.i;
+      break;
+    case V_NUM:
+      result = params[n].var_p->v.n;
+      break;
+    default:
+      result = def;
+    }
+  } else {
+    result = def;
+  }
+  return result;
+}
+
 var_num_t get_param_num(int argc, slib_par_t *params, int n, var_num_t def) {
   var_num_t result;
   if (n >= 0 && n < argc) {

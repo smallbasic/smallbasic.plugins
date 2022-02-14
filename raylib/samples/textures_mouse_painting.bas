@@ -130,9 +130,9 @@ while (!rl.WindowShouldClose())
   ' Image saving logic
   ' NOTE: Saving painted texture to a default named image
   if ((btnSaveMouseHover && rl.IsMouseButtonReleased(c.MOUSE_LEFT_BUTTON)) || rl.IsKeyPressed(c.KEY_S)) then
-    local img = rl.GetTextureData(target.texture)
+    local img = rl.LoadImageFromTexture(target.texture)
     rl.ImageFlipVertical(img)
-    rl.ExportImage(img, "my_amazing_texture_painting.png")
+    err = rl.ExportImage(img, "my_amazing_texture_painting.png")
     rl.UnloadImage(img)
     showSaveMessage = true
   endif
