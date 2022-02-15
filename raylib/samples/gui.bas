@@ -37,11 +37,11 @@ while (!rl.WindowShouldClose() && !debug.IsSourceModified())
     y += h + 5: h = 15
     checked1 = rl.GuiCheckbox([x, y, h, h], "My Check", checked1)
     y += h + 5
-    alpha = rl.guicolorbaralpha([x, y, 140, h], alpha)
+    alpha = rl.guicolorbaralpha([x, y, 140, h], "", alpha)
     y += h + 5: h = 50
-    hue = rl.guicolorbarhue([x, y, h, h], hue)
+    hue = rl.guicolorbarhue([x, y, h, h], "", hue)
     y += h + 5: h = 110
-    cp = rl.guicolorpicker([x, y, w, h], cp)
+    cp = rl.guicolorpicker([x, y, w, h], "", cp)
     y += h + 5: h = 30
     cba = rl.GuiComboBox([10, y, 120, h], "one;two;three;four;five", cba)
     y += h + 5
@@ -49,7 +49,7 @@ while (!rl.WindowShouldClose() && !debug.IsSourceModified())
       is_open = !is_open
     endif
     x = 180: y = 10: h = 100
-    n = rl.guigrid([x, y, h, h], 20, 5)
+    n = rl.guigrid([x, y, h, h], "", 20, 5)
     y += h + 5: h = 20
     n = rl.GuiLabelButton([x, y, 100, h], "hello!")
     y += h + 5: h = 80

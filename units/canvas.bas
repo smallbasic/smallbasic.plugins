@@ -5,7 +5,6 @@ export draw_line
 export draw_pixel
 export draw_char
 export draw_circle
-export draw_line
 export draw_rect
 export draw_rect_filled
 export draw_string
@@ -149,6 +148,7 @@ sub draw_line(byref canvas, x0, y0, x1, y1)
   while 1
     draw_pixel(canvas, x0, y0)
     if (x0 == x1 and y0 == y1) then exit loop
+    if ((sx < 0 and x0 < 0) or (sy < 0 and y0 < 0)) then exit loop
     e2 = err * 2
     if (e2 >= dy) then
       err += dy

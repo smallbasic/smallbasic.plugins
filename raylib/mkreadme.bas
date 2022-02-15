@@ -51,7 +51,7 @@ for i = 0 to len(code) - 1
   comma = ""
   name = functions(code[i]).name
   if (name == 0) then
-    name = lower(code(i))
+    name = translate(lower(code(i)), "physics", "Physics")
   endif
   for param in functions(code[i]).params
     params += comma + param.name

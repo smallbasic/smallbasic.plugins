@@ -29,6 +29,8 @@ c._fontSize = 1
 c._pen = rgb(0, 0, 255)
 canvas.draw_string(c, "1234567890", 2, 70)
 
+canvas.draw_line(c, 10, 10, 50, 50)
+
 png = image(c._dat)
 png.save("foo.png")
 
