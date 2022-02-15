@@ -12,7 +12,7 @@ generated = func-def.h proc-def.h proc.h func.h
 CLEANFILES = $(generated)
 
 README.md: $(generated) mkreadme.bas
-	$(sbasic)	mkreadme.bas `grep RAYLIB_VERSION raylib/src/raylib.h | awk '{print $3}' | sed 's/\"//g'` > README.md
+	$(sbasic)	mkreadme.bas `grep RAYLIB_VERSION raylib/src/raylib.h | sed 's/#define RAYLIB_VERSION//g' | sed 's/\"//g'` > README.md
 
 $(generated): raylib/parser/raylib_api.json mkraylib.bas
 	$(sbasic) mkraylib.bas $@ > $@

@@ -1,4 +1,4 @@
-*Raylib* #define RAYLIB_VERSION 4.1-dev
+*Raylib* 4.1-dev
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
