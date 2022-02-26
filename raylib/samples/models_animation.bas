@@ -36,15 +36,18 @@ camera.projection = c.CAMERA_PERSPECTIVE   ' Camera mode type
 const resources = CWD + "raylib/examples/models/resources/"
 
 ' Load animation data
-anims = rl.LoadModelAnimations(resources + "guy/guyanim.iqm")
+anims = rl.LoadModelAnimations(resources + "models/iqm/guyanim.iqm")
 animFrameCounter = 0
 
-model = rl.LoadModel(resources + "guy/guy.iqm")               ' Load the animated model mesh and basic data
+model = rl.LoadModel(resources + "models/iqm/guy.iqm")        ' Load the animated model mesh and basic data
 
-texture = rl.LoadTexture(resources + "guy/guytex.png")        ' Load model texture and set material
-rl.SetModelDiffuseTexture(model, texture)                         ' Set model material map texture
+texture = rl.LoadTexture(resources + "models/iqm/guytex.png") ' Load model texture and set material
+rl.SetModelDiffuseTexture(model, texture)                     ' Set model material map texture
 
 position = [0, 0, 0]       ' Set model position
+rotationAxis = [0, 1, 0]
+rotationAngle = -90
+scale = [1, 1, 1]
 
 rl.SetCameraMode(camera, c.CAMERA_FREE) ' Set free camera mode
 rl.SetTargetFPS(60)                     ' Set our game to run at 60 frames-per-second
@@ -57,15 +60,25 @@ while (!rl.WindowShouldClose())
     animFrameCounter++
     rl.UpdateModelAnimation(model, anims[0], animFrameCounter)
     if (animFrameCounter >= anims[0].frameCount) then animFrameCounter = 0
+  else if (rl.IsKeyDown(c.KEY_LEFT)) then
+    rotationAxis[0]--
+  else if (rl.IsKeyDown(c.KEY_RIGHT)) then
+    rotationAxis[0]++
+  else if (rl.IsKeyDown(c.KEY_UP)) then
+    rotationAngle--
+  else if (rl.IsKeyDown(c.KEY_DOWN)) then
+    rotationAngle++
   endif
 
   rl.BeginDrawing()
   rl.ClearBackground(c.RAYWHITE)
   rl.BeginMode3D(camera)
   rl.DrawModelEx(model, position, [1, 0, 0], -90, [1, 1, 1], c.WHITE)
+  rl.DrawModelEx(model, position, [1, 0, 0],  90, [1, 1, 1], c.YELLOW)
+  rl.DrawModelEx(model, position, rotationAxis, rotationAngle, scale, c.GREEN)
+
   for i = 0 to model.boneCount - 1
-    'SB Bug: can't use square brakets for framePoses
-    rl.DrawCube(anims[0].framePoses(animFrameCounter,i).translation, 0.2, 0.2, 0.2, c.RED)
+    rl.DrawCube(anims[0].framePoses[animFrameCounter, i].translation, 0.2, 0.2, 0.2, c.RED)
   next i
   rl.DrawGrid(10, 1.0)         ' Draw a grid
   rl.EndMode3D()

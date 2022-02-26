@@ -64,7 +64,7 @@ static int cmd_checkcollisionlines(int argc, slib_par_t *params, var_t *retval) 
   auto endPos1 = get_param_vec2(argc, params, 1);
   auto startPos2 = get_param_vec2(argc, params, 2);
   auto endPos2 = get_param_vec2(argc, params, 3);
-  auto collisionPoint = (Vector2 *)get_param_int_t(argc, params, 4, 0);
+  auto collisionPoint = (Vector2 *)get_param_vec2_array(argc, params, 4);
   auto fnResult = CheckCollisionLines(startPos1, endPos1, startPos2, endPos2, collisionPoint);
   v_setint(retval, fnResult);
   return 1;
@@ -233,7 +233,7 @@ static int cmd_colortoint(int argc, slib_par_t *params, var_t *retval) {
 // Compress data (DEFLATE algorithm)
 //
 static int cmd_compressdata(int argc, slib_par_t *params, var_t *retval) {
-  auto data = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
   auto dataLength = get_param_int(argc, params, 1, 0);
   auto compDataLength = (int *)get_param_int_t(argc, params, 2, 0);
   auto fnResult = (const char *)CompressData(data, dataLength, compDataLength);
@@ -245,7 +245,7 @@ static int cmd_compressdata(int argc, slib_par_t *params, var_t *retval) {
 // Decode Base64 string data
 //
 static int cmd_decodedatabase64(int argc, slib_par_t *params, var_t *retval) {
-  auto data = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
   auto outputLength = (int *)get_param_int_t(argc, params, 1, 0);
   auto fnResult = (const char *)DecodeDataBase64(data, outputLength);
   v_setstr(retval, fnResult);
@@ -256,7 +256,7 @@ static int cmd_decodedatabase64(int argc, slib_par_t *params, var_t *retval) {
 // Decompress data (DEFLATE algorithm)
 //
 static int cmd_decompressdata(int argc, slib_par_t *params, var_t *retval) {
-  auto compData = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto compData = (const unsigned char *)get_param_str(argc, params, 0, 0);
   auto compDataLength = get_param_int(argc, params, 1, 0);
   auto dataLength = (int *)get_param_int_t(argc, params, 2, 0);
   auto fnResult = (const char *)DecompressData(compData, compDataLength, dataLength);
@@ -2131,7 +2131,7 @@ static int cmd_loadmusicstream(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_loadmusicstreamfrommemory(int argc, slib_par_t *params, var_t *retval) {
   auto fileType = get_param_str(argc, params, 0, 0);
-  auto data = (unsigned char *)get_param_str(argc, params, 1, 0);
+  auto data = (const unsigned char *)get_param_str(argc, params, 1, 0);
   auto dataSize = get_param_int(argc, params, 2, 0);
   auto fnResult = LoadMusicStreamFromMemory(fileType, data, dataSize);
   v_setmusic(retval, fnResult);
@@ -2348,7 +2348,7 @@ static int cmd_setgamepadmappings(int argc, slib_par_t *params, var_t *retval) {
 // Encode text as codepoints array into UTF-8 text string (WARNING: memory must be freed!)
 //
 static int cmd_textcodepointstoutf8(int argc, slib_par_t *params, var_t *retval) {
-  auto codepoints = (int *)get_param_int_t(argc, params, 0, 0);
+  auto codepoints = (const int *)get_param_int_t(argc, params, 0, 0);
   auto length = get_param_int(argc, params, 1, 0);
   auto fnResult = (const char *)TextCodepointsToUTF8(codepoints, length);
   v_setstr(retval, fnResult);

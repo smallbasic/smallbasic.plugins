@@ -131,21 +131,6 @@ static Rectangle get_param_rect(int argc, slib_par_t *params, int n) {
   return result;
 }
 
-static Vector2 get_param_vec2(int argc, slib_par_t *params, int n) {
-  Vector2 result;
-  if (is_param_map(argc, params, n)) {
-    result.x = get_map_num(params[n].var_p, "x");
-    result.y = get_map_num(params[n].var_p, "y");
-  } else if (is_param_array(argc, params, n)) {
-    result.x = get_array_elem_num(params[n].var_p, 0);
-    result.y = get_array_elem_num(params[n].var_p, 1);
-  } else {
-    result.x = 0.0;
-    result.y = 0.0;
-  }
-  return result;
-}
-
 static Vector2 get_array_elem_vec2(var_p_t array, int index) {
   Vector2 result;
   int size = v_asize(array);
@@ -191,6 +176,53 @@ static Camera2D get_camera_2d(int argc, slib_par_t *params, int n) {
     result.zoom = get_map_num(map, "zoom");
   } else {
     TraceLog(LOG_FATAL, "Camera2D not found");
+  }
+  return result;
+}
+
+static Vector2 *get_param_vec2_array(int argc, slib_par_t *params, int n) {
+  static Vector2 data[10];
+  Vector2 *result;
+  if (is_param_array(argc, params, n)) {
+    var_p_t array = params[n].var_p;
+    int size = v_asize(array);
+    for (int i = 0; i < size && i < 10; i++) {
+      data[i] = get_array_elem_vec2(array, i);
+    }
+    result = (Vector2 *)&data;
+  } else {
+    result = nullptr;
+  }
+  return result;
+}
+
+static Vector3 *get_param_vec3_array(int argc, slib_par_t *params, int n) {
+  static Vector3 data[10];
+  Vector3 *result;
+  if (is_param_array(argc, params, n)) {
+    var_p_t array = params[n].var_p;
+    int size = v_asize(array);
+    for (int i = 0; i < size && i < 10; i++) {
+      data[i] = get_array_elem_vec3(array, i);
+    }
+    result = (Vector3 *)&data;
+  } else {
+    result = nullptr;
+  }
+  return result;
+}
+
+static Vector2 get_param_vec2(int argc, slib_par_t *params, int n) {
+  Vector2 result;
+  if (is_param_map(argc, params, n)) {
+    result.x = get_map_num(params[n].var_p, "x");
+    result.y = get_map_num(params[n].var_p, "y");
+  } else if (is_param_array(argc, params, n)) {
+    result.x = get_array_elem_num(params[n].var_p, 0);
+    result.y = get_array_elem_num(params[n].var_p, 1);
+  } else {
+    result.x = 0.0;
+    result.y = 0.0;
   }
   return result;
 }
@@ -477,6 +509,7 @@ static int get_music_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   if (is_param_map(argc, params, arg)) {
     int id = get_id(params, arg);
     if (id != -1 && _musicMap.find(id) != _musicMap.end()) {
+      _musicMap.at(id).looping = map_get_int(params[arg].var_p, "looping", 0);
       result = id;
     }
   }
@@ -587,6 +620,9 @@ static void v_settexture2d(var_t *var, Texture2D &texture) {
   int id = ++_nextId;
   _textureMap[id] = texture;
   v_setrect(var, texture.width, texture.height, id);
+  v_setint(map_add_var(var, "id", 0), texture.id);
+  v_setint(map_add_var(var, "mipmaps", 0), texture.mipmaps);
+  v_setint(map_add_var(var, "format", 0), texture.format);
 }
 
 static void v_setimage(var_t *var, Image &image) {

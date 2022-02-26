@@ -193,8 +193,10 @@ static void client_handler(mg_connection *conn, int event, void *eventData, void
 static void set_session(var_p_t var, Session *session, mg_connection *conn) {
   session->setConnection(conn);
   map_init_id(var, conn->id);
-  v_setint(map_add_var(var, "port", 0), conn->peer.port);
-  v_setint(map_add_var(var, "ip", 0), conn->peer.ip);
+  v_setint(map_add_var(var, "local_ip", 0), conn->loc.ip);
+  v_setint(map_add_var(var, "local_port", 0), conn->loc.port);
+  v_setint(map_add_var(var, "remote_ip", 0), conn->rem.ip);
+  v_setint(map_add_var(var, "remote_port", 0), conn->rem.port);
 }
 
 static Session *get_session(int argc, slib_par_t *params, var_t *retval) {

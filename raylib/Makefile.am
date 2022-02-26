@@ -11,6 +11,9 @@ generated = func-def.h proc-def.h proc.h func.h
 
 CLEANFILES = $(generated)
 
+raylib/parser/raylib_api.json: raylib/src/raylib.h
+	(cd raylib/parser && make)
+
 README.md: $(generated) mkreadme.bas
 	$(sbasic)	mkreadme.bas `grep RAYLIB_VERSION raylib/src/raylib.h | sed 's/#define RAYLIB_VERSION//g' | sed 's/\"//g'` > README.md
 
@@ -20,8 +23,7 @@ $(generated): raylib/parser/raylib_api.json mkraylib.bas
 
 gen: $(generated)
 
-build: $(generated)
-	@make all -j 32
+all-am: $(generated) README.md
 
 AM_CXXFLAGS=-fno-rtti -std=c++14
 AM_CPPFLAGS = -Iraylib/src -Iraylib/src/external/glfw/include -Iraylib/src/external/glfw/deps/mingw \

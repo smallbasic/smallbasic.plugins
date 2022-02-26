@@ -558,7 +558,7 @@ static int cmd_drawlineex(int argc, slib_par_t *params, var_t *retval) {
 // Draw lines sequence
 //
 static int cmd_drawlinestrip(int argc, slib_par_t *params, var_t *retval) {
-  auto points = (Vector2 *)get_param_int_t(argc, params, 0, 0);
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
   auto pointCount = get_param_int(argc, params, 1, 0);
   auto color = get_param_color(argc, params, 2);
   DrawLineStrip(points, pointCount, color);
@@ -986,7 +986,7 @@ static int cmd_drawtextcodepoints(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int font_id = get_font_id(argc, params, 0, retval);
   if (font_id != -1) {
-    auto codepoints = (int *)get_param_int_t(argc, params, 1, 0);
+    auto codepoints = (const int *)get_param_int_t(argc, params, 1, 0);
     auto count = get_param_int(argc, params, 2, 0);
     auto position = get_param_vec2(argc, params, 3);
     auto fontSize = get_param_num(argc, params, 4, 0);
@@ -1087,8 +1087,8 @@ static int cmd_drawtexturepoly(int argc, slib_par_t *params, var_t *retval) {
   int texture_id = get_texture_id(argc, params, 0, retval);
   if (texture_id != -1) {
     auto center = get_param_vec2(argc, params, 1);
-    auto points = (Vector2 *)get_param_int_t(argc, params, 2, 0);
-    auto texcoords = (Vector2 *)get_param_int_t(argc, params, 3, 0);
+    auto points = (Vector2 *)get_param_vec2_array(argc, params, 2);
+    auto texcoords = (Vector2 *)get_param_vec2_array(argc, params, 3);
     auto pointCount = get_param_int(argc, params, 4, 0);
     auto tint = get_param_color(argc, params, 5);
     DrawTexturePoly(_textureMap.at(texture_id), center, points, texcoords, pointCount, tint);
@@ -1222,7 +1222,7 @@ static int cmd_drawtriangle3d(int argc, slib_par_t *params, var_t *retval) {
 // Draw a triangle fan defined by points (first vertex is the center)
 //
 static int cmd_drawtrianglefan(int argc, slib_par_t *params, var_t *retval) {
-  auto points = (Vector2 *)get_param_int_t(argc, params, 0, 0);
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
   auto pointCount = get_param_int(argc, params, 1, 0);
   auto color = get_param_color(argc, params, 2);
   DrawTriangleFan(points, pointCount, color);
@@ -1245,7 +1245,7 @@ static int cmd_drawtrianglelines(int argc, slib_par_t *params, var_t *retval) {
 // Draw a triangle strip defined by points
 //
 static int cmd_drawtrianglestrip(int argc, slib_par_t *params, var_t *retval) {
-  auto points = (Vector2 *)get_param_int_t(argc, params, 0, 0);
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
   auto pointCount = get_param_int(argc, params, 1, 0);
   auto color = get_param_color(argc, params, 2);
   DrawTriangleStrip(points, pointCount, color);
@@ -1256,7 +1256,7 @@ static int cmd_drawtrianglestrip(int argc, slib_par_t *params, var_t *retval) {
 // Draw a triangle strip defined by points
 //
 static int cmd_drawtrianglestrip3d(int argc, slib_par_t *params, var_t *retval) {
-  auto points = (Vector3 *)get_param_int_t(argc, params, 0, 0);
+  auto points = (Vector3 *)get_param_vec3_array(argc, params, 0);
   auto pointCount = get_param_int(argc, params, 1, 0);
   auto color = get_param_color(argc, params, 2);
   DrawTriangleStrip3D(points, pointCount, color);
@@ -2967,7 +2967,7 @@ static int cmd_updatemeshbuffer(int argc, slib_par_t *params, var_t *retval) {
   int mesh_id = get_mesh_id(argc, params, 0, retval);
   if (mesh_id != -1) {
     auto index = get_param_int(argc, params, 1, 0);
-    auto data = (void *)get_param_int_t(argc, params, 2, 0);
+    auto data = (const void *)get_param_int_t(argc, params, 2, 0);
     auto dataSize = get_param_int(argc, params, 3, 0);
     auto offset = get_param_int(argc, params, 4, 0);
     UpdateMeshBuffer(_meshMap.at(mesh_id), index, data, dataSize, offset);

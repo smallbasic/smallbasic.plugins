@@ -35,7 +35,7 @@ for i = MAX_CIRCLES to 0 step -1
 next
 
 music = rl.LoadMusicStream("raylib/examples/audio/resources/mini1111.xm")
-music.looping = false
+music.looping = true
 pitch = 1.0
 
 rl.PlayMusicStream(music)

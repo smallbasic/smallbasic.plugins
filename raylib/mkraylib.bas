@@ -59,14 +59,15 @@ func get_param_name(byref param)
   case "modelanimation *": result = "(ModelAnimation *)get_param_int_t"
   case "modelanimation*": result = "(ModelAnimation *)get_param_int_t"
   case "texture2d *": result = "(Texture2D *)get_param_int_t"
-  case "vector2 *": result = "(Vector2 *)get_param_int_t"
-  case "vector3 *": result = "(Vector3 *)get_param_int_t"
+  case "vector2 *": result = "(Vector2 *)get_param_vec2_array"
+  case "vector3 *": result = "(Vector3 *)get_param_vec3_array"
   case "wave *": result = "(Wave *)get_param_int_t"
   case "const void *": result = "(const void *)get_param_int_t"
   case "float *": result = "(float *)get_param_int_t"
   case "unsigned int *": result = "(unsigned int *)get_param_int_t"
   case "int *": result = "(int *)get_param_int_t"
   case "void *": result = "(void *)get_param_int_t"
+  case "const int *": result = "(const int *)get_param_int_t"
   case else: throw "unknown param [" + param.type + "]"
   end select
   return result
