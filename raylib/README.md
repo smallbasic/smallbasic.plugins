@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (540)
+Implemented APIs (552)
 ----------------
 
 | Name    | Description   |
@@ -343,6 +343,8 @@ Implemented APIs (540)
 | func initPhysics() | n/a |
 | sub InitWindow(width, height, title) | Initialize window and OpenGL context |
 | func IsAudioDeviceReady() | Check if audio device has been initialized successfully |
+| func IsAudioStreamPlaying(stream) | Check if audio stream is playing |
+| func IsAudioStreamProcessed(stream) | Check if any audio stream buffers requires refill |
 | func IsCursorHidden() | Check if cursor is not visible |
 | func IsCursorOnScreen() | Check if cursor is on the screen |
 | func IsFileDropped() | Check if a file has been dropped into window |
@@ -372,6 +374,7 @@ Implemented APIs (540)
 | func IsWindowReady() | Check if window has been initialized successfully |
 | func IsWindowResized() | Check if window has been resized last frame |
 | func IsWindowState(flag) | Check if one specific window flag is enabled |
+| func LoadAudioStream(sampleRate, sampleSize, channels) | Load audio stream (to stream raw audio pcm data) |
 | func LoadCodepoints(text, count) | Load all codepoints from a UTF-8 text string, codepoints count returned by parameter |
 | func LoadFileData(fileName, bytesRead) | Load file data as byte array (read) |
 | func LoadFileText(fileName) | Load text data from file (read), returns a '\\0' terminated string |
@@ -412,12 +415,14 @@ Implemented APIs (540)
 | func meshboundingbox() | n/a |
 | sub MinimizeWindow() | Set window state: minimized, if resizable (only PLATFORM_DESKTOP) |
 | sub OpenURL(url) | Open URL with default system browser (if available) |
+| sub PauseAudioStream(stream) | Pause audio stream |
 | sub PauseMusicStream(music) | Pause music playing |
 | sub PauseSound(sound) | Pause a sound |
 | func Physicsaddforce() | n/a |
 | func Physicsaddtorque() | n/a |
 | func Physicsshapetype() | n/a |
 | func Physicsshatter() | n/a |
+| sub PlayAudioStream(stream) | Play audio stream |
 | sub PlayMusicStream(music) | Start music playing |
 | sub PlaySound(sound) | Play a sound |
 | sub PlaySoundMulti(sound) | Play a sound (using multichannel buffer pool) |
@@ -425,6 +430,7 @@ Implemented APIs (540)
 | sub PollInputEvents() | Register all input events |
 | func resetPhysics() | n/a |
 | sub RestoreWindow() | Set window state: not minimized/maximized (only PLATFORM_DESKTOP) |
+| sub ResumeAudioStream(stream) | Resume audio stream |
 | sub ResumeMusicStream(music) | Resume playing paused music |
 | sub ResumeSound(sound) | Resume a paused sound |
 | func SaveFileData(fileName, data, bytesToWrite) | Save data to file from byte array (write), returns true on success |
@@ -432,6 +438,9 @@ Implemented APIs (540)
 | func SaveStorageValue(position, value) | Save integer value to storage file (to defined position), returns true on success |
 | sub SeekMusicStream(music, position) | Seek music to a position (in seconds) |
 | sub SetAudioStreamBufferSizeDefault(size) | Default size for new audio streams |
+| sub SetAudioStreamPan(stream, pan) | Set pan for audio stream (0.5 is centered) |
+| sub SetAudioStreamPitch(stream, pitch) | Set pitch for audio stream (1.0 is base level) |
+| sub SetAudioStreamVolume(stream, volume) | Set volume for audio stream (1.0 is max level) |
 | sub SetCameraAltControl(keyAlt) | Set camera alt key to combine with mouse movement (free camera) |
 | sub SetCameraMode(camera, mode) | Set camera mode (multiple camera modes available) |
 | sub SetCameraMoveControls(keyFront, keyBack, keyRight, keyLeft, keyUp, keyDown) | Set camera move controls (1st person and 3rd person cameras) |
@@ -495,6 +504,7 @@ Implemented APIs (540)
 | sub SetWindowState(flags) | Set window configuration state using flags (only PLATFORM_DESKTOP) |
 | sub SetWindowTitle(title) | Set title for window (only PLATFORM_DESKTOP) |
 | sub ShowCursor() | Shows cursor |
+| sub StopAudioStream(stream) | Stop audio stream |
 | sub StopMusicStream(music) | Stop music playing |
 | sub StopSound(sound) | Stop playing a sound |
 | sub StopSoundMulti() | Stop any sound playing (using multichannel buffer pool) |
@@ -515,6 +525,7 @@ Implemented APIs (540)
 | func TextToPascal(text) | Get Pascal case notation version of provided string |
 | func TextToUpper(text) | Get upper case version of provided string |
 | sub ToggleFullscreen() | Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP) |
+| sub UnloadAudioStream(stream) | Unload audio stream and free memory |
 | sub UnloadCodepoints(codepoints) | Unload codepoints data from memory |
 | sub UnloadFileData(data) | Unload file data allocated by LoadFileData() |
 | sub UnloadFileText(text) | Unload file text data allocated by LoadFileText() |
@@ -534,6 +545,7 @@ Implemented APIs (540)
 | sub UnloadTexture(texture) | Unload texture from GPU memory (VRAM) |
 | sub UnloadWave(wave) | Unload wave data |
 | sub UnloadWaveSamples(samples) | Unload samples data loaded with LoadWaveSamples() |
+| sub UpdateAudioStream(stream, data, frameCount) | Update audio stream buffers with data |
 | sub UpdateCamera(camera) | Update camera position for selected mode |
 | sub UpdateMeshBuffer(mesh, index, data, dataSize, offset) | Update mesh vertex data in GPU for a specific buffer index |
 | sub UpdateModelAnimation(model, anim, frame) | Update model animation pose |

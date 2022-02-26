@@ -17,6 +17,7 @@ func get_param_name(byref param)
   local result
   select case lower(trim(param.type))
   case "alpha": result = "get_param_num"
+  case "audiostream": result = "get_audiostream_id"
   case "boundingbox": result = "get_param_bounding_box"
   case "bounds": result = "get_param_rect"
   case "bool": result = "get_param_int"
@@ -83,6 +84,7 @@ end
 func get_map_name(byref param)
   local result
   select case lower(trim(param.type))
+  case "audiostream": result = "_audioStream"
   case "font": result = "_fontMap"
   case "image": result = "_imageMap"
   case "image *": result = "&_imageMap"
@@ -104,6 +106,7 @@ end
 func get_v_set_name(byref fun)
   local result
   select case lower(trim(fun.returnType))
+  case "audiostream": result = "v_setaudiostream"
   case "bool": result = "v_setint"
   case "boundingbox": result = "v_setboundingbox"
   case "char *": result = "v_setstr"
@@ -183,7 +186,8 @@ func get_result_cast(byref fun)
 end
 
 func is_map_param(type)
-  return type == "Font" || &
+  return type == "AudioStream" || &
+         type == "Font" || &
          type == "Image" || &
          type == "Image *" || &
          type == "Matrix" || &
@@ -210,8 +214,7 @@ func has_map_param(byref fun)
 end
 
 func is_unsupported_type(type)
-  return type == "AudioStream" || &
-         type == "const GlyphInfo *" || &
+  return type == "const GlyphInfo *" || &
          type == "GlyphInfo *" || &
          type == "GlyphInfo" || &
          type == "LoadFileDataCallback" || &

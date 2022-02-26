@@ -32,6 +32,7 @@
 #include "include/param.h"
 #include "physac.h"
 
+robin_hood::unordered_map<int, AudioStream> _audioStream;
 robin_hood::unordered_map<int, Font> _fontMap;
 robin_hood::unordered_map<int, Image> _imageMap;
 robin_hood::unordered_map<int, Matrix> _matrixMap;
@@ -376,6 +377,20 @@ static void set_camera_3d(var_p_t var, Camera3D *camera) {
   }
 }
 
+static int get_audiostream_id(int argc, slib_par_t *params, int arg, var_t *retval) {
+  int result = 0;
+  if (is_param_map(argc, params, arg)) {
+    int id = get_id(params, arg);
+    if (id != -1 && _audioStream.find(id) != _audioStream.end()) {
+      result = id;
+    }
+  }
+  if (result == -1) {
+    error(retval, "AudioStream not found");
+  }
+  return result;
+}
+
 static int get_font_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   int result = -1;
   if (is_param_map(argc, params, arg)) {
@@ -591,6 +606,15 @@ static void v_setboundingbox(var_t *var, BoundingBox &box) {
 static void v_setcolor(var_t *var, Color &c) {
   var_int_t color = ((0x00000000) | (c.r << 24) | (c.g << 16) | (c.b << 8) | (c.a));
   v_setint(var, color);
+}
+
+static void v_setaudiostream(var_t *var, AudioStream &audioStream) {
+  int id = ++_nextId;
+  _audioStream[id] = audioStream;
+  map_init_id(var, id);
+  v_setint(map_add_var(var, "sampleRate", 0), audioStream.sampleRate);
+  v_setint(map_add_var(var, "sampleSize", 0), audioStream.sampleSize);
+  v_setint(map_add_var(var, "channels", 0), audioStream.channels);
 }
 
 static void v_setfont(var_t *var, Font &font) {
@@ -1745,6 +1769,7 @@ SBLIB_API int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *re
 }
 
 SBLIB_API void sblib_close(void) {
+  _audioStream.clear();
   _fontMap.clear();
   _imageMap.clear();
   _matrixMap.clear();

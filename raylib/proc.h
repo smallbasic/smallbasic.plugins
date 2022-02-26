@@ -2038,6 +2038,21 @@ static int cmd_openurl(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Pause audio stream
+//
+static int cmd_pauseaudiostream(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    PauseAudioStream(_audioStream.at(stream_id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Pause music playing
 //
 static int cmd_pausemusicstream(int argc, slib_par_t *params, var_t *retval) {
@@ -2060,6 +2075,21 @@ static int cmd_pausesound(int argc, slib_par_t *params, var_t *retval) {
   int sound_id = get_sound_id(argc, params, 0, retval);
   if (sound_id != -1) {
     PauseSound(_soundMap.at(sound_id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Play audio stream
+//
+static int cmd_playaudiostream(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    PlayAudioStream(_audioStream.at(stream_id));
     result = 1;
   } else {
     result = 0;
@@ -2129,6 +2159,21 @@ static int cmd_restorewindow(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Resume audio stream
+//
+static int cmd_resumeaudiostream(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    ResumeAudioStream(_audioStream.at(stream_id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Resume playing paused music
 //
 static int cmd_resumemusicstream(int argc, slib_par_t *params, var_t *retval) {
@@ -2181,6 +2226,54 @@ static int cmd_setaudiostreambuffersizedefault(int argc, slib_par_t *params, var
   auto size = get_param_int(argc, params, 0, 0);
   SetAudioStreamBufferSizeDefault(size);
   return 1;
+}
+
+//
+// Set pan for audio stream (0.5 is centered)
+//
+static int cmd_setaudiostreampan(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    auto pan = get_param_num(argc, params, 1, 0);
+    SetAudioStreamPan(_audioStream.at(stream_id), pan);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Set pitch for audio stream (1.0 is base level)
+//
+static int cmd_setaudiostreampitch(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    auto pitch = get_param_num(argc, params, 1, 0);
+    SetAudioStreamPitch(_audioStream.at(stream_id), pitch);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Set volume for audio stream (1.0 is max level)
+//
+static int cmd_setaudiostreamvolume(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    auto volume = get_param_num(argc, params, 1, 0);
+    SetAudioStreamVolume(_audioStream.at(stream_id), volume);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 //
@@ -2648,6 +2741,21 @@ static int cmd_showcursor(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Stop audio stream
+//
+static int cmd_stopaudiostream(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    StopAudioStream(_audioStream.at(stream_id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Stop music playing
 //
 static int cmd_stopmusicstream(int argc, slib_par_t *params, var_t *retval) {
@@ -2719,6 +2827,21 @@ static int cmd_textappend(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_togglefullscreen(int argc, slib_par_t *params, var_t *retval) {
   ToggleFullscreen();
   return 1;
+}
+
+//
+// Unload audio stream and free memory
+//
+static int cmd_unloadaudiostream(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    UnloadAudioStream(_audioStream.at(stream_id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 //
@@ -2957,6 +3080,23 @@ static int cmd_unloadwavesamples(int argc, slib_par_t *params, var_t *retval) {
   auto samples = (float *)get_param_int_t(argc, params, 0, 0);
   UnloadWaveSamples(samples);
   return 1;
+}
+
+//
+// Update audio stream buffers with data
+//
+static int cmd_updateaudiostream(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    auto data = (const void *)get_param_int_t(argc, params, 1, 0);
+    auto frameCount = get_param_int(argc, params, 2, 0);
+    UpdateAudioStream(_audioStream.at(stream_id), data, frameCount);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 //

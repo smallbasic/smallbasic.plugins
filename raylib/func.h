@@ -1593,6 +1593,38 @@ static int cmd_isaudiodeviceready(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Check if audio stream is playing
+//
+static int cmd_isaudiostreamplaying(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    auto fnResult = IsAudioStreamPlaying(_audioStream.at(stream_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Check if any audio stream buffers requires refill
+//
+static int cmd_isaudiostreamprocessed(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    auto fnResult = IsAudioStreamProcessed(_audioStream.at(stream_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Check if cursor is not visible
 //
 static int cmd_iscursorhidden(int argc, slib_par_t *params, var_t *retval) {
@@ -1893,6 +1925,18 @@ static int cmd_iswindowstate(int argc, slib_par_t *params, var_t *retval) {
   auto flag = get_param_int(argc, params, 0, 0);
   auto fnResult = IsWindowState(flag);
   v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Load audio stream (to stream raw audio pcm data)
+//
+static int cmd_loadaudiostream(int argc, slib_par_t *params, var_t *retval) {
+  auto sampleRate = get_param_int(argc, params, 0, 0);
+  auto sampleSize = get_param_int(argc, params, 1, 0);
+  auto channels = get_param_int(argc, params, 2, 0);
+  auto fnResult = LoadAudioStream(sampleRate, sampleSize, channels);
+  v_setaudiostream(retval, fnResult);
   return 1;
 }
 
