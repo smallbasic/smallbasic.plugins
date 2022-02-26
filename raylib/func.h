@@ -2240,6 +2240,23 @@ static int cmd_loadtexture(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Load cubemap from image, multiple image cubemap layouts supported
+//
+static int cmd_loadtexturecubemap(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int image_id = get_image_id(argc, params, 0, retval);
+  if (image_id != -1) {
+    auto layout = get_param_int(argc, params, 1, 0);
+    auto fnResult = LoadTextureCubemap(_imageMap.at(image_id), layout);
+    v_settexture2d(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Load texture from image data
 //
 static int cmd_loadtexturefromimage(int argc, slib_par_t *params, var_t *retval) {

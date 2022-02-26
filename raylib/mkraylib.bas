@@ -130,6 +130,7 @@ func get_v_set_name(byref fun)
   case "shader": result = "v_setshader"
   case "shader": result = "v_setshader"
   case "sound": result = "v_setsound"
+  case "texturecubemap": result = "v_settexture2d"
   case "texture2d": result = "v_settexture2d"
   case "unsigned char *": result = "v_setstr"
   case "unsigned int": result = "v_setint"
@@ -224,7 +225,6 @@ func is_unsupported_type(type)
          type == "NPatchInfo" || &
          type == "SaveFileDataCallback" || &
          type == "SaveFileTextCallback" || &
-         type == "TextureCubemap" || &
          type == "TraceLogCallback" || &
          type == "VrStereoConfig" || &
          type == "char **" || &

@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (552)
+Implemented APIs (553)
 ----------------
 
 | Name    | Description   |
@@ -402,6 +402,7 @@ Implemented APIs (552)
 | func LoadSoundFromWave(wave) | Load sound from wave data |
 | func LoadStorageValue(position) | Load integer value from storage file (from defined position) |
 | func LoadTexture(fileName) | Load texture from file into GPU memory (VRAM) |
+| func LoadTextureCubemap(image, layout) | Load cubemap from image, multiple image cubemap layouts supported |
 | func LoadTextureFromImage(image) | Load texture from image data |
 | func LoadWave(fileName) | Load wave data from file |
 | func LoadWaveFromMemory(fileType, fileData, dataSize) | Load wave from memory buffer, fileType refers to extension: i.e. '.wav' |

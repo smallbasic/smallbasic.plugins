@@ -192,6 +192,7 @@
   {1, 1, "LOADSOUNDFROMWAVE", cmd_loadsoundfromwave},
   {1, 1, "LOADSTORAGEVALUE", cmd_loadstoragevalue},
   {1, 1, "LOADTEXTURE", cmd_loadtexture},
+  {2, 2, "LOADTEXTURECUBEMAP", cmd_loadtexturecubemap},
   {1, 1, "LOADTEXTUREFROMIMAGE", cmd_loadtexturefromimage},
   {1, 1, "LOADWAVE", cmd_loadwave},
   {3, 3, "LOADWAVEFROMMEMORY", cmd_loadwavefrommemory},
