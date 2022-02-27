@@ -1080,6 +1080,26 @@ static int cmd_drawtextureex(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Draws a texture (or part of it) that stretches or shrinks nicely
+//
+static int cmd_drawtexturenpatch(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int texture_id = get_texture_id(argc, params, 0, retval);
+  if (texture_id != -1) {
+    auto nPatchInfo = get_param_npatch(argc, params, 1);
+    auto dest = get_param_rect(argc, params, 2);
+    auto origin = get_param_vec2(argc, params, 3);
+    auto rotation = get_param_num(argc, params, 4, 0);
+    auto tint = get_param_color(argc, params, 5);
+    DrawTextureNPatch(_textureMap.at(texture_id), nPatchInfo, dest, origin, rotation, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Draw a textured polygon
 //
 static int cmd_drawtexturepoly(int argc, slib_par_t *params, var_t *retval) {

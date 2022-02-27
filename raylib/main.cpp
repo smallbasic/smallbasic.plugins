@@ -132,6 +132,26 @@ static Rectangle get_param_rect(int argc, slib_par_t *params, int n) {
   return result;
 }
 
+static NPatchInfo get_param_npatch(int argc, slib_par_t *params, int n) {
+  NPatchInfo result;
+  if (is_param_map(argc, params, n) && is_map(map_get(params[n].var_p, "source"))) {
+    var_p_t map = params[n].var_p;
+    var_p_t source = map_get(map, "source");
+    result.source.x = get_map_num(source, "x");
+    result.source.y = get_map_num(source, "y");
+    result.source.width = get_map_num(source, "width");
+    result.source.height = get_map_num(source, "height");
+    result.left = get_map_num(map, "left");
+    result.top = get_map_num(map, "top");
+    result.right = get_map_num(map, "right");
+    result.bottom = get_map_num(map, "bottom");
+    result.layout = get_map_num(map, "layout");
+  } else {
+    TraceLog(LOG_FATAL, "NPatchInfo not found");
+  }
+  return result;
+}
+
 static Vector2 get_array_elem_vec2(var_p_t array, int index) {
   Vector2 result;
   int size = v_asize(array);

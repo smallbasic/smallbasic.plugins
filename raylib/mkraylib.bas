@@ -38,6 +38,7 @@ func get_param_name(byref param)
   case "model": result = "get_model_id"
   case "modelanimation": result = "get_model_animation_id"
   case "music": result = "get_music_id"
+  case "npatchinfo": result = "get_param_npatch"
   case "physicsbody": result = "get_physics_body_id"
   case "ray": result = "get_param_ray"
   case "rectangle": result = "get_param_rect"
@@ -222,7 +223,6 @@ func is_unsupported_type(type)
          type == "LoadFileTextCallback" || &
          type == "Material *" || &
          type == "Material" || &
-         type == "NPatchInfo" || &
          type == "SaveFileDataCallback" || &
          type == "SaveFileTextCallback" || &
          type == "TraceLogCallback" || &
@@ -230,6 +230,21 @@ func is_unsupported_type(type)
          type == "char **" || &
          type == "const char **" || &
          type == ""
+end
+
+'
+' non-generated version in main.cpp
+'
+func is_internal(name)
+  return (name == "GetMeshBoundingBox" || &
+          name == "LoadModelAnimations" || &
+          name == "LoadRenderTexture" || &
+          name == "LoadShader" || &
+          name == "SetShaderValue" || &
+          name == "TextFormat" || &
+          name == "TraceLog" || &
+          name == "UpdateCamera" || &
+          name == "UpdateTexture")
 end
 
 func is_unsupported(byref fun)
@@ -243,18 +258,7 @@ func is_unsupported(byref fun)
       exit for
     endif
   next
-  if (is_unsupported_type(fun.returnType)) then
-    rem NOTE: main.cpp includes non-generated cmd_loadmodelanimations
-    result = true
-  endif
-  if (fun.name == "GetMeshBoundingBox" || &
-      fun.name == "LoadModelAnimations" || &
-      fun.name == "LoadRenderTexture" || &
-      fun.name == "LoadShader" || &
-      fun.name == "SetShaderValue" || &
-      fun.name == "UpdateCamera" || &
-      fun.name == "UpdateTexture") then
-    ' non-generated version in main.cpp
+  if (is_unsupported_type(fun.returnType) || is_internal(fun.name)) then
     result = true
   endif
   return result
@@ -379,6 +383,23 @@ sub print_def(proc_def)
   next
 end
 
+sub print_unsupported()
+  local fun, description
+
+  print "Unimplemented APIs"
+  print "----------------"
+  print ""
+  print "| Name    | Description   |"
+  print "|---------|---------------|"
+
+  for fun in api("functions")
+    if (is_unsupported(fun) && !is_internal(fun.name)) then
+      description = iff(fun.description == 0, "n/a", fun.description)
+      print "| " + fun.name + " | " + description + " |"
+    endif
+  next
+end
+
 if trim(command) == "proc.h" then
   print_proc_main
 else if trim(command) == "proc-def.h" then
@@ -387,5 +408,7 @@ elseif trim(command) == "func.h" then
   print_func_main
 else if trim(command) == "func-def.h" then
   print_def(false)
+else if trim(command) == "unsupported" then
+  print_unsupported()
 endif
 

@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (553)
+Implemented APIs (554)
 ----------------
 
 | Name    | Description   |
@@ -120,6 +120,7 @@ Implemented APIs (553)
 | sub DrawTextPro(font, text, position, origin, rotation, fontSize, spacing, tint) | Draw text using Font and pro parameters (rotation) |
 | sub DrawTexture(texture, posX, posY, tint) | Draw a Texture2D |
 | sub DrawTextureEx(texture, position, rotation, scale, tint) | Draw a Texture2D with extended parameters |
+| sub DrawTextureNPatch(texture, nPatchInfo, dest, origin, rotation, tint) | Draws a texture (or part of it) that stretches or shrinks nicely |
 | sub DrawTexturePoly(texture, center, points, texcoords, pointCount, tint) | Draw a textured polygon |
 | sub DrawTexturePro(texture, source, dest, origin, rotation, tint) | Draw a part of a texture defined by a rectangle with 'pro' parameters |
 | sub DrawTextureQuad(texture, tiling, offset, quad, tint) | Draw texture quad with tiling and offset parameters |
@@ -562,3 +563,32 @@ Implemented APIs (553)
 | sub WaveCrop(wave, initSample, finalSample) | Crop a wave to defined samples range |
 | sub WaveFormat(wave, sampleRate, sampleSize, channels) | Convert wave data to desired format |
 | func WindowShouldClose() | Check if KEY_ESCAPE pressed or Close icon pressed |
+
+Unimplemented APIs
+----------------
+
+| Name    | Description   |
+|---------|---------------|
+| BeginVrStereoMode | Begin stereo rendering (requires VR simulator) |
+| DrawMesh | Draw a 3d mesh with material and transform |
+| DrawMeshInstanced | Draw multiple mesh instances with material and different transforms |
+| GenImageFontAtlas | Generate image font atlas using chars info |
+| GetDirectoryFiles | Get filenames in a directory path (memory should be freed) |
+| GetDroppedFiles | Get dropped files names (memory should be freed) |
+| GetGlyphInfo | Get glyph font info data for a codepoint (unicode character), fallback to '?' if not found |
+| LoadFontData | Load font data for further use |
+| LoadMaterialDefault | Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps) |
+| LoadMaterials | Load materials from model file |
+| LoadVrStereoConfig | Load VR stereo config for VR simulator device parameters |
+| SetLoadFileDataCallback | Set custom file binary data loader |
+| SetLoadFileTextCallback | Set custom file text data loader |
+| SetMaterialTexture | Set texture for a material map type (MATERIAL_MAP_DIFFUSE, MATERIAL_MAP_SPECULAR...) |
+| SetSaveFileDataCallback | Set custom file binary data saver |
+| SetSaveFileTextCallback | Set custom file text data saver |
+| SetTraceLogCallback | Set custom trace log |
+| TextJoin | Join text strings with delimiter |
+| TextSplit | Split text into multiple strings |
+| UnloadFontData | Unload font chars info data (RAM) |
+| UnloadMaterial | Unload material from GPU memory (VRAM) |
+| UnloadVrStereoConfig | Unload VR stereo config |
+

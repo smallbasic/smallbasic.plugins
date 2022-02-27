@@ -80,6 +80,7 @@
   {8, 8, "DRAWTEXTPRO", cmd_drawtextpro},
   {4, 4, "DRAWTEXTURE", cmd_drawtexture},
   {5, 5, "DRAWTEXTUREEX", cmd_drawtextureex},
+  {6, 6, "DRAWTEXTURENPATCH", cmd_drawtexturenpatch},
   {6, 6, "DRAWTEXTUREPOLY", cmd_drawtexturepoly},
   {6, 6, "DRAWTEXTUREPRO", cmd_drawtexturepro},
   {5, 5, "DRAWTEXTUREQUAD", cmd_drawtexturequad},

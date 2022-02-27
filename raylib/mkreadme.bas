@@ -60,3 +60,7 @@ for i = 0 to len(code) - 1
   print "| " + returnType + " " + name + "(" + params + ") | " + description + " |"
 next i
 
+tload "UNSUPPORTED.md", s, 1
+print
+print s
+

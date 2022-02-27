@@ -14,7 +14,10 @@ CLEANFILES = $(generated)
 raylib/parser/raylib_api.json: raylib/src/raylib.h
 	(cd raylib/parser && make)
 
-README.md: $(generated) mkreadme.bas
+UNSUPPORTED.md: $(generated)
+	$(sbasic)	mkraylib.bas unsupported > $@
+
+README.md: $(generated) mkreadme.bas UNSUPPORTED.md
 	$(sbasic)	mkreadme.bas `grep RAYLIB_VERSION raylib/src/raylib.h | sed 's/#define RAYLIB_VERSION//g' | sed 's/\"//g'` > README.md
 
 $(generated): raylib/parser/raylib_api.json mkraylib.bas
