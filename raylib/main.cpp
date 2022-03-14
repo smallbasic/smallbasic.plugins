@@ -32,6 +32,8 @@
 #include "include/param.h"
 #include "physac.h"
 
+#define MAX_INPUTBOX_LENGTH 1024
+
 robin_hood::unordered_map<int, AudioStream> _audioStream;
 robin_hood::unordered_map<int, Font> _fontMap;
 robin_hood::unordered_map<int, Image> _imageMap;
@@ -1089,12 +1091,17 @@ static int cmd_guitextboxmulti(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_guitextinputbox(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
-  auto title = get_param_str(argc, params, 1, 0);
-  auto message = get_param_str(argc, params, 2, NULL);
-  auto buttons = get_param_str(argc, params, 3, 0);
-  auto text = get_param_str(argc, params, 4, 0);
-  auto fnResult = GuiTextInputBox(bounds, title, message, buttons, (char *)text);
-  v_setint(retval, fnResult);
+  const char *title = get_param_str(argc, params, 1, 0);
+  const char *message = get_param_str(argc, params, 2, NULL);
+  const char *buttons = get_param_str(argc, params, 3, 0);
+  char text[MAX_INPUTBOX_LENGTH + 1];
+  strncpy(text, get_param_str(argc, params, 4, 0), MAX_INPUTBOX_LENGTH);
+  auto secretViewActive = get_param_int(argc, params, 5, 0);
+  auto fnResult = GuiTextInputBox(bounds, title, message, buttons, text, MAX_INPUTBOX_LENGTH, &secretViewActive);
+  map_init(retval);
+  v_setstr(map_add_var(retval, "text", 0), text);
+  v_setint(map_add_var(retval, "result", 0), fnResult);
+  v_setint(map_add_var(retval, "secret", 0), secretViewActive);
   return 1;
 }
 
@@ -1235,7 +1242,7 @@ static int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
-  int waitMillis = get_param_int(argc, params, 0, -1);
+  float waitMillis = get_param_int(argc, params, 0, -1);
   if (waitMillis > 0) {
     glfwWaitEventsTimeout(waitMillis / 1000);
   } else {
@@ -1649,7 +1656,7 @@ static FUNC_SIG lib_func[] = {
   {6, 6, "GUISPINNER", cmd_guispinner},
   {4, 4, "GUITEXTBOX", cmd_guitextbox},
   {4, 4, "GUITEXTBOXMULTI", cmd_guitextboxmulti},
-  {5, 5, "GUITEXTINPUTBOX", cmd_guitextinputbox},
+  {6, 6, "GUITEXTINPUTBOX", cmd_guitextinputbox},
   {3, 3, "GUITOGGLE", cmd_guitoggle},
   {3, 3, "GUITOGGLEGROUP", cmd_guitogglegroup},
   {6, 6, "GUIVALUEBOX", cmd_guivaluebox},

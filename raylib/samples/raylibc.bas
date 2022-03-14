@@ -200,3 +200,14 @@ export const KEY_KP_SUBTRACT     = 333
 export const KEY_KP_ADD          = 334
 export const KEY_KP_ENTER        = 335
 export const KEY_KP_EQUAL        = 336
+
+export const TEXTURE_FILTER_POINT = 0
+export const TEXTURE_FILTER_BILINEAR = 1
+export const TEXTURE_FILTER_TRILINEAR = 2
+export const TEXTURE_FILTER_ANISOTROPIC_4X = 3
+export const TEXTURE_FILTER_ANISOTROPIC_8X = 4
+export const TEXTURE_FILTER_ANISOTROPIC_16X = 5
+export const TEXTURE_WRAP_REPEAT = 0
+export const TEXTURE_WRAP_CLAMP = 1
+export const TEXTURE_WRAP_MIRROR_REPEAT = 2
+export const TEXTURE_WRAP_MIRROR_CLAMP = 3

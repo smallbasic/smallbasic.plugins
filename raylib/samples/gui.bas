@@ -2,23 +2,27 @@ import raylib as rl
 import raylibc as c
 import debug
 
-const screenWidth = 800
+const screenWidth = 450
 const screenHeight = 450
 
+'rl.SetWindowState(0x00000800)
 rl.InitWindow(screenWidth, screenHeight, "SmallBASIC raylib gui")
-rl.SetWindowPosition(800, 20)
+rl.SetWindowPosition(rl.GetMonitorWidth(0) - screenWidth - 20, (rl.GetMonitorHeight(0) - screenHeight) / 2)
 rl.SetTargetFPS(60)
-'rl.UndecorateWindow()
 
-cp = c.GREEN
+run("xdotool windowactivate `xdotool search --onlyvisible --name \"Emacs\"`")
+
+'rl.UsndecorateWindow()
+cp = c.YELLOW
+text = "input text"
 
 while (!rl.WindowShouldClose() && !debug.IsSourceModified())
   rl.BeginDrawing()
   rl.ClearBackground(c.RAYWHITE)
-  
-  x = 10: y = 10: h = 35
 
-  if (rl.GuiButton([x, y, 80, 35], "My Button")) then 
+  x = 10: y = 10: h = 39
+
+  if (rl.GuiButton([x, y, 80, 35], "My Button")) then
     showAlert=true
   endif
   if (showAlert) then
@@ -60,11 +64,17 @@ while (!rl.WindowShouldClose() && !debug.IsSourceModified())
     'pbv = iff(pbv == 100, 0, pbv + 1)
     pv = rl.GuiProgressBar([x, y, 100, h], "L", "R", pbv, 0, 100)
 
+    y += h + 5: h =120
+    obj = rl.GuiTextInputBox([x, y, 200, 130], "Title", "Message", "Okay;well;okay", text, secret)
+    text = obj.text
+    secret = obj.secret
+    if (obj.result == 1) then showAlert = true
+    if (obj.result == 0) then text = "don't press x"
+
   endif
 
   rl.EndDrawing()
-  rl.WaitEvents(100)
+  rl.WaitEvents(800)
 wend
 
 rl.CloseWindow()
-

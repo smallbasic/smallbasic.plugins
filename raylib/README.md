@@ -516,7 +516,7 @@ Implemented APIs (554)
 | func TextCodepointsToUTF8(codepoints, length) | Encode text as codepoints array into UTF-8 text string (WARNING: memory must be freed!) |
 | func TextCopy(dst, src) | Copy one string to another, returns bytes copied |
 | func TextFindIndex(text, find) | Find first text occurrence within a string |
-| func TextFormat(text, ) | Text formatting with variables (sprintf() style) |
+| func TextFormat(text, args) | Text formatting with variables (sprintf() style) |
 | func TextInsert(text, insert, position) | Insert text in a position (WARNING: memory must be freed!) |
 | func TextIsEqual(text1, text2) | Check if two text string are equal |
 | func TextLength(text) | Get text length, checks for '\\0' ending |
