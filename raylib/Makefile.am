@@ -11,7 +11,7 @@ generated = func-def.h proc-def.h proc.h func.h
 
 CLEANFILES = $(generated)
 
-raylib/parser/raylib_api.json: raylib/src/raylib.h
+raylib/parser/raylib_api.json: raylib/src/raylib.h raylib/parser/raylib_parser.c
 	(cd raylib/parser && make)
 
 UNSUPPORTED.md: $(generated)

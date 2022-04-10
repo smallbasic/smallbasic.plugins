@@ -1258,23 +1258,6 @@ static int cmd_getraycollisionmesh(int argc, slib_par_t *params, var_t *retval) 
 }
 
 //
-// Get collision info between ray and model
-//
-static int cmd_getraycollisionmodel(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int model_id = get_model_id(argc, params, 1, retval);
-  if (model_id != -1) {
-    auto ray = get_param_ray(argc, params, 0);
-    auto fnResult = GetRayCollisionModel(ray, _modelMap.at(model_id));
-    v_setraycollision(retval, fnResult);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
 // Get collision info between ray and quad
 //
 static int cmd_getraycollisionquad(int argc, slib_par_t *params, var_t *retval) {

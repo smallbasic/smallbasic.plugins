@@ -217,6 +217,7 @@ end
 
 func is_unsupported_type(type)
   return type == "const GlyphInfo *" || &
+         type == "AudioCallback" || &
          type == "GlyphInfo *" || &
          type == "GlyphInfo" || &
          type == "LoadFileDataCallback" || &

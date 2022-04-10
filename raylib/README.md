@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (554)
+Implemented APIs (553)
 ----------------
 
 | Name    | Description   |
@@ -234,7 +234,6 @@ Implemented APIs (554)
 | func GetRandomValue(min, max) | Get a random value between min and max (both included) |
 | func GetRayCollisionBox(ray, box) | Get collision info between ray and box |
 | func GetRayCollisionMesh(ray, mesh, transform) | Get collision info between ray and mesh |
-| func GetRayCollisionModel(ray, model) | Get collision info between ray and model |
 | func GetRayCollisionQuad(ray, p1, p2, p3, p4) | Get collision info between ray and quad |
 | func GetRayCollisionSphere(ray, center, radius) | Get collision info between ray and sphere |
 | func GetRayCollisionTriangle(ray, p1, p2, p3) | Get collision info between ray and triangle |
@@ -569,7 +568,9 @@ Unimplemented APIs
 
 | Name    | Description   |
 |---------|---------------|
+| AttachAudioStreamProcessor | n/a |
 | BeginVrStereoMode | Begin stereo rendering (requires VR simulator) |
+| DetachAudioStreamProcessor | n/a |
 | DrawMesh | Draw a 3d mesh with material and transform |
 | DrawMeshInstanced | Draw multiple mesh instances with material and different transforms |
 | GenImageFontAtlas | Generate image font atlas using chars info |
@@ -580,6 +581,7 @@ Unimplemented APIs
 | LoadMaterialDefault | Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps) |
 | LoadMaterials | Load materials from model file |
 | LoadVrStereoConfig | Load VR stereo config for VR simulator device parameters |
+| SetAudioStreamCallback | Audio thread callback to request new data |
 | SetLoadFileDataCallback | Set custom file binary data loader |
 | SetLoadFileTextCallback | Set custom file text data loader |
 | SetMaterialTexture | Set texture for a material map type (MATERIAL_MAP_DIFFUSE, MATERIAL_MAP_SPECULAR...) |

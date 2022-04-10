@@ -106,7 +106,6 @@
   {2, 2, "GETRANDOMVALUE", cmd_getrandomvalue},
   {2, 2, "GETRAYCOLLISIONBOX", cmd_getraycollisionbox},
   {3, 3, "GETRAYCOLLISIONMESH", cmd_getraycollisionmesh},
-  {2, 2, "GETRAYCOLLISIONMODEL", cmd_getraycollisionmodel},
   {5, 5, "GETRAYCOLLISIONQUAD", cmd_getraycollisionquad},
   {3, 3, "GETRAYCOLLISIONSPHERE", cmd_getraycollisionsphere},
   {4, 4, "GETRAYCOLLISIONTRIANGLE", cmd_getraycollisiontriangle},

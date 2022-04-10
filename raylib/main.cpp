@@ -400,7 +400,7 @@ static void set_camera_3d(var_p_t var, Camera3D *camera) {
 }
 
 static int get_audiostream_id(int argc, slib_par_t *params, int arg, var_t *retval) {
-  int result = 0;
+  int result = -1;
   if (is_param_map(argc, params, arg)) {
     int id = get_id(params, arg);
     if (id != -1 && _audioStream.find(id) != _audioStream.end()) {
@@ -514,7 +514,7 @@ static int get_physics_body_id(int argc, slib_par_t *params, int arg, var_t *ret
 }
 
 static int get_render_texture_id(int argc, slib_par_t *params, int arg, var_t *retval) {
-  int result = 0;
+  int result = -1;
   if (is_param_map(argc, params, arg)) {
     int id = get_id(params, arg);
     if (id != -1 && _renderMap.find(id) != _renderMap.end()) {
@@ -528,7 +528,7 @@ static int get_render_texture_id(int argc, slib_par_t *params, int arg, var_t *r
 }
 
 static int get_matrix_id(int argc, slib_par_t *params, int arg, var_t *retval) {
-  int result = 0;
+  int result = -1;
   if (is_param_map(argc, params, arg)) {
     int id = get_id(params, arg);
     if (id != -1 && _matrixMap.find(id) != _matrixMap.end()) {
@@ -542,7 +542,7 @@ static int get_matrix_id(int argc, slib_par_t *params, int arg, var_t *retval) {
 }
 
 static int get_music_id(int argc, slib_par_t *params, int arg, var_t *retval) {
-  int result = 0;
+  int result = -1;
   if (is_param_map(argc, params, arg)) {
     int id = get_id(params, arg);
     if (id != -1 && _musicMap.find(id) != _musicMap.end()) {
@@ -557,7 +557,7 @@ static int get_music_id(int argc, slib_par_t *params, int arg, var_t *retval) {
 }
 
 static int get_wave_id(int argc, slib_par_t *params, int arg, var_t *retval) {
-  int result = 0;
+  int result = -1;
   if (is_param_map(argc, params, arg)) {
     int id = get_id(params, arg);
     if (id != -1 && _waveMap.find(id) != _waveMap.end()) {
@@ -571,7 +571,7 @@ static int get_wave_id(int argc, slib_par_t *params, int arg, var_t *retval) {
 }
 
 static int get_sound_id(int argc, slib_par_t *params, int arg, var_t *retval) {
-  int result = 0;
+  int result = -1;
   if (is_param_map(argc, params, arg)) {
     int id = get_id(params, arg);
     if (id != -1 && _soundMap.find(id) != _soundMap.end()) {
@@ -1796,6 +1796,15 @@ SBLIB_API int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *re
 }
 
 SBLIB_API void sblib_close(void) {
+  if (IsAudioDeviceReady()) {
+    TraceLog(LOG_INFO, "Closing audio device");
+    CloseAudioDevice();
+  }
+  if (IsWindowFullscreen()) {
+    TraceLog(LOG_INFO, "Restoring from full-screen");
+    ToggleFullscreen();
+  }
+  
   _audioStream.clear();
   _fontMap.clear();
   _imageMap.clear();
