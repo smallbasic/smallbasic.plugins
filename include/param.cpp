@@ -169,6 +169,11 @@ void v_setreal(var_t *var, var_num_t n) {
 }
 
 void v_setstr(var_t *var, const char *str) {
+  int length = strlen(str == nullptr ? 0 : str);
+  v_setstrn(var, str, length);
+}
+
+void v_setstrn(var_t *var, const char *str, int length) {
   assert(var->type != V_ARRAY && var->type != V_MAP);
 
   bool isSet = false;
@@ -181,13 +186,11 @@ void v_setstr(var_t *var, const char *str) {
     }
   }
   if (!isSet) {
-    int length = strlen(str == nullptr ? 0 : str);
     var->type = V_STR;
-    var->v.p.ptr = (char *)malloc(length + 1);
-    var->v.p.ptr[0] = '\0';
+    var->v.p.ptr = (char *)calloc(length + 1, 1);
     var->v.p.length = length + 1;
     var->v.p.owner = 1;
-    strcpy(var->v.p.ptr, str);
+    strncpy(var->v.p.ptr, str, length);
   }
 }
 

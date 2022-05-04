@@ -38,7 +38,7 @@ fontBm = rl.LoadFont(resources + "pixantiqua.fnt")
 
 ' TTF font : Font data and atlas are generated directly from TTF
 ' NOTE: We define a font base size of 32 pixels tall and up-to 250 characters
-fontTtf = rl.LoadFontEx(resources + "pixantiqua.ttf", 32, 0, 250) 
+fontTtf = rl.LoadFontEx(resources + "pixantiqua.ttf", 32, 250) 
 
 useTtf = false 
 rl.SetTargetFPS(60)                ' Set our game to run at 60 frames-per-second

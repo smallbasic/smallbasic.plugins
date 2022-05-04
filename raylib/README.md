@@ -43,12 +43,12 @@ Implemented APIs (553)
 | func ColorNormalize(color) | Get Color normalized as float [0..1] |
 | func ColorToHSV(color) | Get HSV values for a Color, hue [0..360], saturation/value [0..1] |
 | func ColorToInt(color) | Get hexadecimal value for a Color |
-| func CompressData(data, dataLength, compDataLength) | Compress data (DEFLATE algorithm) |
+| func CompressData(data, dataSize, compDataSize) | Compress data (DEFLATE algorithm), memory must be MemFree() |
 | func createPhysicsbodycircle() | n/a |
 | func createPhysicsbodypolygon() | n/a |
 | func createPhysicsbodyrectangle() | n/a |
-| func DecodeDataBase64(data, outputLength) | Decode Base64 string data |
-| func DecompressData(compData, compDataLength, dataLength) | Decompress data (DEFLATE algorithm) |
+| func DecodeDataBase64(data, outputSize) | Decode Base64 string data, memory must be MemFree() |
+| func DecompressData(compData, compDataSize, dataSize) | Decompress data (DEFLATE algorithm), memory must be MemFree() |
 | func destroyPhysicsbody() | n/a |
 | func DirectoryExists(dirPath) | Check if a directory path exists |
 | sub DisableCursor() | Disables cursor (lock cursor) |
@@ -134,7 +134,7 @@ Implemented APIs (553)
 | sub DrawTriangleStrip(points, pointCount, color) | Draw a triangle strip defined by points |
 | sub DrawTriangleStrip3D(points, pointCount, color) | Draw a triangle strip defined by points |
 | sub EnableCursor() | Enables cursor (unlock cursor) |
-| func EncodeDataBase64(data, dataLength, outputLength) | Encode data to Base64 string |
+| func EncodeDataBase64(data, dataSize, outputSize) | Encode data to Base64 string, memory must be MemFree() |
 | sub EndBlendMode() | End blending mode (reset to default: alpha blending) |
 | sub EndDrawing() | End canvas drawing and swap buffers (double buffering) |
 | sub EndMode2D() | Ends 2D mode with custom camera |
@@ -574,8 +574,8 @@ Unimplemented APIs
 | DrawMesh | Draw a 3d mesh with material and transform |
 | DrawMeshInstanced | Draw multiple mesh instances with material and different transforms |
 | GenImageFontAtlas | Generate image font atlas using chars info |
-| GetDirectoryFiles | Get filenames in a directory path (memory should be freed) |
-| GetDroppedFiles | Get dropped files names (memory should be freed) |
+| GetDirectoryFiles | Get filenames in a directory path (memory must be freed) |
+| GetDroppedFiles | Get dropped files names (memory must be freed) |
 | GetGlyphInfo | Get glyph font info data for a codepoint (unicode character), fallback to '?' if not found |
 | LoadFontData | Load font data for further use |
 | LoadMaterialDefault | Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps) |

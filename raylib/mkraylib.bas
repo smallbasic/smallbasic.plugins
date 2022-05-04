@@ -67,7 +67,7 @@ func get_param_name(byref param)
   case "const void *": result = "(const void *)get_param_int_t"
   case "float *": result = "(float *)get_param_int_t"
   case "unsigned int *": result = "(unsigned int *)get_param_int_t"
-  case "int *": result = "(int *)get_param_int_t"
+  case "int *": result = "0"
   case "void *": result = "(void *)get_param_int_t"
   case "const int *": result = "(const int *)get_param_int_t"
   case else: throw "unknown param [" + param.type + "]"
@@ -187,6 +187,34 @@ func get_result_cast(byref fun)
   return result
 end
 
+'
+' returns the parameter argument for the RAYLIB call
+'
+func get_param_arg(byref param)
+  local result
+  select case lower(trim(param.type))
+  case "int *": result = "&" + param.name
+  case else: result = param.name
+  end select
+  return result
+end
+
+'
+' returns the arguments to the method that marshalls the input for one of the fields
+'
+func get_arg_arg(byref param, i)
+  local result
+  local def_arg
+
+  select case lower(trim(param.type))
+  case "int *": result = ";"
+  case else
+    def_arg = iff(has_default_param(param), ", 0", "")
+    result = "(argc, params, " + i + def_arg + ");"
+  end select
+  return result
+end
+
 func is_map_param(type)
   return type == "AudioStream" || &
          type == "Font" || &
@@ -293,14 +321,17 @@ sub print_func_map(byref fun)
 
   i = 0
   local args = ""
-  local def_arg
+  local strlenArg = 0
 
   for param in fun.params
     if (i > 0) then args += ", "
     if (!is_map_param(param.type)) then
-      def_arg = iff(has_default_param(param), ", 0", "")
-      print "    auto " + param.name + " = " + get_param_name(param) + "(argc, params, " + i + def_arg + ");"
-      args += param.name
+      print "    auto " + param.name + " = " + get_param_name(param) + + get_arg_arg(param, i)
+      args += get_param_arg(param)
+      if (lower(trim(param.type)) == "int *") then
+        i--
+        if (fun.returnType != "void" and get_v_set_name(fun) == "v_setstr") then strlenArg = param.name
+      endif
     else
       args += get_map_name(param) + ".at(" + lower(param.name) + "_id)"
     endif
@@ -311,7 +342,12 @@ sub print_func_map(byref fun)
     print "    " + fun.name + "(" + args + ");"
   else
     print "    auto fnResult = " + get_result_cast(fun) + fun.name + "(" + args + ");"
-    print "    " + get_v_set_name(fun) + "(retval, " + "fnResult);"
+    if (strlenArg) then
+      print "  v_setstrn(retval, fnResult, " + strlenArg + ");"
+      print "  MemFree((void *)fnResult);"
+    else
+      print "    " + get_v_set_name(fun) + "(retval, " + "fnResult);"
+    endif
   endif
   print "    result = 1;"
   print "  } else {"
@@ -328,12 +364,16 @@ sub print_func(byref fun)
   local i = 0
   local args = ""
   local param
-  local def_arg
+  local strlenArg = 0
+
   for param in fun.params
-    def_arg = iff(has_default_param(param), ", 0", "")
-    print "  auto " + param.name + " = " + get_param_name(param) + "(argc, params, " + i + def_arg + ");"
+    print "  auto " + param.name + " = " + get_param_name(param) + get_arg_arg(param, i)
     if (i > 0) then args += ", "
-    args += param.name
+    args += get_param_arg(param)
+    if (lower(trim(param.type)) == "int *") then
+      i--
+      if (fun.returnType != "void" and get_v_set_name(fun) == "v_setstr") then strlenArg = param.name
+    endif
     i++
   next
 
@@ -341,7 +381,12 @@ sub print_func(byref fun)
     print "  " + fun.name + "(" + args + ");"
   else
     print "  auto fnResult = " + get_result_cast(fun) + fun.name + "(" + args + ");"
-    print "  " + get_v_set_name(fun) + "(retval, fnResult);"
+    if (strlenArg) then
+      print "  v_setstrn(retval, fnResult, " + strlenArg + ");"
+      print "  MemFree((void *)fnResult);"
+    else
+      print "  " + get_v_set_name(fun) + "(retval, fnResult);"
+    endif
   endif
   print "  return 1;"
   print "}"
@@ -375,10 +420,13 @@ sub print_func_main
 end
 
 sub print_def(proc_def)
-  local fun, n
+  local fun, n, param
   for fun in api("functions")
     if (((fun.returnType == "void") == proc_def) and not is_unsupported(fun)) then
       n = iff(isarray(fun.params), len(fun.params), 0)
+      for param in fun.params
+        if (lower(trim(param.type)) == "int *") then n--
+      next
       print "  {" + n + ", " + n + ", \"" + upper(fun.name) + "\", cmd_" + lower(fun.name) + "},"
     endif
   next

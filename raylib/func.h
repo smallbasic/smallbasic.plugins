@@ -148,9 +148,10 @@ static int cmd_checkcollisionspheres(int argc, slib_par_t *params, var_t *retval
 //
 static int cmd_codepointtoutf8(int argc, slib_par_t *params, var_t *retval) {
   auto codepoint = get_param_int(argc, params, 0, 0);
-  auto byteSize = (int *)get_param_int_t(argc, params, 1, 0);
-  auto fnResult = (const char *)CodepointToUTF8(codepoint, byteSize);
-  v_setstr(retval, fnResult);
+  auto byteSize = 0;
+  auto fnResult = (const char *)CodepointToUTF8(codepoint, &byteSize);
+  v_setstrn(retval, fnResult, byteSize);
+  MemFree((void *)fnResult);
   return 1;
 }
 
@@ -230,37 +231,40 @@ static int cmd_colortoint(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Compress data (DEFLATE algorithm)
+// Compress data (DEFLATE algorithm), memory must be MemFree()
 //
 static int cmd_compressdata(int argc, slib_par_t *params, var_t *retval) {
   auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
-  auto dataLength = get_param_int(argc, params, 1, 0);
-  auto compDataLength = (int *)get_param_int_t(argc, params, 2, 0);
-  auto fnResult = (const char *)CompressData(data, dataLength, compDataLength);
-  v_setstr(retval, fnResult);
+  auto dataSize = get_param_int(argc, params, 1, 0);
+  auto compDataSize = 0;
+  auto fnResult = (const char *)CompressData(data, dataSize, &compDataSize);
+  v_setstrn(retval, fnResult, compDataSize);
+  MemFree((void *)fnResult);
   return 1;
 }
 
 //
-// Decode Base64 string data
+// Decode Base64 string data, memory must be MemFree()
 //
 static int cmd_decodedatabase64(int argc, slib_par_t *params, var_t *retval) {
   auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
-  auto outputLength = (int *)get_param_int_t(argc, params, 1, 0);
-  auto fnResult = (const char *)DecodeDataBase64(data, outputLength);
-  v_setstr(retval, fnResult);
+  auto outputSize = 0;
+  auto fnResult = (const char *)DecodeDataBase64(data, &outputSize);
+  v_setstrn(retval, fnResult, outputSize);
+  MemFree((void *)fnResult);
   return 1;
 }
 
 //
-// Decompress data (DEFLATE algorithm)
+// Decompress data (DEFLATE algorithm), memory must be MemFree()
 //
 static int cmd_decompressdata(int argc, slib_par_t *params, var_t *retval) {
   auto compData = (const unsigned char *)get_param_str(argc, params, 0, 0);
-  auto compDataLength = get_param_int(argc, params, 1, 0);
-  auto dataLength = (int *)get_param_int_t(argc, params, 2, 0);
-  auto fnResult = (const char *)DecompressData(compData, compDataLength, dataLength);
-  v_setstr(retval, fnResult);
+  auto compDataSize = get_param_int(argc, params, 1, 0);
+  auto dataSize = 0;
+  auto fnResult = (const char *)DecompressData(compData, compDataSize, &dataSize);
+  v_setstrn(retval, fnResult, dataSize);
+  MemFree((void *)fnResult);
   return 1;
 }
 
@@ -275,14 +279,15 @@ static int cmd_directoryexists(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Encode data to Base64 string
+// Encode data to Base64 string, memory must be MemFree()
 //
 static int cmd_encodedatabase64(int argc, slib_par_t *params, var_t *retval) {
   auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
-  auto dataLength = get_param_int(argc, params, 1, 0);
-  auto outputLength = (int *)get_param_int_t(argc, params, 2, 0);
-  auto fnResult = (const char *)EncodeDataBase64(data, dataLength, outputLength);
-  v_setstr(retval, fnResult);
+  auto dataSize = get_param_int(argc, params, 1, 0);
+  auto outputSize = 0;
+  auto fnResult = (const char *)EncodeDataBase64(data, dataSize, &outputSize);
+  v_setstrn(retval, fnResult, outputSize);
+  MemFree((void *)fnResult);
   return 1;
 }
 
@@ -696,8 +701,8 @@ static int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_getcodepoint(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
-  auto bytesProcessed = (int *)get_param_int_t(argc, params, 1, 0);
-  auto fnResult = GetCodepoint(text, bytesProcessed);
+  auto bytesProcessed = 0;
+  auto fnResult = GetCodepoint(text, &bytesProcessed);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -1928,8 +1933,8 @@ static int cmd_loadaudiostream(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_loadcodepoints(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
-  auto count = (int *)get_param_int_t(argc, params, 1, 0);
-  auto fnResult = (var_int_t)LoadCodepoints(text, count);
+  auto count = 0;
+  auto fnResult = (var_int_t)LoadCodepoints(text, &count);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -1971,9 +1976,9 @@ static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
   auto fontSize = get_param_int(argc, params, 1, 0);
-  auto fontChars = (int *)get_param_int_t(argc, params, 2, 0);
-  auto glyphCount = get_param_int(argc, params, 3, 0);
-  auto fnResult = LoadFontEx(fileName, fontSize, fontChars, glyphCount);
+  auto fontChars = 0;
+  auto glyphCount = get_param_int(argc, params, 2, 0);
+  auto fnResult = LoadFontEx(fileName, fontSize, &fontChars, glyphCount);
   v_setfont(retval, fnResult);
   return 1;
 }
@@ -2004,9 +2009,9 @@ static int cmd_loadfontfrommemory(int argc, slib_par_t *params, var_t *retval) {
   auto fileData = (const unsigned char *)get_param_str(argc, params, 1, 0);
   auto dataSize = get_param_int(argc, params, 2, 0);
   auto fontSize = get_param_int(argc, params, 3, 0);
-  auto fontChars = (int *)get_param_int_t(argc, params, 4, 0);
-  auto glyphCount = get_param_int(argc, params, 5, 0);
-  auto fnResult = LoadFontFromMemory(fileType, fileData, dataSize, fontSize, fontChars, glyphCount);
+  auto fontChars = 0;
+  auto glyphCount = get_param_int(argc, params, 4, 0);
+  auto fnResult = LoadFontFromMemory(fileType, fileData, dataSize, fontSize, &fontChars, glyphCount);
   v_setfont(retval, fnResult);
   return 1;
 }
@@ -2026,8 +2031,8 @@ static int cmd_loadimage(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_loadimageanim(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
-  auto frames = (int *)get_param_int_t(argc, params, 1, 0);
-  auto fnResult = LoadImageAnim(fileName, frames);
+  auto frames = 0;
+  auto fnResult = LoadImageAnim(fileName, &frames);
   v_setimage(retval, fnResult);
   return 1;
 }
@@ -2093,8 +2098,8 @@ static int cmd_loadimagepalette(int argc, slib_par_t *params, var_t *retval) {
   int image_id = get_image_id(argc, params, 0, retval);
   if (image_id != -1) {
     auto maxPaletteSize = get_param_int(argc, params, 1, 0);
-    auto colorCount = (int *)get_param_int_t(argc, params, 2, 0);
-    auto fnResult = (var_int_t)LoadImagePalette(_imageMap.at(image_id), maxPaletteSize, colorCount);
+    auto colorCount = 0;
+    auto fnResult = (var_int_t)LoadImagePalette(_imageMap.at(image_id), maxPaletteSize, &colorCount);
     v_setint(retval, fnResult);
     result = 1;
   } else {
