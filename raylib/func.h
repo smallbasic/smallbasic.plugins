@@ -701,8 +701,8 @@ static int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_getcodepoint(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
-  auto bytesProcessed = 0;
-  auto fnResult = GetCodepoint(text, &bytesProcessed);
+  auto bytesProcessed = (int *)0;
+  auto fnResult = GetCodepoint(text, bytesProcessed);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -1933,8 +1933,8 @@ static int cmd_loadaudiostream(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_loadcodepoints(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
-  auto count = 0;
-  auto fnResult = (var_int_t)LoadCodepoints(text, &count);
+  auto count = (int *)0;
+  auto fnResult = (var_int_t)LoadCodepoints(text, count);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -1976,9 +1976,9 @@ static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
   auto fontSize = get_param_int(argc, params, 1, 0);
-  auto fontChars = 0;
+  auto fontChars = (int *)0;
   auto glyphCount = get_param_int(argc, params, 2, 0);
-  auto fnResult = LoadFontEx(fileName, fontSize, &fontChars, glyphCount);
+  auto fnResult = LoadFontEx(fileName, fontSize, fontChars, glyphCount);
   v_setfont(retval, fnResult);
   return 1;
 }
@@ -2009,9 +2009,9 @@ static int cmd_loadfontfrommemory(int argc, slib_par_t *params, var_t *retval) {
   auto fileData = (const unsigned char *)get_param_str(argc, params, 1, 0);
   auto dataSize = get_param_int(argc, params, 2, 0);
   auto fontSize = get_param_int(argc, params, 3, 0);
-  auto fontChars = 0;
+  auto fontChars = (int *)0;
   auto glyphCount = get_param_int(argc, params, 4, 0);
-  auto fnResult = LoadFontFromMemory(fileType, fileData, dataSize, fontSize, &fontChars, glyphCount);
+  auto fnResult = LoadFontFromMemory(fileType, fileData, dataSize, fontSize, fontChars, glyphCount);
   v_setfont(retval, fnResult);
   return 1;
 }
@@ -2031,8 +2031,8 @@ static int cmd_loadimage(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_loadimageanim(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
-  auto frames = 0;
-  auto fnResult = LoadImageAnim(fileName, &frames);
+  auto frames = (int *)0;
+  auto fnResult = LoadImageAnim(fileName, frames);
   v_setimage(retval, fnResult);
   return 1;
 }
@@ -2098,8 +2098,8 @@ static int cmd_loadimagepalette(int argc, slib_par_t *params, var_t *retval) {
   int image_id = get_image_id(argc, params, 0, retval);
   if (image_id != -1) {
     auto maxPaletteSize = get_param_int(argc, params, 1, 0);
-    auto colorCount = 0;
-    auto fnResult = (var_int_t)LoadImagePalette(_imageMap.at(image_id), maxPaletteSize, &colorCount);
+    auto colorCount = (int *)0;
+    auto fnResult = (var_int_t)LoadImagePalette(_imageMap.at(image_id), maxPaletteSize, colorCount);
     v_setint(retval, fnResult);
     result = 1;
   } else {

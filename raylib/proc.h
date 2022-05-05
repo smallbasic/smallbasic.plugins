@@ -2836,8 +2836,8 @@ static int cmd_takescreenshot(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_textappend(int argc, slib_par_t *params, var_t *retval) {
   auto text = (char *)get_param_str(argc, params, 0, 0);
   auto append = get_param_str(argc, params, 1, 0);
-  auto position = 0;
-  TextAppend(text, append, &position);
+  auto position = (int *)0;
+  TextAppend(text, append, position);
   return 1;
 }
 
@@ -2868,8 +2868,8 @@ static int cmd_unloadaudiostream(int argc, slib_par_t *params, var_t *retval) {
 // Unload codepoints data from memory
 //
 static int cmd_unloadcodepoints(int argc, slib_par_t *params, var_t *retval) {
-  auto codepoints = 0;
-  UnloadCodepoints(&codepoints);
+  auto codepoints = (int *)0;
+  UnloadCodepoints(codepoints);
   return 1;
 }
 

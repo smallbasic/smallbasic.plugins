@@ -67,7 +67,7 @@ func get_param_name(byref param)
   case "const void *": result = "(const void *)get_param_int_t"
   case "float *": result = "(float *)get_param_int_t"
   case "unsigned int *": result = "(unsigned int *)get_param_int_t"
-  case "int *": result = "0"
+  case "int *": result = "(int *)0"
   case "void *": result = "(void *)get_param_int_t"
   case "const int *": result = "(const int *)get_param_int_t"
   case else: throw "unknown param [" + param.type + "]"
@@ -188,14 +188,22 @@ func get_result_cast(byref fun)
 end
 
 '
+' returns whether the function returns a string
+'
+func is_str_return(byref fun)
+  return fun.returnType != "void" and get_v_set_name(fun) == "v_setstr"
+end
+
+'
 ' returns the parameter argument for the RAYLIB call
 '
-func get_param_arg(byref param)
+func get_param_arg(byref param, byref fun)
   local result
-  select case lower(trim(param.type))
-  case "int *": result = "&" + param.name
-  case else: result = param.name
-  end select
+  if (lower(trim(param.type)) == "int *" && is_str_return(fun)) then
+    result = "&" + param.name
+  else
+    result = param.name
+  end if
   return result
 end
 
@@ -203,16 +211,8 @@ end
 ' returns the arguments to the method that marshalls the input for one of the fields
 '
 func get_arg_arg(byref param, i)
-  local result
-  local def_arg
-
-  select case lower(trim(param.type))
-  case "int *": result = ";"
-  case else
-    def_arg = iff(has_default_param(param), ", 0", "")
-    result = "(argc, params, " + i + def_arg + ");"
-  end select
-  return result
+  local def_arg = iff(has_default_param(param), ", 0", "")
+  return "(argc, params, " + i + def_arg + ");"
 end
 
 func is_map_param(type)
@@ -299,6 +299,18 @@ sub print_description
   print "//"
 end
 
+sub print_var(indent, byref param, byref fun)
+  if (lower(trim(param.type)) == "int *") then
+    if (is_str_return(fun)) then
+      print indent + "  auto " + param.name + " = 0;"
+    else
+      print indent + "  auto " + param.name + " = (int *)0;"
+    endif
+  else
+    print indent + "  auto " + param.name + " = " + get_param_name(param) + get_arg_arg(param, i)
+  endif
+end
+
 sub print_func_map(byref fun)
   print_description
   print "static int cmd_" + lower(fun.name) + "(int argc, slib_par_t *params, var_t *retval) {"
@@ -326,11 +338,11 @@ sub print_func_map(byref fun)
   for param in fun.params
     if (i > 0) then args += ", "
     if (!is_map_param(param.type)) then
-      print "    auto " + param.name + " = " + get_param_name(param) + + get_arg_arg(param, i)
-      args += get_param_arg(param)
+      print_var("  ", param, fun)
+      args += get_param_arg(param, fun)
       if (lower(trim(param.type)) == "int *") then
         i--
-        if (fun.returnType != "void" and get_v_set_name(fun) == "v_setstr") then strlenArg = param.name
+        if (is_str_return(fun)) then strlenArg = param.name
       endif
     else
       args += get_map_name(param) + ".at(" + lower(param.name) + "_id)"
@@ -367,12 +379,12 @@ sub print_func(byref fun)
   local strlenArg = 0
 
   for param in fun.params
-    print "  auto " + param.name + " = " + get_param_name(param) + get_arg_arg(param, i)
+    print_var("", param, fun)
     if (i > 0) then args += ", "
-    args += get_param_arg(param)
+    args += get_param_arg(param, fun)
     if (lower(trim(param.type)) == "int *") then
       i--
-      if (fun.returnType != "void" and get_v_set_name(fun) == "v_setstr") then strlenArg = param.name
+      if (is_str_return(fun)) then strlenArg = param.name
     endif
     i++
   next
