@@ -128,6 +128,14 @@ static int cmd_disablecursor(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Disable waiting for events on EndDrawing(), automatic events polling
+//
+static int cmd_disableeventwaiting(int argc, slib_par_t *params, var_t *retval) {
+  DisableEventWaiting();
+  return 1;
+}
+
+//
 // Draw a billboard texture
 //
 static int cmd_drawbillboard(int argc, slib_par_t *params, var_t *retval) {
@@ -1288,6 +1296,14 @@ static int cmd_drawtrianglestrip3d(int argc, slib_par_t *params, var_t *retval) 
 //
 static int cmd_enablecursor(int argc, slib_par_t *params, var_t *retval) {
   EnableCursor();
+  return 1;
+}
+
+//
+// Enable waiting for events on EndDrawing(), no automatic event polling
+//
+static int cmd_enableeventwaiting(int argc, slib_par_t *params, var_t *retval) {
+  EnableEventWaiting();
   return 1;
 }
 

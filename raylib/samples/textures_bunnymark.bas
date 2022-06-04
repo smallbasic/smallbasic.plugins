@@ -12,7 +12,7 @@ REM ----------------------------------------------------------------------------
 import raylib as rl
 import raylibc as c
 
-local MAX_BUNNIES = 100000    ' 100K bunnies limit
+local MAX_BUNNIES = 10    ' 100K bunnies limit
 
 REM  This is the maximum amount of elements (quads) per batch
 REM  NOTE: This value is defined in [rlgl] module and can be changed there
@@ -64,7 +64,7 @@ while (!rl.WindowShouldClose())
   next i
 
   rl.BeginDrawing()
-  rl.ClearBackground(RAYWHITE);
+  rl.ClearBackground(c.RAYWHITE)
 
   for i = 0 to len(bunnies) - 1
     ' NOTE: When internal batch buffer limit is reached (MAX_BATCH_ELEMENTS),

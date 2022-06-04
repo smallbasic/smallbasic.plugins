@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (553)
+Implemented APIs (556)
 ----------------
 
 | Name    | Description   |
@@ -52,6 +52,7 @@ Implemented APIs (553)
 | func destroyPhysicsbody() | n/a |
 | func DirectoryExists(dirPath) | Check if a directory path exists |
 | sub DisableCursor() | Disables cursor (lock cursor) |
+| sub DisableEventWaiting() | Disable waiting for events on EndDrawing(), automatic events polling |
 | sub DrawBillboard(camera, texture, position, size, tint) | Draw a billboard texture |
 | sub DrawBillboardPro(camera, texture, source, position, up, size, origin, rotation, tint) | Draw a billboard texture defined by source and rotation |
 | sub DrawBillboardRec(camera, texture, source, position, size, tint) | Draw a billboard texture defined by source |
@@ -134,6 +135,7 @@ Implemented APIs (553)
 | sub DrawTriangleStrip(points, pointCount, color) | Draw a triangle strip defined by points |
 | sub DrawTriangleStrip3D(points, pointCount, color) | Draw a triangle strip defined by points |
 | sub EnableCursor() | Enables cursor (unlock cursor) |
+| sub EnableEventWaiting() | Enable waiting for events on EndDrawing(), no automatic event polling |
 | func EncodeDataBase64(data, dataSize, outputSize) | Encode data to Base64 string, memory must be MemFree() |
 | sub EndBlendMode() | End blending mode (reset to default: alpha blending) |
 | sub EndDrawing() | End canvas drawing and swap buffers (double buffering) |
@@ -143,6 +145,7 @@ Implemented APIs (553)
 | sub EndShaderMode() | End custom shader drawing (use default shader) |
 | sub EndTextureMode() | Ends drawing to render texture |
 | sub EndVrStereoMode() | End stereo rendering (requires VR simulator) |
+| func ExportDataAsCode(data, size, fileName) | Export data to code (.h), returns true on success |
 | func ExportFontAsCode(font, fileName) | Export font as code file, returns true on success |
 | func ExportImage(image, fileName) | Export image data to file, returns true on success |
 | func ExportImageAsCode(image, fileName) | Export image as code file defining an array of bytes, returns true on success |

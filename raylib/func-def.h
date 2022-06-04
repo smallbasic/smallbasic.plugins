@@ -23,6 +23,7 @@
   {2, 2, "DECOMPRESSDATA", cmd_decompressdata},
   {1, 1, "DIRECTORYEXISTS", cmd_directoryexists},
   {2, 2, "ENCODEDATABASE64", cmd_encodedatabase64},
+  {3, 3, "EXPORTDATAASCODE", cmd_exportdataascode},
   {2, 2, "EXPORTFONTASCODE", cmd_exportfontascode},
   {2, 2, "EXPORTIMAGE", cmd_exportimage},
   {2, 2, "EXPORTIMAGEASCODE", cmd_exportimageascode},
