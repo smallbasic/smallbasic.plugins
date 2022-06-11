@@ -29,6 +29,7 @@ func get_param_name(byref param)
   case "const char *": result = "get_param_str"
   case "const unsigned char *": result = "(const unsigned char *)get_param_str"
   case "float": result = "get_param_num"
+  case "double": result = "get_param_num"
   case "font": result = "get_font_id"
   case "image": result = "get_image_id"
   case "int": result = "get_param_int"

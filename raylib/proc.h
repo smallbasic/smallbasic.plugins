@@ -79,22 +79,6 @@ static int cmd_clearbackground(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Clear directory files paths buffers (free memory)
-//
-static int cmd_cleardirectoryfiles(int argc, slib_par_t *params, var_t *retval) {
-  ClearDirectoryFiles();
-  return 1;
-}
-
-//
-// Clear dropped files paths buffer (free memory)
-//
-static int cmd_cleardroppedfiles(int argc, slib_par_t *params, var_t *retval) {
-  ClearDroppedFiles();
-  return 1;
-}
-
-//
 // Clear window configuration state flags
 //
 static int cmd_clearwindowstate(int argc, slib_par_t *params, var_t *retval) {
@@ -2890,6 +2874,22 @@ static int cmd_unloadcodepoints(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Unload directory filepaths
+//
+static int cmd_unloaddirectoryfiles(int argc, slib_par_t *params, var_t *retval) {
+  UnloadDirectoryFiles();
+  return 1;
+}
+
+//
+// Unload dropped filepaths
+//
+static int cmd_unloaddroppedfiles(int argc, slib_par_t *params, var_t *retval) {
+  UnloadDroppedFiles();
+  return 1;
+}
+
+//
 // Unload file data allocated by LoadFileData()
 //
 static int cmd_unloadfiledata(int argc, slib_par_t *params, var_t *retval) {
@@ -3231,11 +3231,11 @@ static int cmd_uploadmesh(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Wait for some milliseconds (halt program execution)
+// Wait for some time (halt program execution)
 //
 static int cmd_waittime(int argc, slib_par_t *params, var_t *retval) {
-  auto ms = get_param_num(argc, params, 0, 0);
-  WaitTime(ms);
+  auto seconds = get_param_num(argc, params, 0, 0);
+  WaitTime(seconds);
   return 1;
 }
 

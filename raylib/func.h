@@ -1044,7 +1044,7 @@ static int cmd_getmonitorcount(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get specified monitor height (max available by monitor)
+// Get specified monitor height (current video mode used by monitor)
 //
 static int cmd_getmonitorheight(int argc, slib_par_t *params, var_t *retval) {
   auto monitor = get_param_int(argc, params, 0, 0);
@@ -1104,7 +1104,7 @@ static int cmd_getmonitorrefreshrate(int argc, slib_par_t *params, var_t *retval
 }
 
 //
-// Get specified monitor width (max available by monitor)
+// Get specified monitor width (current video mode used by monitor)
 //
 static int cmd_getmonitorwidth(int argc, slib_par_t *params, var_t *retval) {
   auto monitor = get_param_int(argc, params, 0, 0);

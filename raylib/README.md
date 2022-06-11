@@ -1,4 +1,4 @@
-*Raylib* 4.1-dev
+*Raylib* 4.2-dev
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
@@ -29,8 +29,6 @@ Implemented APIs (556)
 | func CheckCollisionRecs(rec1, rec2) | Check collision between two rectangles |
 | func CheckCollisionSpheres(center1, radius1, center2, radius2) | Check collision between two spheres |
 | sub ClearBackground(color) | Set background color (framebuffer clear color) |
-| sub ClearDirectoryFiles() | Clear directory files paths buffers (free memory) |
-| sub ClearDroppedFiles() | Clear dropped files paths buffer (free memory) |
 | sub ClearWindowState(flags) | Clear window configuration state flags |
 | sub CloseAudioDevice() | Close the audio device and context |
 | func closePhysics() | n/a |
@@ -211,13 +209,13 @@ Implemented APIs (556)
 | func GetKeyPressed() | Get key pressed (keycode), call it multiple times for keys queued, returns 0 when the queue is empty |
 | func GetModelBoundingBox(model) | Compute model bounding box limits (considers all meshes) |
 | func GetMonitorCount() | Get number of connected monitors |
-| func GetMonitorHeight(monitor) | Get specified monitor height (max available by monitor) |
+| func GetMonitorHeight(monitor) | Get specified monitor height (current video mode used by monitor) |
 | func GetMonitorName(monitor) | Get the human-readable, UTF-8 encoded name of the primary monitor |
 | func GetMonitorPhysicalHeight(monitor) | Get specified monitor physical height in millimetres |
 | func GetMonitorPhysicalWidth(monitor) | Get specified monitor physical width in millimetres |
 | func GetMonitorPosition(monitor) | Get specified monitor position |
 | func GetMonitorRefreshRate(monitor) | Get specified monitor refresh rate |
-| func GetMonitorWidth(monitor) | Get specified monitor width (max available by monitor) |
+| func GetMonitorWidth(monitor) | Get specified monitor width (current video mode used by monitor) |
 | func GetMouseDelta() | Get mouse delta between frames |
 | func GetMousePosition() | Get mouse position XY |
 | func GetMouseRay(mousePosition, camera) | Get a ray trace from mouse position |
@@ -531,6 +529,8 @@ Implemented APIs (556)
 | sub ToggleFullscreen() | Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP) |
 | sub UnloadAudioStream(stream) | Unload audio stream and free memory |
 | sub UnloadCodepoints(codepoints) | Unload codepoints data from memory |
+| sub UnloadDirectoryFiles() | Unload directory filepaths |
+| sub UnloadDroppedFiles() | Unload dropped filepaths |
 | sub UnloadFileData(data) | Unload file data allocated by LoadFileData() |
 | sub UnloadFileText(text) | Unload file text data allocated by LoadFileText() |
 | sub UnloadFont(font) | Unload font from GPU memory (VRAM) |
@@ -560,7 +560,7 @@ Implemented APIs (556)
 | sub UpdateTextureRec(texture, rec, pixels) | Update GPU texture rectangle with new data |
 | sub UploadMesh(mesh, dynamic) | Upload mesh vertex data in GPU and provide VAO/VBO ids |
 | func waitevents() | n/a |
-| sub WaitTime(ms) | Wait for some milliseconds (halt program execution) |
+| sub WaitTime(seconds) | Wait for some time (halt program execution) |
 | func WaveCopy(wave) | Copy a wave to a new wave |
 | sub WaveCrop(wave, initSample, finalSample) | Crop a wave to defined samples range |
 | sub WaveFormat(wave, sampleRate, sampleSize, channels) | Convert wave data to desired format |
@@ -577,9 +577,9 @@ Unimplemented APIs
 | DrawMesh | Draw a 3d mesh with material and transform |
 | DrawMeshInstanced | Draw multiple mesh instances with material and different transforms |
 | GenImageFontAtlas | Generate image font atlas using chars info |
-| GetDirectoryFiles | Get filenames in a directory path (memory must be freed) |
-| GetDroppedFiles | Get dropped files names (memory must be freed) |
 | GetGlyphInfo | Get glyph font info data for a codepoint (unicode character), fallback to '?' if not found |
+| LoadDirectoryFiles | Load directory filepaths |
+| LoadDroppedFiles | Load dropped filepaths |
 | LoadFontData | Load font data for further use |
 | LoadMaterialDefault | Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps) |
 | LoadMaterials | Load materials from model file |

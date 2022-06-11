@@ -16,7 +16,7 @@ const MAX_PARTICLES = 200
 local screenWidth = 800
 local screenHeight = 450
 
-rl.InitWindow(screenWidth, screenHeight, "raylib [textures] example - particles trail blending")
+rl.InitWindow(screenWidth, screenHeight, "SmallBASIC - raylib [textures] example - particles trail blending")
 
 REM Particles pool, reuse them!
 dim mouseTail(MAX_PARTICLES)
