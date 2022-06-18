@@ -33,6 +33,7 @@
 #include "physac.h"
 
 #define MAX_INPUTBOX_LENGTH 1024
+#define MAX_FILEPATH_LENGTH 4096
 
 robin_hood::unordered_map<int, AudioStream> _audioStream;
 robin_hood::unordered_map<int, Font> _fontMap;
@@ -332,6 +333,26 @@ static Ray get_param_ray(int argc, slib_par_t *params, int n) {
     var_p_t map = params[n].var_p;
     result.position = get_map_vec3(map, "position");
     result.direction = get_map_vec3(map, "direction");
+  }
+  return result;
+}
+
+static FilePathList get_param_filepathlist(int argc, slib_par_t *params, int n) {
+  FilePathList result;
+  if (is_param_array(argc, params, n)) {
+    var_p_t array = params[n].var_p;
+    result.count = v_asize(array);
+    result.capacity = result.count;
+    result.paths = (char **)malloc(result.capacity * sizeof(char *));
+    for (unsigned index = 0; index < result.count; index++) {
+      result.paths[index] = (char *)malloc(MAX_FILEPATH_LENGTH * sizeof(char));
+      var_p_t elem = v_elem(array, index);
+      if (elem->type == V_STR) {
+        strncpy(result.paths[index], elem->v.p.ptr, MAX_FILEPATH_LENGTH);
+      } else {
+        result.paths[index][0] = '\0';
+      }
+    }
   }
   return result;
 }
@@ -764,6 +785,16 @@ static void v_setwave(var_t *var, Wave &wave) {
   v_setint(map_add_var(var, "sampleRate", 0), wave.sampleRate);
   v_setint(map_add_var(var, "sampleSize", 0), wave.sampleSize);
   v_setint(map_add_var(var, "channels", 0), wave.channels);
+}
+
+static void v_setfilepathlist(var_t *var, FilePathList &filePathList) {
+  v_toarray1(var, filePathList.count);
+  fprintf(stderr, "files count = %d\n", filePathList.count);
+  for (unsigned index = 0; index < filePathList.count; index++) {
+    var_p_t elem = v_elem(var, index);
+    v_setstr(elem, filePathList.paths[index]);
+  }
+  UnloadDirectoryFiles(filePathList);
 }
 
 #include "proc.h"
@@ -1804,7 +1835,7 @@ SBLIB_API void sblib_close(void) {
     TraceLog(LOG_INFO, "Restoring from full-screen");
     ToggleFullscreen();
   }
-  
+
   _audioStream.clear();
   _fontMap.clear();
   _imageMap.clear();

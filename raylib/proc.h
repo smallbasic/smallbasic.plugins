@@ -2874,10 +2874,11 @@ static int cmd_unloadcodepoints(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Unload directory filepaths
+// Unload filepaths
 //
 static int cmd_unloaddirectoryfiles(int argc, slib_par_t *params, var_t *retval) {
-  UnloadDirectoryFiles();
+  auto files = get_param_filepathlist(argc, params, 0);
+  UnloadDirectoryFiles(files);
   return 1;
 }
 
@@ -2885,7 +2886,8 @@ static int cmd_unloaddirectoryfiles(int argc, slib_par_t *params, var_t *retval)
 // Unload dropped filepaths
 //
 static int cmd_unloaddroppedfiles(int argc, slib_par_t *params, var_t *retval) {
-  UnloadDroppedFiles();
+  auto files = get_param_filepathlist(argc, params, 0);
+  UnloadDroppedFiles(files);
   return 1;
 }
 

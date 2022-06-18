@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (556)
+Implemented APIs (561)
 ----------------
 
 | Name    | Description   |
@@ -219,7 +219,8 @@ Implemented APIs (556)
 | func GetMouseDelta() | Get mouse delta between frames |
 | func GetMousePosition() | Get mouse position XY |
 | func GetMouseRay(mousePosition, camera) | Get a ray trace from mouse position |
-| func GetMouseWheelMove() | Get mouse wheel movement Y |
+| func GetMouseWheelMove() | Get mouse wheel movement for X or Y, whichever is larger |
+| func GetMouseWheelMoveV() | Get mouse wheel movement for both X and Y |
 | func GetMouseX() | Get mouse position X |
 | func GetMouseY() | Get mouse position Y |
 | func GetMusicTimeLength(music) | Get music time length (in seconds) |
@@ -366,6 +367,7 @@ Implemented APIs (556)
 | func IsMouseButtonReleased(button) | Check if a mouse button has been released once |
 | func IsMouseButtonUp(button) | Check if a mouse button is NOT being pressed |
 | func IsMusicStreamPlaying(music) | Check if music is playing |
+| func IsPathFile(path) | Check if a given path is a file or a directory |
 | func IsSoundPlaying(sound) | Check if a sound is currently playing |
 | func IsWindowFocused() | Check if window is currently focused (only PLATFORM_DESKTOP) |
 | func IsWindowFullscreen() | Check if window is currently fullscreen |
@@ -377,6 +379,9 @@ Implemented APIs (556)
 | func IsWindowState(flag) | Check if one specific window flag is enabled |
 | func LoadAudioStream(sampleRate, sampleSize, channels) | Load audio stream (to stream raw audio pcm data) |
 | func LoadCodepoints(text, count) | Load all codepoints from a UTF-8 text string, codepoints count returned by parameter |
+| func LoadDirectoryFiles(dirPath) | Load directory filepaths |
+| func LoadDirectoryFilesEx(basePath, filter, scanSubdirs) | Load directory filepaths with extension filtering and recursive directory scan |
+| func LoadDroppedFiles() | Load dropped filepaths |
 | func LoadFileData(fileName, bytesRead) | Load file data as byte array (read) |
 | func LoadFileText(fileName) | Load text data from file (read), returns a '\\0' terminated string |
 | func LoadFont(fileName) | Load font from file into GPU memory (VRAM) |
@@ -529,8 +534,8 @@ Implemented APIs (556)
 | sub ToggleFullscreen() | Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP) |
 | sub UnloadAudioStream(stream) | Unload audio stream and free memory |
 | sub UnloadCodepoints(codepoints) | Unload codepoints data from memory |
-| sub UnloadDirectoryFiles() | Unload directory filepaths |
-| sub UnloadDroppedFiles() | Unload dropped filepaths |
+| sub UnloadDirectoryFiles(files) | Unload filepaths |
+| sub UnloadDroppedFiles(files) | Unload dropped filepaths |
 | sub UnloadFileData(data) | Unload file data allocated by LoadFileData() |
 | sub UnloadFileText(text) | Unload file text data allocated by LoadFileText() |
 | sub UnloadFont(font) | Unload font from GPU memory (VRAM) |
@@ -578,8 +583,6 @@ Unimplemented APIs
 | DrawMeshInstanced | Draw multiple mesh instances with material and different transforms |
 | GenImageFontAtlas | Generate image font atlas using chars info |
 | GetGlyphInfo | Get glyph font info data for a codepoint (unicode character), fallback to '?' if not found |
-| LoadDirectoryFiles | Load directory filepaths |
-| LoadDroppedFiles | Load dropped filepaths |
 | LoadFontData | Load font data for further use |
 | LoadMaterialDefault | Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps) |
 | LoadMaterials | Load materials from model file |

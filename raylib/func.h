@@ -1143,11 +1143,20 @@ static int cmd_getmouseray(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get mouse wheel movement Y
+// Get mouse wheel movement for X or Y, whichever is larger
 //
 static int cmd_getmousewheelmove(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetMouseWheelMove();
   v_setreal(retval, fnResult);
+  return 1;
+}
+
+//
+// Get mouse wheel movement for both X and Y
+//
+static int cmd_getmousewheelmovev(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetMouseWheelMoveV();
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
@@ -1840,6 +1849,16 @@ static int cmd_ismusicstreamplaying(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
+// Check if a given path is a file or a directory
+//
+static int cmd_ispathfile(int argc, slib_par_t *params, var_t *retval) {
+  auto path = get_param_str(argc, params, 0, 0);
+  auto fnResult = IsPathFile(path);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
 // Check if a sound is currently playing
 //
 static int cmd_issoundplaying(int argc, slib_par_t *params, var_t *retval) {
@@ -1948,6 +1967,37 @@ static int cmd_loadcodepoints(int argc, slib_par_t *params, var_t *retval) {
   auto count = (int *)0;
   auto fnResult = (var_int_t)LoadCodepoints(text, count);
   v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Load directory filepaths
+//
+static int cmd_loaddirectoryfiles(int argc, slib_par_t *params, var_t *retval) {
+  auto dirPath = get_param_str(argc, params, 0, 0);
+  auto fnResult = LoadDirectoryFiles(dirPath);
+  v_setfilepathlist(retval, fnResult);
+  return 1;
+}
+
+//
+// Load directory filepaths with extension filtering and recursive directory scan
+//
+static int cmd_loaddirectoryfilesex(int argc, slib_par_t *params, var_t *retval) {
+  auto basePath = get_param_str(argc, params, 0, 0);
+  auto filter = get_param_str(argc, params, 1, 0);
+  auto scanSubdirs = get_param_int(argc, params, 2, 0);
+  auto fnResult = LoadDirectoryFilesEx(basePath, filter, scanSubdirs);
+  v_setfilepathlist(retval, fnResult);
+  return 1;
+}
+
+//
+// Load dropped filepaths
+//
+static int cmd_loaddroppedfiles(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = LoadDroppedFiles();
+  v_setfilepathlist(retval, fnResult);
   return 1;
 }
 

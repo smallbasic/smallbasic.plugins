@@ -71,6 +71,7 @@ func get_param_name(byref param)
   case "int *": result = "(int *)0"
   case "void *": result = "(void *)get_param_int_t"
   case "const int *": result = "(const int *)get_param_int_t"
+  case "filepathlist": result = "get_param_filepathlist"
   case else: throw "unknown param [" + param.type + "]"
   end select
   return result
@@ -156,6 +157,7 @@ func get_v_set_name(byref fun)
   case "unsigned int *": result = "v_setint"
   case "int *": result = "v_setint"
   case "void *": result = "v_setint"
+  case "filepathlist": result = "v_setfilepathlist"
   case else: throw "unknown return [" + fun.returnType + "] "
   end select
   return result
