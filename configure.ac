@@ -12,6 +12,8 @@ AC_CONFIG_AUX_DIR(aux-dist)
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_SRCDIR([include/param.cpp])
 AC_CONFIG_HEADER([config.h])
+AC_LANG([C])
+AC_LANG([C++])
 AM_INIT_AUTOMAKE([subdir-objects])
 LT_INIT([win32-dll])
 
@@ -39,7 +41,7 @@ AC_ARG_WITH(static-include,
 case "${host_os}" in
   *mingw* | *msys*)
     AC_DEFINE(_WIN32, 1, [building for win32])
-    PLATFORM_LDFLAGS="-no-undefined -Wl,-static -avoid-version"
+    PLATFORM_LDFLAGS="-no-undefined -Wc,-static-libgcc -Wl,-static -avoid-version"
     RAYLIB_LDFLAGS="-pthread -lgdi32 -mwindows"
     CLIPBOARD_LDFLAGS=""
     NUKLEAR_LDFLAGS="-pthread -lgdi32 -mwindows"

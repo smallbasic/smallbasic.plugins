@@ -789,7 +789,6 @@ static void v_setwave(var_t *var, Wave &wave) {
 
 static void v_setfilepathlist(var_t *var, FilePathList &filePathList) {
   v_toarray1(var, filePathList.count);
-  fprintf(stderr, "files count = %d\n", filePathList.count);
   for (unsigned index = 0; index < filePathList.count; index++) {
     var_p_t elem = v_elem(var, index);
     v_setstr(elem, filePathList.paths[index]);
