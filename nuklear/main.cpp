@@ -9,15 +9,16 @@
 
 #include "config.h"
 
+#define NK_GLFW_GL2_IMPLEMENTATION
+#define NK_IMPLEMENTATION
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_DEFAULT_FONT
 #define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_STANDARD_IO
 #define NK_INCLUDE_STANDARD_VARARGS
-#define NK_INCLUDE_DEFAULT_ALLOCATOR
 #define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-#define NK_INCLUDE_DEFAULT_FONT
-#define NK_INCLUDE_FONT_BAKING
-#define NK_IMPLEMENTATION
-#define NK_GLFW_GL2_IMPLEMENTATION
+#define NK_KEYSTATE_BASED_INPUT
 
 #include <cstddef>
 #include <cstdio>
@@ -28,6 +29,7 @@
 #include "include/var.h"
 #include "include/module.h"
 #include "include/param.h"
+#include "nkbd.h"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -53,7 +55,6 @@ static struct nk_color _fg_color;
 static struct nk_color _bg_color;
 static float _line_thickness;
 static bool _isExit;
-static int _dirty;
 static int _width;
 static int _height;
 
@@ -125,9 +126,10 @@ bool nkp_process_events() {
   if (glfwWindowShouldClose(_window)) {
     _isExit = true;
   } else {
-    glfwPollEvents();
+    glfwWaitEvents();
     nk_glfw3_new_frame();
   }
+
   return true;
 }
 
@@ -335,10 +337,14 @@ static int cmd_button(int argc, slib_par_t *params, var_t *retval) {
   const char *title = get_param_str(argc, params, 0, nullptr);
   int result;
   if (title != nullptr) {
+    nkbd_widget_begin(_ctx);
     if (is_color(title, v_strlen(params[0].var_p))) {
       v_setint(retval, nk_button_color(_ctx, nk_rgb_hex(title)));
     } else {
       v_setint(retval, nk_button_label(_ctx, title));
+    }
+    if (nkbd_widget_end(_ctx, false, retval->v.i)) {
+      retval->v.i = 1;
     }
     result = 1;
   } else {
@@ -351,13 +357,19 @@ static int cmd_button(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
   const char *label = get_param_str(argc, params, 0, nullptr);
   if (label != nullptr && is_param_map(argc, params, 1)) {
+    nkbd_widget_begin(_ctx);
     var_t *map = params[1].var_p;
     int value = map_get_bool(map, "value");
     int changed = nk_checkbox_label(_ctx, label, &value);
     if (changed) {
+      // value mutated in nk_checkbox_label()
       map_set_int(map, "value", value);
     }
-    v_setint(retval, changed);
+    if (nkbd_widget_end(_ctx, false, changed) && !changed) {
+      changed = 1;
+      map_set_int(map, "value", !value);
+    }
+    v_setint(retval, value);
   } else {
     v_setstr(retval, "Invalid checkbox input");
   }
@@ -484,14 +496,16 @@ static int cmd_edit(int argc, slib_par_t *params, var_t *retval) {
     } else if (!strcasecmp(styleStr, "box")) {
       style = NK_EDIT_BOX;
     }
+    style &= ~NK_EDIT_ALLOW_TAB;
     const char *value = get_param_str_field(argc, params, 1, "value");
     if (value != nullptr && style != 0) {
+      nkbd_widget_begin(_ctx);
       size_t len = NK_CLAMP(0, strlen(value), MAX_EDIT_BUFFER_LEN - 1);
       memcpy(_edit_buffer, value, len);
       _edit_buffer[len] = '\0';
-      nk_flags event = nk_edit_string_zero_terminated(_ctx, style, _edit_buffer,
-                                                      MAX_EDIT_BUFFER_LEN - 1, nk_filter_default);
+      nk_flags event = nk_edit_string_zero_terminated(_ctx, style, _edit_buffer, MAX_EDIT_BUFFER_LEN - 1, nk_filter_default);
       v_setstr(map_get(params[1].var_p, "value"), _edit_buffer);
+      nkbd_widget_end(_ctx, true, 0);
       success = 1;
     }
   } else {
@@ -722,10 +736,14 @@ static int cmd_radio(int argc, slib_par_t *params, var_t *retval) {
   int result;
   const char *name = get_param_str(argc, params, 0, nullptr);
   if (name != nullptr && is_param_map(argc, params, 1)) {
+    nkbd_widget_begin(_ctx);
     const char *value = get_param_str_field(argc, params, 1, "value");
     int active = !strcasecmp(value, name);
     int changed = nk_radio_label(_ctx, name, &active);
     if (changed && active) {
+      v_setstr(map_get(params[1].var_p, "value"), name);
+    }
+    if (nkbd_widget_end(_ctx, false, changed) && !changed) {
       v_setstr(map_get(params[1].var_p, "value"), name);
     }
     result = 1;
@@ -752,11 +770,15 @@ static int cmd_rectmulticolor(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_selectable(int argc, slib_par_t *params, var_t *retval) {
   const char *text = get_param_str(argc, params, 0, nullptr);
   if (text != nullptr && is_param_map(argc, params, 1)) {
+    nkbd_widget_begin(_ctx);
     int value = get_param_num_field(argc, params, 1, "value");
     nk_flags align = NK_TEXT_LEFT;
     int changed = nk_selectable_label(_ctx, text, align, &value);
     if (changed) {
       v_setint(map_get(params[1].var_p, "value"), value);
+    }
+    if (nkbd_widget_end(_ctx, false, changed) && !changed) {
+      v_setint(map_get(params[1].var_p, "value"), !value);
     }
   } else {
     v_setstr(retval, "Invalid selectable input");
@@ -850,30 +872,22 @@ static int cmd_widgetishovered(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
-  nk_input_begin(_ctx);
-  _dirty = nkp_process_events();
-  nk_input_end(_ctx);
-  if (_dirty) {
-    const char *title = get_param_str(argc, params, 0, "Untitled");
-    struct nk_rect rc = get_param_rect(argc, params, 1);
-    nk_flags flags = get_param_window_flags(argc, params, 5);
-    v_setint(retval, nk_begin(_ctx, title, rc, flags));
-    if ((flags & NK_WINDOW_TITLE) == 0) {
-      nkp_set_window_title(title);
-    }
-  } else {
-    // no UI updates required
-    v_setint(retval, 0);
+  nkp_process_events();
+  nkbd_begin(_ctx);
+  const char *title = get_param_str(argc, params, 0, "Untitled");
+  struct nk_rect rc = get_param_rect(argc, params, 1);
+  nk_flags flags = get_param_window_flags(argc, params, 5);
+  v_setint(retval, nk_begin(_ctx, title, rc, flags));
+  if ((flags & NK_WINDOW_TITLE) == 0) {
+    nkp_set_window_title(title);
   }
   return 1;
 }
 
 static int cmd_windowend(int argc, slib_par_t *params, var_t *retval) {
-  if (_dirty) {
-    nk_end(_ctx);
-    nkp_windowend();
-    _dirty = false;
-  }
+  nkbd_end(_ctx, nk_red);
+  nk_end(_ctx);
+  nkp_windowend();
   return 1;
 }
 
@@ -974,7 +988,6 @@ SBLIB_API void sblib_devinit(const char *prog, int width, int height) {
   _bg_color = nk_black;
   _fg_color = nk_white;
   _line_thickness = 1;
-  _dirty = true;
 
   const char *name = strrchr(prog, '/');
   if (name == nullptr) {
