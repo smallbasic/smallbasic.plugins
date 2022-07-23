@@ -11,6 +11,7 @@
 
 #define NK_GLFW_GL2_IMPLEMENTATION
 #define NK_IMPLEMENTATION
+#define NK_INCLUDE_COMMAND_USERDATA
 #define NK_INCLUDE_DEFAULT_ALLOCATOR
 #define NK_INCLUDE_DEFAULT_FONT
 #define NK_INCLUDE_FIXED_TYPES
@@ -53,6 +54,7 @@ static const char *_comboboxItems[MAX_COMBOBOX_ITEMS];
 static char _edit_buffer[MAX_EDIT_BUFFER_LEN];
 static struct nk_color _fg_color;
 static struct nk_color _bg_color;
+static struct nk_color _focus_color;
 static float _line_thickness;
 static bool _isExit;
 static int _width;
@@ -119,6 +121,7 @@ nk_context *nkp_create_window(const char *title, int width, int height) {
   nk_glfw3_font_stash_end();
   _isExit = false;
 
+  nkbd_create(result);
   return result;
 }
 
@@ -147,6 +150,7 @@ void nkp_windowend() {
 }
 
 void nkp_close() {
+  nkbd_destroy(_ctx);
   nk_glfw3_shutdown();
   glfwTerminate();
 }
@@ -435,7 +439,14 @@ static int cmd_combobox(int argc, slib_par_t *params, var_t *retval) {
       struct nk_rect bounds = nk_widget_bounds(_ctx);
       struct nk_vec2 size = nk_vec2(bounds.w, bounds.h * 8);
       int selected = v_value->v.i;
+
+      nkbd_combo_begin(_ctx);
       nk_combobox(_ctx, _comboboxItems, count, &selected, bounds.h, size);
+
+      nk_flags state;
+      bool active = nk_button_behavior(&state, bounds, &_ctx->input, NK_BUTTON_DEFAULT);
+      nkbd_widget_end(_ctx, false, active);
+
       v_value->v.i = selected;
       success = 1;
     }
@@ -885,7 +896,7 @@ static int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_windowend(int argc, slib_par_t *params, var_t *retval) {
-  nkbd_end(_ctx, nk_red);
+  nkbd_end(_ctx, _focus_color);
   nk_end(_ctx);
   nkp_windowend();
   return 1;
@@ -987,6 +998,7 @@ FUNC_SIG lib_func[] = {
 SBLIB_API void sblib_devinit(const char *prog, int width, int height) {
   _bg_color = nk_black;
   _fg_color = nk_white;
+  _focus_color = nk_red;
   _line_thickness = 1;
 
   const char *name = strrchr(prog, '/');
