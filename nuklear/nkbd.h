@@ -84,13 +84,37 @@ NK_LIB void nkbd_widget_begin(nk_context *ctx) {
 //
 // sets the focus rectangle
 //
-NK_LIB bool nkbd_widget_end(nk_context *ctx, bool edit, bool active) {
+NK_LIB bool nkbd_widget_end(nk_context *ctx, bool active) {
+  Nkbd *nkbd = (Nkbd *)ctx->userdata.ptr;
+  bool result = active;
+
+  if ((nkbd->focus == nkbd->seq) || active) {
+    result = nkbd->enter_pressed;
+    nkbd->enter_pressed = false;
+    nkbd->focus_rect = nkbd->widget_rect;
+  }
+
+  if (active) {
+    // focus on selected item
+    nkbd->focus = nkbd->seq;
+    nk_edit_unfocus(ctx);
+  }
+
+  // set ID for next widget
+  nkbd->seq++;
+  return result;
+}
+
+//
+// nkbd_widget_end handler for edit controls
+//
+NK_LIB bool nkbd_edit_end(nk_context *ctx, bool active) {
   Nkbd *nkbd = (Nkbd *)ctx->userdata.ptr;
   bool result = active;
   struct nk_window *win = ctx->current;
 
   // sequence is advanced in nk_edit_buffer, so one less is current
-  if (edit && win->edit.active && win->edit.name == win->edit.seq - 1) {
+  if (win->edit.active && win->edit.name == win->edit.seq - 1) {
     // edit widget is active
     if (nkbd->focus != nkbd->seq && nkbd->tab_pressed) {
       // tabbed away
@@ -101,26 +125,12 @@ NK_LIB bool nkbd_widget_end(nk_context *ctx, bool edit, bool active) {
     }
   }
 
-  if ((nkbd->focus == nkbd->seq) || active) {
-    result = nkbd->enter_pressed;
-    nkbd->enter_pressed = false;
-    nkbd->focus_rect = nkbd->widget_rect;
-    if (edit && !win->edit.active) {
-      win->edit.active = nk_true;
-      win->edit.name = win->edit.seq - 1;
-    }
+  nkbd_widget_end(ctx, active);
+  if (nkbd->focus == nkbd->seq - 1 && !win->edit.active) {
+    win->edit.active = nk_true;
+    win->edit.name = win->edit.seq - 1;
   }
 
-  if (active) {
-    // focus on selected item
-    nkbd->focus = nkbd->seq;
-    if (!edit) {
-      nk_edit_unfocus(ctx);
-    }
-  }
-
-  // set ID for next widget
-  nkbd->seq++;
   return result;
 }
 
@@ -146,3 +156,32 @@ NK_LIB void nkbd_combo_begin(nk_context *ctx) {
     win->layout->flags |= NK_WINDOW_REMOVE_ROM;
   }
 }
+
+/*
+diff --git a/nuklear.h b/nuklear.h
+index aef8f7f..7392972 100644
+--- a/nuklear.h
++++ b/nuklear.h
+@@ -20860,6 +20860,10 @@ nk_nonblock_begin(struct nk_context *ctx,
+         in_header = nk_input_is_mouse_hovering_rect(&ctx->input, header);
+         if (pressed && (!in_body || in_header))
+             is_active = nk_false;
++        // SmallBASIC
++        if (win->layout->flags & NK_WINDOW_REMOVE_ROM) {
++          is_active = nk_false;
++        }
+     }
+     win->popup.header = header;
+ 
+@@ -28682,6 +28686,10 @@ nk_combo_begin(struct nk_context *ctx, struct nk_window *win,
+     hash = win->popup.combo_count++;
+     is_open = (popup) ? nk_true:nk_false;
+     is_active = (popup && (win->popup.name == hash) && win->popup.type == NK_PANEL_COMBO);
++    // SmallBASIC
++    if (!is_open && win->layout->flags & NK_WINDOW_ROM) {
++      is_clicked = nk_true;
++    }
+     if ((is_clicked && is_open && !is_active) || (is_open && !is_active) ||
+         (!is_open && !is_active && !is_clicked)) return 0;
+     if (!nk_nonblock_begin(ctx, 0, body,
+*/

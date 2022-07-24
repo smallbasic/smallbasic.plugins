@@ -347,7 +347,7 @@ static int cmd_button(int argc, slib_par_t *params, var_t *retval) {
     } else {
       v_setint(retval, nk_button_label(_ctx, title));
     }
-    if (nkbd_widget_end(_ctx, false, retval->v.i)) {
+    if (nkbd_widget_end(_ctx, retval->v.i)) {
       retval->v.i = 1;
     }
     result = 1;
@@ -369,7 +369,7 @@ static int cmd_checkbox(int argc, slib_par_t *params, var_t *retval) {
       // value mutated in nk_checkbox_label()
       map_set_int(map, "value", value);
     }
-    if (nkbd_widget_end(_ctx, false, changed) && !changed) {
+    if (nkbd_widget_end(_ctx, changed) && !changed) {
       changed = 1;
       map_set_int(map, "value", !value);
     }
@@ -445,7 +445,7 @@ static int cmd_combobox(int argc, slib_par_t *params, var_t *retval) {
 
       nk_flags state;
       bool active = nk_button_behavior(&state, bounds, &_ctx->input, NK_BUTTON_DEFAULT);
-      nkbd_widget_end(_ctx, false, active);
+      nkbd_widget_end(_ctx, active);
 
       v_value->v.i = selected;
       success = 1;
@@ -516,7 +516,7 @@ static int cmd_edit(int argc, slib_par_t *params, var_t *retval) {
       _edit_buffer[len] = '\0';
       nk_flags event = nk_edit_string_zero_terminated(_ctx, style, _edit_buffer, MAX_EDIT_BUFFER_LEN - 1, nk_filter_default);
       v_setstr(map_get(params[1].var_p, "value"), _edit_buffer);
-      nkbd_widget_end(_ctx, true, 0);
+      nkbd_edit_end(_ctx, 0);
       success = 1;
     }
   } else {
@@ -754,7 +754,7 @@ static int cmd_radio(int argc, slib_par_t *params, var_t *retval) {
     if (changed && active) {
       v_setstr(map_get(params[1].var_p, "value"), name);
     }
-    if (nkbd_widget_end(_ctx, false, changed) && !changed) {
+    if (nkbd_widget_end(_ctx, changed) && !changed) {
       v_setstr(map_get(params[1].var_p, "value"), name);
     }
     result = 1;
@@ -788,7 +788,7 @@ static int cmd_selectable(int argc, slib_par_t *params, var_t *retval) {
     if (changed) {
       v_setint(map_get(params[1].var_p, "value"), value);
     }
-    if (nkbd_widget_end(_ctx, false, changed) && !changed) {
+    if (nkbd_widget_end(_ctx, changed) && !changed) {
       v_setint(map_get(params[1].var_p, "value"), !value);
     }
   } else {
