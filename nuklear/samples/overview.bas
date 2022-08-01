@@ -20,11 +20,17 @@ while 1
   if nk.windowBegin("Overview", 10, 10, "100% - 20", "100% - 20") then
     nk.menubarBegin()
     nk.layoutRow("dynamic", 30, 1)
-    if nk.menuBegin("Menu", nil, 120, 90) then
-      nk.layoutRow("dynamic", 40, 1)
-      nk.menuItem("Item A")
-      nk.menuItem("Item B")
-      nk.menuItem("Item C")
+    if nk.menuBegin("Menu", nil, 120, 120) then
+      nk.layoutRow("dynamic", 30, 1)
+      if nk.menuItem("Item A") then
+        print "A"
+      endif
+      if nk.menuItem("Item B") then
+        print "B"
+      endif
+      if nk.menuItem("Item C") then
+        print "C"
+      endif
       nk.menuEnd()
     endif
     nk.menubarEnd()

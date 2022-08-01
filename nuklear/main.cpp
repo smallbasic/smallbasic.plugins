@@ -674,7 +674,7 @@ static int cmd_menuitem(int argc, slib_par_t *params, var_t *retval) {
   int result;
   const char *text = get_param_str(argc, params, 0, nullptr);
   if (text != nullptr) {
-    result = nk_menu_item_label(_ctx, text, NK_TEXT_LEFT);
+    v_setint(retval, nk_menu_item_label(_ctx, text, NK_TEXT_LEFT));
     result = 1;
   } else {
     v_setstr(retval, "Invalid menu item input");
@@ -943,6 +943,7 @@ static int cmd_swap_buffers(int argc, slib_par_t *params, var_t *retval) {
 
 FUNC_SIG lib_proc[] = {
   {1, 1,  "BUTTON", cmd_button},
+  {1, 1,  "MENUITEM", cmd_menuitem},
   {6, 6,  "ARC", cmd_arc},
   {2, 2,  "CHECKBOX", cmd_checkbox},
   {4, 4,  "CIRCLE", cmd_circle},
@@ -964,7 +965,6 @@ FUNC_SIG lib_proc[] = {
   {0, 0,  "MENUBARBEGIN", cmd_menubarbegin},
   {0, 0,  "MENUBAREND", cmd_menubarend},
   {0, 0,  "MENUEND", cmd_menuend},
-  {1, 1,  "MENUITEM", cmd_menuitem},
   {2, 40, "POLYGON", cmd_polygon},
   {2, 3,  "PROGRESS", cmd_progress},
   {6, 6,  "PROPERTY", cmd_property},
@@ -986,6 +986,7 @@ FUNC_SIG lib_proc[] = {
 
 FUNC_SIG lib_func[] = {
   {1, 1,  "BUTTON", cmd_button},
+  {1, 1,  "MENUITEM", cmd_menuitem},
   {6, 6,  "CONTEXTUALBEGIN", cmd_contextualbegin},
   {4, 4,  "MENUBEGIN", cmd_menubegin},
   {2, 2,  "TREEPUSH", cmd_treepush},
