@@ -51,9 +51,9 @@ while (!rl.WindowShouldClose())
   endif
 
   ' Physics body creation inputs
-  if (rl.isMouseButtonPressed(c.MOUSE_LEFT_BUTTON)) then
+  if (rl.isMouseButtonPressed(c.MOUSE_BUTTON_LEFT)) then
     n = rl.CreatePhysicsBodyPolygon(rl.GetMousePosition(), rl.GetRandomValue(20, 80), rl.GetRandomValue(3, 8), 10)
-  elseif (rl.IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) then
+  elseif (rl.IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) then
     n = rl.CreatePhysicsBodyCircle(rl.GetMousePosition(), rl.GetRandomValue(10, 45), 10)
   endif
 

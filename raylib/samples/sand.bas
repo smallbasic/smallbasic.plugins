@@ -185,7 +185,7 @@ sub main
   
   while (!rl.WindowShouldClose())
     lives = 0
-    if rl.IsMouseButtonDown(c.MOUSE_LEFT_BUTTON) then
+    if rl.IsMouseButtonDown(c.MOUSE_BUTTON_LEFT) then
       pos = rl.GetMousePosition()
       if (pos.x < screenWidth and pos.x > 0) then
         x = int(pos.x * grid.width / screenWidth)

@@ -45,7 +45,7 @@ currentTexture = 0
 
 rl.SetTargetFPS(60)
 while (!rl.WindowShouldClose())
-  if (rl.IsMouseButtonPressed(c.MOUSE_LEFT_BUTTON) OR rl.IsKeyPressed(c.KEY_RIGHT)) then
+  if (rl.IsMouseButtonPressed(c.MOUSE_BUTTON_LEFT) OR rl.IsKeyPressed(c.KEY_RIGHT)) then
     currentTexture = (currentTexture + 1) % NUM_TEXTURES   ' Cycle between the textures
   endif
 
