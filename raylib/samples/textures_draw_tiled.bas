@@ -69,7 +69,7 @@ while (!rl.WindowShouldClose())
   screenHeight = rl.GetScreenHeight()
 
   ' Handle mouse
-  if (rl.IsMouseButtonPressed(c.MOUSE_LEFT_BUTTON)) then
+  if (rl.IsMouseButtonPressed(c.MOUSE_BUTTON_LEFT)) then
     mouse = rl.GetMousePosition()
     ' Check which pattern was clicked and set it as the active pattern
     for i = 0 to len(recPattern) - 1

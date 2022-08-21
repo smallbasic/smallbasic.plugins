@@ -47,7 +47,7 @@ dim bunnies
 rl.SetTargetFPS(60)
 
 while (!rl.WindowShouldClose())
-  if rl.IsMouseButtonDown(c.MOUSE_LEFT_BUTTON) then
+  if rl.IsMouseButtonDown(c.MOUSE_BUTTON_LEFT) then
     for i = 0 to 100
       if (len(bunnies) < MAX_BUNNIES) then
         speed.x = ((rnd * 1000) % 60)

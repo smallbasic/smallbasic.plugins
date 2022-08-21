@@ -42,7 +42,7 @@ framesCounter = 0
 rl.SetTargetFPS(120)
 while (!rl.WindowShouldClose())    ' Detect window close button or ESC key
   ' Check for mouse button pressed and activate explosion (if not active)
-  if (rl.IsMouseButtonPressed(c.MOUSE_LEFT_BUTTON) && !active) then
+  if (rl.IsMouseButtonPressed(c.MOUSE_BUTTON_LEFT) && !active) then
     position = rl.GetMousePosition()
     active = true
     position.x -= frameWidth/2

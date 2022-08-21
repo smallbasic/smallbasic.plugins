@@ -80,7 +80,7 @@ while (!rl.WindowShouldClose())
     endif
   next i
 
-  if ((colorMouseHover >= 0) && rl.IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) then
+  if ((colorMouseHover >= 0) && rl.IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) then
     colorSelected = colorMouseHover
     colorSelectedPrev = colorSelected
   endif
@@ -97,7 +97,7 @@ while (!rl.WindowShouldClose())
     rl.EndTextureMode()
   endif
 
-  if (rl.IsMouseButtonDown(c.MOUSE_LEFT_BUTTON) || (rl.GetGestureDetected() == c.GESTURE_DRAG)) then
+  if (rl.IsMouseButtonDown(c.MOUSE_BUTTON_LEFT) || (rl.GetGestureDetected() == c.GESTURE_DRAG)) then
     ' Paint circle into render texture
     ' NOTE: To avoid discontinuous circles, we could store
     ' previous-next mouse points and just draw a line using brush size
@@ -108,7 +108,7 @@ while (!rl.WindowShouldClose())
     rl.EndTextureMode()
   endif
 
-  if (rl.IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) then
+  if (rl.IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) then
     colorSelected = 0
     ' Erase circle from render texture
     rl.BeginTextureMode(target)
@@ -129,7 +129,7 @@ while (!rl.WindowShouldClose())
 
   ' Image saving logic
   ' NOTE: Saving painted texture to a default named image
-  if ((btnSaveMouseHover && rl.IsMouseButtonReleased(c.MOUSE_LEFT_BUTTON)) || rl.IsKeyPressed(c.KEY_S)) then
+  if ((btnSaveMouseHover && rl.IsMouseButtonReleased(c.MOUSE_BUTTON_LEFT)) || rl.IsKeyPressed(c.KEY_S)) then
     local img = rl.LoadImageFromTexture(target.texture)
     rl.ImageFlipVertical(img)
     err = rl.ExportImage(img, "my_amazing_texture_painting.png")
@@ -153,7 +153,7 @@ while (!rl.WindowShouldClose())
 
   ' Draw drawing circle for reference
   if (mousePos.y > 50) then
-    if (rl.IsMouseButtonDown(c.MOUSE_RIGHT_BUTTON)) then
+    if (rl.IsMouseButtonDown(c.MOUSE_BUTTON_RIGHT)) then
       rl.DrawCircleLines(mousePos.x, mousePos.y, brushSize, c.GRAY)
     else
       rl.DrawCircle(rl.GetMouseX(), rl.GetMouseY(), brushSize, colors[colorSelected])

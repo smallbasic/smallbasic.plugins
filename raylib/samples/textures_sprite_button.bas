@@ -37,12 +37,12 @@ while (!rl.WindowShouldClose())    ' Detect window close button or ESC key
 
   ' Check button state
   if (rl.CheckCollisionPointRec(mousePoint, btnBounds)) then
-    if (rl.IsMouseButtonDown(c.MOUSE_LEFT_BUTTON)) then
+    if (rl.IsMouseButtonDown(c.MOUSE_BUTTON_LEFT)) then
       btnState = 2
     else 
       btnState = 1
     endif
-    if (rl.IsMouseButtonReleased(c.MOUSE_LEFT_BUTTON)) then 
+    if (rl.IsMouseButtonReleased(c.MOUSE_BUTTON_LEFT)) then 
       btnAction = true
     endif
   else 
