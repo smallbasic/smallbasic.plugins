@@ -1,10 +1,10 @@
-*Raylib* 4.2-dev
+*Raylib* 4.2
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (561)
+Implemented APIs (558)
 ----------------
 
 | Name    | Description   |
@@ -159,7 +159,6 @@ Implemented APIs (561)
 | func GenImageGradientRadial(width, height, density, inner, outer) | Generate image: radial gradient |
 | func GenImageGradientV(width, height, top, bottom) | Generate image: vertical gradient |
 | func GenImageWhiteNoise(width, height, factor) | Generate image: white noise |
-| sub GenMeshBinormals(mesh) | Compute mesh binormals |
 | func GenMeshCone(radius, height, slices) | Generate cone/pyramid mesh |
 | func GenMeshCube(width, height, length) | Generate cuboid mesh |
 | func GenMeshCubicmap(cubicmap, cubeSize) | Generate cubes-based map mesh from image data |
@@ -406,7 +405,6 @@ Implemented APIs (561)
 | func LoadShaderFromMemory(vsCode, fsCode) | Load shader from code strings and bind default locations |
 | func LoadSound(fileName) | Load sound from file |
 | func LoadSoundFromWave(wave) | Load sound from wave data |
-| func LoadStorageValue(position) | Load integer value from storage file (from defined position) |
 | func LoadTexture(fileName) | Load texture from file into GPU memory (VRAM) |
 | func LoadTextureCubemap(image, layout) | Load cubemap from image, multiple image cubemap layouts supported |
 | func LoadTextureFromImage(image) | Load texture from image data |
@@ -442,7 +440,6 @@ Implemented APIs (561)
 | sub ResumeSound(sound) | Resume a paused sound |
 | func SaveFileData(fileName, data, bytesToWrite) | Save data to file from byte array (write), returns true on success |
 | func SaveFileText(fileName, text) | Save text data to file (write), string must be '\\0' terminated, returns true on success |
-| func SaveStorageValue(position, value) | Save integer value to storage file (to defined position), returns true on success |
 | sub SeekMusicStream(music, position) | Seek music to a position (in seconds) |
 | sub SetAudioStreamBufferSizeDefault(size) | Default size for new audio streams |
 | sub SetAudioStreamPan(stream, pan) | Set pan for audio stream (0.5 is centered) |
@@ -576,9 +573,9 @@ Unimplemented APIs
 
 | Name    | Description   |
 |---------|---------------|
-| AttachAudioStreamProcessor | n/a |
+| AttachAudioStreamProcessor | Attach audio stream processor to stream |
 | BeginVrStereoMode | Begin stereo rendering (requires VR simulator) |
-| DetachAudioStreamProcessor | n/a |
+| DetachAudioStreamProcessor | Detach audio stream processor from stream |
 | DrawMesh | Draw a 3d mesh with material and transform |
 | DrawMeshInstanced | Draw multiple mesh instances with material and different transforms |
 | GenImageFontAtlas | Generate image font atlas using chars info |

@@ -15,7 +15,6 @@ libglfw_la_SOURCES = \
   ../include/param.cpp \
   ../include/hashmap.cpp \
   ../raylib/raylib/src/rglfw.c \
-  ../raylib/raylib/src/external/glfw/deps/glad_gl.c \
   main.cpp
 libglfw_la_LDFLAGS = -module -rpath '$(libdir)' @RAYLIB_LDFLAGS@ @PLATFORM_LDFLAGS@
 

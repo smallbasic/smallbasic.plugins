@@ -8,6 +8,7 @@
 // Copyright(C) 2020 Chris Warren-Smith
 
 #include "config.h"
+#define GLAD_GL_IMPLEMENTATION
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>

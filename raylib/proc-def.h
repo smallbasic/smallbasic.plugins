@@ -102,7 +102,6 @@
   {0, 0, "ENDSHADERMODE", cmd_endshadermode},
   {0, 0, "ENDTEXTUREMODE", cmd_endtexturemode},
   {0, 0, "ENDVRSTEREOMODE", cmd_endvrstereomode},
-  {1, 1, "GENMESHBINORMALS", cmd_genmeshbinormals},
   {1, 1, "GENMESHTANGENTS", cmd_genmeshtangents},
   {1, 1, "GENTEXTUREMIPMAPS", cmd_gentexturemipmaps},
   {0, 0, "HIDECURSOR", cmd_hidecursor},

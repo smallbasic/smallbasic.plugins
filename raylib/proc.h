@@ -1356,15 +1356,6 @@ static int cmd_endvrstereomode(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Compute mesh binormals
-//
-static int cmd_genmeshbinormals(int argc, slib_par_t *params, var_t *retval) {
-  auto mesh = (Mesh *)get_param_int_t(argc, params, 0, 0);
-  GenMeshBinormals(mesh);
-  return 1;
-}
-
-//
 // Compute mesh tangents
 //
 static int cmd_genmeshtangents(int argc, slib_par_t *params, var_t *retval) {

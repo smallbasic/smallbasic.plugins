@@ -20,6 +20,7 @@
 #define NK_INCLUDE_STANDARD_VARARGS
 #define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
 #define NK_KEYSTATE_BASED_INPUT
+#define GLAD_GL_IMPLEMENTATION
 
 #include <cstddef>
 #include <cstdio>
@@ -820,17 +821,6 @@ static int cmd_spacing(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_textinput(int argc, slib_par_t *params, var_t *retval) {
-  int len;
-  char buf[256];
-  const char *text = get_param_str(argc, params, 0, nullptr);
-  strcpy(buf, text);
-  nk_edit_string(_ctx, NK_EDIT_EDITOR, buf, &len, sizeof(buf) - 1, nk_filter_float);
-  buf[len] = 0;
-  v_setstr(retval, buf);
-  return 1;
-}
-
 static int cmd_tooltip(int argc, slib_par_t *params, var_t *retval) {
   const char *text = get_param_str(argc, params, 0, nullptr);
   if (text) {
@@ -974,7 +964,6 @@ FUNC_SIG lib_proc[] = {
   {4, 4,  "SLIDER", cmd_slider},
   {1, 1,  "SPACING", cmd_spacing},
   {5, 5,  "TEXT", cmd_text},
-  {1, 1,  "TEXTINPUT", cmd_textinput},
   {1, 1,  "TOOLTIP", cmd_tooltip},
   {0, 0,  "TREEPOP", cmd_treepop},
   {0, 0,  "WINDOWEND", cmd_windowend},
@@ -999,7 +988,7 @@ FUNC_SIG lib_func[] = {
 SBLIB_API void sblib_devinit(const char *prog, int width, int height) {
   _bg_color = nk_black;
   _fg_color = nk_white;
-  _focus_color = nk_red;
+  _focus_color = {95, 95, 95, 255};
   _line_thickness = 1;
 
   const char *name = strrchr(prog, '/');

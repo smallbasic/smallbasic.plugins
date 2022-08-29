@@ -2270,16 +2270,6 @@ static int cmd_loadsoundfromwave(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Load integer value from storage file (from defined position)
-//
-static int cmd_loadstoragevalue(int argc, slib_par_t *params, var_t *retval) {
-  auto position = get_param_int(argc, params, 0, 0);
-  auto fnResult = LoadStorageValue(position);
-  v_setint(retval, fnResult);
-  return 1;
-}
-
-//
 // Load texture from file into GPU memory (VRAM)
 //
 static int cmd_loadtexture(int argc, slib_par_t *params, var_t *retval) {
@@ -2430,17 +2420,6 @@ static int cmd_savefiletext(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
   auto text = (char *)get_param_str(argc, params, 1, 0);
   auto fnResult = SaveFileText(fileName, text);
-  v_setint(retval, fnResult);
-  return 1;
-}
-
-//
-// Save integer value to storage file (to defined position), returns true on success
-//
-static int cmd_savestoragevalue(int argc, slib_par_t *params, var_t *retval) {
-  auto position = get_param_int(argc, params, 0, 0);
-  auto value = get_param_int(argc, params, 1, 0);
-  auto fnResult = SaveStorageValue(position, value);
   v_setint(retval, fnResult);
   return 1;
 }
