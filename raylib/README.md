@@ -1,10 +1,10 @@
-*Raylib* 4.2
+*Raylib* 4.5-dev
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (558)
+Implemented APIs (566)
 ----------------
 
 | Name    | Description   |
@@ -24,6 +24,7 @@ Implemented APIs (558)
 | func CheckCollisionLines(startPos1, endPos1, startPos2, endPos2, collisionPoint) | Check the collision between two lines defined by two points each, returns collision point by reference |
 | func CheckCollisionPointCircle(point, center, radius) | Check if point is inside circle |
 | func CheckCollisionPointLine(point, p1, p2, threshold) | Check if point belongs to line created between two points [p1] and [p2] with defined margin in pixels [threshold] |
+| func CheckCollisionPointPoly(point, points, pointCount) | Check if point is within a polygon described by array of vertices |
 | func CheckCollisionPointRec(point, rec) | Check if point is inside rectangle |
 | func CheckCollisionPointTriangle(point, p1, p2, p3) | Check if point is inside a triangle |
 | func CheckCollisionRecs(rec1, rec2) | Check collision between two rectangles |
@@ -33,7 +34,7 @@ Implemented APIs (558)
 | sub CloseAudioDevice() | Close the audio device and context |
 | func closePhysics() | n/a |
 | sub CloseWindow() | Close window and unload OpenGL context |
-| func CodepointToUTF8(codepoint, byteSize) | Encode one codepoint into UTF-8 byte array (array length returned as parameter) |
+| func CodepointToUTF8(codepoint, utf8Size) | Encode one codepoint into UTF-8 byte array (array length returned as parameter) |
 | func ColorAlpha(color, alpha) | Get color with alpha applied, alpha goes from 0.0f to 1.0f |
 | func ColorAlphaBlend(dst, src, tint) | Get src alpha-blended into dst color with tint |
 | func ColorFromHSV(hue, saturation, value) | Get a Color from HSV values, hue [0..360], saturation/value [0..1] |
@@ -158,6 +159,8 @@ Implemented APIs (558)
 | func GenImageGradientH(width, height, left, right) | Generate image: horizontal gradient |
 | func GenImageGradientRadial(width, height, density, inner, outer) | Generate image: radial gradient |
 | func GenImageGradientV(width, height, top, bottom) | Generate image: vertical gradient |
+| func GenImagePerlinNoise(width, height, offsetX, offsetY, scale) | Generate image: perlin noise |
+| func GenImageText(width, height, text) | Generate image: grayscale image from text data |
 | func GenImageWhiteNoise(width, height, factor) | Generate image: white noise |
 | func GenMeshCone(radius, height, slices) | Generate cone/pyramid mesh |
 | func GenMeshCube(width, height, length) | Generate cuboid mesh |
@@ -177,8 +180,10 @@ Implemented APIs (558)
 | func GetCameraMatrix2D(camera) | Get camera 2d transform matrix |
 | func GetCharPressed() | Get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty |
 | func GetClipboardText() | Get clipboard text content |
-| func GetCodepoint(text, bytesProcessed) | Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure |
+| func GetCodepoint(text, codepointSize) | Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure |
 | func GetCodepointCount(text) | Get total number of codepoints in a UTF-8 encoded string |
+| func GetCodepointNext(text, codepointSize) | Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure |
+| func GetCodepointPrevious(text, codepointSize) | Get previous codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure |
 | func GetCollisionRec(rec1, rec2) | Get collision rectangle for two rectangles collision |
 | func GetColor(hexValue) | Get Color structure from hexadecimal value |
 | func GetCurrentMonitor() | Get current connected monitor |
@@ -315,8 +320,10 @@ Implemented APIs (558)
 | sub ImageCrop(image, crop) | Crop an image to a defined rectangle |
 | sub ImageDither(image, rBpp, gBpp, bBpp, aBpp) | Dither image data to 16bpp or lower (Floyd-Steinberg dithering) |
 | sub ImageDraw(dst, src, srcRec, dstRec, tint) | Draw a source image within a destination image (tint applied to source) |
-| sub ImageDrawCircle(dst, centerX, centerY, radius, color) | Draw circle within an image |
-| sub ImageDrawCircleV(dst, center, radius, color) | Draw circle within an image (Vector version) |
+| sub ImageDrawCircle(dst, centerX, centerY, radius, color) | Draw a filled circle within an image |
+| sub ImageDrawCircleLines(dst, centerX, centerY, radius, color) | Draw circle outline within an image |
+| sub ImageDrawCircleLinesV(dst, center, radius, color) | Draw circle outline within an image (Vector version) |
+| sub ImageDrawCircleV(dst, center, radius, color) | Draw a filled circle within an image (Vector version) |
 | sub ImageDrawLine(dst, startPosX, startPosY, endPosX, endPosY, color) | Draw line within an image |
 | sub ImageDrawLineV(dst, start, end, color) | Draw line within an image (Vector version) |
 | sub ImageDrawPixel(dst, posX, posY, color) | Draw pixel within an image |
@@ -408,6 +415,7 @@ Implemented APIs (558)
 | func LoadTexture(fileName) | Load texture from file into GPU memory (VRAM) |
 | func LoadTextureCubemap(image, layout) | Load cubemap from image, multiple image cubemap layouts supported |
 | func LoadTextureFromImage(image) | Load texture from image data |
+| func LoadUTF8(codepoints, length) | Load UTF-8 text encoded from codepoints array |
 | func LoadWave(fileName) | Load wave data from file |
 | func LoadWaveFromMemory(fileType, fileData, dataSize) | Load wave from memory buffer, fileType refers to extension: i.e. '.wav' |
 | func LoadWaveSamples(wave) | Load samples data from wave as a 32bit float data array |
@@ -515,7 +523,6 @@ Implemented APIs (558)
 | sub SwapScreenBuffer() | Swap back buffer with front buffer (screen drawing) |
 | sub TakeScreenshot(fileName) | Takes a screenshot of current screen (filename extension defines format) |
 | sub TextAppend(text, append, position) | Append text at specific position and move cursor! |
-| func TextCodepointsToUTF8(codepoints, length) | Encode text as codepoints array into UTF-8 text string (WARNING: memory must be freed!) |
 | func TextCopy(dst, src) | Copy one string to another, returns bytes copied |
 | func TextFindIndex(text, find) | Find first text occurrence within a string |
 | func TextFormat(text, args) | Text formatting with variables (sprintf() style) |
@@ -549,6 +556,7 @@ Implemented APIs (558)
 | sub UnloadShader(shader) | Unload shader from GPU memory (VRAM) |
 | sub UnloadSound(sound) | Unload sound |
 | sub UnloadTexture(texture) | Unload texture from GPU memory (VRAM) |
+| sub UnloadUTF8(text) | Unload UTF-8 text encoded from codepoints array |
 | sub UnloadWave(wave) | Unload wave data |
 | sub UnloadWaveSamples(samples) | Unload samples data loaded with LoadWaveSamples() |
 | sub UpdateAudioStream(stream, data, frameCount) | Update audio stream buffers with data |

@@ -1611,7 +1611,7 @@ static int cmd_imagedraw(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw circle within an image
+// Draw a filled circle within an image
 //
 static int cmd_imagedrawcircle(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -1630,7 +1630,44 @@ static int cmd_imagedrawcircle(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw circle within an image (Vector version)
+// Draw circle outline within an image
+//
+static int cmd_imagedrawcirclelines(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int dst_id = get_image_id(argc, params, 0, retval);
+  if (dst_id != -1) {
+    auto centerX = get_param_int(argc, params, 1, 0);
+    auto centerY = get_param_int(argc, params, 2, 0);
+    auto radius = get_param_int(argc, params, 3, 0);
+    auto color = get_param_color(argc, params, 4);
+    ImageDrawCircleLines(&_imageMap.at(dst_id), centerX, centerY, radius, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Draw circle outline within an image (Vector version)
+//
+static int cmd_imagedrawcirclelinesv(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int dst_id = get_image_id(argc, params, 0, retval);
+  if (dst_id != -1) {
+    auto center = get_param_vec2(argc, params, 1);
+    auto radius = get_param_int(argc, params, 2, 0);
+    auto color = get_param_color(argc, params, 3);
+    ImageDrawCircleLinesV(&_imageMap.at(dst_id), center, radius, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Draw a filled circle within an image (Vector version)
 //
 static int cmd_imagedrawcirclev(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -3085,6 +3122,15 @@ static int cmd_unloadtexture(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
+}
+
+//
+// Unload UTF-8 text encoded from codepoints array
+//
+static int cmd_unloadutf8(int argc, slib_par_t *params, var_t *retval) {
+  auto text = (char *)get_param_str(argc, params, 0, 0);
+  UnloadUTF8(text);
+  return 1;
 }
 
 //

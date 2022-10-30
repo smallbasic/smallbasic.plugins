@@ -96,6 +96,18 @@ static int cmd_checkcollisionpointline(int argc, slib_par_t *params, var_t *retv
 }
 
 //
+// Check if point is within a polygon described by array of vertices
+//
+static int cmd_checkcollisionpointpoly(int argc, slib_par_t *params, var_t *retval) {
+  auto point = get_param_vec2(argc, params, 0);
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 1);
+  auto pointCount = get_param_int(argc, params, 2, 0);
+  auto fnResult = CheckCollisionPointPoly(point, points, pointCount);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
 // Check if point is inside rectangle
 //
 static int cmd_checkcollisionpointrec(int argc, slib_par_t *params, var_t *retval) {
@@ -148,9 +160,9 @@ static int cmd_checkcollisionspheres(int argc, slib_par_t *params, var_t *retval
 //
 static int cmd_codepointtoutf8(int argc, slib_par_t *params, var_t *retval) {
   auto codepoint = get_param_int(argc, params, 0, 0);
-  auto byteSize = 0;
-  auto fnResult = (const char *)CodepointToUTF8(codepoint, &byteSize);
-  v_setstrn(retval, fnResult, byteSize);
+  auto utf8Size = 0;
+  auto fnResult = (const char *)CodepointToUTF8(codepoint, &utf8Size);
+  v_setstrn(retval, fnResult, utf8Size);
   MemFree((void *)fnResult);
   return 1;
 }
@@ -506,6 +518,32 @@ static int cmd_genimagegradientv(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Generate image: perlin noise
+//
+static int cmd_genimageperlinnoise(int argc, slib_par_t *params, var_t *retval) {
+  auto width = get_param_int(argc, params, 0, 0);
+  auto height = get_param_int(argc, params, 1, 0);
+  auto offsetX = get_param_int(argc, params, 2, 0);
+  auto offsetY = get_param_int(argc, params, 3, 0);
+  auto scale = get_param_num(argc, params, 4, 0);
+  auto fnResult = GenImagePerlinNoise(width, height, offsetX, offsetY, scale);
+  v_setimage(retval, fnResult);
+  return 1;
+}
+
+//
+// Generate image: grayscale image from text data
+//
+static int cmd_genimagetext(int argc, slib_par_t *params, var_t *retval) {
+  auto width = get_param_int(argc, params, 0, 0);
+  auto height = get_param_int(argc, params, 1, 0);
+  auto text = get_param_str(argc, params, 2, 0);
+  auto fnResult = GenImageText(width, height, text);
+  v_setimage(retval, fnResult);
+  return 1;
+}
+
+//
 // Generate image: white noise
 //
 static int cmd_genimagewhitenoise(int argc, slib_par_t *params, var_t *retval) {
@@ -713,8 +751,8 @@ static int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_getcodepoint(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
-  auto bytesProcessed = (int *)0;
-  auto fnResult = GetCodepoint(text, bytesProcessed);
+  auto codepointSize = (int *)0;
+  auto fnResult = GetCodepoint(text, codepointSize);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -725,6 +763,28 @@ static int cmd_getcodepoint(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_getcodepointcount(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
   auto fnResult = GetCodepointCount(text);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure
+//
+static int cmd_getcodepointnext(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto codepointSize = (int *)0;
+  auto fnResult = GetCodepointNext(text, codepointSize);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Get previous codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure
+//
+static int cmd_getcodepointprevious(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto codepointSize = (int *)0;
+  auto fnResult = GetCodepointPrevious(text, codepointSize);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -2313,6 +2373,17 @@ static int cmd_loadtexturefromimage(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
+// Load UTF-8 text encoded from codepoints array
+//
+static int cmd_loadutf8(int argc, slib_par_t *params, var_t *retval) {
+  auto codepoints = (const int *)get_param_int_t(argc, params, 0, 0);
+  auto length = get_param_int(argc, params, 1, 0);
+  auto fnResult = (const char *)LoadUTF8(codepoints, length);
+  v_setstr(retval, fnResult);
+  return 1;
+}
+
+//
 // Load wave data from file
 //
 static int cmd_loadwave(int argc, slib_par_t *params, var_t *retval) {
@@ -2431,17 +2502,6 @@ static int cmd_setgamepadmappings(int argc, slib_par_t *params, var_t *retval) {
   auto mappings = get_param_str(argc, params, 0, 0);
   auto fnResult = SetGamepadMappings(mappings);
   v_setint(retval, fnResult);
-  return 1;
-}
-
-//
-// Encode text as codepoints array into UTF-8 text string (WARNING: memory must be freed!)
-//
-static int cmd_textcodepointstoutf8(int argc, slib_par_t *params, var_t *retval) {
-  auto codepoints = (const int *)get_param_int_t(argc, params, 0, 0);
-  auto length = get_param_int(argc, params, 1, 0);
-  auto fnResult = (const char *)TextCodepointsToUTF8(codepoints, length);
-  v_setstr(retval, fnResult);
   return 1;
 }
 
