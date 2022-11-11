@@ -307,7 +307,7 @@ static int cmd_encodedatabase64(int argc, slib_par_t *params, var_t *retval) {
 // Export data to code (.h), returns true on success
 //
 static int cmd_exportdataascode(int argc, slib_par_t *params, var_t *retval) {
-  auto data = get_param_str(argc, params, 0, 0);
+  auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
   auto size = get_param_int(argc, params, 1, 0);
   auto fileName = get_param_str(argc, params, 2, 0);
   auto fnResult = ExportDataAsCode(data, size, fileName);

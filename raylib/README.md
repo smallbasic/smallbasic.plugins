@@ -56,6 +56,8 @@ Implemented APIs (566)
 | sub DrawBillboardPro(camera, texture, source, position, up, size, origin, rotation, tint) | Draw a billboard texture defined by source and rotation |
 | sub DrawBillboardRec(camera, texture, source, position, size, tint) | Draw a billboard texture defined by source |
 | sub DrawBoundingBox(box, color) | Draw bounding box (wires) |
+| sub DrawCapsule(startPos, endPos, radius, slices, rings, color) | Draw a capsule with the center of its sphere caps at startPos and endPos |
+| sub DrawCapsuleWires(startPos, endPos, radius, slices, rings, color) | Draw capsule wireframe with the center of its sphere caps at startPos and endPos |
 | sub DrawCircle(centerX, centerY, radius, color) | Draw a color-filled circle |
 | sub DrawCircle3D(center, radius, rotationAxis, rotationAngle, color) | Draw a circle in 3D world space |
 | sub DrawCircleGradient(centerX, centerY, radius, color1, color2) | Draw a gradient-filled circle |
@@ -121,11 +123,8 @@ Implemented APIs (566)
 | sub DrawTexture(texture, posX, posY, tint) | Draw a Texture2D |
 | sub DrawTextureEx(texture, position, rotation, scale, tint) | Draw a Texture2D with extended parameters |
 | sub DrawTextureNPatch(texture, nPatchInfo, dest, origin, rotation, tint) | Draws a texture (or part of it) that stretches or shrinks nicely |
-| sub DrawTexturePoly(texture, center, points, texcoords, pointCount, tint) | Draw a textured polygon |
 | sub DrawTexturePro(texture, source, dest, origin, rotation, tint) | Draw a part of a texture defined by a rectangle with 'pro' parameters |
-| sub DrawTextureQuad(texture, tiling, offset, quad, tint) | Draw texture quad with tiling and offset parameters |
 | sub DrawTextureRec(texture, source, position, tint) | Draw a part of a texture defined by a rectangle |
-| sub DrawTextureTiled(texture, source, dest, origin, rotation, scale, tint) | Draw part of a texture (defined by a rectangle) with rotation and scale tiled into dest. |
 | sub DrawTextureV(texture, position, tint) | Draw a Texture2D with position defined as Vector2 |
 | sub DrawTriangle(v1, v2, v3, color) | Draw a color-filled triangle (vertex in counter-clockwise order!) |
 | sub DrawTriangle3D(v1, v2, v3, color) | Draw a color-filled triangle (vertex in counter-clockwise order!) |
@@ -309,6 +308,7 @@ Implemented APIs (566)
 | sub ImageAlphaCrop(image, threshold) | Crop image depending on alpha value |
 | sub ImageAlphaMask(image, alphaMask) | Apply alpha mask to image |
 | sub ImageAlphaPremultiply(image) | Premultiply alpha channel |
+| sub ImageBlurGaussian(image, blurSize) | Apply Gaussian blur using a box blur approximation |
 | sub ImageClearBackground(dst, color) | Clear image background with given color |
 | sub ImageColorBrightness(image, brightness) | Modify image color: brightness (-255 to 255) |
 | sub ImageColorContrast(image, contrast) | Modify image color: contrast (-100 to 100) |

@@ -192,6 +192,34 @@ static int cmd_drawboundingbox(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Draw a capsule with the center of its sphere caps at startPos and endPos
+//
+static int cmd_drawcapsule(int argc, slib_par_t *params, var_t *retval) {
+  auto startPos = get_param_vec3(argc, params, 0);
+  auto endPos = get_param_vec3(argc, params, 1);
+  auto radius = get_param_num(argc, params, 2, 0);
+  auto slices = get_param_int(argc, params, 3, 0);
+  auto rings = get_param_int(argc, params, 4, 0);
+  auto color = get_param_color(argc, params, 5);
+  DrawCapsule(startPos, endPos, radius, slices, rings, color);
+  return 1;
+}
+
+//
+// Draw capsule wireframe with the center of its sphere caps at startPos and endPos
+//
+static int cmd_drawcapsulewires(int argc, slib_par_t *params, var_t *retval) {
+  auto startPos = get_param_vec3(argc, params, 0);
+  auto endPos = get_param_vec3(argc, params, 1);
+  auto radius = get_param_num(argc, params, 2, 0);
+  auto slices = get_param_int(argc, params, 3, 0);
+  auto rings = get_param_int(argc, params, 4, 0);
+  auto color = get_param_color(argc, params, 5);
+  DrawCapsuleWires(startPos, endPos, radius, slices, rings, color);
+  return 1;
+}
+
+//
 // Draw a color-filled circle
 //
 static int cmd_drawcircle(int argc, slib_par_t *params, var_t *retval) {
@@ -1092,26 +1120,6 @@ static int cmd_drawtexturenpatch(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw a textured polygon
-//
-static int cmd_drawtexturepoly(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int texture_id = get_texture_id(argc, params, 0, retval);
-  if (texture_id != -1) {
-    auto center = get_param_vec2(argc, params, 1);
-    auto points = (Vector2 *)get_param_vec2_array(argc, params, 2);
-    auto texcoords = (Vector2 *)get_param_vec2_array(argc, params, 3);
-    auto pointCount = get_param_int(argc, params, 4, 0);
-    auto tint = get_param_color(argc, params, 5);
-    DrawTexturePoly(_textureMap.at(texture_id), center, points, texcoords, pointCount, tint);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
 // Draw a part of a texture defined by a rectangle with 'pro' parameters
 //
 static int cmd_drawtexturepro(int argc, slib_par_t *params, var_t *retval) {
@@ -1132,25 +1140,6 @@ static int cmd_drawtexturepro(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw texture quad with tiling and offset parameters
-//
-static int cmd_drawtexturequad(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int texture_id = get_texture_id(argc, params, 0, retval);
-  if (texture_id != -1) {
-    auto tiling = get_param_vec2(argc, params, 1);
-    auto offset = get_param_vec2(argc, params, 2);
-    auto quad = get_param_rect(argc, params, 3);
-    auto tint = get_param_color(argc, params, 4);
-    DrawTextureQuad(_textureMap.at(texture_id), tiling, offset, quad, tint);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
 // Draw a part of a texture defined by a rectangle
 //
 static int cmd_drawtexturerec(int argc, slib_par_t *params, var_t *retval) {
@@ -1161,27 +1150,6 @@ static int cmd_drawtexturerec(int argc, slib_par_t *params, var_t *retval) {
     auto position = get_param_vec2(argc, params, 2);
     auto tint = get_param_color(argc, params, 3);
     DrawTextureRec(_textureMap.at(texture_id), source, position, tint);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
-// Draw part of a texture (defined by a rectangle) with rotation and scale tiled into dest.
-//
-static int cmd_drawtexturetiled(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int texture_id = get_texture_id(argc, params, 0, retval);
-  if (texture_id != -1) {
-    auto source = get_param_rect(argc, params, 1);
-    auto dest = get_param_rect(argc, params, 2);
-    auto origin = get_param_vec2(argc, params, 3);
-    auto rotation = get_param_num(argc, params, 4, 0);
-    auto scale = get_param_num(argc, params, 5, 0);
-    auto tint = get_param_color(argc, params, 6);
-    DrawTextureTiled(_textureMap.at(texture_id), source, dest, origin, rotation, scale, tint);
     result = 1;
   } else {
     result = 0;
@@ -1438,6 +1406,22 @@ static int cmd_imagealphapremultiply(int argc, slib_par_t *params, var_t *retval
   int image_id = get_image_id(argc, params, 0, retval);
   if (image_id != -1) {
     ImageAlphaPremultiply(&_imageMap.at(image_id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Apply Gaussian blur using a box blur approximation
+//
+static int cmd_imageblurgaussian(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int image_id = get_image_id(argc, params, 0, retval);
+  if (image_id != -1) {
+    auto blurSize = get_param_int(argc, params, 1, 0);
+    ImageBlurGaussian(&_imageMap.at(image_id), blurSize);
     result = 1;
   } else {
     result = 0;
