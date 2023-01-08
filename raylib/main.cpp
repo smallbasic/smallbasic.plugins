@@ -17,6 +17,7 @@
 #pragma GCC diagnostic ignored "-Wenum-compare"
 #pragma GCC diagnostic ignored "-Wdouble-promotion"
 #include <raylib/raylib/src/raylib.h>
+#include <raylib/raylib/src/raymath.h>
 #include <raygui/src/raygui.h>
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
@@ -849,6 +850,21 @@ static int cmd_setmodeldiffusetexture(int argc, slib_par_t *params, var_t *retva
   int textureId = get_texture_id(argc, params, 1, retval);
   if (modelId != -1 && textureId != -1) {
     _modelMap.at(modelId).materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = _textureMap.at(textureId);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_setmodeltransform(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int modelId = get_model_id(argc, params, 0, retval);
+  auto x = get_param_int(argc, params, 1, 0);
+  auto y = get_param_int(argc, params, 2, 0);
+  auto z = get_param_int(argc, params, 3, 0);
+  if (modelId != -1) {
+    _modelMap.at(modelId).transform = MatrixTranslate(x, y, z);
     result = 1;
   } else {
     result = 0;
@@ -1706,6 +1722,7 @@ static FUNC_SIG lib_proc[] = {
 #include "proc-def.h"
   {4, 5, "SETSHADERVALUE", cmd_setshadervalue},
   {2, 2, "SETMODELDIFFUSETEXTURE", cmd_setmodeldiffusetexture},
+  {4, 4, "SETMODELTRANSFORM", cmd_setmodeltransform},
   {1, 1, "UPDATECAMERA", cmd_updatecamera},
   {2, 2, "UPDATETEXTURE", cmd_updatetexture},
   {0, 0, "GUIDISABLE", cmd_guidisable},
