@@ -25,8 +25,6 @@
   {6, 6, "DRAWCIRCLESECTORLINES", cmd_drawcirclesectorlines},
   {3, 3, "DRAWCIRCLEV", cmd_drawcirclev},
   {5, 5, "DRAWCUBE", cmd_drawcube},
-  {6, 6, "DRAWCUBETEXTURE", cmd_drawcubetexture},
-  {7, 7, "DRAWCUBETEXTUREREC", cmd_drawcubetexturerec},
   {3, 3, "DRAWCUBEV", cmd_drawcubev},
   {5, 5, "DRAWCUBEWIRES", cmd_drawcubewires},
   {3, 3, "DRAWCUBEWIRESV", cmd_drawcubewiresv},

@@ -1,10 +1,10 @@
-*Raylib* 4.5-dev
+*Raylib* _MAJOR 4 _MINOR 5 _PATCH 0 4.5-dev
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (566)
+Implemented APIs (578)
 ----------------
 
 | Name    | Description   |
@@ -37,9 +37,12 @@ Implemented APIs (566)
 | func CodepointToUTF8(codepoint, utf8Size) | Encode one codepoint into UTF-8 byte array (array length returned as parameter) |
 | func ColorAlpha(color, alpha) | Get color with alpha applied, alpha goes from 0.0f to 1.0f |
 | func ColorAlphaBlend(dst, src, tint) | Get src alpha-blended into dst color with tint |
+| func ColorBrightness(color, factor) | Get color with brightness correction, brightness factor goes from -1.0f to 1.0f |
+| func ColorContrast(color, contrast) | Get color with contrast correction, contrast values between -1.0f and 1.0f |
 | func ColorFromHSV(hue, saturation, value) | Get a Color from HSV values, hue [0..360], saturation/value [0..1] |
 | func ColorFromNormalized(normalized) | Get Color from normalized values [0..1] |
 | func ColorNormalize(color) | Get Color normalized as float [0..1] |
+| func ColorTint(color, tint) | Get color multiplied with another color |
 | func ColorToHSV(color) | Get HSV values for a Color, hue [0..360], saturation/value [0..1] |
 | func ColorToInt(color) | Get hexadecimal value for a Color |
 | func CompressData(data, dataSize, compDataSize) | Compress data (DEFLATE algorithm), memory must be MemFree() |
@@ -66,8 +69,6 @@ Implemented APIs (566)
 | sub DrawCircleSectorLines(center, radius, startAngle, endAngle, segments, color) | Draw circle sector outline |
 | sub DrawCircleV(center, radius, color) | Draw a color-filled circle (Vector version) |
 | sub DrawCube(position, width, height, length, color) | Draw cube |
-| sub DrawCubeTexture(texture, position, width, height, length, color) | Draw cube textured |
-| sub DrawCubeTextureRec(texture, source, position, width, height, length, color) | Draw cube with a region of a texture |
 | sub DrawCubeV(position, size, color) | Draw cube (Vector version) |
 | sub DrawCubeWires(position, width, height, length, color) | Draw cube wires |
 | sub DrawCubeWiresV(position, size, color) | Draw cube wires (Vector version) |
@@ -353,28 +354,38 @@ Implemented APIs (566)
 | func IsAudioDeviceReady() | Check if audio device has been initialized successfully |
 | func IsAudioStreamPlaying(stream) | Check if audio stream is playing |
 | func IsAudioStreamProcessed(stream) | Check if any audio stream buffers requires refill |
+| func IsAudioStreamReady(stream) | Checks if an audio stream is ready |
 | func IsCursorHidden() | Check if cursor is not visible |
 | func IsCursorOnScreen() | Check if cursor is on the screen |
 | func IsFileDropped() | Check if a file has been dropped into window |
 | func IsFileExtension(fileName, ext) | Check file extension (including point: .png, .wav) |
+| func IsFontReady(font) | Check if a font is ready |
 | func IsGamepadAvailable(gamepad) | Check if a gamepad is available |
 | func IsGamepadButtonDown(gamepad, button) | Check if a gamepad button is being pressed |
 | func IsGamepadButtonPressed(gamepad, button) | Check if a gamepad button has been pressed once |
 | func IsGamepadButtonReleased(gamepad, button) | Check if a gamepad button has been released once |
 | func IsGamepadButtonUp(gamepad, button) | Check if a gamepad button is NOT being pressed |
 | func IsGestureDetected(gesture) | Check if a gesture have been detected |
+| func IsImageReady(image) | Check if an image is ready |
 | func IsKeyDown(key) | Check if a key is being pressed |
 | func IsKeyPressed(key) | Check if a key has been pressed once |
 | func IsKeyReleased(key) | Check if a key has been released once |
 | func IsKeyUp(key) | Check if a key is NOT being pressed |
 | func IsModelAnimationValid(model, anim) | Check model animation skeleton match |
+| func IsModelReady(model) | Check if a model is ready |
 | func IsMouseButtonDown(button) | Check if a mouse button is being pressed |
 | func IsMouseButtonPressed(button) | Check if a mouse button has been pressed once |
 | func IsMouseButtonReleased(button) | Check if a mouse button has been released once |
 | func IsMouseButtonUp(button) | Check if a mouse button is NOT being pressed |
+| func IsMusicReady(music) | Checks if a music stream is ready |
 | func IsMusicStreamPlaying(music) | Check if music is playing |
 | func IsPathFile(path) | Check if a given path is a file or a directory |
+| func IsRenderTextureReady(target) | Check if a render texture is ready |
+| func IsShaderReady(shader) | Check if a shader is ready |
 | func IsSoundPlaying(sound) | Check if a sound is currently playing |
+| func IsSoundReady(sound) | Checks if a sound is ready |
+| func IsTextureReady(texture) | Check if a texture is ready |
+| func IsWaveReady(wave) | Checks if wave data is ready |
 | func IsWindowFocused() | Check if window is currently focused (only PLATFORM_DESKTOP) |
 | func IsWindowFullscreen() | Check if window is currently fullscreen |
 | func IsWindowHidden() | Check if window is currently hidden (only PLATFORM_DESKTOP) |
@@ -466,6 +477,7 @@ Implemented APIs (566)
 | sub SetMasterVolume(volume) | Set master volume (listener) |
 | func setmodeldiffusetexture() | n/a |
 | sub SetModelMeshMaterial(model, meshId, materialId) | Set material for a mesh |
+| func setmodeltransform() | n/a |
 | sub SetMouseCursor(cursor) | Set mouse cursor |
 | sub SetMouseOffset(offsetX, offsetY) | Set mouse offset |
 | sub SetMousePosition(x, y) | Set mouse position XY |
@@ -588,6 +600,7 @@ Unimplemented APIs
 | DrawMeshInstanced | Draw multiple mesh instances with material and different transforms |
 | GenImageFontAtlas | Generate image font atlas using chars info |
 | GetGlyphInfo | Get glyph font info data for a codepoint (unicode character), fallback to '?' if not found |
+| IsMaterialReady | Check if a material is ready |
 | LoadFontData | Load font data for further use |
 | LoadMaterialDefault | Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps) |
 | LoadMaterials | Load materials from model file |

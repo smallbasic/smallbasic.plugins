@@ -191,6 +191,28 @@ static int cmd_coloralphablend(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Get color with brightness correction, brightness factor goes from -1.0f to 1.0f
+//
+static int cmd_colorbrightness(int argc, slib_par_t *params, var_t *retval) {
+  auto color = get_param_color(argc, params, 0);
+  auto factor = get_param_num(argc, params, 1, 0);
+  auto fnResult = ColorBrightness(color, factor);
+  v_setcolor(retval, fnResult);
+  return 1;
+}
+
+//
+// Get color with contrast correction, contrast values between -1.0f and 1.0f
+//
+static int cmd_colorcontrast(int argc, slib_par_t *params, var_t *retval) {
+  auto color = get_param_color(argc, params, 0);
+  auto contrast = get_param_num(argc, params, 1, 0);
+  auto fnResult = ColorContrast(color, contrast);
+  v_setcolor(retval, fnResult);
+  return 1;
+}
+
+//
 // Get a Color from HSV values, hue [0..360], saturation/value [0..1]
 //
 static int cmd_colorfromhsv(int argc, slib_par_t *params, var_t *retval) {
@@ -219,6 +241,17 @@ static int cmd_colornormalize(int argc, slib_par_t *params, var_t *retval) {
   auto color = get_param_color(argc, params, 0);
   auto fnResult = ColorNormalize(color);
   v_setvec4(retval, fnResult);
+  return 1;
+}
+
+//
+// Get color multiplied with another color
+//
+static int cmd_colortint(int argc, slib_par_t *params, var_t *retval) {
+  auto color = get_param_color(argc, params, 0);
+  auto tint = get_param_color(argc, params, 1);
+  auto fnResult = ColorTint(color, tint);
+  v_setcolor(retval, fnResult);
   return 1;
 }
 
@@ -1694,6 +1727,22 @@ static int cmd_isaudiostreamprocessed(int argc, slib_par_t *params, var_t *retva
 }
 
 //
+// Checks if an audio stream is ready
+//
+static int cmd_isaudiostreamready(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int stream_id = get_audiostream_id(argc, params, 0, retval);
+  if (stream_id != -1) {
+    auto fnResult = IsAudioStreamReady(_audioStream.at(stream_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Check if cursor is not visible
 //
 static int cmd_iscursorhidden(int argc, slib_par_t *params, var_t *retval) {
@@ -1729,6 +1778,22 @@ static int cmd_isfileextension(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = IsFileExtension(fileName, ext);
   v_setint(retval, fnResult);
   return 1;
+}
+
+//
+// Check if a font is ready
+//
+static int cmd_isfontready(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int font_id = get_font_id(argc, params, 0, retval);
+  if (font_id != -1) {
+    auto fnResult = IsFontReady(_fontMap.at(font_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 //
@@ -1796,6 +1861,22 @@ static int cmd_isgesturedetected(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Check if an image is ready
+//
+static int cmd_isimageready(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int image_id = get_image_id(argc, params, 0, retval);
+  if (image_id != -1) {
+    auto fnResult = IsImageReady(_imageMap.at(image_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Check if a key is being pressed
 //
 static int cmd_iskeydown(int argc, slib_par_t *params, var_t *retval) {
@@ -1853,6 +1934,22 @@ static int cmd_ismodelanimationvalid(int argc, slib_par_t *params, var_t *retval
 }
 
 //
+// Check if a model is ready
+//
+static int cmd_ismodelready(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int model_id = get_model_id(argc, params, 0, retval);
+  if (model_id != -1) {
+    auto fnResult = IsModelReady(_modelMap.at(model_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Check if a mouse button is being pressed
 //
 static int cmd_ismousebuttondown(int argc, slib_par_t *params, var_t *retval) {
@@ -1893,6 +1990,22 @@ static int cmd_ismousebuttonup(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Checks if a music stream is ready
+//
+static int cmd_ismusicready(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int music_id = get_music_id(argc, params, 0, retval);
+  if (music_id != -1) {
+    auto fnResult = IsMusicReady(_musicMap.at(music_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Check if music is playing
 //
 static int cmd_ismusicstreamplaying(int argc, slib_par_t *params, var_t *retval) {
@@ -1919,6 +2032,32 @@ static int cmd_ispathfile(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Check if a render texture is ready
+//
+static int cmd_isrendertextureready(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int target_id = get_render_texture_id(argc, params, 0, retval);
+  if (target_id != -1) {
+    auto fnResult = IsRenderTextureReady(_renderMap.at(target_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Check if a shader is ready
+//
+static int cmd_isshaderready(int argc, slib_par_t *params, var_t *retval) {
+  auto shader = get_param_shader(argc, params, 0);
+  auto fnResult = IsShaderReady(shader);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
 // Check if a sound is currently playing
 //
 static int cmd_issoundplaying(int argc, slib_par_t *params, var_t *retval) {
@@ -1926,6 +2065,54 @@ static int cmd_issoundplaying(int argc, slib_par_t *params, var_t *retval) {
   int sound_id = get_sound_id(argc, params, 0, retval);
   if (sound_id != -1) {
     auto fnResult = IsSoundPlaying(_soundMap.at(sound_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Checks if a sound is ready
+//
+static int cmd_issoundready(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int sound_id = get_sound_id(argc, params, 0, retval);
+  if (sound_id != -1) {
+    auto fnResult = IsSoundReady(_soundMap.at(sound_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Check if a texture is ready
+//
+static int cmd_istextureready(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int texture_id = get_texture_id(argc, params, 0, retval);
+  if (texture_id != -1) {
+    auto fnResult = IsTextureReady(_textureMap.at(texture_id));
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Checks if wave data is ready
+//
+static int cmd_iswaveready(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int wave_id = get_wave_id(argc, params, 0, retval);
+  if (wave_id != -1) {
+    auto fnResult = IsWaveReady(_waveMap.at(wave_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {

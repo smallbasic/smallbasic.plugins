@@ -322,47 +322,6 @@ static int cmd_drawcube(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw cube textured
-//
-static int cmd_drawcubetexture(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int texture_id = get_texture_id(argc, params, 0, retval);
-  if (texture_id != -1) {
-    auto position = get_param_vec3(argc, params, 1);
-    auto width = get_param_num(argc, params, 2, 0);
-    auto height = get_param_num(argc, params, 3, 0);
-    auto length = get_param_num(argc, params, 4, 0);
-    auto color = get_param_color(argc, params, 5);
-    DrawCubeTexture(_textureMap.at(texture_id), position, width, height, length, color);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
-// Draw cube with a region of a texture
-//
-static int cmd_drawcubetexturerec(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int texture_id = get_texture_id(argc, params, 0, retval);
-  if (texture_id != -1) {
-    auto source = get_param_rect(argc, params, 1);
-    auto position = get_param_vec3(argc, params, 2);
-    auto width = get_param_num(argc, params, 3, 0);
-    auto height = get_param_num(argc, params, 4, 0);
-    auto length = get_param_num(argc, params, 5, 0);
-    auto color = get_param_color(argc, params, 6);
-    DrawCubeTextureRec(_textureMap.at(texture_id), source, position, width, height, length, color);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
 // Draw cube (Vector version)
 //
 static int cmd_drawcubev(int argc, slib_par_t *params, var_t *retval) {

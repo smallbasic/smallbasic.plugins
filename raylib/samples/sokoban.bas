@@ -1,6 +1,5 @@
 import raylib as rl
 import raylibc as c
-'import debug
 
 const screenWidth = 900
 const screenHeight = screenWidth * .75
@@ -18,7 +17,13 @@ rl.InitWindow(screenWidth, screenHeight,  "Sokoban")
 rl.SetWindowPosition(965, 1200)
 rl.SetTargetFPS(20)
 rl.SetCameraMode(camera, c.CAMERA_FREE)
-'run("xdotool windowactivate `xdotool search --onlyvisible --name \"Emacs\"`")
+
+'const soko = rl.LoadModel(CWD + "raylib/examples/models/resources/models/vox/chr_sword.vox")
+' Compute model translation matrix to center model on draw position (0, 0 , 0)
+'const bb = rl.GetModelBoundingBox(soko)
+'const center_x = bb.min.x  + (((bb.max.x - bb.min.x) / 2))
+'const center_z = bb.min.z  + (((bb.max.z - bb.min.z) / 2))
+'rl.SetModelTransform(soko, -center_x, 0, -center_z)
 
 sub main
   local games = load_levels("sokoban.levels")
@@ -32,7 +37,6 @@ sub main
     delim = ";"
   next
 
-' while (!rl.WindowShouldClose() && !debug.IsSourceModified())
   while (!rl.WindowShouldClose())
     update_move(game)
 
@@ -59,6 +63,7 @@ sub main
     rl.EndDrawing()
   wend
 
+  'rl.UnloadModel(soko)
   rl.CloseWindow()
 end
 
@@ -102,6 +107,7 @@ func create_game(grid)
   game.undo_top = 0
   game.game_over = false
   game.undo = []
+  game.angle = 180
   return game
 end
 
@@ -141,6 +147,12 @@ end
 '
 sub draw_soko(byref game, byref pt)
   rl.DrawCube(get_position(game, pt), cubeSize, cubeSize, cubeSize, c.PURPLE)
+ 
+  'local rotationAxis = [0, .1, 0]
+  'local rotationAngle = game.angle
+  'local scale = [.5, .5, .5]
+  'local position = get_position(game, pt)
+  'rl.DrawModelEx(soko, position, rotationAxis, rotationAngle, scale, c.PURPLE)
 end
 
 '
@@ -259,6 +271,7 @@ end
 sub move_up(byref game, is_push)
   game.soko_y--
   game.moves++
+  game.angle = 180
   if is_push then
     move_block game, 0, -1, game.soko_x, game.soko_y
     game.pushes++
@@ -271,6 +284,7 @@ end
 sub move_down(byref game, is_push)
   game.soko_y++
   game.moves++
+  game.angle = 0
   if is_push then
     move_block game, 0, 1, game.soko_x, game.soko_y
     game.pushes++
@@ -283,6 +297,7 @@ end
 sub move_left(byref game, is_push)
   game.soko_x--
   game.moves++
+  game.angle = 270
   if is_push then
     move_block game, -1, 0, game.soko_x, game.soko_y
     game.pushes++
@@ -295,6 +310,7 @@ end
 sub move_right(byref game, is_push)
   game.soko_x++
   game.moves++
+  game.angle = 90  
   if is_push then
     move_block game, 1, 0, game.soko_x, game.soko_y
     game.pushes++
