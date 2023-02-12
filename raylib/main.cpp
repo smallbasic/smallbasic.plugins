@@ -23,7 +23,7 @@
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
-#include <raylib/build/raylib/include/physac.h>
+#include <physac/src/physac.h>
 #include <GLFW/glfw3.h>
 #include <cstring>
 
