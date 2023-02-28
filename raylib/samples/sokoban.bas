@@ -14,16 +14,7 @@ camera.fovy = 60
 camera.projection = c.CAMERA_PERSPECTIVE
 
 rl.InitWindow(screenWidth, screenHeight,  "Sokoban")
-rl.SetWindowPosition(965, 1200)
 rl.SetTargetFPS(20)
-rl.SetCameraMode(camera, c.CAMERA_FREE)
-
-'const soko = rl.LoadModel(CWD + "raylib/examples/models/resources/models/vox/chr_sword.vox")
-' Compute model translation matrix to center model on draw position (0, 0 , 0)
-'const bb = rl.GetModelBoundingBox(soko)
-'const center_x = bb.min.x  + (((bb.max.x - bb.min.x) / 2))
-'const center_z = bb.min.z  + (((bb.max.z - bb.min.z) / 2))
-'rl.SetModelTransform(soko, -center_x, 0, -center_z)
 
 sub main
   local games = load_levels("sokoban.levels")
@@ -39,8 +30,8 @@ sub main
 
   while (!rl.WindowShouldClose())
     update_move(game)
+    update_camera()
 
-    rl.UpdateCamera(camera)
     rl.BeginDrawing()
     rl.ClearBackground(c.WHITE)
     rl.BeginMode3D(camera)
@@ -65,6 +56,24 @@ sub main
 
   'rl.UnloadModel(soko)
   rl.CloseWindow()
+end
+
+sub update_camera() 
+  if (rl.isKeyPressed(c.KEY_P)) then
+    logprint camera
+  elseif (rl.isKeyDown(c.KEY_Q)) then
+     camera.target[0]+=.1
+  elseif (rl.isKeyDown(c.KEY_W)) then
+    camera.target[0]-=.1
+  elseif (rl.isKeyDown(c.KEY_A)) then
+     camera.position[1]+=.1
+  elseif (rl.isKeyDown(c.KEY_S)) then
+    camera.position[1]-=.1
+  elseif (rl.isKeyDown(c.KEY_Z)) then
+     camera.target[2]+=.1
+  elseif (rl.isKeyDown(c.KEY_X)) then
+    camera.target[2]-=.1
+  endif
 end
 
 '
@@ -147,12 +156,6 @@ end
 '
 sub draw_soko(byref game, byref pt)
   rl.DrawCube(get_position(game, pt), cubeSize, cubeSize, cubeSize, c.PURPLE)
- 
-  'local rotationAxis = [0, .1, 0]
-  'local rotationAngle = game.angle
-  'local scale = [.5, .5, .5]
-  'local position = get_position(game, pt)
-  'rl.DrawModelEx(soko, position, rotationAxis, rotationAngle, scale, c.PURPLE)
 end
 
 '
@@ -392,13 +395,7 @@ sub update_move(byref game)
     undo game
   elseif (rl.isKeyPressed(c.KEY_E)) then
     game.game_over = true
-  elseif (rl.isKeyPressed(c.KEY_P)) then
-    logprint camera
-  elseif (rl.isKeyPressed(c.KEY_A)) then
-     camera.position[2]+=.5
-  elseif (rl.isKeyPressed(c.KEY_S)) then
-    camera.position[2]-=.5
-  endif
+  endif  
 end
 
 '

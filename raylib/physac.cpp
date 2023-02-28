@@ -184,16 +184,3 @@ void setUseGravity(PhysicsBody body, bool useGravity) { body->useGravity = useGr
 void setIsGrounded(PhysicsBody body, bool isGrounded) { body->isGrounded = isGrounded;}
 void setFreezeOrient(PhysicsBody body, bool freezeOrient) { body->freezeOrient = freezeOrient;}
 
-#if defined(_WIN32)
-#include "sysinfoapi.h"
-// libtool has issues linking the real versions of these
-int __stdcall QueryPerformanceCounter(unsigned long long int *lpPerformanceCount) {
-  *lpPerformanceCount = GetTickCount();
-  return 1;
-}
-
-int __stdcall QueryPerformanceFrequency(unsigned long long int *lpFrequency) {
-  *lpFrequency = 1000;
-  return 1;
-}
-#endif

@@ -49,11 +49,11 @@ rotationAxis = [0, 1, 0]
 rotationAngle = -90
 scale = [1, 1, 1]
 
-rl.SetCameraMode(camera, c.CAMERA_FREE) ' Set free camera mode
+'rl.SetCameraMode(camera, c.CAMERA_FREE) ' Set free camera mode
 rl.SetTargetFPS(60)                     ' Set our game to run at 60 frames-per-second
 
 while (!rl.WindowShouldClose())
-  rl.UpdateCamera(camera)
+  rl.UpdateCamera(camera, c.CAMERA_FIRST_PERSON)
 
   ' Play animation when spacebar is held down
   if (rl.IsKeyDown(c.KEY_SPACE)) then

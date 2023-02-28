@@ -2268,57 +2268,6 @@ static int cmd_setaudiostreamvolume(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
-// Set camera alt key to combine with mouse movement (free camera)
-//
-static int cmd_setcameraaltcontrol(int argc, slib_par_t *params, var_t *retval) {
-  auto keyAlt = get_param_int(argc, params, 0, 0);
-  SetCameraAltControl(keyAlt);
-  return 1;
-}
-
-//
-// Set camera mode (multiple camera modes available)
-//
-static int cmd_setcameramode(int argc, slib_par_t *params, var_t *retval) {
-  auto camera = get_camera_3d(argc, params, 0);
-  auto mode = get_param_int(argc, params, 1, 0);
-  SetCameraMode(camera, mode);
-  return 1;
-}
-
-//
-// Set camera move controls (1st person and 3rd person cameras)
-//
-static int cmd_setcameramovecontrols(int argc, slib_par_t *params, var_t *retval) {
-  auto keyFront = get_param_int(argc, params, 0, 0);
-  auto keyBack = get_param_int(argc, params, 1, 0);
-  auto keyRight = get_param_int(argc, params, 2, 0);
-  auto keyLeft = get_param_int(argc, params, 3, 0);
-  auto keyUp = get_param_int(argc, params, 4, 0);
-  auto keyDown = get_param_int(argc, params, 5, 0);
-  SetCameraMoveControls(keyFront, keyBack, keyRight, keyLeft, keyUp, keyDown);
-  return 1;
-}
-
-//
-// Set camera pan key to combine with mouse movement (free camera)
-//
-static int cmd_setcamerapancontrol(int argc, slib_par_t *params, var_t *retval) {
-  auto keyPan = get_param_int(argc, params, 0, 0);
-  SetCameraPanControl(keyPan);
-  return 1;
-}
-
-//
-// Set camera smooth zoom key to combine with mouse (free camera)
-//
-static int cmd_setcamerasmoothzoomcontrol(int argc, slib_par_t *params, var_t *retval) {
-  auto keySmoothZoom = get_param_int(argc, params, 0, 0);
-  SetCameraSmoothZoomControl(keySmoothZoom);
-  return 1;
-}
-
-//
 // Set clipboard text content
 //
 static int cmd_setclipboardtext(int argc, slib_par_t *params, var_t *retval) {
@@ -2643,13 +2592,29 @@ static int cmd_settraceloglevel(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set icon for window (only PLATFORM_DESKTOP)
+// Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP)
 //
 static int cmd_setwindowicon(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int image_id = get_image_id(argc, params, 0, retval);
   if (image_id != -1) {
     SetWindowIcon(_imageMap.at(image_id));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Set icon for window (multiple images, RGBA 32bit, only PLATFORM_DESKTOP)
+//
+static int cmd_setwindowicons(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int images_id = get_image_id(argc, params, 0, retval);
+  if (images_id != -1) {
+    auto count = get_param_int(argc, params, 1, 0);
+    SetWindowIcons(&_imageMap.at(images_id), count);
     result = 1;
   } else {
     result = 0;

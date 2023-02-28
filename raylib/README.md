@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (578)
+Implemented APIs (574)
 ----------------
 
 | Name    | Description   |
@@ -464,11 +464,6 @@ Implemented APIs (578)
 | sub SetAudioStreamPan(stream, pan) | Set pan for audio stream (0.5 is centered) |
 | sub SetAudioStreamPitch(stream, pitch) | Set pitch for audio stream (1.0 is base level) |
 | sub SetAudioStreamVolume(stream, volume) | Set volume for audio stream (1.0 is max level) |
-| sub SetCameraAltControl(keyAlt) | Set camera alt key to combine with mouse movement (free camera) |
-| sub SetCameraMode(camera, mode) | Set camera mode (multiple camera modes available) |
-| sub SetCameraMoveControls(keyFront, keyBack, keyRight, keyLeft, keyUp, keyDown) | Set camera move controls (1st person and 3rd person cameras) |
-| sub SetCameraPanControl(keyPan) | Set camera pan key to combine with mouse movement (free camera) |
-| sub SetCameraSmoothZoomControl(keySmoothZoom) | Set camera smooth zoom key to combine with mouse (free camera) |
 | sub SetClipboardText(text) | Set clipboard text content |
 | sub SetConfigFlags(flags) | Setup init configuration flags (view FLAGS) |
 | sub SetExitKey(key) | Set a custom key to exit program (default is ESC) |
@@ -519,7 +514,8 @@ Implemented APIs (578)
 | sub SetTextureFilter(texture, filter) | Set texture scaling filter mode |
 | sub SetTextureWrap(texture, wrap) | Set texture wrapping mode |
 | sub SetTraceLogLevel(logLevel) | Set the current threshold (minimum) log level |
-| sub SetWindowIcon(image) | Set icon for window (only PLATFORM_DESKTOP) |
+| sub SetWindowIcon(image) | Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP) |
+| sub SetWindowIcons(images, count) | Set icon for window (multiple images, RGBA 32bit, only PLATFORM_DESKTOP) |
 | sub SetWindowMinSize(width, height) | Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE) |
 | sub SetWindowMonitor(monitor) | Set monitor for the current window (fullscreen mode) |
 | sub SetWindowOpacity(opacity) | Set window opacity [0.0f..1.0f] (only PLATFORM_DESKTOP) |
@@ -572,7 +568,7 @@ Implemented APIs (578)
 | sub UnloadWave(wave) | Unload wave data |
 | sub UnloadWaveSamples(samples) | Unload samples data loaded with LoadWaveSamples() |
 | sub UpdateAudioStream(stream, data, frameCount) | Update audio stream buffers with data |
-| sub UpdateCamera(camera) | Update camera position for selected mode |
+| sub UpdateCamera(camera, mode) | Update camera position for selected mode |
 | sub UpdateMeshBuffer(mesh, index, data, dataSize, offset) | Update mesh vertex data in GPU for a specific buffer index |
 | sub UpdateModelAnimation(model, anim, frame) | Update model animation pose |
 | sub UpdateMusicStream(music) | Updates buffers for music streaming |
@@ -593,8 +589,10 @@ Unimplemented APIs
 
 | Name    | Description   |
 |---------|---------------|
+| AttachAudioMixedProcessor | Attach audio stream processor to the entire audio pipeline |
 | AttachAudioStreamProcessor | Attach audio stream processor to stream |
 | BeginVrStereoMode | Begin stereo rendering (requires VR simulator) |
+| DetachAudioMixedProcessor | Detach audio stream processor from the entire audio pipeline |
 | DetachAudioStreamProcessor | Detach audio stream processor from stream |
 | DrawMesh | Draw a 3d mesh with material and transform |
 | DrawMeshInstanced | Draw multiple mesh instances with material and different transforms |
