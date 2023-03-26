@@ -1,10 +1,10 @@
-*Raylib* _MAJOR 4 _MINOR 5 _PATCH 0 4.5-dev
+*Raylib* _MAJOR 4 _MINOR 6 _PATCH 0 4.6-dev
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (574)
+Implemented APIs (570)
 ----------------
 
 | Name    | Description   |
@@ -250,7 +250,6 @@ Implemented APIs (574)
 | func GetScreenWidth() | Get current screen width |
 | func GetShaderLocation(shader, uniformName) | Get shader uniform location |
 | func GetShaderLocationAttrib(shader, attribName) | Get shader attribute location |
-| func GetSoundsPlaying() | Get number of sounds playing in the multichannel |
 | func GetTime() | Get elapsed time in seconds since InitWindow() |
 | func GetTouchPointCount() | Get number of touch points |
 | func GetTouchPointId(index) | Get touch point identifier for given index |
@@ -449,7 +448,6 @@ Implemented APIs (574)
 | sub PlayAudioStream(stream) | Play audio stream |
 | sub PlayMusicStream(music) | Start music playing |
 | sub PlaySound(sound) | Play a sound |
-| sub PlaySoundMulti(sound) | Play a sound (using multichannel buffer pool) |
 | func pollevents() | n/a |
 | sub PollInputEvents() | Register all input events |
 | func resetPhysics() | n/a |
@@ -527,7 +525,6 @@ Implemented APIs (574)
 | sub StopAudioStream(stream) | Stop audio stream |
 | sub StopMusicStream(music) | Stop music playing |
 | sub StopSound(sound) | Stop playing a sound |
-| sub StopSoundMulti() | Stop any sound playing (using multichannel buffer pool) |
 | sub SwapScreenBuffer() | Swap back buffer with front buffer (screen drawing) |
 | sub TakeScreenshot(fileName) | Takes a screenshot of current screen (filename extension defines format) |
 | sub TextAppend(text, append, position) | Append text at specific position and move cursor! |
@@ -558,7 +555,6 @@ Implemented APIs (574)
 | sub UnloadModel(model) | Unload model (including meshes) from memory (RAM and/or VRAM) |
 | sub UnloadModelAnimation(anim) | Unload animation data |
 | sub UnloadModelAnimations(animations, count) | Unload animation array data |
-| sub UnloadModelKeepMeshes(model) | Unload model (but not meshes) from memory (RAM and/or VRAM) |
 | sub UnloadMusicStream(music) | Unload music stream |
 | sub UnloadRenderTexture(target) | Unload render texture from GPU memory (VRAM) |
 | sub UnloadShader(shader) | Unload shader from GPU memory (VRAM) |

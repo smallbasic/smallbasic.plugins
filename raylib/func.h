@@ -1485,15 +1485,6 @@ static int cmd_getshaderlocationattrib(int argc, slib_par_t *params, var_t *retv
 }
 
 //
-// Get number of sounds playing in the multichannel
-//
-static int cmd_getsoundsplaying(int argc, slib_par_t *params, var_t *retval) {
-  auto fnResult = GetSoundsPlaying();
-  v_setint(retval, fnResult);
-  return 1;
-}
-
-//
 // Get elapsed time in seconds since InitWindow()
 //
 static int cmd_gettime(int argc, slib_par_t *params, var_t *retval) {

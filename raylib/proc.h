@@ -2119,21 +2119,6 @@ static int cmd_playsound(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Play a sound (using multichannel buffer pool)
-//
-static int cmd_playsoundmulti(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int sound_id = get_sound_id(argc, params, 0, retval);
-  if (sound_id != -1) {
-    PlaySoundMulti(_soundMap.at(sound_id));
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
 // Register all input events
 //
 static int cmd_pollinputevents(int argc, slib_par_t *params, var_t *retval) {
@@ -2742,14 +2727,6 @@ static int cmd_stopsound(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Stop any sound playing (using multichannel buffer pool)
-//
-static int cmd_stopsoundmulti(int argc, slib_par_t *params, var_t *retval) {
-  StopSoundMulti();
-  return 1;
-}
-
-//
 // Swap back buffer with front buffer (screen drawing)
 //
 static int cmd_swapscreenbuffer(int argc, slib_par_t *params, var_t *retval) {
@@ -2946,21 +2923,6 @@ static int cmd_unloadmodelanimations(int argc, slib_par_t *params, var_t *retval
   auto count = get_param_int(argc, params, 1, 0);
   UnloadModelAnimations(animations, count);
   return 1;
-}
-
-//
-// Unload model (but not meshes) from memory (RAM and/or VRAM)
-//
-static int cmd_unloadmodelkeepmeshes(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int model_id = get_model_id(argc, params, 0, retval);
-  if (model_id != -1) {
-    UnloadModelKeepMeshes(_modelMap.at(model_id));
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
 }
 
 //

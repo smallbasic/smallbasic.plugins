@@ -275,6 +275,7 @@ func is_internal(name)
           name == "SetShaderValue" || &
           name == "TextFormat" || &
           name == "TraceLog" || &
+          name == "UpdateCameraPro" || &
           name == "UpdateCamera" || &
           name == "UpdateTexture")
 end

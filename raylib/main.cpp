@@ -830,8 +830,15 @@ static int cmd_setshadervalue(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_updatecamera(int argc, slib_par_t *params, var_t *retval) {
   auto camera = get_camera_3d(argc, params, 0);
-  auto mode = get_param_int(argc, params, 1, CAMERA_FREE);
-  UpdateCamera(&camera, mode);
+  if (argc == 4) {
+    auto movement = get_param_vec3(argc, params, 1);
+    auto rotation = get_param_vec3(argc, params, 2);
+    auto zoom = get_param_num(argc, params, 3, 0);
+    UpdateCameraPro(&camera, movement, rotation, zoom);
+  } else {
+    auto mode = get_param_int(argc, params, 1, CAMERA_FREE);
+    UpdateCamera(&camera, mode);
+  }
   set_camera_3d(params[0].var_p, &camera);
   return 1;
 }
@@ -1724,7 +1731,7 @@ static FUNC_SIG lib_proc[] = {
   {4, 5, "SETSHADERVALUE", cmd_setshadervalue},
   {2, 2, "SETMODELDIFFUSETEXTURE", cmd_setmodeldiffusetexture},
   {4, 4, "SETMODELTRANSFORM", cmd_setmodeltransform},
-  {1, 2, "UPDATECAMERA", cmd_updatecamera},
+  {1, 4, "UPDATECAMERA", cmd_updatecamera},
   {2, 2, "UPDATETEXTURE", cmd_updatetexture},
   {0, 0, "GUIDISABLE", cmd_guidisable},
   {2, 2, "GUIDUMMYREC", cmd_guidummyrec},

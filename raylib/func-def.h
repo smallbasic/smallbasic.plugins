@@ -126,7 +126,6 @@
   {0, 0, "GETSCREENWIDTH", cmd_getscreenwidth},
   {2, 2, "GETSHADERLOCATION", cmd_getshaderlocation},
   {2, 2, "GETSHADERLOCATIONATTRIB", cmd_getshaderlocationattrib},
-  {0, 0, "GETSOUNDSPLAYING", cmd_getsoundsplaying},
   {0, 0, "GETTIME", cmd_gettime},
   {0, 0, "GETTOUCHPOINTCOUNT", cmd_gettouchpointcount},
   {1, 1, "GETTOUCHPOINTID", cmd_gettouchpointid},
