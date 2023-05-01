@@ -5,8 +5,6 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 #
 
-sbasic = /home/chrisws/src/SmallBASIC/src/platform/console/sbasic
-
 generated = func-def.h proc-def.h proc.h func.h
 
 CLEANFILES = $(generated)

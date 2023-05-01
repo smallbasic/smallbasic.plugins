@@ -7,15 +7,19 @@ dnl This program is distributed under the terms of the GPL v2.0
 dnl Download the GNU Public License (GPL) from www.gnu.org
 dnl
 
-AC_INIT([smallbasic], [20.0])
+AC_INIT([smallbasic],[27.0])
 AC_CONFIG_AUX_DIR(aux-dist)
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_SRCDIR([include/param.cpp])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_LANG([C])
 AC_LANG([C++])
 AM_INIT_AUTOMAKE([subdir-objects])
 LT_INIT([win32-dll])
+
+dnl sbasic is required for raylib code generation
+AC_CHECK_PROG(SBASIC_CHECK,sbasic, yes)
+AS_IF([test x"$SBASIC_CHECK" != x"yes"], [AC_MSG_ERROR([Please install sbasic before configuring.])])
 
 function checkDebugMode() {
   AC_MSG_CHECKING([if debug mode is enabled])
@@ -37,6 +41,11 @@ AC_ARG_WITH(static-include,
   [AS_HELP_STRING([--with-static-include], [Include module sources])],
   [STATIC_INCLUDE="yes"],
   [STATIC_INCLUDE="no"])
+
+AC_ARG_WITH(mlpack,
+  [AS_HELP_STRING([--with-mlpack], [Build the mlpack module])],
+  [MLPACK="yes"],
+  [MLPACK="no"])
 
 case "${host_os}" in
   *mingw* | *msys*)
@@ -63,6 +72,7 @@ case "${host_os}" in
 esac
 
 AM_CONDITIONAL(WITH_STATIC_INCLUDE, test "${STATIC_INCLUDE}" = "yes")
+AM_CONDITIONAL(WITH_MLPACK, test "${MLPACK}" = "yes")
 AC_SUBST(DEBUG_LDFLAGS)
 AC_SUBST(CLIPBOARD_LDFLAGS)
 AC_SUBST(RAYLIB_LDFLAGS)
@@ -74,12 +84,16 @@ dnl change default aru setting to avoid warning
 ARFLAGS=cr
 AC_SUBST(ARFLAGS)
 
-AC_LIBTOOL_DLOPEN
-AC_PROG_LIBTOOL
-AC_PROG_CXX
+LT_INIT([dlopen])
 LT_PREREQ([2.2])
+AC_PROG_CXX
 
 BUILD_SUBDIRS="debug nuklear gifenc glfw clipboard websocket raylib"
+if test "${MLPACK}" = "yes"
+then
+  BUILD_SUBDIRS="${BUILD_SUBDIRS} mlpack"
+fi
+
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
 
@@ -93,7 +107,8 @@ gifenc/Makefile
 glfw/Makefile
 clipboard/Makefile
 websocket/Makefile
-raylib/Makefile])
+raylib/Makefile
+mlpack/Makefile])
 
 AC_OUTPUT
 

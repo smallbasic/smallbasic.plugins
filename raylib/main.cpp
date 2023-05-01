@@ -1133,16 +1133,6 @@ static int cmd_guitextbox(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_guitextboxmulti(int argc, slib_par_t *params, var_t *retval) {
-  auto bounds = get_param_rect(argc, params, 0);
-  auto text = get_param_str(argc, params, 1, 0);
-  auto textSize = get_param_int(argc, params, 2, 0);
-  auto editMode = get_param_int(argc, params, 3, 0);
-  auto fnResult = GuiTextBoxMulti(bounds, (char *)text, textSize, editMode);
-  v_setint(retval, fnResult);
-  return 1;
-}
-
 static int cmd_guitextinputbox(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   const char *title = get_param_str(argc, params, 1, 0);
@@ -1709,7 +1699,6 @@ static FUNC_SIG lib_func[] = {
   {6, 6, "GUISLIDERBAR", cmd_guisliderbar},
   {6, 6, "GUISPINNER", cmd_guispinner},
   {4, 4, "GUITEXTBOX", cmd_guitextbox},
-  {4, 4, "GUITEXTBOXMULTI", cmd_guitextboxmulti},
   {6, 6, "GUITEXTINPUTBOX", cmd_guitextinputbox},
   {3, 3, "GUITOGGLE", cmd_guitoggle},
   {3, 3, "GUITOGGLEGROUP", cmd_guitogglegroup},
