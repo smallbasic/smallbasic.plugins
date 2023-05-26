@@ -138,6 +138,7 @@
   {3, 3, "IMAGERESIZE", cmd_imageresize},
   {6, 6, "IMAGERESIZECANVAS", cmd_imageresizecanvas},
   {3, 3, "IMAGERESIZENN", cmd_imageresizenn},
+  {2, 2, "IMAGEROTATE", cmd_imagerotate},
   {1, 1, "IMAGEROTATECCW", cmd_imagerotateccw},
   {1, 1, "IMAGEROTATECW", cmd_imagerotatecw},
   {2, 2, "IMAGETOPOT", cmd_imagetopot},

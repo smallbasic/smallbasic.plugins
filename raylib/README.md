@@ -156,9 +156,9 @@ Implemented APIs (570)
 | func GenImageCellular(width, height, tileSize) | Generate image: cellular algorithm, bigger tileSize means bigger cells |
 | func GenImageChecked(width, height, checksX, checksY, col1, col2) | Generate image: checked |
 | func GenImageColor(width, height, color) | Generate image: plain color |
-| func GenImageGradientH(width, height, left, right) | Generate image: horizontal gradient |
+| func GenImageGradientLinear(width, height, direction, start, end) | Generate image: linear gradient, direction in degrees [0..360], 0=Vertical gradient |
 | func GenImageGradientRadial(width, height, density, inner, outer) | Generate image: radial gradient |
-| func GenImageGradientV(width, height, top, bottom) | Generate image: vertical gradient |
+| func GenImageGradientSquare(width, height, density, inner, outer) | Generate image: square gradient |
 | func GenImagePerlinNoise(width, height, offsetX, offsetY, scale) | Generate image: perlin noise |
 | func GenImageText(width, height, text) | Generate image: grayscale image from text data |
 | func GenImageWhiteNoise(width, height, factor) | Generate image: white noise |
@@ -296,7 +296,6 @@ Implemented APIs (570)
 | func guispinner() | n/a |
 | func guistatusbar() | n/a |
 | func guitextbox() | n/a |
-| func guitextboxmulti() | n/a |
 | func guitextinputbox() | n/a |
 | func guitoggle() | n/a |
 | func guitogglegroup() | n/a |
@@ -342,6 +341,7 @@ Implemented APIs (570)
 | sub ImageResize(image, newWidth, newHeight) | Resize image (Bicubic scaling algorithm) |
 | sub ImageResizeCanvas(image, newWidth, newHeight, offsetX, offsetY, fill) | Resize canvas and fill with color |
 | sub ImageResizeNN(image, newWidth, newHeight) | Resize image (Nearest-Neighbor scaling algorithm) |
+| sub ImageRotate(image, degrees) | Rotate image by input angle in degrees (-359 to 359)  |
 | sub ImageRotateCCW(image) | Rotate image counter-clockwise 90deg |
 | sub ImageRotateCW(image) | Rotate image clockwise 90deg |
 | func ImageText(text, fontSize, color) | Create an image from text (default font) |

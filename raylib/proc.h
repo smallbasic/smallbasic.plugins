@@ -1930,6 +1930,22 @@ static int cmd_imageresizenn(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Rotate image by input angle in degrees (-359 to 359) 
+//
+static int cmd_imagerotate(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int image_id = get_image_id(argc, params, 0, retval);
+  if (image_id != -1) {
+    auto degrees = get_param_int(argc, params, 1, 0);
+    ImageRotate(&_imageMap.at(image_id), degrees);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Rotate image counter-clockwise 90deg
 //
 static int cmd_imagerotateccw(int argc, slib_par_t *params, var_t *retval) {

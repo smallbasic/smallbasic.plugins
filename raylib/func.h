@@ -511,14 +511,15 @@ static int cmd_genimagecolor(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Generate image: horizontal gradient
+// Generate image: linear gradient, direction in degrees [0..360], 0=Vertical gradient
 //
-static int cmd_genimagegradienth(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_genimagegradientlinear(int argc, slib_par_t *params, var_t *retval) {
   auto width = get_param_int(argc, params, 0, 0);
   auto height = get_param_int(argc, params, 1, 0);
-  auto left = get_param_color(argc, params, 2);
-  auto right = get_param_color(argc, params, 3);
-  auto fnResult = GenImageGradientH(width, height, left, right);
+  auto direction = get_param_int(argc, params, 2, 0);
+  auto start = get_param_color(argc, params, 3);
+  auto end = get_param_color(argc, params, 4);
+  auto fnResult = GenImageGradientLinear(width, height, direction, start, end);
   v_setimage(retval, fnResult);
   return 1;
 }
@@ -538,14 +539,15 @@ static int cmd_genimagegradientradial(int argc, slib_par_t *params, var_t *retva
 }
 
 //
-// Generate image: vertical gradient
+// Generate image: square gradient
 //
-static int cmd_genimagegradientv(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_genimagegradientsquare(int argc, slib_par_t *params, var_t *retval) {
   auto width = get_param_int(argc, params, 0, 0);
   auto height = get_param_int(argc, params, 1, 0);
-  auto top = get_param_color(argc, params, 2);
-  auto bottom = get_param_color(argc, params, 3);
-  auto fnResult = GenImageGradientV(width, height, top, bottom);
+  auto density = get_param_num(argc, params, 2, 0);
+  auto inner = get_param_color(argc, params, 3);
+  auto outer = get_param_color(argc, params, 4);
+  auto fnResult = GenImageGradientSquare(width, height, density, inner, outer);
   v_setimage(retval, fnResult);
   return 1;
 }

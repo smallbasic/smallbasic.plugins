@@ -6,6 +6,7 @@
 #
 
 generated = func-def.h proc-def.h proc.h func.h
+sbasic=sbasic
 
 CLEANFILES = $(generated)
 
