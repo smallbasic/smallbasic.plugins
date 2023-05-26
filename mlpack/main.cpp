@@ -18,11 +18,14 @@
 #include <mlpack/methods/kmeans/kmeans.hpp>
 
 // https://arma.sourceforge.net/docs.html
-
 using namespace mlpack;
 
+void error_array(var_p_t var) {
+  error(var, "First argument must be an array [or image file name]");
+}
+
 //
-// load from CSV or PNG
+// load from CSV
 //
 static bool get_mat(arma::mat &dataset, const char *str) {
   return data::Load(str, dataset, true);
@@ -76,9 +79,9 @@ static bool get_mat(arma::mat &dataset, var_t *var) {
   return result;
 }
 
-static void cmd_kmeans_cluster(arma::mat &dataset, size_t clusters, var_t *retval) {
+static void cmd_kmeans_cluster(arma::mat &dataset, size_t clusters, size_t maxIterations, var_t *retval) {
   // Create the k-means object and set the parameters.
-  KMeans<> k(clusters);
+  KMeans<> k(maxIterations);
 
   // The assignments will be stored in this vector.
   arma::Row<size_t> assignments;
@@ -86,7 +89,6 @@ static void cmd_kmeans_cluster(arma::mat &dataset, size_t clusters, var_t *retva
   // The centroids will be stored in this matrix.
   arma::mat centroids;
 
-  // kmeans.Cluster(data, clusters, assignments, centroids, maxIterations, verbose);
   k.Cluster(dataset, clusters, assignments, centroids);
 
   map_init(retval);
@@ -99,7 +101,6 @@ static void cmd_kmeans_cluster(arma::mat &dataset, size_t clusters, var_t *retva
   }
 
   v_tomatrix(array, centroids.n_rows, centroids.n_cols);
-
   for (size_t r = 0; r < centroids.n_rows; r++) {
     for (size_t c = 0; c < centroids.n_cols; c++) {
       size_t pos = r * centroids.n_cols + c;
@@ -145,24 +146,62 @@ static int cmd_kmeans_cluster(int argc, slib_par_t *params, var_t *retval) {
     }
     if (result) {
       size_t clusters = get_param_int(argc, params, 1, 5);
-      cmd_kmeans_cluster(dataset, clusters, retval);
+      size_t maxIterations = get_param_int(argc, params, 2, 1000);
+      cmd_kmeans_cluster(dataset, clusters, maxIterations, retval);
     } else {
-      error(retval, "First argument must be an array [or image file name]");
+      error_array(retval);
     }
   }
   return result;
 }
 
+static void cmd_neighbor_search(arma::mat &dataset, var_t *retval) {
+  // dataset.raw_print();
+  NeighborSearch<NearestNeighborSort, ManhattanDistance> nn(dataset);
+  arma::Mat<size_t> neighbors;
+  arma::mat distances;
+
+  nn.Search(1, neighbors, distances);
+
+  map_init(retval);
+  var_t *v_neighbors = map_add_var(retval, "neighbors", 0);
+  var_t *v_distances = map_add_var(retval, "distances", 0);
+  v_toarray1(v_neighbors, neighbors.n_elem);
+  v_toarray1(v_distances, neighbors.n_elem);
+  for (size_t c = 0; c < neighbors.n_elem; c++) {
+    v_setreal(v_elem(v_neighbors, c), neighbors[c]);
+    v_setreal(v_elem(v_distances, c), distances[c]);
+  }
+}
+
+static int cmd_neighbor_search(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  arma::mat dataset;
+  if (is_param_array(argc, params, 0)) {
+    result = get_mat(dataset, params[0].var_p) ? 1 : 0;
+  } else if (is_param_str(argc, params, 0)) {
+    result = get_mat(dataset, get_param_str(argc, params, 0, nullptr)) ? 1 : 0;
+  } else {
+    result = 0;
+  }
+  if (result) {
+    cmd_neighbor_search(dataset, retval);
+  } else {
+    error_array(retval);
+  }
+  return result;
+}
+
 FUNC_SIG lib_func[] = {
-  {2, 2, "KMEANSCLUSTER", cmd_kmeans_cluster},
+  {2, 3, "KMEANSCLUSTER", cmd_kmeans_cluster},
+  {1, 1, "NEIGHBORSEARCH", cmd_neighbor_search},
 };
 
 FUNC_SIG lib_proc[] = {
-  {2, 2, "KMEANSCLUSTER", cmd_kmeans_cluster},
 };
 
 SBLIB_API int sblib_proc_count() {
-  return (sizeof(lib_proc) / sizeof(lib_proc[0]));
+  return 0;
 }
 
 SBLIB_API int sblib_func_count() {

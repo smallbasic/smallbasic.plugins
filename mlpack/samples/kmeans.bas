@@ -50,6 +50,11 @@ end
 
 show arr
 
+i = image("chicken.png")
+i.save(a)
+? ubound(a,1)
+? ubound(a,2)
+
 kresult = mlpack.kmeansCluster(arr, 2)
 ? "assignments:"
 ? kresult.assignments
