@@ -349,7 +349,7 @@ static FilePathList get_param_filepathlist(int argc, slib_par_t *params, int n) 
       result.paths[index] = (char *)malloc(MAX_FILEPATH_LENGTH * sizeof(char));
       var_p_t elem = v_elem(array, index);
       if (elem->type == V_STR) {
-        strncpy(result.paths[index], elem->v.p.ptr, MAX_FILEPATH_LENGTH);
+        TextCopy(result.paths[index], elem->v.p.ptr);
       } else {
         result.paths[index][0] = '\0';
       }
@@ -955,9 +955,9 @@ static int cmd_guibutton(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_guicheckbox(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
-  auto checked = get_param_int(argc, params, 2, 0);
-  auto fnResult = GuiCheckBox(bounds, text, checked);
-  v_setint(retval, fnResult);
+  auto checked = get_param_int(argc, params, 2, 0) == 1;
+  GuiCheckBox(bounds, text, &checked);
+  v_setint(retval, checked);
   return 1;
 }
 
@@ -965,17 +965,17 @@ static int cmd_guicolorbaralpha(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
   auto alpha = get_param_num(argc, params, 2, 0);
-  auto fnResult = GuiColorBarAlpha(bounds, text, alpha);
-  v_setreal(retval, fnResult);
+  GuiColorBarAlpha(bounds, text, (float*)&alpha);
+  v_setreal(retval, alpha);
   return 1;
 }
 
 static int cmd_guicolorbarhue(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
-  auto value = get_param_num(argc, params, 2, 0);
-  auto fnResult = GuiColorBarHue(bounds, text, value);
-  v_setreal(retval, fnResult);
+  auto value = (float)get_param_num(argc, params, 2, 0);
+  GuiColorBarHue(bounds, text, &value);
+  v_setreal(retval, value);
   return 1;
 }
 
@@ -983,8 +983,8 @@ static int cmd_guicolorpicker(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
   auto color = get_param_color(argc, params, 2);
-  auto fnResult = GuiColorPicker(bounds, text, color);
-  v_setcolor(retval, fnResult);
+  GuiColorPicker(bounds, text, &color);
+  v_setcolor(retval, color);
   return 1;
 }
 
@@ -992,8 +992,8 @@ static int cmd_guicombobox(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
   auto active = get_param_int(argc, params, 2, 0);
-  auto fnResult = GuiComboBox(bounds, text, active);
-  v_setint(retval, fnResult);
+  GuiComboBox(bounds, text, &active);
+  v_setint(retval, active);
   return 1;
 }
 
@@ -1001,7 +1001,7 @@ static int cmd_guidropdownbox(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
   auto active = get_param_int(argc, params, 2, 0);
-  bool editMode = get_param_int(argc, params, 3, 0) == 1;
+  auto editMode = get_param_int(argc, params, 3, 0) == 1;
   auto fnResult = GuiDropdownBox(bounds, text, &active, editMode);
   v_setint(retval, fnResult);
   return set_param_int(argc, params, 2, active, retval);
@@ -1020,8 +1020,9 @@ static int cmd_guigrid(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 1, 0);
   auto spacing = get_param_num(argc, params, 2, 0);
   auto subdivs = get_param_int(argc, params, 3, 0);
-  auto fnResult = GuiGrid(bounds, text, spacing, subdivs);
-  v_setvec2(retval, fnResult);
+  auto mouseCell = get_param_vec2(argc, params, 4);
+  GuiGrid(bounds, text, spacing, subdivs, &mouseCell);
+  v_setvec2(retval, mouseCell);
   return 1;
 }
 
@@ -1037,9 +1038,9 @@ static int cmd_guilistview(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
   auto scrollIndex = get_param_int(argc, params, 2, 0);
-  bool active = get_param_int(argc, params, 3, 0) == 1;
-  auto fnResult = GuiListView(bounds, text, &scrollIndex, active);
-  v_setint(retval, fnResult);
+  int active = get_param_int(argc, params, 3, 0);
+  GuiListView(bounds, text, &scrollIndex, &active);
+  v_setint(retval, active);
   return set_param_int(argc, params, 2, scrollIndex, retval);
 }
 
@@ -1049,9 +1050,9 @@ static int cmd_guilistviewex(int argc, slib_par_t *params, var_t *retval) {
   auto count = get_param_int(argc, params, 2, 0);
   auto focus = get_param_int(argc, params, 3, 0);
   auto scrollIndex = get_param_int(argc, params, 4, 0);
-  bool active = get_param_int(argc, params, 5, 0) == 1;
-  auto fnResult = GuiListViewEx(bounds, &text, count, &focus, &scrollIndex, active);
-  v_setint(retval, fnResult);
+  int  active = get_param_int(argc, params, 5, 0);
+  GuiListViewEx(bounds, &text, count, &focus, &scrollIndex, &active);
+  v_setint(retval, active);
   return set_param_int(argc, params, 3, focus, retval) && set_param_int(argc, params, 4, scrollIndex, retval);
 }
 
@@ -1069,11 +1070,11 @@ static int cmd_guiprogressbar(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto textLeft = get_param_str(argc, params, 1, 0);
   auto textRight = get_param_str(argc, params, 2, 0);
-  auto value = get_param_num(argc, params, 3, 0);
+  auto value = (float)get_param_num(argc, params, 3, 0);
   auto minValue = get_param_num(argc, params, 4, 0);
   auto maxValue = get_param_num(argc, params, 5, 0);
-  auto fnResult = GuiProgressBar(bounds, textLeft, textRight, value, minValue, maxValue);
-  v_setreal(retval, fnResult);
+  GuiProgressBar(bounds, textLeft, textRight, &value, minValue, maxValue);
+  v_setreal(retval, value);
   return 1;
 }
 
@@ -1082,8 +1083,9 @@ static int cmd_guiscrollpanel(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 1, 0);
   auto content = get_param_rect(argc, params, 2);
   auto scroll = get_param_vec2(argc, params, 3);
-  auto fnResult = GuiScrollPanel(bounds, text, content, &scroll);
-  v_setrect(retval, fnResult);
+  Rectangle view;
+  GuiScrollPanel(bounds, text, content, &scroll, &view);
+  v_setrect(retval, view);
   return 1;
 }
 
@@ -1091,11 +1093,11 @@ static int cmd_guislider(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto textLeft = get_param_str(argc, params, 1, 0);
   auto textRight = get_param_str(argc, params, 2, 0);
-  auto value = get_param_num(argc, params, 3, 0);
+  auto value = (float)get_param_num(argc, params, 3, 0);
   auto minValue = get_param_num(argc, params, 4, 0);
   auto maxValue = get_param_num(argc, params, 5, 0);
-  auto fnResult = GuiSlider(bounds, textLeft, textRight, value, minValue, maxValue);
-  v_setreal(retval, fnResult);
+  GuiSlider(bounds, textLeft, textRight, &value, minValue, maxValue);
+  v_setreal(retval, value);
   return 1;
 }
 
@@ -1103,11 +1105,11 @@ static int cmd_guisliderbar(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto textLeft = get_param_str(argc, params, 1, 0);
   auto textRight = get_param_str(argc, params, 2, 0);
-  auto value = get_param_num(argc, params, 3, 0);
+  auto value = (float)get_param_num(argc, params, 3, 0);
   auto minValue = get_param_num(argc, params, 4, 0);
   auto maxValue = get_param_num(argc, params, 5, 0);
-  auto fnResult = GuiSliderBar(bounds, textLeft, textRight, value, minValue, maxValue);
-  v_setreal(retval, fnResult);
+  GuiSliderBar(bounds, textLeft, textRight, &value, minValue, maxValue);
+  v_setreal(retval, value);
   return 1;
 }
 
@@ -1139,8 +1141,8 @@ static int cmd_guitextinputbox(int argc, slib_par_t *params, var_t *retval) {
   const char *message = get_param_str(argc, params, 2, NULL);
   const char *buttons = get_param_str(argc, params, 3, 0);
   char text[MAX_INPUTBOX_LENGTH + 1];
-  strncpy(text, get_param_str(argc, params, 4, 0), MAX_INPUTBOX_LENGTH);
-  auto secretViewActive = get_param_int(argc, params, 5, 0);
+  TextCopy(text, get_param_str(argc, params, 4, 0));
+  auto secretViewActive = get_param_int(argc, params, 5, 0) == 1;
   auto fnResult = GuiTextInputBox(bounds, title, message, buttons, text, MAX_INPUTBOX_LENGTH, &secretViewActive);
   map_init(retval);
   v_setstr(map_add_var(retval, "text", 0), text);
@@ -1152,18 +1154,18 @@ static int cmd_guitextinputbox(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_guitoggle(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
-  bool active = get_param_int(argc, params, 2, 0) == 1;
-  auto fnResult = GuiToggle(bounds, text, active);
-  v_setint(retval, fnResult);
+  auto active = get_param_int(argc, params, 2, 0) == 1;
+  GuiToggle(bounds, text, &active);
+  v_setint(retval, active);
   return 1;
 }
 
 static int cmd_guitogglegroup(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
-  bool active = get_param_int(argc, params, 2, 0) == 1;
-  auto fnResult = GuiToggleGroup(bounds, text, active);
-  v_setint(retval, fnResult);
+  auto active = get_param_int(argc, params, 2, 0);
+  GuiToggleGroup(bounds, text, &active);
+  v_setint(retval, active);
   return 1;
 }
 
@@ -1173,7 +1175,7 @@ static int cmd_guivaluebox(int argc, slib_par_t *params, var_t *retval) {
   auto value = get_param_int(argc, params, 2, 0);
   auto minValue = get_param_int(argc, params, 3, 0);
   auto maxValue = get_param_int(argc, params, 4, 0);
-  bool editMode = get_param_int(argc, params, 5, 0) == 1;
+  auto editMode = get_param_int(argc, params, 5, 0) == 1;
   auto fnResult = GuiValueBox(bounds, text, &value, minValue, maxValue, editMode);
   v_setint(retval, fnResult);
   return set_param_int(argc, params, 2, value, retval);
@@ -1688,7 +1690,7 @@ static FUNC_SIG lib_func[] = {
   {3, 3, "GUICOMBOBOX", cmd_guicombobox},
   {4, 4, "GUIDROPDOWNBOX", cmd_guidropdownbox},
   {2, 2, "GUIGETSTYLE", cmd_guigetstyle},
-  {4, 4, "GUIGRID", cmd_guigrid},
+  {4, 5, "GUIGRID", cmd_guigrid},
   {2, 2, "GUILABELBUTTON", cmd_guilabelbutton},
   {4, 4, "GUILISTVIEW", cmd_guilistview},
   {6, 6, "GUILISTVIEWEX", cmd_guilistviewex},
