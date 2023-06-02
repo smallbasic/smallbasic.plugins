@@ -27,7 +27,7 @@ void error(var_p_t var, const char *field, int nMin, int nMax);
 void error(var_p_t var, const char *field, int n);
 void error(var_p_t var, const char *text);
 void map_init(var_p_t map);
-void map_init_id(var_p_t map, int id);
+void map_init_id(var_p_t map, int id, int cls_id = -1);
 void map_set_int(var_p_t base, const char *name, var_int_t n);
 void v_free(var_t *var);
 void v_setstrn(var_t *var, const char *str, int length);

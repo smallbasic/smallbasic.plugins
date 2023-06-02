@@ -252,9 +252,10 @@ void map_init(var_p_t map) {
   hashmap_create(map, 0);
 }
 
-void map_init_id(var_p_t map, int id) {
+void map_init_id(var_p_t map, int id, int cls_id) {
   map_init(map);
   map->v.m.id = id;
+  map->v.m.cls_id = cls_id;
 }
 
 int map_get_bool(var_p_t base, const char *name) {

@@ -51,6 +51,20 @@ robin_hood::unordered_map<int, Texture2D> _textureMap;
 robin_hood::unordered_map<int, Wave> _waveMap;
 int _nextId = 1;
 
+#define CLS_AUDIOSTREAM 1
+#define CLS_FONTMAP 2
+#define CLS_IMAGEMAP 3
+#define CLS_MATRIXMAP 4
+#define CLS_MESHMAP 5
+#define CLS_MODELMAP 6
+#define CLS_MODELANIMATIONMAP 7
+#define CLS_MUSICMAP 8
+#define CLS_PHYSICSMAP 9
+#define CLS_RENDERMAP 10
+#define CLS_SOUNDMAP 12
+#define CLS_TEXTUREMAP 13
+#define CLS_WAVEMAP 14
+
 PhysicsBody get_physics_body(var_p_t var) {
   PhysicsBody result;
   int id = var->v.fn.id;
@@ -655,7 +669,7 @@ static void v_setcolor(var_t *var, Color &c) {
 static void v_setaudiostream(var_t *var, AudioStream &audioStream) {
   int id = ++_nextId;
   _audioStream[id] = audioStream;
-  map_init_id(var, id);
+  map_init_id(var, id, CLS_AUDIOSTREAM);
   v_setint(map_add_var(var, "sampleRate", 0), audioStream.sampleRate);
   v_setint(map_add_var(var, "sampleSize", 0), audioStream.sampleSize);
   v_setint(map_add_var(var, "channels", 0), audioStream.channels);
@@ -664,7 +678,7 @@ static void v_setaudiostream(var_t *var, AudioStream &audioStream) {
 static void v_setfont(var_t *var, Font &font) {
   auto id = ++_nextId;
   _fontMap[id] = font;
-  map_init_id(var, id);
+  map_init_id(var, id, CLS_FONTMAP);
   v_setint(map_add_var(var, "baseSize", 0), font.baseSize);
   v_setint(map_add_var(var, "charsCount", 0), font.glyphCount);
 }
@@ -702,7 +716,7 @@ static void v_setimage(var_t *var, Image &image) {
 static void v_setmesh(var_t *var, Mesh &mesh) {
   int id = ++_nextId;
   _meshMap[id] = mesh;
-  map_init_id(var, id);
+  map_init_id(var, id, CLS_MESHMAP);
   v_setint(map_add_var(var, "vertexCount", 0), mesh.vertexCount);
   v_setint(map_add_var(var, "triangleCount", 0), mesh.triangleCount);
 }
@@ -710,13 +724,13 @@ static void v_setmesh(var_t *var, Mesh &mesh) {
 static void v_setmatrix(var_t *var, Matrix &matrix) {
   int id = ++_nextId;
   _matrixMap[id] = matrix;
-  map_init_id(var, id);
+  map_init_id(var, id, CLS_MATRIXMAP);
 }
 
 static void v_setmodel(var_t *var, Model &model) {
   auto id = ++_nextId;
   _modelMap[id] = model;
-  map_init_id(var, id);
+  map_init_id(var, id, CLS_MODELMAP);
   v_setint(map_add_var(var, "meshCount", 0), model.meshCount);
   v_setint(map_add_var(var, "materialCount", 0), model.materialCount);
   v_setint(map_add_var(var, "boneCount", 0), model.boneCount);
@@ -725,7 +739,7 @@ static void v_setmodel(var_t *var, Model &model) {
 static void v_setmusic(var_t *var, Music &music) {
   int id = ++_nextId;
   _musicMap[id] = music;
-  map_init_id(var, id);
+  map_init_id(var, id, CLS_MUSICMAP);
   v_setint(map_add_var(var, "frameCount", 0), music.frameCount);
   v_setint(map_add_var(var, "looping", 0), music.looping);
   v_setint(map_add_var(var, "ctxType", 0), music.ctxType);
@@ -737,7 +751,7 @@ static void v_setmodel_animation(var_t *var, ModelAnimation *anims, int animsCou
     var_t *v_anim = v_elem(var, i);
     auto id = ++_nextId;
     _modelAnimationMap[id] = anims[i];
-    map_init_id(v_anim, id);
+    map_init_id(v_anim, id, CLS_MODELANIMATIONMAP);
 
     int frameCount = anims[i].frameCount;
     int boneCount = anims[i].boneCount;
@@ -774,14 +788,14 @@ static void v_setray(var_t *var, Ray &ray) {
 static void v_setsound(var_t *var, Sound &sound) {
   int id = ++_nextId;
   _soundMap[id] = sound;
-  map_init_id(var, id);
+  map_init_id(var, id, CLS_SOUNDMAP);
   v_setint(map_add_var(var, "frameCount", 0), sound.frameCount);
 }
 
 static void v_setwave(var_t *var, Wave &wave) {
   int id = ++_nextId;
   _waveMap[id] = wave;
-  map_init_id(var, id);
+  map_init_id(var, id, CLS_WAVEMAP);
   v_setint(map_add_var(var, "frameCount", 0), wave.frameCount);
   v_setint(map_add_var(var, "sampleRate", 0), wave.sampleRate);
   v_setint(map_add_var(var, "sampleSize", 0), wave.sampleSize);
@@ -886,7 +900,7 @@ static int cmd_loadrendertexture(int argc, slib_par_t *params, var_t *retval) {
   auto renderId = ++_nextId;
   auto renderTexture = LoadRenderTexture(width, height);
   _renderMap[renderId] = renderTexture;
-  map_init_id(retval, renderId);
+  map_init_id(retval, renderId, CLS_RENDERMAP);
   auto textureId = ++_nextId;
   _textureMap[textureId] = renderTexture.texture;
   var_p_t texture = map_add_var(retval, "texture", 0);
@@ -1839,6 +1853,41 @@ SBLIB_API int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *re
     result = 0;
   }
   return result;
+}
+
+SBLIB_API void sblib_free(int cls_id, int id) {
+  switch(cls_id) {
+  case CLS_AUDIOSTREAM:
+    break;
+  case CLS_FONTMAP:
+    break;
+  case CLS_IMAGEMAP:
+    break;
+  case CLS_MATRIXMAP:
+    break;
+  case CLS_MESHMAP:
+    break;
+  case CLS_MODELMAP:
+    break;
+  case CLS_MODELANIMATIONMAP:
+    break;
+  case CLS_MUSICMAP:
+    if (id != -1 && _musicMap.find(id) != _musicMap.end()) {
+      UnloadMusicStream(_musicMap.at(id));
+      _musicMap.erase(id);
+    }
+    break;
+  case CLS_PHYSICSMAP:
+    break;
+  case CLS_RENDERMAP:
+    break;
+  case CLS_SOUNDMAP:
+    break;
+  case CLS_TEXTUREMAP:
+    break;
+  case CLS_WAVEMAP:
+    break;
+  }
 }
 
 SBLIB_API void sblib_close(void) {
