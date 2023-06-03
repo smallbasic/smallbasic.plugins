@@ -356,6 +356,9 @@ sub print_func_map(byref fun)
 
   if (fun.returnType == "void") then
     print "    " + fun.name + "(" + args + ");"
+    if (instr(fun.name, "Unload") == 1) then
+      print "    " + get_map_name(fun.params[0]) + ".erase(" + lower(fun.params[0].name) + "_id);"
+    endif
   else
     print "    auto fnResult = " + get_result_cast(fun) + fun.name + "(" + args + ");"
     if (strlenArg) then

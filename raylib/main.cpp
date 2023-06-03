@@ -1856,37 +1856,92 @@ SBLIB_API int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *re
 }
 
 SBLIB_API void sblib_free(int cls_id, int id) {
-  switch(cls_id) {
-  case CLS_AUDIOSTREAM:
-    break;
-  case CLS_FONTMAP:
-    break;
-  case CLS_IMAGEMAP:
-    break;
-  case CLS_MATRIXMAP:
-    break;
-  case CLS_MESHMAP:
-    break;
-  case CLS_MODELMAP:
-    break;
-  case CLS_MODELANIMATIONMAP:
-    break;
-  case CLS_MUSICMAP:
-    if (id != -1 && _musicMap.find(id) != _musicMap.end()) {
-      UnloadMusicStream(_musicMap.at(id));
-      _musicMap.erase(id);
+  if (id != -1) {
+    switch (cls_id) {
+    case CLS_AUDIOSTREAM:
+      if (_audioStream.find(id) != _audioStream.end()) {
+        StopAudioStream(_audioStream.at(id));
+        UnloadAudioStream(_audioStream.at(id));
+        _audioStream.erase(id);
+      }
+      break;
+    case CLS_FONTMAP:
+      if (_fontMap.find(id) != _fontMap.end()) {
+        UnloadFont(_fontMap.at(id));
+        _fontMap.erase(id);
+      }
+      break;
+    case CLS_IMAGEMAP:
+      if (_imageMap.find(id) != _imageMap.end()) {
+        UnloadImage(_imageMap.at(id));
+        _imageMap.erase(id);
+      }
+      break;
+    case CLS_MATRIXMAP:
+      if (_matrixMap.find(id) != _matrixMap.end()) {
+        _matrixMap.erase(id);
+      }
+      break;
+    case CLS_MESHMAP:
+      if (_meshMap.find(id) != _meshMap.end()) {
+        // causes seg-fault: UnloadMesh(_meshMap.at(id));
+        _meshMap.erase(id);
+      }
+      break;
+    case CLS_MODELMAP:
+      if (_modelMap.find(id) != _modelMap.end()) {
+        UnloadModel(_modelMap.at(id));
+        _modelMap.erase(id);
+      }
+      break;
+    case CLS_MODELANIMATIONMAP:
+      if (_modelAnimationMap.find(id) != _modelAnimationMap.end()) {
+        UnloadModelAnimation(_modelAnimationMap.at(id));
+        _modelAnimationMap.erase(id);
+      }
+      break;
+    case CLS_MUSICMAP:
+      if (_musicMap.find(id) != _musicMap.end()) {
+        StopMusicStream(_musicMap.at(id));
+        UnloadMusicStream(_musicMap.at(id));
+        _musicMap.erase(id);
+      }
+      break;
+    case CLS_PHYSICSMAP:
+      if (_physicsMap.find(id) != _physicsMap.end()) {
+        _physicsMap.erase(id);
+      }
+      break;
+    case CLS_RENDERMAP:
+      if (_renderMap.find(id) != _renderMap.end()) {
+        UnloadRenderTexture(_renderMap.at(id));
+        _renderMap.erase(id);
+      }
+      // renderTexture has a texture field which should be unloaded by UnloadRenderTexture
+      if (_textureMap.find(id + 1) != _textureMap.end()) {
+        _textureMap.erase(id + 1);
+      }
+      break;
+    case CLS_SOUNDMAP:
+      if (_soundMap.find(id) != _soundMap.end()) {
+        StopSound(_soundMap.at(id));
+        UnloadSound(_soundMap.at(id));
+        _soundMap.erase(id);
+      }
+      break;
+    case CLS_TEXTUREMAP:
+      if (_textureMap.find(id) != _textureMap.end()) {
+        UnloadTexture(_textureMap.at(id));
+        _textureMap.erase(id);
+      }
+      break;
+    case CLS_WAVEMAP:
+      if (_waveMap.find(id) != _waveMap.end()) {
+        UnloadWave(_waveMap.at(id));
+        _waveMap.erase(id);
+      }
+      break;
     }
-    break;
-  case CLS_PHYSICSMAP:
-    break;
-  case CLS_RENDERMAP:
-    break;
-  case CLS_SOUNDMAP:
-    break;
-  case CLS_TEXTUREMAP:
-    break;
-  case CLS_WAVEMAP:
-    break;
   }
 }
 
@@ -1899,17 +1954,52 @@ SBLIB_API void sblib_close(void) {
     TraceLog(LOG_INFO, "Restoring from full-screen");
     ToggleFullscreen();
   }
-
-  _audioStream.clear();
-  _fontMap.clear();
-  _imageMap.clear();
-  _matrixMap.clear();
-  _meshMap.clear();
-  _modelAnimationMap.clear();
-  _modelMap.clear();
-  _musicMap.clear();
-  _renderMap.clear();
-  _soundMap.clear();
-  _textureMap.clear();
-  _waveMap.clear();
+  if (!_audioStream.empty()) {
+    TraceLog(LOG_ERROR, "Audiostream leak detected");
+    _audioStream.clear();
+  }
+  if (!_fontMap.empty()) {
+    TraceLog(LOG_ERROR, "Font leak detected");
+    _fontMap.clear();
+  }
+  if (!_imageMap.empty()) {
+    TraceLog(LOG_ERROR, "Image leak detected");
+    _imageMap.clear();
+  }
+  if (!_matrixMap.empty()) {
+    TraceLog(LOG_ERROR, "Matrix leak detected");
+    _matrixMap.clear();
+  }
+  if (!_meshMap.empty()) {
+    TraceLog(LOG_ERROR, "Mesh leak detected");
+    _meshMap.clear();
+  }
+  if (!_modelAnimationMap.empty()) {
+    TraceLog(LOG_ERROR, "Animation leak detected");
+    _modelAnimationMap.clear();
+  }
+  if (!_modelMap.empty()) {
+    TraceLog(LOG_ERROR, "Model leak detected");
+    _modelMap.clear();
+  }
+  if (!_musicMap.empty()) {
+    TraceLog(LOG_ERROR, "Music leak detected");
+    _musicMap.clear();
+  }
+  if (!_renderMap.empty()) {
+    TraceLog(LOG_ERROR, "Render leak detected");
+    _renderMap.clear();
+  }
+  if (!_soundMap.empty()) {
+    TraceLog(LOG_ERROR, "Sound leak detected");
+    _soundMap.clear();
+  }
+  if (!_textureMap.empty()) {
+    TraceLog(LOG_ERROR, "Texture leak detected");
+    _textureMap.clear();
+  }
+  if (!_waveMap.empty()) {
+    TraceLog(LOG_ERROR, "Wave leak detected");
+    _waveMap.clear();
+  }
 }

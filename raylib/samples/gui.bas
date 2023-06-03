@@ -10,7 +10,7 @@ rl.InitWindow(screenWidth, screenHeight, "SmallBASIC raylib gui")
 rl.SetWindowPosition(rl.GetMonitorWidth(0) - screenWidth - 20, (rl.GetMonitorHeight(0) - screenHeight) / 2)
 rl.SetTargetFPS(60)
 
-run("xdotool windowactivate `xdotool search --onlyvisible --name \"Emacs\"`")
+'run("xdotool windowactivate `xdotool search --onlyvisible --name \"Emacs\"`")
 
 'rl.UsndecorateWindow()
 cp = c.YELLOW

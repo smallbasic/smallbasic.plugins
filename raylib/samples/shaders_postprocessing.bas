@@ -87,12 +87,11 @@ REM  Create a RenderTexture2D to be used for render to texture
 const target = rl.LoadRenderTexture(screenWidth, screenHeight)
 const boxBackground = rl.Fade(c.LIGHTGRAY, 0.7)
 
-rl.SetCameraMode(camera, c.CAMERA_ORBITAL)  ' Set an orbital camera mode
 rl.SetTargetFPS(60)                        ' Set our game to run at 60 frames-per-second
 
 REM  Main game loop
 while (!rl.WindowShouldClose())
-  rl.UpdateCamera(camera)           ' Update camera
+  rl.UpdateCamera(camera, c.CAMERA_ORBITAL)           ' Update camera
   if (rl.IsKeyPressed(c.KEY_RIGHT)) then 
     currentShader++
   elseif (rl.IsKeyPressed(c.KEY_LEFT)) then 

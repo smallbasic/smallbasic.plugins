@@ -26,8 +26,6 @@ camera.target = [0.0, 0.0, 0.7]       ' Camera looking at point
 camera.up = [ 0.0, 1.0, 0.0]          ' Camera up vector (rotation towards target)
 camera.fovy = 65.0                    ' Camera field-of-view Y
 
-rl.SetCameraMode(camera, c.CAMERA_FREE)  ' Set camera mode
-
 ' Load raymarching shader
 ' NOTE: Defining 0 (NULL) for vertex shader forces usage of internal default vertex shader
 ' 
@@ -47,7 +45,7 @@ runTime = 0.0
 
 rl.SetTargetFPS(60)                        ' Set our game to run at 60 frames-per-second
 while (!rl.WindowShouldClose())
-  rl.UpdateCamera(camera)               ' Update camera
+  rl.UpdateCamera(camera,c.CAMERA_FREE)               ' Update camera
 
   cameraPos = [camera.position[0], camera.position[1], camera.position[2]]
   cameraTarget = [camera.target[0], camera.target[1], camera.target[2]]

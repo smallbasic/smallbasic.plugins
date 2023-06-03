@@ -2786,6 +2786,7 @@ static int cmd_unloadaudiostream(int argc, slib_par_t *params, var_t *retval) {
   int stream_id = get_audiostream_id(argc, params, 0, retval);
   if (stream_id != -1) {
     UnloadAudioStream(_audioStream.at(stream_id));
+    _audioStream.erase(stream_id);
     result = 1;
   } else {
     result = 0;
@@ -2846,6 +2847,7 @@ static int cmd_unloadfont(int argc, slib_par_t *params, var_t *retval) {
   int font_id = get_font_id(argc, params, 0, retval);
   if (font_id != -1) {
     UnloadFont(_fontMap.at(font_id));
+    _fontMap.erase(font_id);
     result = 1;
   } else {
     result = 0;
@@ -2861,6 +2863,7 @@ static int cmd_unloadimage(int argc, slib_par_t *params, var_t *retval) {
   int image_id = get_image_id(argc, params, 0, retval);
   if (image_id != -1) {
     UnloadImage(_imageMap.at(image_id));
+    _imageMap.erase(image_id);
     result = 1;
   } else {
     result = 0;
@@ -2894,6 +2897,7 @@ static int cmd_unloadmesh(int argc, slib_par_t *params, var_t *retval) {
   int mesh_id = get_mesh_id(argc, params, 0, retval);
   if (mesh_id != -1) {
     UnloadMesh(_meshMap.at(mesh_id));
+    _meshMap.erase(mesh_id);
     result = 1;
   } else {
     result = 0;
@@ -2909,6 +2913,7 @@ static int cmd_unloadmodel(int argc, slib_par_t *params, var_t *retval) {
   int model_id = get_model_id(argc, params, 0, retval);
   if (model_id != -1) {
     UnloadModel(_modelMap.at(model_id));
+    _modelMap.erase(model_id);
     result = 1;
   } else {
     result = 0;
@@ -2924,6 +2929,7 @@ static int cmd_unloadmodelanimation(int argc, slib_par_t *params, var_t *retval)
   int anim_id = get_model_animation_id(argc, params, 0, retval);
   if (anim_id != -1) {
     UnloadModelAnimation(_modelAnimationMap.at(anim_id));
+    _modelAnimationMap.erase(anim_id);
     result = 1;
   } else {
     result = 0;
@@ -2949,6 +2955,7 @@ static int cmd_unloadmusicstream(int argc, slib_par_t *params, var_t *retval) {
   int music_id = get_music_id(argc, params, 0, retval);
   if (music_id != -1) {
     UnloadMusicStream(_musicMap.at(music_id));
+    _musicMap.erase(music_id);
     result = 1;
   } else {
     result = 0;
@@ -2964,6 +2971,7 @@ static int cmd_unloadrendertexture(int argc, slib_par_t *params, var_t *retval) 
   int target_id = get_render_texture_id(argc, params, 0, retval);
   if (target_id != -1) {
     UnloadRenderTexture(_renderMap.at(target_id));
+    _renderMap.erase(target_id);
     result = 1;
   } else {
     result = 0;
@@ -2988,6 +2996,7 @@ static int cmd_unloadsound(int argc, slib_par_t *params, var_t *retval) {
   int sound_id = get_sound_id(argc, params, 0, retval);
   if (sound_id != -1) {
     UnloadSound(_soundMap.at(sound_id));
+    _soundMap.erase(sound_id);
     result = 1;
   } else {
     result = 0;
@@ -3003,6 +3012,7 @@ static int cmd_unloadtexture(int argc, slib_par_t *params, var_t *retval) {
   int texture_id = get_texture_id(argc, params, 0, retval);
   if (texture_id != -1) {
     UnloadTexture(_textureMap.at(texture_id));
+    _textureMap.erase(texture_id);
     result = 1;
   } else {
     result = 0;
@@ -3027,6 +3037,7 @@ static int cmd_unloadwave(int argc, slib_par_t *params, var_t *retval) {
   int wave_id = get_wave_id(argc, params, 0, retval);
   if (wave_id != -1) {
     UnloadWave(_waveMap.at(wave_id));
+    _waveMap.erase(wave_id);
     result = 1;
   } else {
     result = 0;
