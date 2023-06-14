@@ -1,7 +1,7 @@
 '
-' k-means clustering can be used in image detection and segmentation. 
+' k-means clustering can be used in image detection and segmentation.
 ' One application of k-means clustering in image processing is to group
-' similar pixels in an image into clusters,  which can then be used 
+' similar pixels in an image into clusters,  which can then be used
 ' for tasks such as image segmentation, object recognition, and compression.
 
 ' For example, suppose you have an image of a landscape with different
@@ -46,18 +46,12 @@ sub show(byref a)
     next
     print
   next
-end  
+end
 
 show arr
-
-i = image("chicken.png")
-i.save(a)
-? ubound(a,1)
-? ubound(a,2)
-
-kresult = mlpack.kmeansCluster(arr, 2)
+dataset = mlpack.Load(arr)
+kresult = mlpack.kmeansCluster(dataset, 2)
 ? "assignments:"
 ? kresult.assignments
-
 ? "centroids:"
 show kresult.centroids

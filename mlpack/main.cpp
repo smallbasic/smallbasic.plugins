@@ -15,20 +15,46 @@
 #include <cstdio>
 
 #include "include/param.h"
+#include "robin-hood-hashing/src/include/robin_hood.h"
 #include <mlpack/methods/kmeans/kmeans.hpp>
+
+robin_hood::unordered_map<int, arma::mat *> _dataMap;
+int _nextId = 1;
+
+#define CLS_DATA 1
 
 // https://arma.sourceforge.net/docs.html
 using namespace mlpack;
 
-void error_array(var_p_t var) {
-  error(var, "First argument must be an array [or image file name]");
+static void v_setmat(var_t *var, arma::mat *mat) {
+  int id = ++_nextId;
+  _dataMap[id] = mat;
+  map_init_id(var, id, CLS_DATA);
+  v_setint(map_add_var(var, "n_rows", 0), mat->n_rows);
+  v_setint(map_add_var(var, "n_cols", 0), mat->n_cols);
+}
+
+static int get_data_id(int argc, slib_par_t *params, int arg, var_t *retval) {
+  int result = -1;
+  if (is_param_map(argc, params, arg)) {
+    int id = get_id(params, arg);
+    if (id != -1 && _dataMap.find(id) != _dataMap.end()) {
+      result = id;
+    } else {
+      fprintf(stderr, "ID was %d %d %d\n", id, params[arg].var_p->v.m.cls_id, params[arg].var_p->v.m.lib_id);
+      error(retval, "Data ID not found");
+    }
+  } else {
+    error(retval, "Map type not found");
+  }
+  return result;
 }
 
 //
 // load from CSV
 //
 static bool get_mat(arma::mat &dataset, const char *str) {
-  return data::Load(str, dataset, true);
+  return data::Load(str, dataset, false);
 }
 
 //
@@ -79,7 +105,26 @@ static bool get_mat(arma::mat &dataset, var_t *var) {
   return result;
 }
 
-static void cmd_kmeans_cluster(arma::mat &dataset, size_t clusters, size_t maxIterations, var_t *retval) {
+static void neighbor_search(arma::mat &dataset, var_t *retval) {
+  // dataset.raw_print();
+  NeighborSearch<NearestNeighborSort, ManhattanDistance> nn(dataset);
+  arma::Mat<size_t> neighbors;
+  arma::mat distances;
+
+  nn.Search(1, neighbors, distances);
+
+  map_init(retval);
+  var_t *v_neighbors = map_add_var(retval, "neighbors", 0);
+  var_t *v_distances = map_add_var(retval, "distances", 0);
+  v_toarray1(v_neighbors, neighbors.n_elem);
+  v_toarray1(v_distances, neighbors.n_elem);
+  for (size_t c = 0; c < neighbors.n_elem; c++) {
+    v_setreal(v_elem(v_neighbors, c), neighbors[c]);
+    v_setreal(v_elem(v_distances, c), distances[c]);
+  }
+}
+
+static void kmeans_cluster(arma::mat &dataset, size_t clusters, size_t maxIterations, var_t *retval) {
   // Create the k-means object and set the parameters.
   KMeans<> k(maxIterations);
 
@@ -134,67 +179,73 @@ static void cmd_kmeans_cluster(arma::mat &dataset, size_t clusters, size_t maxIt
 // a|n|n|
 //
 static int cmd_kmeans_cluster(int argc, slib_par_t *params, var_t *retval) {
-  int result = 0;
-  if (!is_param_num(argc, params, 1)) {
-    error(retval, "Second argument must be an integer");
+  int result;
+  int data_id = get_data_id(argc, params, 0, retval);
+  if (data_id != -1) {
+    size_t clusters = get_param_int(argc, params, 1, 5);
+    size_t maxIterations = get_param_int(argc, params, 2, 1000);
+    kmeans_cluster(*_dataMap.at(data_id), clusters, maxIterations, retval);
+    result = 1;
   } else {
-    arma::mat dataset;
-    if (is_param_array(argc, params, 0)) {
-      result = get_mat(dataset, params[0].var_p) ? 1 : 0;
-    } else if (is_param_str(argc, params, 0)) {
-      result = get_mat(dataset, get_param_str(argc, params, 0, nullptr)) ? 1 : 0;
-    }
-    if (result) {
-      size_t clusters = get_param_int(argc, params, 1, 5);
-      size_t maxIterations = get_param_int(argc, params, 2, 1000);
-      cmd_kmeans_cluster(dataset, clusters, maxIterations, retval);
-    } else {
-      error_array(retval);
-    }
+    result = 0;
   }
   return result;
 }
 
-static void cmd_neighbor_search(arma::mat &dataset, var_t *retval) {
-  // dataset.raw_print();
-  NeighborSearch<NearestNeighborSort, ManhattanDistance> nn(dataset);
-  arma::Mat<size_t> neighbors;
-  arma::mat distances;
-
-  nn.Search(1, neighbors, distances);
-
-  map_init(retval);
-  var_t *v_neighbors = map_add_var(retval, "neighbors", 0);
-  var_t *v_distances = map_add_var(retval, "distances", 0);
-  v_toarray1(v_neighbors, neighbors.n_elem);
-  v_toarray1(v_distances, neighbors.n_elem);
-  for (size_t c = 0; c < neighbors.n_elem; c++) {
-    v_setreal(v_elem(v_neighbors, c), neighbors[c]);
-    v_setreal(v_elem(v_distances, c), distances[c]);
-  }
-}
-
 static int cmd_neighbor_search(int argc, slib_par_t *params, var_t *retval) {
   int result;
-  arma::mat dataset;
+  int data_id = get_data_id(argc, params, 0, retval);
+  if (data_id != -1) {
+    neighbor_search(*_dataMap[data_id], retval);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_load(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  arma::mat *dataset = new arma::mat();
   if (is_param_array(argc, params, 0)) {
-    result = get_mat(dataset, params[0].var_p) ? 1 : 0;
+    result = get_mat(*dataset, params[0].var_p) ? 1 : 0;
   } else if (is_param_str(argc, params, 0)) {
-    result = get_mat(dataset, get_param_str(argc, params, 0, nullptr)) ? 1 : 0;
+    result = get_mat(*dataset, get_param_str(argc, params, 0, nullptr)) ? 1 : 0;
   } else {
     result = 0;
   }
   if (result) {
-    cmd_neighbor_search(dataset, retval);
+    v_setmat(retval, dataset);
   } else {
-    error_array(retval);
+    delete dataset;
+    error(retval, "First argument must be an array [or image file name]");
+  }
+  return result;
+}
+
+static int cmd_submat(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int data_id = get_data_id(argc, params, 0, retval);
+  if (data_id != -1) {
+    auto first_row = get_param_int(argc, params, 1, 0);
+    auto first_col = get_param_int(argc, params, 2, 0);
+    auto last_row = get_param_int(argc, params, 3, 0);
+    auto last_col = get_param_int(argc, params, 4, 0);
+    auto mat = _dataMap.at(data_id);
+    auto submat = new arma::mat(mat->submat(first_row, first_col, last_row, last_col));
+    v_setmat(retval, submat);
+    result = 1;
+  } else {
+    result = 0;
   }
   return result;
 }
 
 FUNC_SIG lib_func[] = {
-  {2, 3, "KMEANSCLUSTER", cmd_kmeans_cluster},
+  {1, 1, "LOAD", cmd_load},
   {1, 1, "NEIGHBORSEARCH", cmd_neighbor_search},
+  {2, 3, "KMEANSCLUSTER", cmd_kmeans_cluster},
+  {5, 5, "SUBMAT", cmd_submat}
 };
 
 FUNC_SIG lib_proc[] = {
@@ -206,4 +257,22 @@ SBLIB_API int sblib_proc_count() {
 
 SBLIB_API int sblib_func_count() {
   return (sizeof(lib_func) / sizeof(lib_func[0]));
+}
+
+SBLIB_API void sblib_free(int cls_id, int id) {
+  if (id != -1) {
+    switch (cls_id) {
+    case CLS_DATA:
+      if (_dataMap.find(id) != _dataMap.end()) {
+        delete _dataMap.at(id);
+        _dataMap.erase(id);
+      }
+    }
+  }
+}
+
+SBLIB_API void sblib_close(void) {
+  if (!_dataMap.empty()) {
+    fprintf(stderr, "Matrix leak detected\n");
+  }
 }
