@@ -9,4 +9,4 @@ AM_CXXFLAGS=-std=c++14
 AM_CPPFLAGS =  -Imlpack/src -Wall -Wextra -Wno-shadow -Wdouble-promotion -Wno-unused-parameter -Wno-unknown-pragmas -fPIC
 lib_LTLIBRARIES = libmlpack.la
 libmlpack_la_SOURCES = main.cpp ../include/apiexec.cpp ../include/param.cpp ../include/hashmap.cpp mlpack/mlpack/src/mlpack.hpp
-libmlpack_la_LDFLAGS = -module -rpath '$(libdir)' @PLATFORM_LDFLAGS@
+libmlpack_la_LDFLAGS = -module -rpath '$(libdir)' @PLATFORM_LDFLAGS@ -fopenmp -larmadillo

@@ -41,7 +41,6 @@ static int get_data_id(int argc, slib_par_t *params, int arg, var_t *retval) {
     if (id != -1 && _dataMap.find(id) != _dataMap.end()) {
       result = id;
     } else {
-      fprintf(stderr, "ID was %d %d %d\n", id, params[arg].var_p->v.m.cls_id, params[arg].var_p->v.m.lib_id);
       error(retval, "Data ID not found");
     }
   } else {
@@ -241,10 +240,31 @@ static int cmd_submat(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
+static int cmd_split(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int data_id = get_data_id(argc, params, 0, retval);
+  if (data_id != -1) {
+    auto ratio = get_param_num(argc, params, 1, 0);
+    arma::mat *train = new arma::mat();
+    arma::mat *test = new arma::mat();
+    data::Split(*_dataMap[data_id], *train, *test, ratio);
+    map_init(retval);
+    var_t *v_train = map_add_var(retval, "train", 0);
+    var_t *v_test = map_add_var(retval, "test", 0);
+    v_setmat(v_train, train);
+    v_setmat(v_test, test);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
 FUNC_SIG lib_func[] = {
   {1, 1, "LOAD", cmd_load},
   {1, 1, "NEIGHBORSEARCH", cmd_neighbor_search},
   {2, 3, "KMEANSCLUSTER", cmd_kmeans_cluster},
+  {2, 2, "SPLIT", cmd_split},
   {5, 5, "SUBMAT", cmd_submat}
 };
 
