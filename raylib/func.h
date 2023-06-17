@@ -400,6 +400,25 @@ static int cmd_exportimageascode(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Export image to memory buffer
+//
+static int cmd_exportimagetomemory(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int image_id = get_image_id(argc, params, 0, retval);
+  if (image_id != -1) {
+    auto fileType = get_param_str(argc, params, 1, 0);
+    auto fileSize = 0;
+    auto fnResult = (const char *)ExportImageToMemory(_imageMap.at(image_id), fileType, &fileSize);
+  v_setstrn(retval, fnResult, fileSize);
+  MemFree((void *)fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Export mesh data to file, returns true on success
 //
 static int cmd_exportmesh(int argc, slib_par_t *params, var_t *retval) {

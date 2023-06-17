@@ -31,6 +31,7 @@
   {2, 2, "EXPORTFONTASCODE", cmd_exportfontascode},
   {2, 2, "EXPORTIMAGE", cmd_exportimage},
   {2, 2, "EXPORTIMAGEASCODE", cmd_exportimageascode},
+  {2, 2, "EXPORTIMAGETOMEMORY", cmd_exportimagetomemory},
   {2, 2, "EXPORTMESH", cmd_exportmesh},
   {2, 2, "EXPORTWAVE", cmd_exportwave},
   {2, 2, "EXPORTWAVEASCODE", cmd_exportwaveascode},

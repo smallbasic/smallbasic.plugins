@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (570)
+Implemented APIs (571)
 ----------------
 
 | Name    | Description   |
@@ -148,6 +148,7 @@ Implemented APIs (570)
 | func ExportFontAsCode(font, fileName) | Export font as code file, returns true on success |
 | func ExportImage(image, fileName) | Export image data to file, returns true on success |
 | func ExportImageAsCode(image, fileName) | Export image as code file defining an array of bytes, returns true on success |
+| func ExportImageToMemory(image, fileType, fileSize) | Export image to memory buffer |
 | func ExportMesh(mesh, fileName) | Export mesh data to file, returns true on success |
 | func ExportWave(wave, fileName) | Export wave data to file, returns true on success |
 | func ExportWaveAsCode(wave, fileName) | Export wave sample data to code (.h), returns true on success |
