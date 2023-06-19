@@ -217,7 +217,6 @@ static int cmd_load(int argc, slib_par_t *params, var_t *retval) {
     v_setmat(retval, dataset);
   } else {
     delete dataset;
-    error(retval, "First argument must be an array [or image file name]");
   }
   return result;
 }
@@ -231,8 +230,8 @@ static int cmd_submat(int argc, slib_par_t *params, var_t *retval) {
     auto last_row = get_param_int(argc, params, 3, 0);
     auto last_col = get_param_int(argc, params, 4, 0);
     auto mat = _dataMap.at(data_id);
-    auto submat = new arma::mat(mat->submat(first_row, first_col, last_row, last_col));
-    v_setmat(retval, submat);
+    arma::mat submat = mat->submat(first_row, first_col, last_row, last_col);
+    v_setmat(retval, new arma::mat(submat));
     result = 1;
   } else {
     result = 0;
@@ -260,19 +259,53 @@ static int cmd_split(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
+static int cmd_get_row(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int data_id = get_data_id(argc, params, 0, retval);
+  if (data_id != -1) {
+    auto index = get_param_int(argc, params, 1, 0);
+    arma::mat row = _dataMap[data_id]->row(index);
+    v_setmat(retval, new arma::mat(row));
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+static int cmd_scale(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int train_id = get_data_id(argc, params, 0, retval);
+  int valid_id = get_data_id(argc, params, 1, retval);
+  if (train_id != -1 && valid_id != -1) {
+    arma::mat *train = _dataMap[train_id];
+    arma::mat *valid = _dataMap[valid_id];
+    data::MinMaxScaler scale;
+    scale.Fit(*train);
+    scale.Transform(*train, *train);
+    scale.Transform(*valid, *valid);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
 FUNC_SIG lib_func[] = {
   {1, 1, "LOAD", cmd_load},
   {1, 1, "NEIGHBORSEARCH", cmd_neighbor_search},
   {2, 3, "KMEANSCLUSTER", cmd_kmeans_cluster},
+  {2, 2, "GET_ROW", cmd_get_row},
   {2, 2, "SPLIT", cmd_split},
   {5, 5, "SUBMAT", cmd_submat}
 };
 
 FUNC_SIG lib_proc[] = {
+  {2, 2, "SCALE", cmd_scale}
 };
 
 SBLIB_API int sblib_proc_count() {
-  return 0;
+  return (sizeof(lib_proc) / sizeof(lib_proc[0]));
 }
 
 SBLIB_API int sblib_func_count() {
