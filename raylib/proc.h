@@ -1930,7 +1930,7 @@ static int cmd_imageresizenn(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Rotate image by input angle in degrees (-359 to 359) 
+// Rotate image by input angle in degrees (-359 to 359)
 //
 static int cmd_imagerotate(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -2552,6 +2552,15 @@ static int cmd_settargetfps(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Set vertical line spacing when drawing with line-breaks
+//
+static int cmd_settextlinespacing(int argc, slib_par_t *params, var_t *retval) {
+  auto spacing = get_param_int(argc, params, 0, 0);
+  SetTextLineSpacing(spacing);
+  return 1;
+}
+
+//
 // Set texture scaling filter mode
 //
 static int cmd_settexturefilter(int argc, slib_par_t *params, var_t *retval) {
@@ -2589,6 +2598,14 @@ static int cmd_settexturewrap(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_settraceloglevel(int argc, slib_par_t *params, var_t *retval) {
   auto logLevel = get_param_int(argc, params, 0, 0);
   SetTraceLogLevel(logLevel);
+  return 1;
+}
+
+//
+// Set window focused (only PLATFORM_DESKTOP)
+//
+static int cmd_setwindowfocused(int argc, slib_par_t *params, var_t *retval) {
+  SetWindowFocused();
   return 1;
 }
 

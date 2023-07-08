@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (571)
+Implemented APIs (573)
 ----------------
 
 | Name    | Description   |
@@ -342,7 +342,7 @@ Implemented APIs (571)
 | sub ImageResize(image, newWidth, newHeight) | Resize image (Bicubic scaling algorithm) |
 | sub ImageResizeCanvas(image, newWidth, newHeight, offsetX, offsetY, fill) | Resize canvas and fill with color |
 | sub ImageResizeNN(image, newWidth, newHeight) | Resize image (Nearest-Neighbor scaling algorithm) |
-| sub ImageRotate(image, degrees) | Rotate image by input angle in degrees (-359 to 359)  |
+| sub ImageRotate(image, degrees) | Rotate image by input angle in degrees (-359 to 359) |
 | sub ImageRotateCCW(image) | Rotate image counter-clockwise 90deg |
 | sub ImageRotateCW(image) | Rotate image clockwise 90deg |
 | func ImageText(text, fontSize, color) | Create an image from text (default font) |
@@ -510,9 +510,11 @@ Implemented APIs (571)
 | sub SetSoundPitch(sound, pitch) | Set pitch for a sound (1.0 is base level) |
 | sub SetSoundVolume(sound, volume) | Set volume for a sound (1.0 is max level) |
 | sub SetTargetFPS(fps) | Set target FPS (maximum) |
+| sub SetTextLineSpacing(spacing) | Set vertical line spacing when drawing with line-breaks |
 | sub SetTextureFilter(texture, filter) | Set texture scaling filter mode |
 | sub SetTextureWrap(texture, wrap) | Set texture wrapping mode |
 | sub SetTraceLogLevel(logLevel) | Set the current threshold (minimum) log level |
+| sub SetWindowFocused() | Set window focused (only PLATFORM_DESKTOP) |
 | sub SetWindowIcon(image) | Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP) |
 | sub SetWindowIcons(images, count) | Set icon for window (multiple images, RGBA 32bit, only PLATFORM_DESKTOP) |
 | sub SetWindowMinSize(width, height) | Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE) |
