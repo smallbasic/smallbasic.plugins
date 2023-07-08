@@ -17,14 +17,34 @@
 #include "include/param.h"
 #include "robin-hood-hashing/src/include/robin_hood.h"
 #include <mlpack/methods/kmeans/kmeans.hpp>
+#include <mlpack/src/mlpack/methods/ann.hpp>
+
+//
+// References:
+// https://arma.sourceforge.net/docs.html
+// https://training.galaxyproject.org/training-material/topics/statistics/tutorials/FNN/tutorial.html
+//
+// NegativeLogLikelihood is the output layer that is used for classification problem.
+// RandomInitialization means that initial weights in neurons are generated randomly in the interval from -1 to 1.
+// For regression problems, we use Mean Squared Error (MSE) loss function, which averages the square of the
+// difference between predicted and actual values for the batch.
+
+using namespace mlpack;
+
+typedef FFN<MeanSquaredError, GaussianInitialization> FFN_MSE;
+typedef FFN<NegativeLogLikelihood, RandomInitialization> FFN_NLL;
+typedef FFN<ReconstructionLoss, HeInitialization> FFN_RL;
 
 robin_hood::unordered_map<int, arma::mat *> _dataMap;
+robin_hood::unordered_map<int, FFN_MSE *> _ffnMseMap;
+robin_hood::unordered_map<int, FFN_NLL *> _ffnNllMap;
+robin_hood::unordered_map<int, FFN_RL *> _ffnRlMap;
 int _nextId = 1;
 
-#define CLS_DATA 1
-
-// https://arma.sourceforge.net/docs.html
-using namespace mlpack;
+#define CLS_DATA     1
+#define CLS_FFN_MSE  2
+#define CLS_FFN_NLL  3
+#define CLS_FFN_RL   4
 
 static void v_setmat(var_t *var, arma::mat *mat) {
   int id = ++_nextId;
@@ -259,6 +279,27 @@ static int cmd_split(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
+static int cmd_create_fnn_mse(int argc, slib_par_t *params, var_t *retval) {
+  int id = ++_nextId;
+  _ffnMseMap[id] = new FFN_MSE();
+  map_init_id(retval, id, CLS_FFN_MSE);
+  return 1;
+}
+
+static int cmd_create_fnn_nll(int argc, slib_par_t *params, var_t *retval) {
+  int id = ++_nextId;
+  _ffnNllMap[id] = new FFN_NLL();
+  map_init_id(retval, id, CLS_FFN_NLL);
+  return 1;
+}
+
+static int cmd_create_fnn_rl(int argc, slib_par_t *params, var_t *retval) {
+  int id = ++_nextId;
+  _ffnRlMap[id] = new FFN_RL();
+  map_init_id(retval, id, CLS_FFN_RL);
+  return 1;
+}
+
 static int cmd_get_row(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int data_id = get_data_id(argc, params, 0, retval);
@@ -292,11 +333,14 @@ static int cmd_scale(int argc, slib_par_t *params, var_t *retval) {
 }
 
 FUNC_SIG lib_func[] = {
+  {0, 0, "FFN_MSE", cmd_create_fnn_mse},
+  {0, 0, "FFN_NLL", cmd_create_fnn_nll},
+  {0, 0, "FFN_RL", cmd_create_fnn_rl},
   {1, 1, "LOAD", cmd_load},
   {1, 1, "NEIGHBORSEARCH", cmd_neighbor_search},
-  {2, 3, "KMEANSCLUSTER", cmd_kmeans_cluster},
   {2, 2, "GET_ROW", cmd_get_row},
   {2, 2, "SPLIT", cmd_split},
+  {2, 3, "KMEANSCLUSTER", cmd_kmeans_cluster},
   {5, 5, "SUBMAT", cmd_submat}
 };
 
@@ -320,6 +364,25 @@ SBLIB_API void sblib_free(int cls_id, int id) {
         delete _dataMap.at(id);
         _dataMap.erase(id);
       }
+      break;
+    case CLS_FFN_MSE:
+      if (_ffnMseMap.find(id) != _ffnMseMap.end()) {
+        delete _ffnMseMap.at(id);
+        _ffnMseMap.erase(id);
+      }
+      break;
+    case CLS_FFN_NLL:
+      if (_ffnNllMap.find(id) != _ffnNllMap.end()) {
+        delete _ffnNllMap.at(id);
+        _ffnNllMap.erase(id);
+      }
+      break;
+    case CLS_FFN_RL:
+      if (_ffnRlMap.find(id) != _ffnRlMap.end()) {
+        delete _ffnRlMap.at(id);
+        _ffnRlMap.erase(id);
+      }
+      break;
     }
   }
 }
@@ -327,5 +390,14 @@ SBLIB_API void sblib_free(int cls_id, int id) {
 SBLIB_API void sblib_close(void) {
   if (!_dataMap.empty()) {
     fprintf(stderr, "Matrix leak detected\n");
+  }
+  if (!_ffnMseMap.empty()) {
+    fprintf(stderr, "FFN MSE leak detected\n");
+  }
+  if (!_ffnNllMap.empty()) {
+    fprintf(stderr, "FFN NLL leak detected\n");
+  }
+  if (!_ffnRlMap.empty()) {
+    fprintf(stderr, "FFN RL leak detected\n");
   }
 }
