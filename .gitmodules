@@ -28,3 +28,6 @@
 [submodule "raylib/physac"]
 	path = raylib/physac
 	url = https://github.com/raysan5/physac
+[submodule "gtk-server/uthash"]
+	path = gtk-server/uthash
+	url = https://github.com/troydhanson/uthash.git

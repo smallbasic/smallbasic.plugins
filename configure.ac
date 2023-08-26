@@ -37,15 +37,15 @@ function checkDebugMode() {
   AC_SUBST(CFLAGS)
 }
 
-AC_ARG_WITH(static-include,
-  [AS_HELP_STRING([--with-static-include], [Include module sources])],
-  [STATIC_INCLUDE="yes"],
-  [STATIC_INCLUDE="no"])
-
 AC_ARG_WITH(mlpack,
   [AS_HELP_STRING([--with-mlpack], [Build the mlpack module])],
   [MLPACK="yes"],
   [MLPACK="no"])
+
+AC_ARG_WITH(gtk-server,
+  [AS_HELP_STRING([--with-gtk-server], [Build the gtk-server module])],
+  [GTK_SERVER="yes"],
+  [GTK_SERVER="no"])
 
 case "${host_os}" in
   *mingw* | *msys*)
@@ -55,7 +55,8 @@ case "${host_os}" in
     CLIPBOARD_LDFLAGS=""
     NUKLEAR_LDFLAGS="-pthread -lgdi32 -mwindows"
     WEBSOCKET_LDFLAGS="-lwsock32"
-    STATIC_INCLUDE="yes"
+    GTK_SERVER_LDFLAGS=""
+    GTK_SERVER_CPPFLAGS="-DGTK_SERVER_WIN32"
     ;;
 
   *)
@@ -63,22 +64,19 @@ case "${host_os}" in
     CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
     NUKLEAR_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
     WEBSOCKET_LDFLAGS=""
-    if test "${STATIC_INCLUDE}" = "yes"
-    then
-      RAYLIB_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
-    else
-      RAYLIB_LDFLAGS="-lraylib -lGL -lm -lpthread -ldl -lrt -lX11"
-    fi
+    GTK_SERVER_LDFLAGS="`pkg-config --libs gtk+-3.0` -lXm -lXt"
+    GTK_SERVER_CPPFLAGS="`pkg-config --cflags gtk+-3.0` -DGTK_SERVER_LIBRARY -DGTK_SERVER_UNIX -DGTK_SERVER_GTK3x"
+    RAYLIB_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
 esac
 
-AM_CONDITIONAL(WITH_STATIC_INCLUDE, test "${STATIC_INCLUDE}" = "yes")
-AM_CONDITIONAL(WITH_MLPACK, test "${MLPACK}" = "yes")
 AC_SUBST(DEBUG_LDFLAGS)
 AC_SUBST(CLIPBOARD_LDFLAGS)
 AC_SUBST(RAYLIB_LDFLAGS)
 AC_SUBST(NUKLEAR_LDFLAGS)
 AC_SUBST(WEBSOCKET_LDFLAGS)
 AC_SUBST(PLATFORM_LDFLAGS)
+AC_SUBST(GTK_SERVER_LDFLAGS)
+AC_SUBST(GTK_SERVER_CPPFLAGS)
 
 dnl change default aru setting to avoid warning
 ARFLAGS=cr
@@ -92,6 +90,10 @@ BUILD_SUBDIRS="debug nuklear gifenc glfw clipboard websocket raylib"
 if test "${MLPACK}" = "yes"
 then
   BUILD_SUBDIRS="${BUILD_SUBDIRS} mlpack"
+fi
+if test "${GTK_SERVER}" = "yes"
+then
+  BUILD_SUBDIRS="${BUILD_SUBDIRS} gtk-server"
 fi
 
 AC_SUBST(BUILD_SUBDIRS)
@@ -108,7 +110,8 @@ glfw/Makefile
 clipboard/Makefile
 websocket/Makefile
 raylib/Makefile
-mlpack/Makefile])
+mlpack/Makefile
+gtk-server/Makefile])
 
 AC_OUTPUT
 
