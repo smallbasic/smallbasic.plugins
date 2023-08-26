@@ -6554,7 +6554,7 @@ if (gtkserver.LogDir != NULL) unlink(gtkserver.LogDir);
 #ifndef GTK_SERVER_LIBRARY
 /* Only create logfile when argument is given, if logfile cannot be created: warn, but continue */
 if (gtkserver.LogDir != NULL){
-    logfile = fopen (gtkserver.LogDir, "w");
+    logfile = strcmp(gtkserver.LogDir, "stderr") == 0 ? stderr : fopen (gtkserver.LogDir, "w");
     #ifdef GTK_SERVER_UNIX
     if (logfile == NULL) fprintf(stderr, "WARNING: The logfile could not be created.\n");
     #elif GTK_SERVER_WIN32
@@ -7639,7 +7639,7 @@ if (gtk_protos == NULL){
 
 /* If logging is enabled, write incoming text to log */
 if (gtkserver.LogDir != NULL){
-    logfile = fopen (gtkserver.LogDir, "a");
+    logfile = strcmp(gtkserver.LogDir, "stderr") == 0 ? stderr : fopen (gtkserver.LogDir, "w");
     #ifdef GTK_SERVER_UNIX
     if (logfile == NULL) {
 	fprintf(stderr, "WARNING: The logfile could not be created.\n");

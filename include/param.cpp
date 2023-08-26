@@ -569,7 +569,7 @@ const char *format_text(int argc, slib_par_t *params, int param) {
 
   if (error) {
     memset(buffer, '\0', MAX_TEXT_BUFFER_LENGTH);
-    strcpy(buffer, "ERROR: Invalid text format");
+    sprintf(buffer, "ERROR: Invalid text format: %s", format);
   } else {
     int segLength = end - start;
     if (segLength && (segLength + length + padding < MAX_TEXT_BUFFER_LENGTH)) {
