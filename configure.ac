@@ -65,7 +65,7 @@ case "${host_os}" in
     NUKLEAR_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
     WEBSOCKET_LDFLAGS=""
     GTK_SERVER_LDFLAGS="`pkg-config --libs gtk+-3.0` -lXm -lXt"
-    GTK_SERVER_CPPFLAGS="`pkg-config --cflags gtk+-3.0` -DGTK_SERVER_LIBRARY -DGTK_SERVER_UNIX -DGTK_SERVER_GTK3x"
+    GTK_SERVER_CPPFLAGS="`pkg-config --cflags gtk+-3.0` -DGTK_SERVER_FFI -DGTK_SERVER_LIBRARY -DGTK_SERVER_UNIX -DGTK_SERVER_GTK3x"
     RAYLIB_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
 esac
 

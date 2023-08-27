@@ -1,5 +1,6 @@
 rem
 rem gtk-server module for SmallBASIC
+rem based on gtk-server-2.4.6/scriptbasic/gtk.bas by Peter van Eerten, GPL license
 rem
 
 unit gtk
@@ -47,7 +48,7 @@ gtk_list_select={}
 gtk_list_array={}
 
 gtks.debug(1)
-'gtks.gtk("gtk_server_cfg -debug")
+gtks.gtk("gtk_server_cfg -debug")
 gtks.gtk("gtk_init 0 0")
 
 rem
@@ -57,16 +58,16 @@ func g_UTF8(st)
   local t, x, b1, b2
 
   t = 1
-  while t <= LEN(st)
-    x = ASC(MID(st, t, 1))
+  while t <= len(st)
+    x = asc(mid(st, t, 1))
     if x > 127 then
       b1 = CHR((x AND 192) / 64 + 192)
       b2 = CHR((x AND 63) + 128)
-      st = LEFT(st, t - 1) + b1 + b2 + RIGHT(st, LEN(st) - t - 1)
+      st = left(st, t - 1) + b1 + b2 + right(st, len(st) - t - 1)
       t+=1
     end if
     t+=1
-  Wend
+  wend
   return st
 end
 
@@ -115,7 +116,7 @@ rem
 rem Check Button creation starts here
 rem
 func g_check(text, xsize, ysize)
-  local chk = gtks.gtk("gtk_check_button_new_with_label \"" + text + "\"")
+  local chk = gtks.gtk("gtk_check_button_new_with_label \"%s\"", text)
   gtks.gtk("gtk_widget_set_size_request %s %u %u", chk, xsize, ysize)
   gtks.gtk("gtk_widget_set_name %s %s", chk, chk)
   gtks.gtk("gtk_widget_show %s", chk)
@@ -127,7 +128,7 @@ rem
 rem Radio Button creation starts here
 rem
 func g_radio(text, xsize, ysize, group)
-  local value = gtks.gtk("gtk_radio_button_new_with_label_from_widget %s %s", "\"" + STR(group) + "\"", "\"" + text + "\"")
+  local value = gtks.gtk("gtk_radio_button_new_with_label_from_widget \"%s\" \"%s\"", str(group), text)
   gtks.gtk("gtk_widget_set_size_request %s %u %u", value, xsize, ysize)
   gtks.gtk("gtk_widget_set_name %s %s", value, value)
   gtks.gtk("gtk_widget_show %s", value)
@@ -164,7 +165,7 @@ rem
 rem Label creation starts here
 rem
 func g_label(text, xsize, ysize)
-  local lab = gtks.gtk("gtk_label_new \"" + text + "\"")
+  local lab = gtks.gtk("gtk_label_new \"%s\"", text)
   gtks.gtk("gtk_widget_set_size_request %s %u %u", lab, xsize, ysize)
   gtks.gtk("gtk_widget_set_name %s %s", lab, lab)
   gtks.gtk("gtk_widget_show %s", lab)
@@ -313,10 +314,11 @@ func g_get_text(widget)
   if gtk_type[widget] = "separator" then PRINT "WARNING: Cannot get text of " + gtk_type[widget] + " widget!\n"
   if gtk_type[widget] = "frame" then get_text = gtks.gtk("gtk_frame_get_label", widget)
   if gtk_type[widget] = "list" then
-    if VAL(gtks.gtk("gtk_tree_selection_get_selected", gtk_list_select[widget], "NULL", gtk_list_iter[widget])) then
-      if gtk_list_array[widget] <> 0 then
+    if VAL(gtks.gtk("gtk_tree_selection_get_selected %s NULL %s", gtk_list_select[widget], gtk_list_iter[widget])) then
+      if ismap(gtk_list_array[widget]) then
         arr = gtk_list_array[widget]
-        result = arr[LBOUND(arr) + VAL(gtks.gtk("gtk_tree_model_get_string_from_iter", gtk_list_store[widget], gtk_list_iter[widget]))]
+        result = gtks.gtk("gtk_tree_model_get_string_from_iter %s %s", gtk_list_store[widget], gtk_list_iter[widget])
+        result = arr[result]
       end if
     end if
   end if
@@ -440,57 +442,57 @@ sub g_fg_color(widget, r, g, b)
   if gtk_type[widget] = "window" then PRINT "WARNING: Cannot set foreground color of window widget!\n"
   if gtk_type[widget] = "button" then
     gtks.gtk("gtk_rc_parse_string %s %s %s %s %s %s %s %s", "\"style \\\"" + widget + "\\\" [ fg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ fg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ fg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ fg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ fg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "*\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "check" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ fg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ fg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ fg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ fg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ fg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ fg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "*\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "radio" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ fg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ fg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ fg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ fg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ fg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ fg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "*\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "entry" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ text[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ GtkWidget::cursor_color = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ text[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ GtkWidget::cursor_color = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "password" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ text[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ GtkWidget::cursor_color = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ text[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ GtkWidget::cursor_color = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "label" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ fg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ fg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "droplist" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ text[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ text[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ text[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ text[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "*\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "text" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ text[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ GtkWidget::cursor_color = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ text[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ GtkWidget::cursor_color = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + GTK_TEXT_VIEW[widget] + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "separator" then PRINT "WARNING: Cannot set foreground color of separator widget!\n"
   if gtk_type[widget] = "frame" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ fg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ fg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "*\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "list" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ text[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ text[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + gtk_container[widget] + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   
-  gtks.gtk("gtk_rc_reset_styles", gtksettings)
+  gtks.gtk("gtk_rc_reset_styles %s", gtksettings)
 end
 
 rem
@@ -502,81 +504,81 @@ sub g_bg_color(widget, r, g, b)
   gtksettings = gtks.gtk("gtk_settings_get_default")
   
   if gtk_type[widget] = "window" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"" + widget + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "button" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     if r < 60415 then r = r + 5120 
     if g < 60415 then g = g + 5120
     if b < 60415 then b = b + 5120
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
     if r > 5120 then r = r - 5120
     if g > 5120 then g = g - 5120
     if b > 5120 then b = b - 5120
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "*\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "check" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     if r < 60415 then r = r + 5120 
     if g < 60415 then g = g + 5120
     if b < 60415 then b = b + 5120
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
     if r > 5120 then r = r - 5120
     if g > 5120 then g = g - 5120
     if b > 5120 then b = b - 5120
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "*\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "radio" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     if r < 60415 then r = r + 5120 
     if g < 60415 then g = g + 5120
     if b < 60415 then b = b + 5120
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
     if r > 5120 then r = r - 5120
     if g > 5120 then g = g - 5120
     if b > 5120 then b = b - 5120
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[ACTIVE] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "*\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "entry" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ base[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ base[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "password" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ base[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ base[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "text" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ base[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ base[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + GTK_TEXT_VIEW[widget] + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "droplist" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     if r < 60415 then r = r + 5120 
     if g < 60415 then g = g + 5120
     if b < 60415 then b = b + 5120
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[PRELIGHT] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "*\\\" style \\\"" + widget + "\\\"\"")
   end if
   
   if gtk_type[widget] = "label" then PRINT "WARNING: Cannot set background color of label widget!\n"
   if gtk_type[widget] = "separator" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "frame" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ bg[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + widget + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   if gtk_type[widget] = "list" then
-    gtks.gtk("gtk_rc_parse_string", "\"style \\\"" + widget + "\\\" [ base[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
+    gtks.gtk("gtk_rc_parse_string \"style \\\"" + widget + "\\\" [ base[NORMAL] = [" + r + ", " + g + ", " + b + "] ]\"")
     gtks.gtk("gtk_rc_parse_string \"widget \\\"*.*." + gtk_container[widget] + "\\\" style \\\"" + widget + "\\\"\"")
   end if
   
-  gtks.gtk("gtk_rc_reset_styles", gtksettings)
+  gtks.gtk("gtk_rc_reset_styles %s", gtksettings)
 end
 
 rem

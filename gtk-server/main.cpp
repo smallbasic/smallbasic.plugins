@@ -23,7 +23,7 @@ extern "C" char *gtk(char *arg);
 int debug = 0;
 
 static char buffer[MAX_TEXT_BUFFER_LENGTH];
-static char *formatError = "ERROR: Invalid text format:";
+static const char *formatError = "ERROR: Invalid text format:";
 
 static int cmd_gtk(int argc, slib_par_t *params, var_t *retval) {
   strcpy(buffer, format_text(argc, params, 0));
