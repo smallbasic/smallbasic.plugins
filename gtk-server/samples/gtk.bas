@@ -383,16 +383,16 @@ rem Find selection of chek/option button
 rem
 func g_get_value(widget)
   if gtk_type[widget] = "check" then
-    get_value = VAL(gtks.gtk("gtk_toggle_button_get_active %s", widget))
+    g_get_value = VAL(gtks.gtk("gtk_toggle_button_get_active %s", widget))
   else if gtk_type[widget] = "radio" then
-    get_value = VAL(gtks.gtk("gtk_toggle_button_get_active %s", widget))
+    g_get_value = VAL(gtks.gtk("gtk_toggle_button_get_active %s", widget))
   else if gtk_type[widget] = "droplist" then
-    get_value = VAL(gtks.gtk("gtk_combo_box_get_active %s", widget))
+    g_get_value = VAL(gtks.gtk("gtk_combo_box_get_active %s", widget))
   else if gtk_type[widget] = "text" then
-    get_value = VAL(gtks.gtk("gtk_text_buffer_get_line_count %s", gtk_container[widget]))
+    g_get_value = VAL(gtks.gtk("gtk_text_buffer_get_line_count %s", gtk_container[widget]))
   else if gtk_type[widget] = "list" then
     if VAL(gtks.gtk("gtk_tree_selection_get_selected %u %u %u", gtk_list_select[widget], "NULL", gtk_list_iter[widget])) then
-      get_value = VAL(gtks.gtk("gtk_tree_model_get_string_from_iter %u %u", gtk_list_store[widget], gtk_list_iter[widget]))
+      g_get_value = VAL(gtks.gtk("gtk_tree_model_get_string_from_iter %u %u", gtk_list_store[widget], gtk_list_iter[widget]))
     end if
   else
     PRINT "WARNING: Cannot get status of " + gtk_type[widget] + " widget!\n"
