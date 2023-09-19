@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (573)
+Implemented APIs (580)
 ----------------
 
 | Name    | Description   |
@@ -85,6 +85,8 @@ Implemented APIs (573)
 | sub DrawLineBezier(startPos, endPos, thick, color) | Draw a line using cubic-bezier curves in-out |
 | sub DrawLineBezierCubic(startPos, endPos, startControlPos, endControlPos, thick, color) | Draw line using cubic bezier curves with 2 control points |
 | sub DrawLineBezierQuad(startPos, endPos, controlPos, thick, color) | Draw line using quadratic bezier curves with a control point |
+| sub DrawLineBSpline(points, pointCount, thick, color) | Draw a B-Spline line, minimum 4 points |
+| sub DrawLineCatmullRom(points, pointCount, thick, color) | Draw a Catmull Rom spline line, minimum 4 points |
 | sub DrawLineEx(startPos, endPos, thick, color) | Draw a line defining thickness |
 | sub DrawLineStrip(points, pointCount, color) | Draw lines sequence |
 | sub DrawLineV(startPos, endPos, color) | Draw a line (Vector version) |
@@ -118,7 +120,7 @@ Implemented APIs (573)
 | sub DrawSphereWires(centerPos, radius, rings, slices, color) | Draw sphere wires |
 | sub DrawText(text, posX, posY, fontSize, color) | Draw text (using default font) |
 | sub DrawTextCodepoint(font, codepoint, position, fontSize, tint) | Draw one character (codepoint) |
-| sub DrawTextCodepoints(font, codepoints, count, position, fontSize, spacing, tint) | Draw multiple character (codepoint) |
+| sub DrawTextCodepoints(font, codepoints, codepointCount, position, fontSize, spacing, tint) | Draw multiple character (codepoint) |
 | sub DrawTextEx(font, text, position, fontSize, spacing, tint) | Draw text using font and additional parameters |
 | sub DrawTextPro(font, text, position, origin, rotation, fontSize, spacing, tint) | Draw text using Font and pro parameters (rotation) |
 | sub DrawTexture(texture, posX, posY, tint) | Draw a Texture2D |
@@ -144,7 +146,7 @@ Implemented APIs (573)
 | sub EndShaderMode() | End custom shader drawing (use default shader) |
 | sub EndTextureMode() | Ends drawing to render texture |
 | sub EndVrStereoMode() | End stereo rendering (requires VR simulator) |
-| func ExportDataAsCode(data, size, fileName) | Export data to code (.h), returns true on success |
+| func ExportDataAsCode(data, dataSize, fileName) | Export data to code (.h), returns true on success |
 | func ExportFontAsCode(font, fileName) | Export font as code file, returns true on success |
 | func ExportImage(image, fileName) | Export image data to file, returns true on success |
 | func ExportImageAsCode(image, fileName) | Export image as code file defining an array of bytes, returns true on success |
@@ -176,7 +178,7 @@ Implemented APIs (573)
 | sub GenMeshTangents(mesh) | Compute mesh tangents |
 | func GenMeshTorus(radius, size, radSeg, sides) | Generate torus mesh |
 | sub GenTextureMipmaps(texture) | Generate GPU mipmaps for a texture |
-| func GetApplicationDirectory() | Get the directory if the running application (uses static string) |
+| func GetApplicationDirectory() | Get the directory of the running application (uses static string) |
 | func GetCameraMatrix(camera) | Get camera transform matrix (view matrix) |
 | func GetCameraMatrix2D(camera) | Get camera 2d transform matrix |
 | func GetCharPressed() | Get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty |
@@ -215,7 +217,7 @@ Implemented APIs (573)
 | func GetModelBoundingBox(model) | Compute model bounding box limits (considers all meshes) |
 | func GetMonitorCount() | Get number of connected monitors |
 | func GetMonitorHeight(monitor) | Get specified monitor height (current video mode used by monitor) |
-| func GetMonitorName(monitor) | Get the human-readable, UTF-8 encoded name of the primary monitor |
+| func GetMonitorName(monitor) | Get the human-readable, UTF-8 encoded name of the specified monitor |
 | func GetMonitorPhysicalHeight(monitor) | Get specified monitor physical height in millimetres |
 | func GetMonitorPhysicalWidth(monitor) | Get specified monitor physical width in millimetres |
 | func GetMonitorPosition(monitor) | Get specified monitor position |
@@ -274,7 +276,6 @@ Implemented APIs (573)
 | func guidropdownbox() | n/a |
 | func guidummyrec() | n/a |
 | func guienable() | n/a |
-| func guifade() | n/a |
 | func guigetstyle() | n/a |
 | func guigrid() | n/a |
 | func guigroupbox() | n/a |
@@ -369,6 +370,7 @@ Implemented APIs (573)
 | func IsImageReady(image) | Check if an image is ready |
 | func IsKeyDown(key) | Check if a key is being pressed |
 | func IsKeyPressed(key) | Check if a key has been pressed once |
+| func IsKeyPressedRepeat(key) | Check if a key has been pressed again (Only PLATFORM_DESKTOP) |
 | func IsKeyReleased(key) | Check if a key has been released once |
 | func IsKeyUp(key) | Check if a key is NOT being pressed |
 | func IsModelAnimationValid(model, anim) | Check model animation skeleton match |
@@ -399,12 +401,12 @@ Implemented APIs (573)
 | func LoadDirectoryFiles(dirPath) | Load directory filepaths |
 | func LoadDirectoryFilesEx(basePath, filter, scanSubdirs) | Load directory filepaths with extension filtering and recursive directory scan |
 | func LoadDroppedFiles() | Load dropped filepaths |
-| func LoadFileData(fileName, bytesRead) | Load file data as byte array (read) |
+| func LoadFileData(fileName, dataSize) | Load file data as byte array (read) |
 | func LoadFileText(fileName) | Load text data from file (read), returns a '\\0' terminated string |
 | func LoadFont(fileName) | Load font from file into GPU memory (VRAM) |
-| func LoadFontEx(fileName, fontSize, fontChars, glyphCount) | Load font from file with extended parameters, use NULL for fontChars and 0 for glyphCount to load the default character set |
+| func LoadFontEx(fileName, fontSize, codepoints, codepointCount) | Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character setFont |
 | func LoadFontFromImage(image, key, firstChar) | Load font from Image (XNA style) |
-| func LoadFontFromMemory(fileType, fileData, dataSize, fontSize, fontChars, glyphCount) | Load font from memory buffer, fileType refers to extension: i.e. '.ttf' |
+| func LoadFontFromMemory(fileType, fileData, dataSize, fontSize, codepoints, codepointCount) | Load font from memory buffer, fileType refers to extension: i.e. '.ttf' |
 | func LoadImage(fileName) | Load image from file into CPU memory (RAM) |
 | func LoadImageAnim(fileName, frames) | Load image sequence from file (frames appended to image.data) |
 | func LoadImageColors(image) | Load color data from image as a Color array (RGBA - 32bit) |
@@ -413,6 +415,7 @@ Implemented APIs (573)
 | func LoadImageFromTexture(texture) | Load image from GPU texture data |
 | func LoadImagePalette(image, maxPaletteSize, colorCount) | Load colors palette from image as a Color array (RGBA - 32bit) |
 | func LoadImageRaw(fileName, width, height, format, headerSize) | Load image from RAW file data |
+| func LoadImageSvg(fileNameOrString, width, height) | Load image from SVG file data or string with specified size |
 | func LoadModel(fileName) | Load model from files (meshes and materials) |
 | func LoadModelAnimations(fileName, animCount) | Load model animations from file |
 | func LoadModelFromMesh(mesh) | Load model from generated mesh (default material) |
@@ -422,6 +425,7 @@ Implemented APIs (573)
 | func LoadShader(vsFileName, fsFileName) | Load shader from files and bind default locations |
 | func LoadShaderFromMemory(vsCode, fsCode) | Load shader from code strings and bind default locations |
 | func LoadSound(fileName) | Load sound from file |
+| func LoadSoundAlias(source) | Create a new sound that shares the same sample data as the source sound, does not own the sound data |
 | func LoadSoundFromWave(wave) | Load sound from wave data |
 | func LoadTexture(fileName) | Load texture from file into GPU memory (VRAM) |
 | func LoadTextureCubemap(image, layout) | Load cubemap from image, multiple image cubemap layouts supported |
@@ -456,7 +460,7 @@ Implemented APIs (573)
 | sub ResumeAudioStream(stream) | Resume audio stream |
 | sub ResumeMusicStream(music) | Resume playing paused music |
 | sub ResumeSound(sound) | Resume a paused sound |
-| func SaveFileData(fileName, data, bytesToWrite) | Save data to file from byte array (write), returns true on success |
+| func SaveFileData(fileName, data, dataSize) | Save data to file from byte array (write), returns true on success |
 | func SaveFileText(fileName, text) | Save text data to file (write), string must be '\\0' terminated, returns true on success |
 | sub SeekMusicStream(music, position) | Seek music to a position (in seconds) |
 | sub SetAudioStreamBufferSizeDefault(size) | Default size for new audio streams |
@@ -517,13 +521,14 @@ Implemented APIs (573)
 | sub SetWindowFocused() | Set window focused (only PLATFORM_DESKTOP) |
 | sub SetWindowIcon(image) | Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP) |
 | sub SetWindowIcons(images, count) | Set icon for window (multiple images, RGBA 32bit, only PLATFORM_DESKTOP) |
+| sub SetWindowMaxSize(width, height) | Set window maximum dimensions (for FLAG_WINDOW_RESIZABLE) |
 | sub SetWindowMinSize(width, height) | Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE) |
-| sub SetWindowMonitor(monitor) | Set monitor for the current window (fullscreen mode) |
+| sub SetWindowMonitor(monitor) | Set monitor for the current window |
 | sub SetWindowOpacity(opacity) | Set window opacity [0.0f..1.0f] (only PLATFORM_DESKTOP) |
 | sub SetWindowPosition(x, y) | Set window position on screen (only PLATFORM_DESKTOP) |
 | sub SetWindowSize(width, height) | Set window dimensions |
 | sub SetWindowState(flags) | Set window configuration state using flags (only PLATFORM_DESKTOP) |
-| sub SetWindowTitle(title) | Set title for window (only PLATFORM_DESKTOP) |
+| sub SetWindowTitle(title) | Set title for window (only PLATFORM_DESKTOP and PLATFORM_WEB) |
 | sub ShowCursor() | Shows cursor |
 | sub StopAudioStream(stream) | Stop audio stream |
 | sub StopMusicStream(music) | Stop music playing |
@@ -543,6 +548,7 @@ Implemented APIs (573)
 | func TextToLower(text) | Get lower case version of provided string |
 | func TextToPascal(text) | Get Pascal case notation version of provided string |
 | func TextToUpper(text) | Get upper case version of provided string |
+| sub ToggleBorderlessWindowed() | Toggle window state: borderless windowed (only PLATFORM_DESKTOP) |
 | sub ToggleFullscreen() | Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP) |
 | sub UnloadAudioStream(stream) | Unload audio stream and free memory |
 | sub UnloadCodepoints(codepoints) | Unload codepoints data from memory |
@@ -557,11 +563,12 @@ Implemented APIs (573)
 | sub UnloadMesh(mesh) | Unload mesh data from CPU and GPU |
 | sub UnloadModel(model) | Unload model (including meshes) from memory (RAM and/or VRAM) |
 | sub UnloadModelAnimation(anim) | Unload animation data |
-| sub UnloadModelAnimations(animations, count) | Unload animation array data |
+| sub UnloadModelAnimations(animations, animCount) | Unload animation array data |
 | sub UnloadMusicStream(music) | Unload music stream |
 | sub UnloadRenderTexture(target) | Unload render texture from GPU memory (VRAM) |
 | sub UnloadShader(shader) | Unload shader from GPU memory (VRAM) |
 | sub UnloadSound(sound) | Unload sound |
+| sub UnloadSoundAlias(alias) | Unload a sound alias (does not deallocate sample data) |
 | sub UnloadTexture(texture) | Unload texture from GPU memory (VRAM) |
 | sub UnloadUTF8(text) | Unload UTF-8 text encoded from codepoints array |
 | sub UnloadWave(wave) | Unload wave data |
@@ -588,8 +595,8 @@ Unimplemented APIs
 
 | Name    | Description   |
 |---------|---------------|
-| AttachAudioMixedProcessor | Attach audio stream processor to the entire audio pipeline |
-| AttachAudioStreamProcessor | Attach audio stream processor to stream |
+| AttachAudioMixedProcessor | Attach audio stream processor to the entire audio pipeline, receives the samples as <float>s |
+| AttachAudioStreamProcessor | Attach audio stream processor to stream, receives the samples as <float>s |
 | BeginVrStereoMode | Begin stereo rendering (requires VR simulator) |
 | DetachAudioMixedProcessor | Detach audio stream processor from the entire audio pipeline |
 | DetachAudioStreamProcessor | Detach audio stream processor from stream |

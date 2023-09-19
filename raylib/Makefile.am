@@ -35,8 +35,7 @@ AM_CPPFLAGS = -Iraylib/src -Iraylib/src/external/glfw/include -Iraylib/src/exter
 
 lib_LTLIBRARIES = libraylib.la
 
-if WITH_STATIC_INCLUDE
-  libraylib_la_SOURCES = \
+libraylib_la_SOURCES = \
    raylib/src/rglfw.c \
    raylib/src/rmodels.c \
    raylib/src/raudio.c \
@@ -50,14 +49,6 @@ if WITH_STATIC_INCLUDE
    physac.cpp \
    raygui.cpp \
    main.cpp
-else
-  libraylib_la_SOURCES = \
-   ../include/param.cpp \
-   ../include/hashmap.cpp \
-   physac.cpp \
-   raygui.cpp \
-   main.cpp
-endif
 
 libraylib_la_LDFLAGS = -module -rpath '$(libdir)' @RAYLIB_LDFLAGS@ @PLATFORM_LDFLAGS@
 

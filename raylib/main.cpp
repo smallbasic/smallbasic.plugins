@@ -1220,12 +1220,6 @@ static int cmd_guienable(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_guifade(int argc, slib_par_t *params, var_t *retval) {
-  auto alpha = get_param_num(argc, params, 0, 0);
-  GuiFade(alpha);
-  return 1;
-}
-
 static int cmd_guigroupbox(int argc, slib_par_t *params, var_t *retval) {
   auto bounds = get_param_rect(argc, params, 0);
   auto text = get_param_str(argc, params, 1, 0);
@@ -1741,7 +1735,6 @@ static FUNC_SIG lib_proc[] = {
   {0, 0, "GUIDISABLE", cmd_guidisable},
   {2, 2, "GUIDUMMYREC", cmd_guidummyrec},
   {0, 0, "GUIENABLE", cmd_guienable},
-  {1, 1, "GUIFADE", cmd_guifade},
   {2, 2, "GUIGROUPBOX", cmd_guigroupbox},
   {2, 2, "GUILABEL", cmd_guilabel},
   {2, 2, "GUILINE", cmd_guiline},

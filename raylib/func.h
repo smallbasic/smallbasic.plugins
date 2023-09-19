@@ -341,9 +341,9 @@ static int cmd_encodedatabase64(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_exportdataascode(int argc, slib_par_t *params, var_t *retval) {
   auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
-  auto size = get_param_int(argc, params, 1, 0);
+  auto dataSize = get_param_int(argc, params, 1, 0);
   auto fileName = get_param_str(argc, params, 2, 0);
-  auto fnResult = ExportDataAsCode(data, size, fileName);
+  auto fnResult = ExportDataAsCode(data, dataSize, fileName);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -754,7 +754,7 @@ static int cmd_genmeshtorus(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get the directory if the running application (uses static string)
+// Get the directory of the running application (uses static string)
 //
 static int cmd_getapplicationdirectory(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = (const char *)GetApplicationDirectory();
@@ -1168,7 +1168,7 @@ static int cmd_getmonitorheight(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get the human-readable, UTF-8 encoded name of the primary monitor
+// Get the human-readable, UTF-8 encoded name of the specified monitor
 //
 static int cmd_getmonitorname(int argc, slib_par_t *params, var_t *retval) {
   auto monitor = get_param_int(argc, params, 0, 0);
@@ -1909,6 +1909,16 @@ static int cmd_iskeypressed(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Check if a key has been pressed again (Only PLATFORM_DESKTOP)
+//
+static int cmd_iskeypressedrepeat(int argc, slib_par_t *params, var_t *retval) {
+  auto key = get_param_int(argc, params, 0, 0);
+  auto fnResult = IsKeyPressedRepeat(key);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
 // Check if a key has been released once
 //
 static int cmd_iskeyreleased(int argc, slib_par_t *params, var_t *retval) {
@@ -2265,9 +2275,10 @@ static int cmd_loaddroppedfiles(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_loadfiledata(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
-  auto bytesRead = (unsigned int *)get_param_int_t(argc, params, 1, 0);
-  auto fnResult = (const char *)LoadFileData(fileName, bytesRead);
-  v_setstr(retval, fnResult);
+  auto dataSize = 0;
+  auto fnResult = (const char *)LoadFileData(fileName, &dataSize);
+  v_setstrn(retval, fnResult, dataSize);
+  MemFree((void *)fnResult);
   return 1;
 }
 
@@ -2292,14 +2303,14 @@ static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Load font from file with extended parameters, use NULL for fontChars and 0 for glyphCount to load the default character set
+// Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character setFont
 //
 static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
   auto fontSize = get_param_int(argc, params, 1, 0);
-  auto fontChars = (int *)0;
-  auto glyphCount = get_param_int(argc, params, 2, 0);
-  auto fnResult = LoadFontEx(fileName, fontSize, fontChars, glyphCount);
+  auto codepoints = (int *)0;
+  auto codepointCount = get_param_int(argc, params, 2, 0);
+  auto fnResult = LoadFontEx(fileName, fontSize, codepoints, codepointCount);
   v_setfont(retval, fnResult);
   return 1;
 }
@@ -2330,9 +2341,9 @@ static int cmd_loadfontfrommemory(int argc, slib_par_t *params, var_t *retval) {
   auto fileData = (const unsigned char *)get_param_str(argc, params, 1, 0);
   auto dataSize = get_param_int(argc, params, 2, 0);
   auto fontSize = get_param_int(argc, params, 3, 0);
-  auto fontChars = (int *)0;
-  auto glyphCount = get_param_int(argc, params, 4, 0);
-  auto fnResult = LoadFontFromMemory(fileType, fileData, dataSize, fontSize, fontChars, glyphCount);
+  auto codepoints = (int *)0;
+  auto codepointCount = get_param_int(argc, params, 4, 0);
+  auto fnResult = LoadFontFromMemory(fileType, fileData, dataSize, fontSize, codepoints, codepointCount);
   v_setfont(retval, fnResult);
   return 1;
 }
@@ -2444,6 +2455,18 @@ static int cmd_loadimageraw(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Load image from SVG file data or string with specified size
+//
+static int cmd_loadimagesvg(int argc, slib_par_t *params, var_t *retval) {
+  auto fileNameOrString = get_param_str(argc, params, 0, 0);
+  auto width = get_param_int(argc, params, 1, 0);
+  auto height = get_param_int(argc, params, 2, 0);
+  auto fnResult = LoadImageSvg(fileNameOrString, width, height);
+  v_setimage(retval, fnResult);
+  return 1;
+}
+
+//
 // Load model from files (meshes and materials)
 //
 static int cmd_loadmodel(int argc, slib_par_t *params, var_t *retval) {
@@ -2510,6 +2533,22 @@ static int cmd_loadsound(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = LoadSound(fileName);
   v_setsound(retval, fnResult);
   return 1;
+}
+
+//
+// Create a new sound that shares the same sample data as the source sound, does not own the sound data
+//
+static int cmd_loadsoundalias(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int source_id = get_sound_id(argc, params, 0, retval);
+  if (source_id != -1) {
+    auto fnResult = LoadSoundAlias(_soundMap.at(source_id));
+    v_setsound(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 //
@@ -2677,8 +2716,8 @@ static int cmd_memrealloc(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_savefiledata(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
   auto data = (void *)get_param_int_t(argc, params, 1, 0);
-  auto bytesToWrite = get_param_int(argc, params, 2, 0);
-  auto fnResult = SaveFileData(fileName, data, bytesToWrite);
+  auto dataSize = get_param_int(argc, params, 2, 0);
+  auto fnResult = SaveFileData(fileName, data, dataSize);
   v_setint(retval, fnResult);
   return 1;
 }

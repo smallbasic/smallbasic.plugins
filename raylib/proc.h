@@ -522,6 +522,30 @@ static int cmd_drawlinebezierquad(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Draw a B-Spline line, minimum 4 points
+//
+static int cmd_drawlinebspline(int argc, slib_par_t *params, var_t *retval) {
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
+  auto pointCount = get_param_int(argc, params, 1, 0);
+  auto thick = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawLineBSpline(points, pointCount, thick, color);
+  return 1;
+}
+
+//
+// Draw a Catmull Rom spline line, minimum 4 points
+//
+static int cmd_drawlinecatmullrom(int argc, slib_par_t *params, var_t *retval) {
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
+  auto pointCount = get_param_int(argc, params, 1, 0);
+  auto thick = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawLineCatmullRom(points, pointCount, thick, color);
+  return 1;
+}
+
+//
 // Draw a line defining thickness
 //
 static int cmd_drawlineex(int argc, slib_par_t *params, var_t *retval) {
@@ -966,12 +990,12 @@ static int cmd_drawtextcodepoints(int argc, slib_par_t *params, var_t *retval) {
   int font_id = get_font_id(argc, params, 0, retval);
   if (font_id != -1) {
     auto codepoints = (const int *)get_param_int_t(argc, params, 1, 0);
-    auto count = get_param_int(argc, params, 2, 0);
+    auto codepointCount = get_param_int(argc, params, 2, 0);
     auto position = get_param_vec2(argc, params, 3);
     auto fontSize = get_param_num(argc, params, 4, 0);
     auto spacing = get_param_num(argc, params, 5, 0);
     auto tint = get_param_color(argc, params, 6);
-    DrawTextCodepoints(_fontMap.at(font_id), codepoints, count, position, fontSize, spacing, tint);
+    DrawTextCodepoints(_fontMap.at(font_id), codepoints, codepointCount, position, fontSize, spacing, tint);
     result = 1;
   } else {
     result = 0;
@@ -2641,6 +2665,16 @@ static int cmd_setwindowicons(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Set window maximum dimensions (for FLAG_WINDOW_RESIZABLE)
+//
+static int cmd_setwindowmaxsize(int argc, slib_par_t *params, var_t *retval) {
+  auto width = get_param_int(argc, params, 0, 0);
+  auto height = get_param_int(argc, params, 1, 0);
+  SetWindowMaxSize(width, height);
+  return 1;
+}
+
+//
 // Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE)
 //
 static int cmd_setwindowminsize(int argc, slib_par_t *params, var_t *retval) {
@@ -2651,7 +2685,7 @@ static int cmd_setwindowminsize(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set monitor for the current window (fullscreen mode)
+// Set monitor for the current window
 //
 static int cmd_setwindowmonitor(int argc, slib_par_t *params, var_t *retval) {
   auto monitor = get_param_int(argc, params, 0, 0);
@@ -2698,7 +2732,7 @@ static int cmd_setwindowstate(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set title for window (only PLATFORM_DESKTOP)
+// Set title for window (only PLATFORM_DESKTOP and PLATFORM_WEB)
 //
 static int cmd_setwindowtitle(int argc, slib_par_t *params, var_t *retval) {
   auto title = get_param_str(argc, params, 0, 0);
@@ -2784,6 +2818,14 @@ static int cmd_textappend(int argc, slib_par_t *params, var_t *retval) {
   auto append = get_param_str(argc, params, 1, 0);
   auto position = (int *)0;
   TextAppend(text, append, position);
+  return 1;
+}
+
+//
+// Toggle window state: borderless windowed (only PLATFORM_DESKTOP)
+//
+static int cmd_toggleborderlesswindowed(int argc, slib_par_t *params, var_t *retval) {
+  ToggleBorderlessWindowed();
   return 1;
 }
 
@@ -2959,8 +3001,8 @@ static int cmd_unloadmodelanimation(int argc, slib_par_t *params, var_t *retval)
 //
 static int cmd_unloadmodelanimations(int argc, slib_par_t *params, var_t *retval) {
   auto animations = (ModelAnimation *)get_param_int_t(argc, params, 0, 0);
-  auto count = get_param_int(argc, params, 1, 0);
-  UnloadModelAnimations(animations, count);
+  auto animCount = get_param_int(argc, params, 1, 0);
+  UnloadModelAnimations(animations, animCount);
   return 1;
 }
 
@@ -3014,6 +3056,22 @@ static int cmd_unloadsound(int argc, slib_par_t *params, var_t *retval) {
   if (sound_id != -1) {
     UnloadSound(_soundMap.at(sound_id));
     _soundMap.erase(sound_id);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Unload a sound alias (does not deallocate sample data)
+//
+static int cmd_unloadsoundalias(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int alias_id = get_sound_id(argc, params, 0, retval);
+  if (alias_id != -1) {
+    UnloadSoundAlias(_soundMap.at(alias_id));
+    _soundMap.erase(alias_id);
     result = 1;
   } else {
     result = 0;
