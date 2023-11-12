@@ -80,7 +80,8 @@ while (!rl.WindowShouldClose())
     droppedFiles = rl.LoadDroppedFiles()
 
     rem Supports loading .rgs style files (text or binary) and .png style palette images
-    if (rl.IsFileExtension(droppedFiles.paths[0], ".txt.rae")) then
+    if (rl.IsFileExtension(droppedFiles.paths[0], ".rae")) then
+      print "loading dropped file"
       rl.UnloadAutomationEventList(aelist)
       aelist = rl.LoadAutomationEventList(droppedFiles.paths[0])
 
@@ -93,9 +94,10 @@ while (!rl.WindowShouldClose())
       
       reset_player()
       reset_camera()
+    else
+      print "Dropped file is invalid: "; droppedFiles.paths[0]
     endif
-
-    rl.UnloadDroppedFiles(droppedFiles)   ' Unload filepaths from memory
+    'UnloadDroppedFiles called as part of Loaddroppedfiles
   endif
 
   REM Update player
@@ -250,13 +252,13 @@ while (!rl.WindowShouldClose())
     rl.DrawCircle(30, 175, 10, c.MAROON)
     if (((frameCounter/15)%2) == 1) then
       rl.DrawText(rl.TextFormat("RECORDING EVENTS... [%i]", aelist.count), 50, 170, 10, c.MAROON)
-    else if (eventPlaying) then
-      rl.DrawRectangle(10, 160, 290, 30, rl.fade(c.LIME, 0.3))
-      rl.DrawRectangleLines(10, 160, 290, 30, rl.fade(c.DARKGREEN, 0.8))
-      rl.DrawTriangle([20, 155 + 10], [20, 155 + 30], [40, 155 + 20], c.DARKGREEN)
-      if (((frameCounter/15)%2) == 1) then
-        rl.DrawText(rl.TextFormat("PLAYING RECORDED EVENTS... [%i]", currentPlayFrame), 50, 170, 10, c.DARKGREEN)
-      endif
+    endif
+  else if (eventPlaying) then
+    rl.DrawRectangle(10, 160, 290, 30, rl.fade(c.LIME, 0.3))
+    rl.DrawRectangleLines(10, 160, 290, 30, rl.fade(c.DARKGREEN, 0.8))
+    rl.DrawTriangle([20, 155 + 10], [20, 155 + 30], [40, 155 + 20], c.DARKGREEN)
+    if (((frameCounter/15)%2) == 1) then
+      rl.DrawText(rl.TextFormat("PLAYING RECORDED EVENTS... [%i]", currentPlayFrame), 50, 170, 10, c.DARKGREEN)
     endif
   endif
   rl.EndDrawing()

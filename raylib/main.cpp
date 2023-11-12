@@ -819,12 +819,14 @@ static void v_setwave(var_t *var, Wave &wave) {
 }
 
 static void v_setfilepathlist(var_t *var, FilePathList &filePathList) {
-  v_toarray1(var, filePathList.count);
+  map_init(var);
+  v_setint(map_add_var(var, "count", 0), filePathList.count);
+  var_t *v_paths = map_add_var(var, "paths", 0);
+  v_toarray1(v_paths, filePathList.count);
   for (unsigned index = 0; index < filePathList.count; index++) {
-    var_p_t elem = v_elem(var, index);
+    var_p_t elem = v_elem(v_paths, index);
     v_setstr(elem, filePathList.paths[index]);
   }
-  UnloadDirectoryFiles(filePathList);
 }
 
 static AutomationEvent get_param_automationevent(int argc, slib_par_t *params, int n) {

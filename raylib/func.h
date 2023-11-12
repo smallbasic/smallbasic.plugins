@@ -2370,6 +2370,7 @@ static int cmd_loaddirectoryfilesex(int argc, slib_par_t *params, var_t *retval)
 static int cmd_loaddroppedfiles(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = LoadDroppedFiles();
   v_setfilepathlist(retval, fnResult);
+  UnloadDroppedFiles(fnResult);
   return 1;
 }
 

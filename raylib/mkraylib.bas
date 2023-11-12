@@ -198,6 +198,17 @@ func get_result_cast(byref fun)
 end
 
 '
+' When the result is returned in a map and fnResult value should be cleared
+'
+func get_cleanup_fn(byref fun)
+  local result = ""
+  select case lower(trim(fun.name))
+  case "loaddroppedfiles": result = "  UnloadDroppedFiles(fnResult);"
+  end select
+  return result
+end
+
+'
 ' returns whether the function returns a string
 '
 func is_str_return(byref fun)
@@ -417,6 +428,8 @@ sub print_func(byref fun)
     else
       print "  " + get_v_set_name(fun) + "(retval, fnResult);"
     endif
+    local cleanup_fn = get_cleanup_fn(fun)
+    if (len(cleanup_fn) > 0) then print cleanup_fn
   endif
   print "  return 1;"
   print "}"
