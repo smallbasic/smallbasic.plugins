@@ -72,6 +72,9 @@ func get_param_name(byref param)
   case "void *": result = "(void *)get_param_int_t"
   case "const int *": result = "(const int *)get_param_int_t"
   case "filepathlist": result = "get_param_filepathlist"
+  case "automationevent": result = "get_param_automationevent"
+  case "automationeventlist": result = "get_automationeventlist_id"
+  case "automationeventlist *": result = "get_automationeventlist_id"
   case else: throw "unknown param [" + param.type + "]"
   end select
   return result
@@ -101,6 +104,8 @@ func get_map_name(byref param)
   case "sound": result = "_soundMap"
   case "texture2d": result = "_textureMap"
   case "wave": result = "_waveMap"
+  case "automationeventlist": result = "_automationEventListMap"
+  case "automationeventlist *": result = "&_automationEventListMap"
   case else: throw "unknown  map [_" + param.type + "Map]"
   end select
   return result
@@ -158,6 +163,8 @@ func get_v_set_name(byref fun)
   case "int *": result = "v_setint"
   case "void *": result = "v_setint"
   case "filepathlist": result = "v_setfilepathlist"
+  case "automationeventlist": result = "v_setautomationeventlist"
+  case "automationeventlist *": result = "v_setautomationeventlist"
   case else: throw "unknown return [" + fun.returnType + "] "
   end select
   return result
@@ -227,6 +234,8 @@ func is_map_param(type)
          type == "Mesh" || &
          type == "Model" || &
          type == "ModelAnimation" || &
+         type == "AutomationEventList" || &
+         type == "AutomationEventList *" || &
          type == "Music" || &
          type == "RenderTexture2D" || &
          type == "Sound" || &
@@ -357,7 +366,9 @@ sub print_func_map(byref fun)
   if (fun.returnType == "void") then
     print "    " + fun.name + "(" + args + ");"
     if (instr(fun.name, "Unload") == 1) then
-      print "    " + get_map_name(fun.params[0]) + ".erase(" + lower(fun.params[0].name) + "_id);"
+      local map_name = get_map_name(fun.params[0])
+      if (left(map_name, 1) == "&") then map_name = mid(map_name, 2)
+      print "    " + map_name + ".erase(" + lower(fun.params[0].name) + "_id);"
     endif
   else
     print "    auto fnResult = " + get_result_cast(fun) + fun.name + "(" + args + ");"

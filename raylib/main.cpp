@@ -49,6 +49,7 @@ robin_hood::unordered_map<int, RenderTexture2D> _renderMap;
 robin_hood::unordered_map<int, Sound> _soundMap;
 robin_hood::unordered_map<int, Texture2D> _textureMap;
 robin_hood::unordered_map<int, Wave> _waveMap;
+robin_hood::unordered_map<int, AutomationEventList> _automationEventListMap;
 int _nextId = 1;
 
 #define CLS_AUDIOSTREAM 1
@@ -64,6 +65,7 @@ int _nextId = 1;
 #define CLS_SOUNDMAP 12
 #define CLS_TEXTUREMAP 13
 #define CLS_WAVEMAP 14
+#define CLS_AUTOMATIONEVENTLISTMAP 15
 
 PhysicsBody get_physics_body(var_p_t var) {
   PhysicsBody result;
@@ -620,6 +622,20 @@ static int get_sound_id(int argc, slib_par_t *params, int arg, var_t *retval) {
   return result;
 }
 
+static int get_automationeventlist_id(int argc, slib_par_t *params, int arg, var_t *retval) {
+  int result = -1;
+  if (is_param_map(argc, params, arg)) {
+    int id = get_id(params, arg);
+    if (id != -1 && _automationEventListMap.find(id) != _automationEventListMap.end()) {
+      result = id;
+    }
+  }
+  if (result == -1 && retval != nullptr) {
+    error(retval, "AutomationEventList not found");
+  }
+  return result;
+}
+
 static void v_setrect(var_t *var, int width, int height, int id) {
   map_init_id(var, id);
   v_setint(map_add_var(var, "width", 0), width);
@@ -811,6 +827,53 @@ static void v_setfilepathlist(var_t *var, FilePathList &filePathList) {
   UnloadDirectoryFiles(filePathList);
 }
 
+static AutomationEvent get_param_automationevent(int argc, slib_par_t *params, int n) {
+  static AutomationEvent result;
+  if (is_param_map(argc, params, n)) {
+    var_p_t map = params[n].var_p;
+    int position = map_get_int(map, "position", -1);
+    int id = get_automationeventlist_id(argc, params, 0, nullptr);
+    if (position != -1 && id != -1 ) {
+      AutomationEventList *atomationEventList = &_automationEventListMap.at(id);
+      if ((unsigned)position < atomationEventList->count) {
+        result = atomationEventList->events[position];
+      }
+    }
+  }
+  return result;
+}
+
+static void v_setautomationeventlist(var_t *var, AutomationEventList &automationEventList) {
+  int id = ++_nextId;
+  _automationEventListMap[id] = automationEventList;
+
+  map_init_id(var, id, CLS_AUTOMATIONEVENTLISTMAP);
+  v_setint(map_add_var(var, "count", 0), automationEventList.count);
+
+  var_t *v_events = map_add_var(var, "events", 0);
+  v_toarray1(v_events, automationEventList.count);
+  for (unsigned i = 0; i < automationEventList.count; i++) {
+    var_p_t elem = v_elem(v_events, i);
+    map_init_id(elem, id);
+    v_setint(map_add_var(elem, "frame", 0), automationEventList.events[i].frame);
+    v_setint(map_add_var(elem, "type", 0), automationEventList.events[i].type);
+    v_setint(map_add_var(elem, "position", 0), i);
+  }
+}
+
+static int cmd_updateautomationeventlist(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int id = get_automationeventlist_id(argc, params, 0, retval);
+  if (id != -1) {
+    AutomationEventList copiedAtomationEventList = _automationEventListMap.at(id);
+    v_setautomationeventlist(retval, copiedAtomationEventList);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
 #include "proc.h"
 #include "func.h"
 
@@ -859,7 +922,7 @@ static int cmd_updatecamera(int argc, slib_par_t *params, var_t *retval) {
 
 static int cmd_loadmodelanimations(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, NULL);
-  unsigned int animsCount = 0;
+  int animsCount = 0;
   auto anims = LoadModelAnimations(fileName, &animsCount);
   v_setmodel_animation(retval, anims, animsCount);
   RL_FREE(anims);
@@ -1723,6 +1786,7 @@ static FUNC_SIG lib_func[] = {
   {2, 2, "GETPHYSICSSHAPEVERTEX", cmd_getphysicsshapevertex},
   {1, 1, "GETPHYSICSSHAPEVERTICESCOUNT", cmd_getphysicsshapeverticescount},
   {0, 0, "PHYSICSSHAPETYPE", cmd_physicsshapetype},
+  {1, 1, "UPDATEAUTOMATIONEVENTLIST", cmd_updateautomationeventlist},
 };
 
 static FUNC_SIG lib_proc[] = {
@@ -1934,6 +1998,11 @@ SBLIB_API void sblib_free(int cls_id, int id) {
         _waveMap.erase(id);
       }
       break;
+    case CLS_AUTOMATIONEVENTLISTMAP:
+      if (_automationEventListMap.find(id) != _automationEventListMap.end()) {
+        _automationEventListMap.erase(id);
+      }
+      break;
     }
   }
 }
@@ -1993,6 +2062,10 @@ SBLIB_API void sblib_close(void) {
   }
   if (!_waveMap.empty()) {
     TraceLog(LOG_ERROR, "Wave leak detected");
+    _waveMap.clear();
+  }
+  if (!_automationEventListMap.empty()) {
+    TraceLog(LOG_ERROR, "AutomationEventList leak detected");
     _waveMap.clear();
   }
 }

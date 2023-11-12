@@ -337,6 +337,23 @@ static int cmd_encodedatabase64(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Export automation events list as text file
+//
+static int cmd_exportautomationeventlist(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int list_id = get_automationeventlist_id(argc, params, 0, retval);
+  if (list_id != -1) {
+    auto fileName = get_param_str(argc, params, 1, 0);
+    auto fnResult = ExportAutomationEventList(_automationEventListMap.at(list_id), fileName);
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Export data to code (.h), returns true on success
 //
 static int cmd_exportdataascode(int argc, slib_par_t *params, var_t *retval) {
@@ -1133,6 +1150,15 @@ static int cmd_getkeypressed(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Get master volume (listener)
+//
+static int cmd_getmastervolume(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetMasterVolume();
+  v_setreal(retval, fnResult);
+  return 1;
+}
+
+//
 // Compute model bounding box limits (considers all meshes)
 //
 static int cmd_getmodelboundingbox(int argc, slib_par_t *params, var_t *retval) {
@@ -1502,6 +1528,73 @@ static int cmd_getshaderlocationattrib(int argc, slib_par_t *params, var_t *retv
   auto attribName = get_param_str(argc, params, 1, 0);
   auto fnResult = GetShaderLocationAttrib(shader, attribName);
   v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Get (evaluate) spline point: B-Spline
+//
+static int cmd_getsplinepointbasis(int argc, slib_par_t *params, var_t *retval) {
+  auto p1 = get_param_vec2(argc, params, 0);
+  auto p2 = get_param_vec2(argc, params, 1);
+  auto p3 = get_param_vec2(argc, params, 2);
+  auto p4 = get_param_vec2(argc, params, 3);
+  auto t = get_param_num(argc, params, 4, 0);
+  auto fnResult = GetSplinePointBasis(p1, p2, p3, p4, t);
+  v_setvec2(retval, fnResult);
+  return 1;
+}
+
+//
+// Get (evaluate) spline point: Cubic Bezier
+//
+static int cmd_getsplinepointbeziercubic(int argc, slib_par_t *params, var_t *retval) {
+  auto p1 = get_param_vec2(argc, params, 0);
+  auto c2 = get_param_vec2(argc, params, 1);
+  auto c3 = get_param_vec2(argc, params, 2);
+  auto p4 = get_param_vec2(argc, params, 3);
+  auto t = get_param_num(argc, params, 4, 0);
+  auto fnResult = GetSplinePointBezierCubic(p1, c2, c3, p4, t);
+  v_setvec2(retval, fnResult);
+  return 1;
+}
+
+//
+// Get (evaluate) spline point: Quadratic Bezier
+//
+static int cmd_getsplinepointbezierquad(int argc, slib_par_t *params, var_t *retval) {
+  auto p1 = get_param_vec2(argc, params, 0);
+  auto c2 = get_param_vec2(argc, params, 1);
+  auto p3 = get_param_vec2(argc, params, 2);
+  auto t = get_param_num(argc, params, 3, 0);
+  auto fnResult = GetSplinePointBezierQuad(p1, c2, p3, t);
+  v_setvec2(retval, fnResult);
+  return 1;
+}
+
+//
+// Get (evaluate) spline point: Catmull-Rom
+//
+static int cmd_getsplinepointcatmullrom(int argc, slib_par_t *params, var_t *retval) {
+  auto p1 = get_param_vec2(argc, params, 0);
+  auto p2 = get_param_vec2(argc, params, 1);
+  auto p3 = get_param_vec2(argc, params, 2);
+  auto p4 = get_param_vec2(argc, params, 3);
+  auto t = get_param_num(argc, params, 4, 0);
+  auto fnResult = GetSplinePointCatmullRom(p1, p2, p3, p4, t);
+  v_setvec2(retval, fnResult);
+  return 1;
+}
+
+//
+// Get (evaluate) spline point: Linear
+//
+static int cmd_getsplinepointlinear(int argc, slib_par_t *params, var_t *retval) {
+  auto startPos = get_param_vec2(argc, params, 0);
+  auto endPos = get_param_vec2(argc, params, 1);
+  auto t = get_param_num(argc, params, 2, 0);
+  auto fnResult = GetSplinePointLinear(startPos, endPos, t);
+  v_setvec2(retval, fnResult);
   return 1;
 }
 
@@ -2229,6 +2322,16 @@ static int cmd_loadaudiostream(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS
+//
+static int cmd_loadautomationeventlist(int argc, slib_par_t *params, var_t *retval) {
+  auto fileName = get_param_str(argc, params, 0, 0);
+  auto fnResult = LoadAutomationEventList(fileName);
+  v_setautomationeventlist(retval, fnResult);
+  return 1;
+}
+
+//
 // Load all codepoints from a UTF-8 text string, codepoints count returned by parameter
 //
 static int cmd_loadcodepoints(int argc, slib_par_t *params, var_t *retval) {
@@ -2511,6 +2614,18 @@ static int cmd_loadmusicstreamfrommemory(int argc, slib_par_t *params, var_t *re
   auto dataSize = get_param_int(argc, params, 2, 0);
   auto fnResult = LoadMusicStreamFromMemory(fileType, data, dataSize);
   v_setmusic(retval, fnResult);
+  return 1;
+}
+
+//
+// Load random values sequence, no values repeated
+//
+static int cmd_loadrandomsequence(int argc, slib_par_t *params, var_t *retval) {
+  auto count = get_param_int(argc, params, 0, 0);
+  auto min = get_param_int(argc, params, 1, 0);
+  auto max = get_param_int(argc, params, 2, 0);
+  auto fnResult = (var_int_t)LoadRandomSequence(count, min, max);
+  v_setint(retval, fnResult);
   return 1;
 }
 
@@ -2879,7 +2994,7 @@ static int cmd_wavecopy(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if KEY_ESCAPE pressed or Close icon pressed
+// Check if application should close (KEY_ESCAPE pressed or windows close icon clicked)
 //
 static int cmd_windowshouldclose(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = WindowShouldClose();

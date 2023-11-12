@@ -1,10 +1,10 @@
-*Raylib* _MAJOR 4 _MINOR 6 _PATCH 0 4.6-dev
+*Raylib* _MAJOR 5 _MINOR 0 _PATCH 0 5.0
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (580)
+Implemented APIs (604)
 ----------------
 
 | Name    | Description   |
@@ -65,6 +65,7 @@ Implemented APIs (580)
 | sub DrawCircle3D(center, radius, rotationAxis, rotationAngle, color) | Draw a circle in 3D world space |
 | sub DrawCircleGradient(centerX, centerY, radius, color1, color2) | Draw a gradient-filled circle |
 | sub DrawCircleLines(centerX, centerY, radius, color) | Draw circle outline |
+| sub DrawCircleLinesV(center, radius, color) | Draw circle outline (Vector version) |
 | sub DrawCircleSector(center, radius, startAngle, endAngle, segments, color) | Draw a piece of a circle |
 | sub DrawCircleSectorLines(center, radius, startAngle, endAngle, segments, color) | Draw circle sector outline |
 | sub DrawCircleV(center, radius, color) | Draw a color-filled circle (Vector version) |
@@ -82,14 +83,10 @@ Implemented APIs (580)
 | sub DrawGrid(slices, spacing) | Draw a grid (centered at (0, 0, 0)) |
 | sub DrawLine(startPosX, startPosY, endPosX, endPosY, color) | Draw a line |
 | sub DrawLine3D(startPos, endPos, color) | Draw a line in 3D world space |
-| sub DrawLineBezier(startPos, endPos, thick, color) | Draw a line using cubic-bezier curves in-out |
-| sub DrawLineBezierCubic(startPos, endPos, startControlPos, endControlPos, thick, color) | Draw line using cubic bezier curves with 2 control points |
-| sub DrawLineBezierQuad(startPos, endPos, controlPos, thick, color) | Draw line using quadratic bezier curves with a control point |
-| sub DrawLineBSpline(points, pointCount, thick, color) | Draw a B-Spline line, minimum 4 points |
-| sub DrawLineCatmullRom(points, pointCount, thick, color) | Draw a Catmull Rom spline line, minimum 4 points |
-| sub DrawLineEx(startPos, endPos, thick, color) | Draw a line defining thickness |
-| sub DrawLineStrip(points, pointCount, color) | Draw lines sequence |
-| sub DrawLineV(startPos, endPos, color) | Draw a line (Vector version) |
+| sub DrawLineBezier(startPos, endPos, thick, color) | Draw line segment cubic-bezier in-out interpolation |
+| sub DrawLineEx(startPos, endPos, thick, color) | Draw a line (using triangles/quads) |
+| sub DrawLineStrip(points, pointCount, color) | Draw lines sequence (using gl lines) |
+| sub DrawLineV(startPos, endPos, color) | Draw a line (using gl lines) |
 | sub DrawModel(model, position, scale, tint) | Draw a model (with texture if set) |
 | sub DrawModelEx(model, position, rotationAxis, rotationAngle, scale, tint) | Draw a model with extended parameters |
 | sub DrawModelWires(model, position, scale, tint) | Draw a model wires (with texture if set) |
@@ -118,6 +115,16 @@ Implemented APIs (580)
 | sub DrawSphere(centerPos, radius, color) | Draw sphere |
 | sub DrawSphereEx(centerPos, radius, rings, slices, color) | Draw sphere with extended parameters |
 | sub DrawSphereWires(centerPos, radius, rings, slices, color) | Draw sphere wires |
+| sub DrawSplineBasis(points, pointCount, thick, color) | Draw spline: B-Spline, minimum 4 points |
+| sub DrawSplineBezierCubic(points, pointCount, thick, color) | Draw spline: Cubic Bezier, minimum 4 points (2 control points): [p1, c2, c3, p4, c5, c6...] |
+| sub DrawSplineBezierQuadratic(points, pointCount, thick, color) | Draw spline: Quadratic Bezier, minimum 3 points (1 control point): [p1, c2, p3, c4...] |
+| sub DrawSplineCatmullRom(points, pointCount, thick, color) | Draw spline: Catmull-Rom, minimum 4 points |
+| sub DrawSplineLinear(points, pointCount, thick, color) | Draw spline: Linear, minimum 2 points |
+| sub DrawSplineSegmentBasis(p1, p2, p3, p4, thick, color) | Draw spline segment: B-Spline, 4 points |
+| sub DrawSplineSegmentBezierCubic(p1, c2, c3, p4, thick, color) | Draw spline segment: Cubic Bezier, 2 points, 2 control points |
+| sub DrawSplineSegmentBezierQuadratic(p1, c2, p3, thick, color) | Draw spline segment: Quadratic Bezier, 2 points, 1 control point |
+| sub DrawSplineSegmentCatmullRom(p1, p2, p3, p4, thick, color) | Draw spline segment: Catmull-Rom, 4 points |
+| sub DrawSplineSegmentLinear(p1, p2, thick, color) | Draw spline segment: Linear, 2 points |
 | sub DrawText(text, posX, posY, fontSize, color) | Draw text (using default font) |
 | sub DrawTextCodepoint(font, codepoint, position, fontSize, tint) | Draw one character (codepoint) |
 | sub DrawTextCodepoints(font, codepoints, codepointCount, position, fontSize, spacing, tint) | Draw multiple character (codepoint) |
@@ -146,6 +153,7 @@ Implemented APIs (580)
 | sub EndShaderMode() | End custom shader drawing (use default shader) |
 | sub EndTextureMode() | Ends drawing to render texture |
 | sub EndVrStereoMode() | End stereo rendering (requires VR simulator) |
+| func ExportAutomationEventList(list, fileName) | Export automation events list as text file |
 | func ExportDataAsCode(data, dataSize, fileName) | Export data to code (.h), returns true on success |
 | func ExportFontAsCode(font, fileName) | Export font as code file, returns true on success |
 | func ExportImage(image, fileName) | Export image data to file, returns true on success |
@@ -214,6 +222,7 @@ Implemented APIs (580)
 | func GetImageAlphaBorder(image, threshold) | Get image alpha border rectangle |
 | func GetImageColor(image, x, y) | Get image pixel color at (x, y) position |
 | func GetKeyPressed() | Get key pressed (keycode), call it multiple times for keys queued, returns 0 when the queue is empty |
+| func GetMasterVolume() | Get master volume (listener) |
 | func GetModelBoundingBox(model) | Compute model bounding box limits (considers all meshes) |
 | func GetMonitorCount() | Get number of connected monitors |
 | func GetMonitorHeight(monitor) | Get specified monitor height (current video mode used by monitor) |
@@ -253,6 +262,11 @@ Implemented APIs (580)
 | func GetScreenWidth() | Get current screen width |
 | func GetShaderLocation(shader, uniformName) | Get shader uniform location |
 | func GetShaderLocationAttrib(shader, attribName) | Get shader attribute location |
+| func GetSplinePointBasis(p1, p2, p3, p4, t) | Get (evaluate) spline point: B-Spline |
+| func GetSplinePointBezierCubic(p1, c2, c3, p4, t) | Get (evaluate) spline point: Cubic Bezier |
+| func GetSplinePointBezierQuad(p1, c2, p3, t) | Get (evaluate) spline point: Quadratic Bezier |
+| func GetSplinePointCatmullRom(p1, p2, p3, p4, t) | Get (evaluate) spline point: Catmull-Rom |
+| func GetSplinePointLinear(startPos, endPos, t) | Get (evaluate) spline point: Linear |
 | func GetTime() | Get elapsed time in seconds since InitWindow() |
 | func GetTouchPointCount() | Get number of touch points |
 | func GetTouchPointId(index) | Get touch point identifier for given index |
@@ -397,6 +411,7 @@ Implemented APIs (580)
 | func IsWindowResized() | Check if window has been resized last frame |
 | func IsWindowState(flag) | Check if one specific window flag is enabled |
 | func LoadAudioStream(sampleRate, sampleSize, channels) | Load audio stream (to stream raw audio pcm data) |
+| func LoadAutomationEventList(fileName) | Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS |
 | func LoadCodepoints(text, count) | Load all codepoints from a UTF-8 text string, codepoints count returned by parameter |
 | func LoadDirectoryFiles(dirPath) | Load directory filepaths |
 | func LoadDirectoryFilesEx(basePath, filter, scanSubdirs) | Load directory filepaths with extension filtering and recursive directory scan |
@@ -421,6 +436,7 @@ Implemented APIs (580)
 | func LoadModelFromMesh(mesh) | Load model from generated mesh (default material) |
 | func LoadMusicStream(fileName) | Load music stream from file |
 | func LoadMusicStreamFromMemory(fileType, data, dataSize) | Load music stream from data |
+| func LoadRandomSequence(count, min, max) | Load random values sequence, no values repeated |
 | func LoadRenderTexture(width, height) | Load texture for rendering (framebuffer) |
 | func LoadShader(vsFileName, fsFileName) | Load shader from files and bind default locations |
 | func LoadShaderFromMemory(vsCode, fsCode) | Load shader from code strings and bind default locations |
@@ -451,6 +467,7 @@ Implemented APIs (580)
 | func Physicsshapetype() | n/a |
 | func Physicsshatter() | n/a |
 | sub PlayAudioStream(stream) | Play audio stream |
+| sub PlayAutomationEvent(event) | Play a recorded automation event |
 | sub PlayMusicStream(music) | Start music playing |
 | sub PlaySound(sound) | Play a sound |
 | func pollevents() | n/a |
@@ -467,6 +484,8 @@ Implemented APIs (580)
 | sub SetAudioStreamPan(stream, pan) | Set pan for audio stream (0.5 is centered) |
 | sub SetAudioStreamPitch(stream, pitch) | Set pitch for audio stream (1.0 is base level) |
 | sub SetAudioStreamVolume(stream, volume) | Set volume for audio stream (1.0 is max level) |
+| sub SetAutomationEventBaseFrame(frame) | Set automation event internal base frame to start recording |
+| sub SetAutomationEventList(list) | Set automation event list to record to |
 | sub SetClipboardText(text) | Set clipboard text content |
 | sub SetConfigFlags(flags) | Setup init configuration flags (view FLAGS) |
 | sub SetExitKey(key) | Set a custom key to exit program (default is ESC) |
@@ -530,7 +549,9 @@ Implemented APIs (580)
 | sub SetWindowState(flags) | Set window configuration state using flags (only PLATFORM_DESKTOP) |
 | sub SetWindowTitle(title) | Set title for window (only PLATFORM_DESKTOP and PLATFORM_WEB) |
 | sub ShowCursor() | Shows cursor |
+| sub StartAutomationEventRecording() | Start recording automation events (AutomationEventList must be set) |
 | sub StopAudioStream(stream) | Stop audio stream |
+| sub StopAutomationEventRecording() | Stop recording automation events |
 | sub StopMusicStream(music) | Stop music playing |
 | sub StopSound(sound) | Stop playing a sound |
 | sub SwapScreenBuffer() | Swap back buffer with front buffer (screen drawing) |
@@ -551,6 +572,7 @@ Implemented APIs (580)
 | sub ToggleBorderlessWindowed() | Toggle window state: borderless windowed (only PLATFORM_DESKTOP) |
 | sub ToggleFullscreen() | Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP) |
 | sub UnloadAudioStream(stream) | Unload audio stream and free memory |
+| sub UnloadAutomationEventList(list) | Unload automation events list from file |
 | sub UnloadCodepoints(codepoints) | Unload codepoints data from memory |
 | sub UnloadDirectoryFiles(files) | Unload filepaths |
 | sub UnloadDroppedFiles(files) | Unload dropped filepaths |
@@ -565,6 +587,7 @@ Implemented APIs (580)
 | sub UnloadModelAnimation(anim) | Unload animation data |
 | sub UnloadModelAnimations(animations, animCount) | Unload animation array data |
 | sub UnloadMusicStream(music) | Unload music stream |
+| sub UnloadRandomSequence(sequence) | Unload random values sequence |
 | sub UnloadRenderTexture(target) | Unload render texture from GPU memory (VRAM) |
 | sub UnloadShader(shader) | Unload shader from GPU memory (VRAM) |
 | sub UnloadSound(sound) | Unload sound |
@@ -574,6 +597,7 @@ Implemented APIs (580)
 | sub UnloadWave(wave) | Unload wave data |
 | sub UnloadWaveSamples(samples) | Unload samples data loaded with LoadWaveSamples() |
 | sub UpdateAudioStream(stream, data, frameCount) | Update audio stream buffers with data |
+| func updateautomationeventlist() | n/a |
 | sub UpdateCamera(camera, mode) | Update camera position for selected mode |
 | sub UpdateMeshBuffer(mesh, index, data, dataSize, offset) | Update mesh vertex data in GPU for a specific buffer index |
 | sub UpdateModelAnimation(model, anim, frame) | Update model animation pose |
@@ -588,7 +612,7 @@ Implemented APIs (580)
 | func WaveCopy(wave) | Copy a wave to a new wave |
 | sub WaveCrop(wave, initSample, finalSample) | Crop a wave to defined samples range |
 | sub WaveFormat(wave, sampleRate, sampleSize, channels) | Convert wave data to desired format |
-| func WindowShouldClose() | Check if KEY_ESCAPE pressed or Close icon pressed |
+| func WindowShouldClose() | Check if application should close (KEY_ESCAPE pressed or windows close icon clicked) |
 
 Unimplemented APIs
 ----------------

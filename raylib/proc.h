@@ -270,6 +270,17 @@ static int cmd_drawcirclelines(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Draw circle outline (Vector version)
+//
+static int cmd_drawcirclelinesv(int argc, slib_par_t *params, var_t *retval) {
+  auto center = get_param_vec2(argc, params, 0);
+  auto radius = get_param_num(argc, params, 1, 0);
+  auto color = get_param_color(argc, params, 2);
+  DrawCircleLinesV(center, radius, color);
+  return 1;
+}
+
+//
 // Draw a piece of a circle
 //
 static int cmd_drawcirclesector(int argc, slib_par_t *params, var_t *retval) {
@@ -483,7 +494,7 @@ static int cmd_drawline3d(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw a line using cubic-bezier curves in-out
+// Draw line segment cubic-bezier in-out interpolation
 //
 static int cmd_drawlinebezier(int argc, slib_par_t *params, var_t *retval) {
   auto startPos = get_param_vec2(argc, params, 0);
@@ -495,58 +506,7 @@ static int cmd_drawlinebezier(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw line using cubic bezier curves with 2 control points
-//
-static int cmd_drawlinebeziercubic(int argc, slib_par_t *params, var_t *retval) {
-  auto startPos = get_param_vec2(argc, params, 0);
-  auto endPos = get_param_vec2(argc, params, 1);
-  auto startControlPos = get_param_vec2(argc, params, 2);
-  auto endControlPos = get_param_vec2(argc, params, 3);
-  auto thick = get_param_num(argc, params, 4, 0);
-  auto color = get_param_color(argc, params, 5);
-  DrawLineBezierCubic(startPos, endPos, startControlPos, endControlPos, thick, color);
-  return 1;
-}
-
-//
-// Draw line using quadratic bezier curves with a control point
-//
-static int cmd_drawlinebezierquad(int argc, slib_par_t *params, var_t *retval) {
-  auto startPos = get_param_vec2(argc, params, 0);
-  auto endPos = get_param_vec2(argc, params, 1);
-  auto controlPos = get_param_vec2(argc, params, 2);
-  auto thick = get_param_num(argc, params, 3, 0);
-  auto color = get_param_color(argc, params, 4);
-  DrawLineBezierQuad(startPos, endPos, controlPos, thick, color);
-  return 1;
-}
-
-//
-// Draw a B-Spline line, minimum 4 points
-//
-static int cmd_drawlinebspline(int argc, slib_par_t *params, var_t *retval) {
-  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
-  auto pointCount = get_param_int(argc, params, 1, 0);
-  auto thick = get_param_num(argc, params, 2, 0);
-  auto color = get_param_color(argc, params, 3);
-  DrawLineBSpline(points, pointCount, thick, color);
-  return 1;
-}
-
-//
-// Draw a Catmull Rom spline line, minimum 4 points
-//
-static int cmd_drawlinecatmullrom(int argc, slib_par_t *params, var_t *retval) {
-  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
-  auto pointCount = get_param_int(argc, params, 1, 0);
-  auto thick = get_param_num(argc, params, 2, 0);
-  auto color = get_param_color(argc, params, 3);
-  DrawLineCatmullRom(points, pointCount, thick, color);
-  return 1;
-}
-
-//
-// Draw a line defining thickness
+// Draw a line (using triangles/quads)
 //
 static int cmd_drawlineex(int argc, slib_par_t *params, var_t *retval) {
   auto startPos = get_param_vec2(argc, params, 0);
@@ -558,7 +518,7 @@ static int cmd_drawlineex(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw lines sequence
+// Draw lines sequence (using gl lines)
 //
 static int cmd_drawlinestrip(int argc, slib_par_t *params, var_t *retval) {
   auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
@@ -569,7 +529,7 @@ static int cmd_drawlinestrip(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw a line (Vector version)
+// Draw a line (using gl lines)
 //
 static int cmd_drawlinev(int argc, slib_par_t *params, var_t *retval) {
   auto startPos = get_param_vec2(argc, params, 0);
@@ -947,6 +907,133 @@ static int cmd_drawspherewires(int argc, slib_par_t *params, var_t *retval) {
   auto slices = get_param_int(argc, params, 3, 0);
   auto color = get_param_color(argc, params, 4);
   DrawSphereWires(centerPos, radius, rings, slices, color);
+  return 1;
+}
+
+//
+// Draw spline: B-Spline, minimum 4 points
+//
+static int cmd_drawsplinebasis(int argc, slib_par_t *params, var_t *retval) {
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
+  auto pointCount = get_param_int(argc, params, 1, 0);
+  auto thick = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawSplineBasis(points, pointCount, thick, color);
+  return 1;
+}
+
+//
+// Draw spline: Cubic Bezier, minimum 4 points (2 control points): [p1, c2, c3, p4, c5, c6...]
+//
+static int cmd_drawsplinebeziercubic(int argc, slib_par_t *params, var_t *retval) {
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
+  auto pointCount = get_param_int(argc, params, 1, 0);
+  auto thick = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawSplineBezierCubic(points, pointCount, thick, color);
+  return 1;
+}
+
+//
+// Draw spline: Quadratic Bezier, minimum 3 points (1 control point): [p1, c2, p3, c4...]
+//
+static int cmd_drawsplinebezierquadratic(int argc, slib_par_t *params, var_t *retval) {
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
+  auto pointCount = get_param_int(argc, params, 1, 0);
+  auto thick = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawSplineBezierQuadratic(points, pointCount, thick, color);
+  return 1;
+}
+
+//
+// Draw spline: Catmull-Rom, minimum 4 points
+//
+static int cmd_drawsplinecatmullrom(int argc, slib_par_t *params, var_t *retval) {
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
+  auto pointCount = get_param_int(argc, params, 1, 0);
+  auto thick = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawSplineCatmullRom(points, pointCount, thick, color);
+  return 1;
+}
+
+//
+// Draw spline: Linear, minimum 2 points
+//
+static int cmd_drawsplinelinear(int argc, slib_par_t *params, var_t *retval) {
+  auto points = (Vector2 *)get_param_vec2_array(argc, params, 0);
+  auto pointCount = get_param_int(argc, params, 1, 0);
+  auto thick = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawSplineLinear(points, pointCount, thick, color);
+  return 1;
+}
+
+//
+// Draw spline segment: B-Spline, 4 points
+//
+static int cmd_drawsplinesegmentbasis(int argc, slib_par_t *params, var_t *retval) {
+  auto p1 = get_param_vec2(argc, params, 0);
+  auto p2 = get_param_vec2(argc, params, 1);
+  auto p3 = get_param_vec2(argc, params, 2);
+  auto p4 = get_param_vec2(argc, params, 3);
+  auto thick = get_param_num(argc, params, 4, 0);
+  auto color = get_param_color(argc, params, 5);
+  DrawSplineSegmentBasis(p1, p2, p3, p4, thick, color);
+  return 1;
+}
+
+//
+// Draw spline segment: Cubic Bezier, 2 points, 2 control points
+//
+static int cmd_drawsplinesegmentbeziercubic(int argc, slib_par_t *params, var_t *retval) {
+  auto p1 = get_param_vec2(argc, params, 0);
+  auto c2 = get_param_vec2(argc, params, 1);
+  auto c3 = get_param_vec2(argc, params, 2);
+  auto p4 = get_param_vec2(argc, params, 3);
+  auto thick = get_param_num(argc, params, 4, 0);
+  auto color = get_param_color(argc, params, 5);
+  DrawSplineSegmentBezierCubic(p1, c2, c3, p4, thick, color);
+  return 1;
+}
+
+//
+// Draw spline segment: Quadratic Bezier, 2 points, 1 control point
+//
+static int cmd_drawsplinesegmentbezierquadratic(int argc, slib_par_t *params, var_t *retval) {
+  auto p1 = get_param_vec2(argc, params, 0);
+  auto c2 = get_param_vec2(argc, params, 1);
+  auto p3 = get_param_vec2(argc, params, 2);
+  auto thick = get_param_num(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawSplineSegmentBezierQuadratic(p1, c2, p3, thick, color);
+  return 1;
+}
+
+//
+// Draw spline segment: Catmull-Rom, 4 points
+//
+static int cmd_drawsplinesegmentcatmullrom(int argc, slib_par_t *params, var_t *retval) {
+  auto p1 = get_param_vec2(argc, params, 0);
+  auto p2 = get_param_vec2(argc, params, 1);
+  auto p3 = get_param_vec2(argc, params, 2);
+  auto p4 = get_param_vec2(argc, params, 3);
+  auto thick = get_param_num(argc, params, 4, 0);
+  auto color = get_param_color(argc, params, 5);
+  DrawSplineSegmentCatmullRom(p1, p2, p3, p4, thick, color);
+  return 1;
+}
+
+//
+// Draw spline segment: Linear, 2 points
+//
+static int cmd_drawsplinesegmentlinear(int argc, slib_par_t *params, var_t *retval) {
+  auto p1 = get_param_vec2(argc, params, 0);
+  auto p2 = get_param_vec2(argc, params, 1);
+  auto thick = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawSplineSegmentLinear(p1, p2, thick, color);
   return 1;
 }
 
@@ -2129,6 +2216,15 @@ static int cmd_playaudiostream(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Play a recorded automation event
+//
+static int cmd_playautomationevent(int argc, slib_par_t *params, var_t *retval) {
+  auto event = get_param_automationevent(argc, params, 0);
+  PlayAutomationEvent(event);
+  return 1;
+}
+
+//
 // Start music playing
 //
 static int cmd_playmusicstream(int argc, slib_par_t *params, var_t *retval) {
@@ -2285,6 +2381,30 @@ static int cmd_setaudiostreamvolume(int argc, slib_par_t *params, var_t *retval)
   if (stream_id != -1) {
     auto volume = get_param_num(argc, params, 1, 0);
     SetAudioStreamVolume(_audioStream.at(stream_id), volume);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Set automation event internal base frame to start recording
+//
+static int cmd_setautomationeventbaseframe(int argc, slib_par_t *params, var_t *retval) {
+  auto frame = get_param_int(argc, params, 0, 0);
+  SetAutomationEventBaseFrame(frame);
+  return 1;
+}
+
+//
+// Set automation event list to record to
+//
+static int cmd_setautomationeventlist(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int list_id = get_automationeventlist_id(argc, params, 0, retval);
+  if (list_id != -1) {
+    SetAutomationEventList(&_automationEventListMap.at(list_id));
     result = 1;
   } else {
     result = 0;
@@ -2749,6 +2869,14 @@ static int cmd_showcursor(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Start recording automation events (AutomationEventList must be set)
+//
+static int cmd_startautomationeventrecording(int argc, slib_par_t *params, var_t *retval) {
+  StartAutomationEventRecording();
+  return 1;
+}
+
+//
 // Stop audio stream
 //
 static int cmd_stopaudiostream(int argc, slib_par_t *params, var_t *retval) {
@@ -2761,6 +2889,14 @@ static int cmd_stopaudiostream(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
+}
+
+//
+// Stop recording automation events
+//
+static int cmd_stopautomationeventrecording(int argc, slib_par_t *params, var_t *retval) {
+  StopAutomationEventRecording();
+  return 1;
 }
 
 //
@@ -2846,6 +2982,22 @@ static int cmd_unloadaudiostream(int argc, slib_par_t *params, var_t *retval) {
   if (stream_id != -1) {
     UnloadAudioStream(_audioStream.at(stream_id));
     _audioStream.erase(stream_id);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Unload automation events list from file
+//
+static int cmd_unloadautomationeventlist(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int list_id = get_automationeventlist_id(argc, params, 0, retval);
+  if (list_id != -1) {
+    UnloadAutomationEventList(&_automationEventListMap.at(list_id));
+    _automationEventListMap.erase(list_id);
     result = 1;
   } else {
     result = 0;
@@ -3020,6 +3172,15 @@ static int cmd_unloadmusicstream(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
+}
+
+//
+// Unload random values sequence
+//
+static int cmd_unloadrandomsequence(int argc, slib_par_t *params, var_t *retval) {
+  auto sequence = (int *)0;
+  UnloadRandomSequence(sequence);
+  return 1;
 }
 
 //
