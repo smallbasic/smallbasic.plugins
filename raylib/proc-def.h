@@ -229,7 +229,6 @@
   {1, 1, "UNLOADAUTOMATIONEVENTLIST", cmd_unloadautomationeventlist},
   {0, 0, "UNLOADCODEPOINTS", cmd_unloadcodepoints},
   {1, 1, "UNLOADDIRECTORYFILES", cmd_unloaddirectoryfiles},
-  {1, 1, "UNLOADDROPPEDFILES", cmd_unloaddroppedfiles},
   {1, 1, "UNLOADFILEDATA", cmd_unloadfiledata},
   {1, 1, "UNLOADFILETEXT", cmd_unloadfiletext},
   {1, 1, "UNLOADFONT", cmd_unloadfont},

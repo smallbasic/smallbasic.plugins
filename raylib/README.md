@@ -1,4 +1,4 @@
-*Raylib* _MAJOR 5 _MINOR 0 _PATCH 0 5.0
+*Raylib* _MAJOR 5 _MINOR 1 _PATCH 0 5.1-dev
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
@@ -353,6 +353,7 @@ Implemented APIs (604)
 | sub ImageFlipVertical(image) | Flip image vertically |
 | sub ImageFormat(image, newFormat) | Convert image data to desired format |
 | func ImageFromImage(image, rec) | Create an image from another image piece |
+| sub ImageKernelConvolution(image, kernel, kernelSize) | Apply Custom Square image convolution kernel |
 | sub ImageMipmaps(image) | Compute all mipmap levels for a provided image |
 | sub ImageResize(image, newWidth, newHeight) | Resize image (Bicubic scaling algorithm) |
 | sub ImageResizeCanvas(image, newWidth, newHeight, offsetX, offsetY, fill) | Resize canvas and fill with color |
@@ -575,7 +576,6 @@ Implemented APIs (604)
 | sub UnloadAutomationEventList(list) | Unload automation events list from file |
 | sub UnloadCodepoints(codepoints) | Unload codepoints data from memory |
 | sub UnloadDirectoryFiles(files) | Unload filepaths |
-| sub UnloadDroppedFiles(files) | Unload dropped filepaths |
 | sub UnloadFileData(data) | Unload file data allocated by LoadFileData() |
 | sub UnloadFileText(text) | Unload file text data allocated by LoadFileText() |
 | sub UnloadFont(font) | Unload font from GPU memory (VRAM) |

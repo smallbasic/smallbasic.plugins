@@ -293,8 +293,10 @@ func is_internal(name)
           name == "LoadRenderTexture" || &
           name == "LoadShader" || &
           name == "SetShaderValue" || &
+          name == "ImageKernelConvolution" || &
           name == "TextFormat" || &
           name == "TraceLog" || &
+          name == "UnloadDroppedFiles" || &
           name == "UpdateCameraPro" || &
           name == "UpdateCamera" || &
           name == "UpdateTexture")

@@ -876,6 +876,28 @@ static int cmd_updateautomationeventlist(int argc, slib_par_t *params, var_t *re
   return result;
 }
 
+//
+// Apply Custom Square image convolution kernel
+//
+static int cmd_imagekernelconvolution(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int image_id = get_image_id(argc, params, 0, retval);
+  if (image_id != -1 && is_param_array(argc, params, 1)) {
+    var_p_t array = params[1].var_p;
+    int kernelSize = v_asize(array);
+    float *kernel = new float[kernelSize];
+    for (int i = 0; i < kernelSize; i++) {
+      kernel[i] = get_num(v_elem(array, i));
+    }
+    ImageKernelConvolution(&_imageMap.at(image_id), kernel, kernelSize);
+    delete [] kernel;
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
 #include "proc.h"
 #include "func.h"
 
@@ -1793,6 +1815,7 @@ static FUNC_SIG lib_func[] = {
 
 static FUNC_SIG lib_proc[] = {
 #include "proc-def.h"
+  {2, 2, "IMAGEKERNELCONVOLUTION", cmd_imagekernelconvolution},
   {4, 5, "SETSHADERVALUE", cmd_setshadervalue},
   {2, 2, "SETMODELDIFFUSETEXTURE", cmd_setmodeldiffusetexture},
   {4, 4, "SETMODELTRANSFORM", cmd_setmodeltransform},

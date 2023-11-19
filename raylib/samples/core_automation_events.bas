@@ -141,36 +141,29 @@ while (!rl.WindowShouldClose())
 
   if (rl.IsKeyPressed(c.KEY_R)) then
     REM Reset game state
-    player.position.x = 400
-    player.position.y = 280
-    player.speed = 0
-    player.canJump = false
-    camera.target = player.position
-    camera.offset.x = screenWidth/2.0
-    camera.offset.y = screenHeight/2.0
-    camera.rotation = 0.0
-    camera.zoom = 1.0
+    reset_player()
+    reset_camera()
   endif
 
   REM Update camera
   camera.target = player.position
   camera.offset.x = screenWidth/2.0
   camera.offset.y = screenHeight/2.0
-  minX = 1000
-  minY = 1000
-  maxX = -1000
-  maxY = -1000
-
-  for i = 0 to MAX_ENVIRONMENT_ELEMENTS - 1
-    minX = min(element._rect.x, minX)
-    maxX = max(element._rect.x + element._rect.width, maxX)
-    minY = min(element._rect.y, minY)
-    maxY = max(element._rect.y + element._rect.height, maxY)
-  next
-
-  _max = rl.GetWorldToScreen2D([maxX, maxY], camera)
-  _min = rl.GetWorldToScreen2D([minX, minY], camera)
-
+'  minX = 1000
+'  minY = 1000
+'  maxX = -1000
+'  maxY = -1000
+'
+'  for i = 0 to MAX_ENVIRONMENT_ELEMENTS - 1
+'    minX = min(element._rect.x, minX)
+'    maxX = max(element._rect.x + element._rect.width, maxX)
+'    minY = min(element._rect.y, minY)
+'    maxY = max(element._rect.y + element._rect.height, maxY)
+'  next
+'
+'  _max = rl.GetWorldToScreen2D([maxX, maxY], camera)
+'  _min = rl.GetWorldToScreen2D([minX, minY], camera)
+'
 '  if (_max.x < screenWidth) then camera.offset.x = screenWidth - (_max.x - screenWidth/2)
 '  if (_max.y < screenHeight) then camera.offset.y = screenHeight - (_max.y - screenHeight/2)
 '  if (_min.x > 0) then camera.offset.x = screenWidth/2 - _min.x

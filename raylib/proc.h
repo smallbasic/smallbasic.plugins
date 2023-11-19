@@ -3024,15 +3024,6 @@ static int cmd_unloaddirectoryfiles(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
-// Unload dropped filepaths
-//
-static int cmd_unloaddroppedfiles(int argc, slib_par_t *params, var_t *retval) {
-  auto files = get_param_filepathlist(argc, params, 0);
-  UnloadDroppedFiles(files);
-  return 1;
-}
-
-//
 // Unload file data allocated by LoadFileData()
 //
 static int cmd_unloadfiledata(int argc, slib_par_t *params, var_t *retval) {
