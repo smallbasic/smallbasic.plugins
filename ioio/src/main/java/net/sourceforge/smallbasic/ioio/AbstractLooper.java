@@ -10,17 +10,13 @@ import java.util.concurrent.BlockingQueue;
 
 public abstract class AbstractLooper implements IOIOLooper {
   static final String TAG = "AbstractLooper";
-  final BlockingQueue<Consumer<IOIO>> messageQueue;
-  final String connectionType;
-  final Object extra;
-  IOIO ioio;
-  boolean isIncompatible;
-  int pin;
+  protected IOIO ioio;
+  protected boolean isIncompatible;
+  protected int pin;
+  private final BlockingQueue<Consumer<IOIO>> queue;
 
-  public AbstractLooper(BlockingQueue<Consumer<IOIO>> messageQueue, String connectionType, Object extra, int pin) {
-    this.messageQueue = messageQueue;
-    this.connectionType = connectionType;
-    this.extra = extra;
+  public AbstractLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
+    this.queue = queue;
     this.pin = pin;
     this.ioio = null;
     this.isIncompatible = false;
@@ -45,11 +41,10 @@ public abstract class AbstractLooper implements IOIOLooper {
   }
 
   @Override
-  public void loop() throws InterruptedException {
-    Log.i(TAG, "loop entered");
-    if (!messageQueue.isEmpty()) {
+  public void loop() throws InterruptedException, ConnectionLostException {
+    if (!queue.isEmpty()) {
       try {
-        messageQueue.take().invoke(ioio);
+        queue.take().invoke(ioio);
       }
       catch (ConnectionLostException | IncompatibilityException e) {
         throw new RuntimeException(e);

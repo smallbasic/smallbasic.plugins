@@ -8,10 +8,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public abstract class AbstractLooperProvider implements IOIOLooperProvider {
-  static final String TAG = "AbstractLooperProvider";
-  static final BlockingQueue<Consumer<IOIO>> QUEUE = new LinkedBlockingQueue<>();
-  final ConnectionController controller;
-  boolean ready;
+  static final protected String TAG = "AbstractLooperProvider";
+  static final protected BlockingQueue<Consumer<IOIO>> QUEUE = new LinkedBlockingQueue<>();
+  final protected ConnectionController controller;
+  protected boolean ready;
 
   protected AbstractLooperProvider() {
     this.controller = new ConnectionController(this);

@@ -20,17 +20,8 @@ JavaVM *jvm;
 jclass analogInputClass = nullptr;
 jobject analogInput = nullptr;
 
-// void callVoidMethod(jmethodID method, int n) {
-//   env->CallVoidMethod(instance, method, n);
-// }
-
-// jmethodID getMethodID(const char *name, const char *signature) {
-//   return env->GetMethodID(clazz, name, signature);
-// }
-
-// jmethodID getStaticMethodId(const char *name, const char *signature) {
-//   return env->GetStaticMethodID(clazz, name, signature);
-// }
+jclass digitalOutputClass = nullptr;
+jobject digitalOutput = nullptr;
 
 jobject createInstance(jclass clazz) {
   jobject result = nullptr;
@@ -94,8 +85,37 @@ static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
   return result;
 }
 
+static int cmd_opendigitaloutput(int argc, slib_par_t *params, var_t *retval) {
+  int pin = get_param_int(argc, params, 0, 0);
+  int result = 0;
+  if (digitalOutput == nullptr && jvm->AttachCurrentThread((void**)&env, nullptr) == JNI_OK) {
+    digitalOutputClass = env->FindClass("net/sourceforge/smallbasic/ioio/DigitalOutput");
+    digitalOutput = createInstance(digitalOutputClass);
+    if (digitalOutput != nullptr) {
+      jmethodID method = env->GetMethodID(digitalOutputClass, "openOutput", "(I)V");
+      if (method != nullptr) {
+        env->CallVoidMethod(digitalOutput, method, pin);
+        map_init(retval);
+        
+        //v_setint(map_add_var(var, "width", 0), width);
+        //v_setint(map_add_var(var, "height", 0), height);
+        
+        result = 1;
+      } else {
+        env->ExceptionDescribe();
+      }
+    }
+    jvm->DetachCurrentThread();
+  }
+  if (!result) {
+    error(retval, "openDigitalOutput() failed");
+  }
+  return result;
+}
+
 FUNC_SIG lib_func[] = {
   {1, 1, "OPENANALOGINPUT", cmd_openanaloginput},
+  {1, 1, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
 };
 
 FUNC_SIG lib_proc[] = {

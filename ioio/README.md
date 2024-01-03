@@ -12,26 +12,26 @@ ACTION=="add", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b4f", ATT
 ATTRS{idVendor}=="1b4f", ATTRS{idProduct}=="0008", ENV{ID_MM_DEVICE_IGNORE}="1"
 ```
 
-looper: 
-  
+looper:
+
   init
      AnalogInput in = ioio.openAnalogInput(pinNum);
 
   loop:
-     
-     
+
+
 ```
 SB-> openAnalogInput(pin) -> JNI -> JAVA -> (pin)
      service.methods.push(function (ioio) { ioio.openAnalogInput(pin) });
      service.initMethods.push(function (ioio) { ioio.openAnalogInput(pin) });
      returns handle
-     
+
      init:
         initmethods.pop().invoke();
-     
+
      loop
         methods.pop().invoke()
-     
+
 ```
 
 

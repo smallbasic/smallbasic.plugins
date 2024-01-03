@@ -1,4 +1,7 @@
-package net.sourceforge.smallbasic.ioio;
+package net.sourceforge.smallbasic.ioio.input;
+
+import net.sourceforge.smallbasic.ioio.AbstractLooper;
+import net.sourceforge.smallbasic.ioio.Consumer;
 
 import ioio.lib.api.AnalogInput;
 import ioio.lib.api.IOIO;
@@ -8,13 +11,11 @@ import ioio.lib.spi.Log;
 import java.util.concurrent.BlockingQueue;
 
 public class AnalogInputLooper extends AbstractLooper {
+  private static final String TAG = "AnalogInput";
   private AnalogInput analogInput;
 
-  public AnalogInputLooper(BlockingQueue<Consumer<IOIO>> messageQueue,
-                           String connectionType,
-                           Object extra,
-                           int pin) {
-    super(messageQueue, connectionType, extra, pin);
+  public AnalogInputLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
+    super(queue, pin);
     Log.i(TAG, "creating AnalogInputLooper");
   }
 
@@ -23,7 +24,7 @@ public class AnalogInputLooper extends AbstractLooper {
     Log.i(TAG, "setup entered");
     super.setup(ioio);
     try {
-      this.analogInput = ioio.openAnalogInput(pin);
+      analogInput = ioio.openAnalogInput(pin);
     }
     catch (ConnectionLostException e) {
       throw new RuntimeException(e);

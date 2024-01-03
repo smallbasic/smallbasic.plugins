@@ -1,25 +1,27 @@
-package net.sourceforge.smallbasic.ioio;
+package net.sourceforge.smallbasic.ioio.input;
+
+import net.sourceforge.smallbasic.ioio.AbstractLooperProvider;
 
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
 
 public class AnalogInput extends AbstractLooperProvider {
-  private static final String TAG = "AnalogController";
-  private int pin;
+  private static final String TAG = "AnalogInput";
+  private AnalogInputLooper looper;
 
   public AnalogInput() {
     super();
-    Log.i(TAG, "created AnalogController");
+    Log.i(TAG, "created AnalogInput");
   }
 
   @Override
   public IOIOLooper createIOIOLooper(String connectionType, Object extra) {
-    return new AnalogInputLooper(QUEUE, connectionType, extra, pin);
+    return looper;
   }
 
   public void openInput(int pin) {
     Log.i(TAG, "openInput");
-    this.pin = pin;
+    looper = new AnalogInputLooper(QUEUE, pin);
     start();
   }
 }
