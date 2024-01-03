@@ -47,6 +47,11 @@ AC_ARG_WITH(gtk-server,
   [GTK_SERVER="yes"],
   [GTK_SERVER="no"])
 
+AC_ARG_WITH(ioio,
+  [AS_HELP_STRING([--with-ioio], [Build the ioio module])],
+  [IOIO="yes"],
+  [IOIO="no"])
+
 case "${host_os}" in
   *mingw* | *msys*)
     AC_DEFINE(_WIN32, 1, [building for win32])
@@ -95,6 +100,10 @@ if test "${GTK_SERVER}" = "yes"
 then
   BUILD_SUBDIRS="${BUILD_SUBDIRS} gtk-server"
 fi
+if test "${IOIO}" = "yes"
+then
+  BUILD_SUBDIRS="${BUILD_SUBDIRS} ioio"
+fi
 
 AC_SUBST(BUILD_SUBDIRS)
 checkDebugMode
@@ -111,6 +120,7 @@ clipboard/Makefile
 websocket/Makefile
 raylib/Makefile
 mlpack/Makefile
+ioio/Makefile
 gtk-server/Makefile])
 
 AC_OUTPUT
