@@ -1,4 +1,4 @@
-package net.sourceforge.smallbasic.ioio.output;
+package net.sourceforge.smallbasic.ioio;
 
 import net.sourceforge.smallbasic.ioio.AbstractLooper;
 import net.sourceforge.smallbasic.ioio.Consumer;
@@ -12,7 +12,7 @@ import ioio.lib.spi.Log;
 class DigitalOutputLooper extends AbstractLooper {
   private static final String TAG = "DigitalOutput";
   private ioio.lib.api.DigitalOutput output;
-  private boolean value;
+  private volatile boolean value;
 
   public DigitalOutputLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
     super(queue, pin);

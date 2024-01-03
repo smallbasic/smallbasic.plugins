@@ -1,4 +1,4 @@
-package net.sourceforge.smallbasic.ioio.input;
+package net.sourceforge.smallbasic.ioio;
 
 import net.sourceforge.smallbasic.ioio.AbstractLooper;
 import net.sourceforge.smallbasic.ioio.Consumer;

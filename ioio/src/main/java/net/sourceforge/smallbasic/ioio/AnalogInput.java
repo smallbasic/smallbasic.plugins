@@ -1,6 +1,4 @@
-package net.sourceforge.smallbasic.ioio.input;
-
-import net.sourceforge.smallbasic.ioio.AbstractLooperProvider;
+package net.sourceforge.smallbasic.ioio;
 
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
@@ -19,7 +17,7 @@ public class AnalogInput extends AbstractLooperProvider {
     return looper;
   }
 
-  public void openInput(int pin) {
+  public void open(int pin) {
     Log.i(TAG, "openInput");
     looper = new AnalogInputLooper(QUEUE, pin);
     start();

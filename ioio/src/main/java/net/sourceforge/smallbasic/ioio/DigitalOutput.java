@@ -1,6 +1,4 @@
-package net.sourceforge.smallbasic.ioio.output;
-
-import net.sourceforge.smallbasic.ioio.AbstractLooperProvider;
+package net.sourceforge.smallbasic.ioio;
 
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
@@ -14,8 +12,9 @@ public class DigitalOutput extends AbstractLooperProvider {
     Log.i(TAG, "created DigitalOutput");
   }
 
-  public void setValue(boolean value) {
-    outputLooper.setValue(value);
+  public void close() {
+    stop();
+    outputLooper = null;
   }
 
   @Override
@@ -23,9 +22,13 @@ public class DigitalOutput extends AbstractLooperProvider {
     return outputLooper;
   }
 
-  public void openOutput(int pin) {
+  public void open(int pin) {
     Log.i(TAG, "openOutput");
     outputLooper = new DigitalOutputLooper(QUEUE, pin);
     start();
+  }
+
+  public void setValue(boolean value) {
+    outputLooper.setValue(value);
   }
 }

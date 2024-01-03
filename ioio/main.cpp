@@ -3,7 +3,7 @@
 // This program is distributed under the terms of the GPL v2.0 or later
 // Download the GNU Public License (GPL) from www.gnu.org
 //
-// Copyright(C) 2020 Chris Warren-Smith
+// Copyright(C) 2024 Chris Warren-Smith
 
 #include "config.h"
 #include "include/var.h"
@@ -38,6 +38,83 @@ jobject createInstance(jclass clazz) {
   return result;
 }
 
+int invokeIV(jclass clazz, jobject instance, const char *name, int value) {
+  int result = 0;
+  if (instance != nullptr) {
+    jmethodID method = env->GetMethodID(clazz, name, "(I)V");
+    if (method != nullptr) {
+      env->CallVoidMethod(instance, method, value);
+      result = 1;
+    } else {
+      env->ExceptionDescribe();
+    }
+  }
+  return result;
+}
+
+int invokeOpen(jclass clazz, jobject instance, int pin) {
+  return invokeIV(clazz, instance, "open", pin);
+}
+
+static void cmd_digital_output_write(var_s *self, var_s *retval) {
+  int value = 0;
+  if (digitalOutput != nullptr && jvm->AttachCurrentThread((void**)&env, nullptr) == JNI_OK) {
+    invokeIV(digitalOutputClass, digitalOutput, "write", value);
+    jvm->DetachCurrentThread();
+  }
+}
+
+static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
+  int pin = get_param_int(argc, params, 0, 0);
+  int result = 0;
+  if (analogInput == nullptr && jvm->AttachCurrentThread((void**)&env, nullptr) == JNI_OK) {
+    analogInputClass = env->FindClass("net/sourceforge/smallbasic/ioio/AnalogInput");
+    analogInput = createInstance(analogInputClass);
+    result = invokeOpen(analogInputClass, analogInput, pin);
+    jvm->DetachCurrentThread();
+  }
+  if (!result) {
+    error(retval, "openAnalogInput() failed");
+  }
+  return result;
+}
+
+static int cmd_opendigitaloutput(int argc, slib_par_t *params, var_t *retval) {
+  int pin = get_param_int(argc, params, 0, 0);
+  int result = 0;
+  if (digitalOutput == nullptr && jvm->AttachCurrentThread((void**)&env, nullptr) == JNI_OK) {
+    digitalOutputClass = env->FindClass("net/sourceforge/smallbasic/ioio/DigitalOutput");
+    digitalOutput = createInstance(digitalOutputClass);
+    if (digitalOutput != nullptr) {
+      result = invokeOpen(digitalOutputClass, digitalOutput, pin);
+    }
+    jvm->DetachCurrentThread();
+  }
+  if (!result) {
+    error(retval, "openDigitalOutput() failed");
+  } else {
+    map_init(retval);
+    v_create_func(retval, "write", cmd_digital_output_write);
+  }
+  return result;
+}
+
+FUNC_SIG lib_func[] = {
+  {1, 1, "OPENANALOGINPUT", cmd_openanaloginput},
+  {1, 1, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
+};
+
+FUNC_SIG lib_proc[] = {
+};
+
+SBLIB_API int sblib_proc_count() {
+  return (sizeof(lib_proc) / sizeof(lib_proc[0]));
+}
+
+SBLIB_API int sblib_func_count() {
+  return (sizeof(lib_func) / sizeof(lib_func[0]));
+}
+
 int sblib_init(const char *sourceFile) {
   JavaVMInitArgs vm_args;
   JavaVMOption options[2];
@@ -61,72 +138,4 @@ void sblib_close(void) {
   env = nullptr;
   jvm = nullptr;
 }
-
-static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
-  int pin = get_param_int(argc, params, 0, 0);
-  int result = 0;
-  if (analogInput == nullptr && jvm->AttachCurrentThread((void**)&env, nullptr) == JNI_OK) {
-    analogInputClass = env->FindClass("net/sourceforge/smallbasic/ioio/AnalogInput");
-    analogInput = createInstance(analogInputClass);
-    if (analogInput != nullptr) {
-      jmethodID method = env->GetMethodID(analogInputClass, "openInput", "(I)V");
-      if (method != nullptr) {
-        env->CallVoidMethod(analogInput, method, pin);
-        result = 1;
-      } else {
-        env->ExceptionDescribe();
-      }
-    }
-    jvm->DetachCurrentThread();
-  }
-  if (!result) {
-    error(retval, "openAnalogInput() failed");
-  }
-  return result;
-}
-
-static int cmd_opendigitaloutput(int argc, slib_par_t *params, var_t *retval) {
-  int pin = get_param_int(argc, params, 0, 0);
-  int result = 0;
-  if (digitalOutput == nullptr && jvm->AttachCurrentThread((void**)&env, nullptr) == JNI_OK) {
-    digitalOutputClass = env->FindClass("net/sourceforge/smallbasic/ioio/DigitalOutput");
-    digitalOutput = createInstance(digitalOutputClass);
-    if (digitalOutput != nullptr) {
-      jmethodID method = env->GetMethodID(digitalOutputClass, "openOutput", "(I)V");
-      if (method != nullptr) {
-        env->CallVoidMethod(digitalOutput, method, pin);
-        map_init(retval);
-        
-        //v_setint(map_add_var(var, "width", 0), width);
-        //v_setint(map_add_var(var, "height", 0), height);
-        
-        result = 1;
-      } else {
-        env->ExceptionDescribe();
-      }
-    }
-    jvm->DetachCurrentThread();
-  }
-  if (!result) {
-    error(retval, "openDigitalOutput() failed");
-  }
-  return result;
-}
-
-FUNC_SIG lib_func[] = {
-  {1, 1, "OPENANALOGINPUT", cmd_openanaloginput},
-  {1, 1, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
-};
-
-FUNC_SIG lib_proc[] = {
-};
-
-SBLIB_API int sblib_proc_count() {
-  return (sizeof(lib_proc) / sizeof(lib_proc[0]));
-}
-
-SBLIB_API int sblib_func_count() {
-  return (sizeof(lib_func) / sizeof(lib_func[0]));
-}
-
 
