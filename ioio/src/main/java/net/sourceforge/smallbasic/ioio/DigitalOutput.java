@@ -23,12 +23,13 @@ public class DigitalOutput extends AbstractLooperProvider {
   }
 
   public void open(int pin) {
-    Log.i(TAG, "openOutput");
+    Log.i(TAG, "open");
     outputLooper = new DigitalOutputLooper(QUEUE, pin);
     start();
   }
 
-  public void setValue(boolean value) {
-    outputLooper.setValue(value);
+  public void write(int value) {
+    System.err.println("WRITE ! write = " + value);
+    outputLooper.setValue(value == 1);
   }
 }

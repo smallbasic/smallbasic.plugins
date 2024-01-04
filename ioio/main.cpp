@@ -17,84 +17,91 @@
 
 JNIEnv *env;
 JavaVM *jvm;
-jclass analogInputClass = nullptr;
-jobject analogInput = nullptr;
 
-jclass digitalOutputClass = nullptr;
-jobject digitalOutput = nullptr;
+struct IOClass {
+  IOClass(): _clazz(nullptr), _instance(nullptr) {}
 
-jobject createInstance(jclass clazz) {
-  jobject result = nullptr;
-  if (clazz == nullptr) {
-    env->ExceptionDescribe();
-  } else {
-    jmethodID constructor = env->GetMethodID(clazz, "<init>", "()V");
-    if (constructor == nullptr) {
-      env->ExceptionDescribe();
+  bool create(const char *path) {
+    bool result;
+    if (_instance != nullptr) {
+      // error: already constructed
+      result = false;
     } else {
-      result = env->NewObject(clazz, constructor);
+      _clazz = env->FindClass(path);
+      if (_clazz == nullptr) {
+        env->ExceptionDescribe();
+      } else {
+        jmethodID constructor = env->GetMethodID(_clazz, "<init>", "()V");
+        if (constructor == nullptr) {
+          env->ExceptionDescribe();
+        } else {
+          _instance = env->NewObject(_clazz, constructor);
+        }
+      }
+      result = _instance != nullptr;
     }
+    return result;
   }
-  return result;
-}
 
-int invokeIV(jclass clazz, jobject instance, const char *name, int value) {
-  int result = 0;
-  if (instance != nullptr) {
-    jmethodID method = env->GetMethodID(clazz, name, "(I)V");
-    if (method != nullptr) {
-      env->CallVoidMethod(instance, method, value);
-      result = 1;
-    } else {
-      env->ExceptionDescribe();
+  bool invoke(const char *name, int value) {
+    bool result = false;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, name, "(I)V");
+      if (method != nullptr) {
+        env->CallVoidMethod(_instance, method, value);
+        result = true;
+      } else {
+        env->ExceptionDescribe();
+      }
     }
+    return result;
   }
-  return result;
-}
 
-int invokeOpen(jclass clazz, jobject instance, int pin) {
-  return invokeIV(clazz, instance, "open", pin);
-}
+  bool open(int pin) {
+    return invoke("open", pin);
+  }
+  
+  bool write(int value) {
+    return invoke("write", value);
+  }
+  
+  private:
+  jclass _clazz;
+  jobject _instance;
+};
+
+IOClass analogInput;
+IOClass digitalOutput;
 
 static void cmd_digital_output_write(var_s *self, var_s *retval) {
-  int value = 0;
-  if (digitalOutput != nullptr && jvm->AttachCurrentThread((void**)&env, nullptr) == JNI_OK) {
-    invokeIV(digitalOutputClass, digitalOutput, "write", value);
-    jvm->DetachCurrentThread();
-  }
+  static int value = !value;
+  digitalOutput.write(value);
 }
 
 static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
+  int result;
   int pin = get_param_int(argc, params, 0, 0);
-  int result = 0;
-  if (analogInput == nullptr && jvm->AttachCurrentThread((void**)&env, nullptr) == JNI_OK) {
-    analogInputClass = env->FindClass("net/sourceforge/smallbasic/ioio/AnalogInput");
-    analogInput = createInstance(analogInputClass);
-    result = invokeOpen(analogInputClass, analogInput, pin);
-    jvm->DetachCurrentThread();
-  }
-  if (!result) {
+  if (analogInput.create("net/sourceforge/smallbasic/ioio/AnalogInput") &&
+      analogInput.open(pin)) {
+    result = 1;
+  } else {
     error(retval, "openAnalogInput() failed");
+    result = 0;
   }
   return result;
 }
 
 static int cmd_opendigitaloutput(int argc, slib_par_t *params, var_t *retval) {
+  int result;
   int pin = get_param_int(argc, params, 0, 0);
-  int result = 0;
-  if (digitalOutput == nullptr && jvm->AttachCurrentThread((void**)&env, nullptr) == JNI_OK) {
-    digitalOutputClass = env->FindClass("net/sourceforge/smallbasic/ioio/DigitalOutput");
-    digitalOutput = createInstance(digitalOutputClass);
-    if (digitalOutput != nullptr) {
-      result = invokeOpen(digitalOutputClass, digitalOutput, pin);
-    }
-    jvm->DetachCurrentThread();
-  }
-  if (!result) {
-    error(retval, "openDigitalOutput() failed");
-  } else {
+  if (digitalOutput.create("net/sourceforge/smallbasic/ioio/DigitalOutput") &&
+      digitalOutput.open(pin)) {
     map_init(retval);
     v_create_func(retval, "write", cmd_digital_output_write);
+    result = 1;
+  } else {
+    error(retval, "openDigitalOutput() failed");
+    result = 0;
   }
   return result;
 }
@@ -124,17 +131,17 @@ int sblib_init(const char *sourceFile) {
   vm_args.nOptions = 2;
   vm_args.options = options;
   vm_args.ignoreUnrecognized = 0;
-  int result = (JNI_CreateJavaVM(&jvm, (void **)&env, &vm_args) == JNI_OK);
+  int result = (JNI_CreateJavaVM(&jvm, (void **)&env, &vm_args) == JNI_OK &&
+                jvm->AttachCurrentThread((void **)&env, nullptr) == JNI_OK);
   if (!result) {
-    fprintf(stderr, "Unable to create JVM\n");
+    fprintf(stderr, "Failed to create JVM\n");
   }
   return result;
 }
 
 void sblib_close(void) {
+  jvm->DetachCurrentThread();
   jvm->DestroyJavaVM();
-  analogInputClass = nullptr;
-  analogInput = nullptr;
   env = nullptr;
   jvm = nullptr;
 }

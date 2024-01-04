@@ -6,10 +6,12 @@ class DigitalOutputTest {
   public static void main(String[] args) throws InterruptedException {
     DigitalOutput output = new DigitalOutput();
     output.open(IOIO.LED_PIN);
-    boolean value = true;
+    System.err.println("done open");
+    int value = 1;
     while (true) {
-      output.setValue(value);
-      value = !value;
+      System.err.println("Setting LED " + value);
+      output.write(value);
+      value = value == 1 ? 0 : 1;
       Thread.sleep(1000);
     }
   }
