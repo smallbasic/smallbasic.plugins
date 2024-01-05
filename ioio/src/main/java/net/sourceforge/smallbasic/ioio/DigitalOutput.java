@@ -29,7 +29,6 @@ public class DigitalOutput extends AbstractLooperProvider {
   }
 
   public void write(int value) {
-    System.err.println("WRITE ! write = " + value);
     outputLooper.setValue(value == 1);
   }
 }

@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <jni.h>
 #include <pthread.h>
+#include "robin-hood-hashing/src/include/robin_hood.h"
 
 JNIEnv *env;
 JavaVM *jvm;
@@ -21,10 +22,15 @@ JavaVM *jvm;
 struct IOClass {
   IOClass(): _clazz(nullptr), _instance(nullptr) {}
 
+  virtual ~IOClass() {
+    _clazz = nullptr;
+    _instance = nullptr;
+  }
+
   bool create(const char *path) {
     bool result;
     if (_instance != nullptr) {
-      // error: already constructed
+      // error when already constructed
       result = false;
     } else {
       _clazz = env->FindClass(path);
@@ -43,48 +49,75 @@ struct IOClass {
     return result;
   }
 
-  bool invoke(const char *name, int value) {
+  bool invokeIV(const char *name, int value) {
     bool result = false;
     if (_instance != nullptr) {
       jmethodID method = env->GetMethodID(_clazz, name, "(I)V");
       if (method != nullptr) {
         env->CallVoidMethod(_instance, method, value);
-        result = true;
-      } else {
+      }
+      auto exc = env->ExceptionOccurred();
+      if (exc) {
         env->ExceptionDescribe();
+        env->ExceptionClear();
+      } else {
+        result = (method != nullptr);
       }
     }
     return result;
   }
 
   bool open(int pin) {
-    return invoke("open", pin);
+    return invokeIV("open", pin);
   }
-  
+
   bool write(int value) {
-    return invoke("write", value);
+    return invokeIV("write", value);
   }
-  
+
   private:
   jclass _clazz;
   jobject _instance;
 };
 
-IOClass analogInput;
-IOClass digitalOutput;
+#define CLS_IOCLASS 1
+robin_hood::unordered_map<int, IOClass> _ioClassMap;
+int _nextId = 1;
 
-static void cmd_digital_output_write(var_s *self, var_s *retval) {
-  static int value = !value;
-  digitalOutput.write(value);
+static int get_io_class_id(var_s *map) {
+  int result = -1;
+  if (is_map(map)) {
+    int id = map->v.m.id;
+    if (id != -1 && _ioClassMap.find(id) != _ioClassMap.end()) {
+      result = id;
+    }
+  }
+  return result;
+}
+
+int value = 0;
+static void cmd_digital_output_write(var_s *map, var_s *retval) {
+  value = !value;
+  int id = get_io_class_id(map);
+  if (id != -1) {
+    _ioClassMap.at(id).write(value);
+  } else {
+    error(retval, "IOClass not found");
+  }
 }
 
 static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int pin = get_param_int(argc, params, 0, 0);
-  if (analogInput.create("net/sourceforge/smallbasic/ioio/AnalogInput") &&
-      analogInput.open(pin)) {
+  int id = ++_nextId;
+  IOClass &input = _ioClassMap[id];
+  if (input.create("net/sourceforge/smallbasic/ioio/AnalogInput") &&
+      input.open(pin)) {
+    map_init_id(retval, id, CLS_IOCLASS);
+    //v_create_func(retval, "write", cmd_digital_output_write);
     result = 1;
   } else {
+    _ioClassMap.erase(id);
     error(retval, "openAnalogInput() failed");
     result = 0;
   }
@@ -94,12 +127,15 @@ static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_opendigitaloutput(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int pin = get_param_int(argc, params, 0, 0);
-  if (digitalOutput.create("net/sourceforge/smallbasic/ioio/DigitalOutput") &&
-      digitalOutput.open(pin)) {
-    map_init(retval);
+  int id = ++_nextId;
+  IOClass &output = _ioClassMap[id];
+  if (output.create("net/sourceforge/smallbasic/ioio/DigitalOutput") &&
+      output.open(pin)) {
+    map_init_id(retval, id, CLS_IOCLASS);
     v_create_func(retval, "write", cmd_digital_output_write);
     result = 1;
   } else {
+    _ioClassMap.erase(id);
     error(retval, "openDigitalOutput() failed");
     result = 0;
   }
@@ -126,7 +162,10 @@ int sblib_init(const char *sourceFile) {
   JavaVMInitArgs vm_args;
   JavaVMOption options[2];
   options[0].optionString = (char *)"-Djava.class.path=./target/ioio-1.0-jar-with-dependencies.jar";
-  options[1].optionString = (char *)"-Dioio.SerialPorts=ACM0";
+  options[1].optionString = (char *)"-Dioio.SerialPorts=IOIO0";
+  //options[2].optionString = "-Xdebug";
+  //options[3].optionString = "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=y";
+  //options[2].optionString = (char *)"-Xcheck:jni";
   vm_args.version = JNI_VERSION_1_8;
   vm_args.nOptions = 2;
   vm_args.options = options;
@@ -139,9 +178,24 @@ int sblib_init(const char *sourceFile) {
   return result;
 }
 
+SBLIB_API void sblib_free(int cls_id, int id) {
+  if (id != -1) {
+    switch (cls_id) {
+    case CLS_IOCLASS:
+      _ioClassMap.erase(id);
+      break;
+    }
+  }
+}
+
 void sblib_close(void) {
+  if (!_ioClassMap.empty()) {
+    fprintf(stderr, "IOClass leak detected\n");
+    _ioClassMap.clear();
+  }
   jvm->DetachCurrentThread();
-  jvm->DestroyJavaVM();
+  // hangs
+  //jvm->DestroyJavaVM();
   env = nullptr;
   jvm = nullptr;
 }

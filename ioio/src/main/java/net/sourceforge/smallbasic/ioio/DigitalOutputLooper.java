@@ -16,7 +16,7 @@ class DigitalOutputLooper extends AbstractLooper {
 
   public DigitalOutputLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
     super(queue, pin);
-    Log.i(TAG, "creating AnalogInputLooper");
+    Log.i(TAG, "creating DigitalOutputLooper");
   }
 
   @Override

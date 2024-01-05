@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import ioio.lib.spi.Log;
 import purejavacomm.CommPort;
 import purejavacomm.CommPortIdentifier;
 import purejavacomm.NoSuchPortException;
@@ -49,6 +50,7 @@ class SerialPortIOIOConnection implements IOIOConnection {
   private SerialPort serialPort_;
   private InputStream inputStream_;
   private OutputStream outputStream_;
+  public static final String TAG = "SerialPortIOIOConnection";
 
   public SerialPortIOIOConnection(String name) {
     name_ = name;
@@ -78,11 +80,14 @@ class SerialPortIOIOConnection implements IOIOConnection {
           }
         }
       } catch (NoSuchPortException e) {
+        Log.d(TAG, e.toString(), e);
         try {
           Thread.sleep(1000);
         } catch (InterruptedException e1) {
+          Log.d(TAG, e1.toString(), e1);
         }
       } catch (Exception e) {
+        Log.d(TAG, e.toString(), e);
         if (serialPort_ != null) {
           serialPort_.close();
         }
