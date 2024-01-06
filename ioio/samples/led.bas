@@ -5,7 +5,7 @@ out = ioio.openDigitalOutput(0)
 value = false
 for i = 0 to 5
   print "setting LED "+ value
-  out.write()
+  out.write(value)
   value = !value
   delay 1000
 next  

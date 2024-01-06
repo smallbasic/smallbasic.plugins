@@ -81,43 +81,49 @@ struct IOClass {
 };
 
 #define CLS_IOCLASS 1
-robin_hood::unordered_map<int, IOClass> _ioClassMap;
+robin_hood::unordered_map<int, IOClass> _classMap;
 int _nextId = 1;
 
 static int get_io_class_id(var_s *map) {
   int result = -1;
   if (is_map(map)) {
     int id = map->v.m.id;
-    if (id != -1 && _ioClassMap.find(id) != _ioClassMap.end()) {
+    if (id != -1 && _classMap.find(id) != _classMap.end()) {
       result = id;
     }
   }
   return result;
 }
 
-int value = 0;
-static void cmd_digital_output_write(var_s *map, var_s *retval) {
-  value = !value;
-  int id = get_io_class_id(map);
-  if (id != -1) {
-    _ioClassMap.at(id).write(value);
+static int cmd_digital_output_write(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
+  int result = 0;
+  if (param_count == 1) {
+    int id = get_io_class_id(self);
+    if (id != -1) {
+      int value = get_param_int(param_count, params, 0, 0);
+      _classMap.at(id).write(value);
+      result = 1;
+    } else {
+      error(retval, "IOClass not found");
+    }
   } else {
-    error(retval, "IOClass not found");
+    error(retval, "Missing value argument");
   }
+  return result;
 }
 
 static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int pin = get_param_int(argc, params, 0, 0);
   int id = ++_nextId;
-  IOClass &input = _ioClassMap[id];
+  IOClass &input = _classMap[id];
   if (input.create("net/sourceforge/smallbasic/ioio/AnalogInput") &&
       input.open(pin)) {
     map_init_id(retval, id, CLS_IOCLASS);
     //v_create_func(retval, "write", cmd_digital_output_write);
     result = 1;
   } else {
-    _ioClassMap.erase(id);
+    _classMap.erase(id);
     error(retval, "openAnalogInput() failed");
     result = 0;
   }
@@ -128,14 +134,14 @@ static int cmd_opendigitaloutput(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int pin = get_param_int(argc, params, 0, 0);
   int id = ++_nextId;
-  IOClass &output = _ioClassMap[id];
+  IOClass &output = _classMap[id];
   if (output.create("net/sourceforge/smallbasic/ioio/DigitalOutput") &&
       output.open(pin)) {
     map_init_id(retval, id, CLS_IOCLASS);
     v_create_func(retval, "write", cmd_digital_output_write);
     result = 1;
   } else {
-    _ioClassMap.erase(id);
+    _classMap.erase(id);
     error(retval, "openDigitalOutput() failed");
     result = 0;
   }
@@ -182,16 +188,16 @@ SBLIB_API void sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
     case CLS_IOCLASS:
-      _ioClassMap.erase(id);
+      _classMap.erase(id);
       break;
     }
   }
 }
 
 void sblib_close(void) {
-  if (!_ioClassMap.empty()) {
+  if (!_classMap.empty()) {
     fprintf(stderr, "IOClass leak detected\n");
-    _ioClassMap.clear();
+    _classMap.clear();
   }
   jvm->DetachCurrentThread();
   // hangs

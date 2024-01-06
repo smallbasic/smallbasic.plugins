@@ -581,10 +581,11 @@ const char *format_text(int argc, slib_par_t *params, int param) {
   return buffer;
 }
 
-void v_create_func(var_p_t map, const char *name, method cb) {
+void v_create_func(var_p_t map, const char *name, callback mcb) {
   var_p_t v_func = map_add_var(map, name, 0);
   v_func->type = V_FUNC;
-  v_func->v.fn.cb = cb;
+  v_func->v.fn.cb = nullptr;
+  v_func->v.fn.mcb = mcb;
   v_func->v.fn.id = map->v.m.id;
 }
 
