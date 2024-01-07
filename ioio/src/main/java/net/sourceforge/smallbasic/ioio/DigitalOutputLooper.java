@@ -1,8 +1,5 @@
 package net.sourceforge.smallbasic.ioio;
 
-import net.sourceforge.smallbasic.ioio.AbstractLooper;
-import net.sourceforge.smallbasic.ioio.Consumer;
-
 import java.util.concurrent.BlockingQueue;
 
 import ioio.lib.api.IOIO;

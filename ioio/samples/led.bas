@@ -1,7 +1,13 @@
 import ioio
 
 out = ioio.openDigitalOutput(0)
+
+print "wait for connect"
+out.waitForConnect()
+print "ready"
+
 while !out.isReady()
+  print "actually.. not ready"
   delay 1000
 wend
 

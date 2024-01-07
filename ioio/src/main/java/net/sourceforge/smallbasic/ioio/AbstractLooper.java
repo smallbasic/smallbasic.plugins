@@ -1,12 +1,12 @@
 package net.sourceforge.smallbasic.ioio;
 
+import java.util.concurrent.BlockingQueue;
+
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.api.exception.IncompatibilityException;
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
-
-import java.util.concurrent.BlockingQueue;
 
 public abstract class AbstractLooper implements IOIOLooper {
   static final String TAG = "AbstractLooper";
