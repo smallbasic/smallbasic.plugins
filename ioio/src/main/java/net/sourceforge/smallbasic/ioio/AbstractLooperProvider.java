@@ -20,23 +20,23 @@ public abstract class AbstractLooperProvider implements IOIOLooperProvider {
   }
 
   public void beginBatch() {
-    putMethod(IOIO::beginBatch);
+    invoke(IOIO::beginBatch);
   }
 
   public void disconnect() {
-    putMethod(IOIO::disconnect);
+    invoke(IOIO::disconnect);
   }
 
   public void endBatch() {
-    putMethod(IOIO::endBatch);
+    invoke(IOIO::endBatch);
   }
 
   public void hardReset() {
-    putMethod(IOIO::hardReset);
+    invoke(IOIO::hardReset);
   }
 
   public void softReset() {
-    putMethod(IOIO::softReset);
+    invoke(IOIO::softReset);
   }
 
   public void stop() {
@@ -45,15 +45,15 @@ public abstract class AbstractLooperProvider implements IOIOLooperProvider {
   }
 
   public void sync() {
-    putMethod(IOIO::sync);
+    invoke(IOIO::sync);
   }
 
   public void waitForConnect() {
-    putMethod(IOIO::waitForConnect);
+    invoke(IOIO::waitForConnect);
   }
 
   public void waitForDisconnect() {
-    putMethod(IOIO::waitForDisconnect);
+    invoke(IOIO::waitForDisconnect);
   }
 
   protected void start() {
@@ -61,7 +61,7 @@ public abstract class AbstractLooperProvider implements IOIOLooperProvider {
     this.ready = true;
   }
 
-  private void putMethod(Consumer<IOIO> consumer) {
+  private void invoke(Consumer<IOIO> consumer) {
     final CountDownLatch latch = new CountDownLatch(1);
     try {
       if (this.ready) {

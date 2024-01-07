@@ -175,6 +175,62 @@ static int get_io_class_id(var_s *map, var_s *retval) {
   return result;
 }
 
+static int cmd_begin_batch(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
+  int result = 0;
+  if (param_count != 0) {
+    error(retval, METHOD_BEGIN_BATCH, 0);
+  } else {
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      _classMap.at(id).beginBatch();
+      result = 1;
+    }
+  }
+  return result;
+}
+
+static int cmd_disconnect(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
+  int result = 0;
+  if (param_count != 0) {
+    error(retval, METHOD_DISCONNECT, 0);
+  } else {
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      _classMap.at(id).disconnect();
+      result = 1;
+    }
+  }
+  return result;
+}
+
+static int cmd_end_batch(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
+  int result = 0;
+  if (param_count != 0) {
+    error(retval, METHOD_END_BATCH, 0);
+  } else {
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      _classMap.at(id).endBatch();
+      result = 1;
+    }
+  }
+  return result;
+}
+
+static int cmd_hard_reset(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
+  int result = 0;
+  if (param_count != 0) {
+    error(retval, METHOD_HARD_RESET, 0);
+  } else {
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      _classMap.at(id).hardReset();
+      result = 1;
+    }
+  }
+  return result;
+}
+
 static int cmd_is_ready(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
   int result = 0;
   if (param_count != 0) {
@@ -183,6 +239,34 @@ static int cmd_is_ready(var_s *self, int param_count, slib_par_t *params, var_s 
     int id = get_io_class_id(self, retval);
     if (id != -1) {
       v_setint(retval, _classMap.at(id).isReady());
+      result = 1;
+    }
+  }
+  return result;
+}
+
+static int cmd_soft_reset(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
+  int result = 0;
+  if (param_count != 0) {
+    error(retval, METHOD_SOFT_RESET, 0);
+  } else {
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      _classMap.at(id).softReset();
+      result = 1;
+    }
+  }
+  return result;
+}
+
+static int cmd_sync(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
+  int result = 0;
+  if (param_count != 0) {
+    error(retval, METHOD_SYNC, 0);
+  } else {
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      _classMap.at(id).sync();
       result = 1;
     }
   }
@@ -203,6 +287,19 @@ static int cmd_wait_for_connect(var_s *self, int param_count, slib_par_t *params
   return result;
 }
 
+static int cmd_wait_for_disconnect(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
+  int result = 0;
+  if (param_count != 0) {
+    error(retval, METHOD_WAIT_FOR_DISCONNECT, 0);
+  } else {
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      _classMap.at(id).waitForDisconnect();
+      result = 1;
+    }
+  }
+  return result;
+}
 
 static int cmd_digital_output_write(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
   int result = 0;
@@ -221,8 +318,15 @@ static int cmd_digital_output_write(var_s *self, int param_count, slib_par_t *pa
 
 static void create_io_class(var_t *map, int id) {
   map_init_id(map, id, CLASS_IOCLASS);
-  v_create_callback(map, METHOD_WRITE, cmd_digital_output_write);
+  v_create_callback(map, METHOD_BEGIN_BATCH, cmd_begin_batch);
+  v_create_callback(map, METHOD_DISCONNECT, cmd_disconnect);
+  v_create_callback(map, METHOD_END_BATCH, cmd_end_batch);
+  v_create_callback(map, METHOD_HARD_RESET, cmd_hard_reset);
   v_create_callback(map, METHOD_READY, cmd_is_ready);
+  v_create_callback(map, METHOD_SOFT_RESET, cmd_soft_reset);
+  v_create_callback(map, METHOD_SYNC, cmd_sync);
+  v_create_callback(map, METHOD_WAIT_FOR_CONNECT, cmd_wait_for_connect);
+  v_create_callback(map, METHOD_WAIT_FOR_DISCONNECT, cmd_wait_for_disconnect);
 }
 
 static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
@@ -251,7 +355,7 @@ static int cmd_opendigitaloutput(int argc, slib_par_t *params, var_t *retval) {
   if (output.create(CLASS_DIGITAL_INPUT) &&
       output.open(pin)) {
     create_io_class(retval, id);
-    v_create_callback(retval, METHOD_WAIT_FOR_CONNECT, cmd_wait_for_connect);
+    v_create_callback(retval, METHOD_WRITE, cmd_digital_output_write);
     result = 1;
   } else {
     _classMap.erase(id);
@@ -266,8 +370,7 @@ FUNC_SIG lib_func[] = {
   {1, 1, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
 };
 
-FUNC_SIG lib_proc[] = {
-};
+FUNC_SIG lib_proc[] = {};
 
 SBLIB_API int sblib_proc_count() {
   return (sizeof(lib_proc) / sizeof(lib_proc[0]));
