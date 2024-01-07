@@ -18,6 +18,14 @@
 
 JNIEnv *env;
 JavaVM *jvm;
+int nextId = 1;
+
+#define CLASS_DIGITAL_INPUT "net/sourceforge/smallbasic/ioio/DigitalOutput"
+#define CLASS_ANALOG_INPUT "net/sourceforge/smallbasic/ioio/AnalogInput"
+#define CLASS_IOCLASS 1
+#define METHOD_OPEN  "open"
+#define METHOD_READY "isReady"
+#define METHOD_WRITE "write"
 
 struct IOClass {
   IOClass(): _clazz(nullptr), _instance(nullptr) {}
@@ -49,6 +57,15 @@ struct IOClass {
     return result;
   }
 
+  bool checkException() {
+    auto exc = env->ExceptionOccurred();
+    if (exc) {
+      env->ExceptionDescribe();
+      env->ExceptionClear();
+    }
+    return exc;
+  }
+
   bool invokeIV(const char *name, int value) {
     bool result = false;
     if (_instance != nullptr) {
@@ -56,23 +73,35 @@ struct IOClass {
       if (method != nullptr) {
         env->CallVoidMethod(_instance, method, value);
       }
-      auto exc = env->ExceptionOccurred();
-      if (exc) {
-        env->ExceptionDescribe();
-        env->ExceptionClear();
-      } else {
+      if (!checkException()) {
         result = (method != nullptr);
       }
     }
     return result;
   }
 
+  int invokeI(const char *name) {
+    int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, name, "()I");
+      if (method != nullptr) {
+        result = env->CallIntMethod(_instance, method);
+      }
+      checkException();
+    }
+    return result;
+  }
+
   bool open(int pin) {
-    return invokeIV("open", pin);
+    return invokeIV(METHOD_OPEN, pin);
+  }
+
+  int isReady() {
+    return invokeI(METHOD_READY);
   }
 
   bool write(int value) {
-    return invokeIV("write", value);
+    return invokeIV(METHOD_WRITE, value);
   }
 
   private:
@@ -80,11 +109,9 @@ struct IOClass {
   jobject _instance;
 };
 
-#define CLS_IOCLASS 1
 robin_hood::unordered_map<int, IOClass> _classMap;
-int _nextId = 1;
 
-static int get_io_class_id(var_s *map) {
+static int get_io_class_id(var_s *map, var_s *retval) {
   int result = -1;
   if (is_map(map)) {
     int id = map->v.m.id;
@@ -92,22 +119,37 @@ static int get_io_class_id(var_s *map) {
       result = id;
     }
   }
+  if (result == -1) {
+    error(retval, "IOClass not found");
+  }
+  return result;
+}
+
+static int cmd_digital_output_is_ready(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
+  int result = 0;
+  if (param_count != 0) {
+    error(retval, METHOD_READY, 0);
+  } else {
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      v_setint(retval, _classMap.at(id).isReady());
+      result = 1;
+    }
+  }
   return result;
 }
 
 static int cmd_digital_output_write(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
   int result = 0;
-  if (param_count == 1) {
-    int id = get_io_class_id(self);
+  if (param_count != 1) {
+    error(retval, METHOD_WRITE, 1);
+  } else {
+    int id = get_io_class_id(self, retval);
     if (id != -1) {
       int value = get_param_int(param_count, params, 0, 0);
       _classMap.at(id).write(value);
       result = 1;
-    } else {
-      error(retval, "IOClass not found");
     }
-  } else {
-    error(retval, "Missing value argument");
   }
   return result;
 }
@@ -115,11 +157,11 @@ static int cmd_digital_output_write(var_s *self, int param_count, slib_par_t *pa
 static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int pin = get_param_int(argc, params, 0, 0);
-  int id = ++_nextId;
+  int id = ++nextId;
   IOClass &input = _classMap[id];
-  if (input.create("net/sourceforge/smallbasic/ioio/AnalogInput") &&
+  if (input.create(CLASS_ANALOG_INPUT) &&
       input.open(pin)) {
-    map_init_id(retval, id, CLS_IOCLASS);
+    map_init_id(retval, id, CLASS_IOCLASS);
     //v_create_func(retval, "write", cmd_digital_output_write);
     result = 1;
   } else {
@@ -133,12 +175,13 @@ static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_opendigitaloutput(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int pin = get_param_int(argc, params, 0, 0);
-  int id = ++_nextId;
+  int id = ++nextId;
   IOClass &output = _classMap[id];
-  if (output.create("net/sourceforge/smallbasic/ioio/DigitalOutput") &&
+  if (output.create(CLASS_DIGITAL_INPUT) &&
       output.open(pin)) {
-    map_init_id(retval, id, CLS_IOCLASS);
-    v_create_func(retval, "write", cmd_digital_output_write);
+    map_init_id(retval, id, CLASS_IOCLASS);
+    v_create_callback(retval, METHOD_READY, cmd_digital_output_is_ready);
+    v_create_callback(retval, METHOD_WRITE, cmd_digital_output_write);
     result = 1;
   } else {
     _classMap.erase(id);
@@ -187,7 +230,7 @@ int sblib_init(const char *sourceFile) {
 SBLIB_API void sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
-    case CLS_IOCLASS:
+    case CLASS_IOCLASS:
       _classMap.erase(id);
       break;
     }
@@ -200,7 +243,7 @@ void sblib_close(void) {
     _classMap.clear();
   }
   jvm->DetachCurrentThread();
-  // hangs
+  // calling this hangs
   //jvm->DestroyJavaVM();
   env = nullptr;
   jvm = nullptr;

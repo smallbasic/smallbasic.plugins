@@ -501,7 +501,14 @@ int v_strlen(const var_t *v);
  *
  * setup a method on the map using the given name
  */
-void v_create_func(var_p_t map, const char *name, callback cb);
+void v_create_func(var_p_t map, const char *name, method cb);
+
+/**
+ * @ingroup var
+ *
+ * creates a callback method
+ */
+void v_create_callback(var_p_t map, const char *name, callback cb);
 
 #if defined(__cplusplus)
 }

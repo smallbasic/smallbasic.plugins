@@ -22,6 +22,10 @@ public class DigitalOutput extends AbstractLooperProvider {
     return outputLooper;
   }
 
+  public int isReady() {
+    return outputLooper.isReady() ? 1 : 0;
+  }
+
   public void open(int pin) {
     Log.i(TAG, "open");
     outputLooper = new DigitalOutputLooper(QUEUE, pin);
