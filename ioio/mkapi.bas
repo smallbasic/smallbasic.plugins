@@ -5,6 +5,8 @@ rem
 tload "api.json", s, 1
 api = array(s)
 
+baseApi = ["beginBatch", "disconnect", "endBatch", "hardReset", "softReset", "sync", "waitForConnect", "waitForDisconnect"]
+
 func get_method_name(method)
   local result
 
@@ -32,11 +34,19 @@ sub generate_command(objName, method)
   local uname = upper(method.name)
   local param_count = iff(method.arg == "void", 0, 1)
   local invoke = get_method_name(method)
+  local cmd_name, err_name
+  if (isstring(objName)) then
+    cmd_name = lower(objName) + "_" + lname
+    err_name = objName + "." + method.name
+  else
+    cmd_name = lname
+    err_name = method.name
+  endif
 
-  print "static int cmd_" + lower(objName) + "_" + lname + "(var_s *self, int argc, slib_par_t *arg, var_s *retval) {"
+  print "static int cmd_" + cmd_name + "(var_s *self, int argc, slib_par_t *arg, var_s *retval) {"
   print "  int result = 0;"
   print "  if (argc != " + param_count + ") {"
-  print "    error(retval, \"" + objName + "." + method.name + "\", " + param_count + ");"
+  print "    error(retval, \"" + err_name + "\", " + param_count + ");"
   print "  } else {"
   print "    int id = get_io_class_id(self, retval);"
   print "    if (id != -1) {"
@@ -70,6 +80,9 @@ sub generate_constructor(byref obj)
   for method in obj.methods
      print "  v_create_callback(map, \"" + method.name + "\", cmd_" + lower(obj.name) + "_" + lower(method.name) + ");"
   next
+  for s in baseApi
+    print "  v_create_callback(map, \"" + s + "\", cmd_" + lower(s) + ");"
+  next
   print "}"
   print
 end
@@ -78,6 +91,13 @@ for obj in api
   for method in obj.methods
     generate_command(obj.name, method)
   next
+next
+
+for s in baseApi
+  method.name = s
+  method.rtn = "void"
+  method.arg = "void"  
+  generate_command(0, method)
 next
 
 for obj in api
