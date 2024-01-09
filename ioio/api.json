@@ -1,0 +1,23 @@
+[{
+  "name": "CapSense",
+  "methods" : [{
+    "name": "read",
+    "rtn": "float",
+    "arg": "void"
+  }, {
+    "name": "waitOver",
+    "rtn": "void",
+    "arg": "float"
+  }]
+},{
+  "name": "DigitalInput",
+  "methods": [{
+    "name": "read",
+    "rtn": "boolean",
+    "arg": "void"
+  },{
+    "name": "waitForValue",
+    "rtn": "void",
+    "arg": "boolean"
+  }]
+}]

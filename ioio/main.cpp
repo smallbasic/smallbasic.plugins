@@ -74,85 +74,108 @@ struct IOClass {
     return exc;
   }
 
-  bool invokeIV(const char *name, int value) {
-    bool result = false;
+  // float foo(void)
+  int invokeFloatVoid(const char *name, var_s *retval) {
+    int result = 0;
+    return result;
+  }
+  
+  // int foo(void)
+  int invokeIntVoid(const char *name, var_s *retval) {
+    int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, name, "()I");
+      int value = 0;
+      if (method != nullptr) {
+        value = env->CallIntMethod(_instance, method);
+      }
+      if (!checkException()) {
+        v_setint(retval, value);
+        result = 1;
+      }
+    }
+    return result;
+  }
+
+  // void foo(float)
+  int invokeVoidFloat(const char *name, var_num_t value, var_s *retval) {
+    int result = 0;
+    return result;
+  }
+  
+  // void foo(int)
+  int invokeVoidInt(const char *name, int value, var_s *) {
+    int result = 0;
     if (_instance != nullptr) {
       jmethodID method = env->GetMethodID(_clazz, name, "(I)V");
       if (method != nullptr) {
         env->CallVoidMethod(_instance, method, value);
       }
       if (!checkException()) {
-        result = (method != nullptr);
+        result = 1;
       }
     }
     return result;
   }
 
-  int invokeI(const char *name) {
+  // void foo(void)
+  int invokeVoidVoid(const char *name, var_s *) {
     int result = 0;
-    if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "()I");
-      if (method != nullptr) {
-        result = env->CallIntMethod(_instance, method);
-      }
-      checkException();
-    }
-    return result;
-  }
-
-  void invokeV(const char *name) {
     if (_instance != nullptr) {
       jmethodID method = env->GetMethodID(_clazz, name, "()V");
       if (method != nullptr) {
         env->CallVoidMethod(_instance, method);
       }
-      checkException();
+      if (!checkException()) {
+        result = 1;
+      }
     }
+    return result;
   }
 
-  int isReady() {
-    return invokeI(METHOD_READY);
-  }
+  // int isReady() {
+  //   return invokeI(METHOD_READY);
+  // }
 
   bool open(int pin) {
-    return invokeIV(METHOD_OPEN, pin);
+    return 1;//invokeIV(METHOD_OPEN, pin);
   }
 
-  void beginBatch() {
-    invokeV(METHOD_BEGIN_BATCH);
-  }
+  // void beginBatch() {
+  //   invokeV(METHOD_BEGIN_BATCH);
+  // }
 
-  void endBatch() {
-    invokeV(METHOD_END_BATCH);
-  }
+  // void endBatch() {
+  //   invokeV(METHOD_END_BATCH);
+  // }
 
-  void disconnect() {
-    invokeV(METHOD_DISCONNECT);
-  }
+  // void disconnect() {
+  //   invokeV(METHOD_DISCONNECT);
+  // }
 
-  void hardReset() {
-    invokeV(METHOD_HARD_RESET);
-  }
+  // void hardReset() {
+  //   invokeV(METHOD_HARD_RESET);
+  // }
 
-  void softReset() {
-    invokeV(METHOD_SOFT_RESET);
-  }
+  // void softReset() {
+  //   invokeV(METHOD_SOFT_RESET);
+  // }
 
-  void sync() {
-    invokeV(METHOD_SYNC);
-  }
+  // void sync() {
+  //   invokeV(METHOD_SYNC);
+  // }
 
-  void waitForConnect() {
-    invokeV(METHOD_WAIT_FOR_CONNECT);
-  }
+  // void waitForConnect() {
+  //   invokeV(METHOD_WAIT_FOR_CONNECT);
+  // }
 
-  void waitForDisconnect() {
-    invokeV(METHOD_WAIT_FOR_DISCONNECT);
-  }
+  // void waitForDisconnect() {
+  //   invokeV(METHOD_WAIT_FOR_DISCONNECT);
+  // }
 
-  bool write(int value) {
-    return invokeIV(METHOD_WRITE, value);
-  }
+  // bool write(int value) {
+  //   return invokeIV(METHOD_WRITE, value);
+  // }
 
   private:
   jclass _clazz;
@@ -175,6 +198,9 @@ static int get_io_class_id(var_s *map, var_s *retval) {
   return result;
 }
 
+#include "api.h"
+
+/*
 static int cmd_begin_batch(var_s *self, int param_count, slib_par_t *params, var_s *retval) {
   int result = 0;
   if (param_count != 0) {
@@ -315,18 +341,18 @@ static int cmd_digital_output_write(var_s *self, int param_count, slib_par_t *pa
   }
   return result;
 }
-
+*/
 static void create_io_class(var_t *map, int id) {
   map_init_id(map, id, CLASS_IOCLASS);
-  v_create_callback(map, METHOD_BEGIN_BATCH, cmd_begin_batch);
-  v_create_callback(map, METHOD_DISCONNECT, cmd_disconnect);
-  v_create_callback(map, METHOD_END_BATCH, cmd_end_batch);
-  v_create_callback(map, METHOD_HARD_RESET, cmd_hard_reset);
-  v_create_callback(map, METHOD_READY, cmd_is_ready);
-  v_create_callback(map, METHOD_SOFT_RESET, cmd_soft_reset);
-  v_create_callback(map, METHOD_SYNC, cmd_sync);
-  v_create_callback(map, METHOD_WAIT_FOR_CONNECT, cmd_wait_for_connect);
-  v_create_callback(map, METHOD_WAIT_FOR_DISCONNECT, cmd_wait_for_disconnect);
+  //  v_create_callback(map, METHOD_BEGIN_BATCH, cmd_begin_batch);
+  //  v_create_callback(map, METHOD_DISCONNECT, cmd_disconnect);
+  //  v_create_callback(map, METHOD_END_BATCH, cmd_end_batch);
+  //  v_create_callback(map, METHOD_HARD_RESET, cmd_hard_reset);
+  //  v_create_callback(map, METHOD_READY, cmd_is_ready);
+  //  v_create_callback(map, METHOD_SOFT_RESET, cmd_soft_reset);
+  //  v_create_callback(map, METHOD_SYNC, cmd_sync);
+  //  v_create_callback(map, METHOD_WAIT_FOR_CONNECT, cmd_wait_for_connect);
+  //  v_create_callback(map, METHOD_WAIT_FOR_DISCONNECT, cmd_wait_for_disconnect);
 }
 
 static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
@@ -355,7 +381,7 @@ static int cmd_opendigitaloutput(int argc, slib_par_t *params, var_t *retval) {
   if (output.create(CLASS_DIGITAL_INPUT) &&
       output.open(pin)) {
     create_io_class(retval, id);
-    v_create_callback(retval, METHOD_WRITE, cmd_digital_output_write);
+    //v_create_callback(retval, METHOD_WRITE, cmd_digital_output_write);
     result = 1;
   } else {
     _classMap.erase(id);
