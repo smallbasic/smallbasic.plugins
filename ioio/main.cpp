@@ -20,11 +20,11 @@ JNIEnv *env;
 JavaVM *jvm;
 int nextId = 1;
 
-#define CLASS_ANALOG_INPUT "net/sourceforge/smallbasic/ioio/AnalogInput"
-#define CLASS_DIGITAL_INPUT "net/sourceforge/smallbasic/ioio/DigitalInput"
-#define CLASS_DIGITAL_OUTPUT "net/sourceforge/smallbasic/ioio/DigitalOutput"
-#define CLASS_PULSE_INPUT "net/sourceforge/smallbasic/ioio/PulseInput"
-#define CLASS_PWM_OUTPUT "net/sourceforge/smallbasic/ioio/PwmOutput"
+#define CLASS_ANALOGINPUT "net/sourceforge/smallbasic/ioio/AnalogInput"
+#define CLASS_DIGITALINPUT "net/sourceforge/smallbasic/ioio/DigitalInput"
+#define CLASS_DIGITALOUTPUT "net/sourceforge/smallbasic/ioio/DigitalOutput"
+#define CLASS_PULSEINPUT "net/sourceforge/smallbasic/ioio/PulseInput"
+#define CLASS_PWMOUTPUT "net/sourceforge/smallbasic/ioio/PwmOutput"
 #define CLASS_CAPSENSE "net/sourceforge/smallbasic/ioio/Capsense"
 #define CLASS_IOCLASS 1
 
@@ -153,121 +153,13 @@ static int get_io_class_id(var_s *map, var_s *retval) {
 
 #include "api.h"
 
-static int cmd_openanaloginput(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int pin = get_param_int(argc, params, 0, 0);
-  int id = ++nextId;
-  IOClass &input = _classMap[id];
-  if (input.create(CLASS_ANALOG_INPUT) &&
-      input.open(pin, retval)) {
-    map_init_id(retval, id, CLASS_IOCLASS);
-    create_analoginput(retval);
-    result = 1;
-  } else {
-    _classMap.erase(id);
-    error(retval, "openAnalogInput() failed");
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_opencapsense(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int pin = get_param_int(argc, params, 0, 0);
-  int id = ++nextId;
-  IOClass &output = _classMap[id];
-  if (output.create(CLASS_CAPSENSE) &&
-      output.open(pin, retval)) {
-    map_init_id(retval, id, CLASS_IOCLASS);
-    create_capsense(retval);
-    result = 1;
-  } else {
-    _classMap.erase(id);
-    error(retval, "openCapsense() failed");
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_opendigitalinput(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int pin = get_param_int(argc, params, 0, 0);
-  int id = ++nextId;
-  IOClass &output = _classMap[id];
-  if (output.create(CLASS_DIGITAL_INPUT) &&
-      output.open(pin, retval)) {
-    map_init_id(retval, id, CLASS_IOCLASS);
-    create_digitalinput(retval);
-    result = 1;
-  } else {
-    _classMap.erase(id);
-    error(retval, "openDigitalInput() failed");
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_opendigitaloutput(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int pin = get_param_int(argc, params, 0, 0);
-  int id = ++nextId;
-  IOClass &output = _classMap[id];
-  if (output.create(CLASS_DIGITAL_OUTPUT) &&
-      output.open(pin, retval)) {
-    map_init_id(retval, id, CLASS_IOCLASS);
-    create_digitaloutput(retval);
-    result = 1;
-  } else {
-    _classMap.erase(id);
-    error(retval, "openDigitalOutput() failed");
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_openpulseinput(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int pin = get_param_int(argc, params, 0, 0);
-  int id = ++nextId;
-  IOClass &output = _classMap[id];
-  if (output.create(CLASS_PULSE_INPUT) &&
-      output.open(pin, retval)) {
-    map_init_id(retval, id, CLASS_IOCLASS);
-    create_pulseinput(retval);
-    result = 1;
-  } else {
-    _classMap.erase(id);
-    error(retval, "openPulseInput() failed");
-    result = 0;
-  }
-  return result;
-}
-
-static int cmd_openpwmoutput(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int pin = get_param_int(argc, params, 0, 0);
-  int id = ++nextId;
-  IOClass &output = _classMap[id];
-  if (output.create(CLASS_PWM_OUTPUT) &&
-      output.open(pin, retval)) {
-    map_init_id(retval, id, CLASS_IOCLASS);
-    create_pwmoutput(retval);
-    result = 1;
-  } else {
-    _classMap.erase(id);
-    error(retval, "openPwmOutput() failed");
-    result = 0;
-  }
-  return result;
-}
-
 FUNC_SIG lib_func[] = {
-  {1, 1, "OPENANALOGINPUT", cmd_openanaloginput},
-  {1, 1, "OPENCAPSENSE", cmd_opencapsense},
-  {1, 1, "OPENDIGITALINPUT", cmd_opendigitalinput},
-  {1, 1, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
-  {1, 1, "OPENPULSEINPUT", cmd_openpulseinput},
-  {1, 1, "OPENPWMOUTPUT", cmd_openpwmoutput},
+  {1, 2, "OPENANALOGINPUT", cmd_openanaloginput},
+  {1, 2, "OPENCAPSENSE", cmd_opencapsense},
+  {1, 2, "OPENDIGITALINPUT", cmd_opendigitalinput},
+  {1, 2, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
+  {1, 2, "OPENPULSEINPUT", cmd_openpulseinput},
+  {1, 2, "OPENPWMOUTPUT", cmd_openpwmoutput},
 };
 
 FUNC_SIG lib_proc[] = {};

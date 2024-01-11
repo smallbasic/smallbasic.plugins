@@ -25,6 +25,7 @@ lib_LTLIBRARIES = libioio.la
 libioio_la_SOURCES = ../include/param.cpp ../include/hashmap.cpp ../include/apiexec.cpp main.cpp $(generated)
 libioio_la_LDFLAGS = -module -rpath '$(libdir)' @PLATFORM_LDFLAGS@ -L/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server -ljvm
 
-$(generated): api.json mkapi.bas
+$(generated): api.json mkapi.bas mkdoc.bas
 	$(sbasic) mkapi.bas > $@
+	$(sbasic) mkdoc.bas > README.md
 	@touch main.cpp

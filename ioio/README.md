@@ -1,55 +1,101 @@
-## Links
+# IOIO for SmallBASIC
 
-https://github.com/ytai/ioio/wiki
-https://github.com/ytai/ioio/blob/master/applications/HelloIOIOService/src/main/java/ioio/examples/hello_service/HelloIOIOService.java
-https://github.com/ytai/ioio/wiki/IOIOLib-Core-API
+see: https://github.com/ytai/ioio/wiki
 
+## AnalogInput
 
-## Setup
+This interface represents AnalogInput functionality, providing methods to obtain analog input readings and buffered samples.
 
-/etc/udev/rules.d/50-ioio.rules
+`io = openAnalogInput(pin [, 1])`
 
-```
-ACTION=="add", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b4f", ATTRS{idProduct}=="0008", SYMLINK+="IOIO%n", MODE="666"
-ATTRS{idVendor}=="1b4f", ATTRS{idProduct}=="0008", ENV{ID_MM_DEVICE_IGNORE}="1"
-```
+| Name    | Description   |
+|---------|---------------|
+|float getVoltage(void)|Gets the analog input reading, as an absolute voltage in Volt units.|
+|float getVoltageSync(void)|This is very similar to getVoltage(), but will wait for a new sample to arrive before returning.|
+|float getReference(void)|Gets the maximum value against which read() values are scaled.|
+|float read(void)|Gets the analog input reading, as a scaled real value between 0 and 1.|
+|float readSync(void)|This is very similar to read(), but will wait for a new sample to arrive before returning.|
+|void setBuffer(int)|Initializes or destroys an internal buffer, used for queuing sampled data.|
+|int getOverflowCount(void)|Gets the number of samples that have been dropped as a result of overflow.|
+|int available(void)|Gets the number of samples currently in the buffer. Reading that many samples is guaranteed not to block.|
+|float readBuffered(void)|Read a sample from the internal buffer. This method will block until at least one sample is available.|
+|float getVoltageBuffered(void)|Read a sample from the internal buffer. This method will block until at least one sample is available.|
+|float getSampleRate(void)|Gets the sample rate used for obtaining buffered samples.|
 
-## Investigating connection issues
+## PulseInput
 
-When you plug an IOIO-OTG board into a USB port on your Linux machine, you can check which serial port has been 
-assigned to the device by using various commands and tools. Here are a few methods:
+This interface represents PulseInput functionality, providing methods for pulse and frequency measurements.
 
-## Check dmesg Logs:
+`io = openPulseInput(pin [, 1])`
 
-Open a terminal and run the following command to view the kernel logs:
+| Name    | Description   |
+|---------|---------------|
+|float getDuration(void)|Gets the pulse duration in case of pulse measurement mode, or the period in case of frequency mode.|
+|float getDurationSync(void)|This is very similar to getDuration(), but will wait for a new sample to arrive before returning.|
+|float getDurationBuffered(void)|Reads a single measurement from the queue. If the queue is empty, will block until more data arrives.|
+|float waitPulseGetDuration(void)|@deprecated Please use getDurationBuffered() instead.|
+|float getFrequency(void)|Gets the momentary frequency of the measured signal. When scaling is used, this is compensated for here.|
+|float getFrequencySync(void)|This is very similar to getFrequency(), but will wait for a new sample to arrive before returning.|
 
-```
-dmesg | tail
-```
+## DigitalInput
 
-Look for lines related to the connected USB device. The assigned serial port might be mentioned in the logs.
+This interface represents DigitalInput functionality, providing methods to read digital input pin values and wait for specific logical levels.
 
-## Use lsusb
+`io = openDigitalInput(pin [, 1])`
 
-Use lsusb to list the connected USB devices and note the device ID.
+| Name    | Description   |
+|---------|---------------|
+|int read(void)|Read the value sensed on the pin. May block for a few milliseconds if called right after creation of the instance.|
+|void waitForValue(int)|Block until a desired logical level is sensed. The calling thread can be interrupted for aborting this operation.|
 
-```
-lsusb
-```
+## CapSense
 
-## Use udevadm to get detailed information about the device:
+This interface represents the CapSense functionality, allowing capacitance readings and threshold-based operations.
 
-```
-udevadm info -a -n /dev/ttyUSB0
-```
-Replace /dev/ttyUSB0 with the appropriate device file.
+`io = openCapSense(pin [, 1])`
 
-## Check /dev/ Directory:
+| Name    | Description   |
+|---------|---------------|
+|float read(void)|Gets the capacitance reading. It typically takes a few milliseconds.|
+|float readSync(void)|This is very similar to read(), but will wait for a new sample to arrive before returning.|
+|void setFilterCoef(float)|Sets the low-pass filter coefficient. This coefficient is the typical time constant of the system.|
+|void waitOver(float)|Block until sensed capacitance becomes greater than a given threshold.|
+|void waitOverSync(float)|This is very similar to waitOver(float), but will wait for a new sample to arrive before returning.|
+|void waitUnder(float)|Block until sensed capacitance becomes less than a given threshold.|
+|void waitUnderSync(float)|This is very similar to waitUnder(float), but will wait for a new sample to arrive before returning.|
 
-After connecting the device, run the following command to list the /dev/ directory:
+## DigitalOutput
 
-``
-ls /dev/ttyUSB*
-``
+A pin used for digital output. A digital output pin can be used to generate logic-level signals. DigitalOutput instances are obtained by calling IOIO#openDigitalOutput. The value of the pin is set by calling write. The instance is alive since its creation. If the connection with the IOIO drops at any point, the instance transitions to a disconnected state, in which every attempt to use the pin (except close()) will throw a ConnectionLostException. Whenever close() is invoked the instance may no longer be used. Any resources associated with it are freed and can be reused. Typical usage:
 
-This should show you the assigned serial port(s) for connected USB devices.
+`io = openDigitalOutput(pin [, 1])`
+
+| Name    | Description   |
+|---------|---------------|
+|void write(int)|The output. true is logical \"HIGH\", false is logical \"LOW\".|
+
+## PwmOutput
+
+A pin used for PWM (Pulse-Width Modulation) output. A PWM pin produces a logic-level PWM signal. These signals are typically used for simulating analog outputs for controlling the intensity of LEDs, the rotation speed of motors, etc. They are also frequently used for controlling hobby servo motors. PwmOutput instances are obtained by calling IOIO#openPwmOutput. When used for motors and LEDs, a frequency of several KHz is typically used, where there is a trade-off between switching power-loses and smoothness of operation. The pulse width is typically set by specifying the duty cycle, with the setDutyCycle method. A duty cycle of 0 is \"off\", a duty cycle of 1 is \"on\", and every intermediate value produces an intermediate intensity. Please note that any devices consuming more than 20mA of current (e.g. motors) should not by directly connected the the IOIO pins, but rather through an amplification circuit suited for the specific load. When used for hobby servos, the PWM signal is rather used for encoding of the desired angle the motor should go to. By standard, a 100Hz signal is used and the pulse width is varied between 1ms and 2ms (corresponding to both extremes of the shaft angle), using setPulseWidth. The instance is alive since its creation. If the connection with the IOIO drops at any point, the instance transitions to a disconnected state, in which every attempt to use the pin (except close()) will throw a ConnectionLostException. Whenever close() is invoked the instance may no longer be used. Any resources associated with it are freed and can be reused. Typical usage (fading LED):
+
+`io = openPwmOutput(pin [, 1])`
+
+| Name    | Description   |
+|---------|---------------|
+|void setDutyCycle(float)|Sets the duty cycle of the PWM output. The duty cycle is defined to be the pulse width divided by the total cycle period. For absolute control of the pulse with, consider using setPulseWidth.|
+|void setPulseWidth(float)|Sets the pulse width of the PWM output. The pulse width is duration of the high-time within a single period of the signal. For relative control of the pulse with, consider using setDutyCycle.|
+
+## Optional second argument
+
+Option second argument `1` causes the following additional IOIO methods to be attached:
+
+| Name    | Description   |
+|---------|---------------|
+| void beginBatch()|Start a batch of operations. This is strictly an optimization and will not change functionality|
+| void disconnect()|Closes the connection to the board, or aborts a connection process started with waitForConnect()|
+| void endBatch()|End a batch of operations.|
+| void hardReset()|Equivalent to disconnecting and reconnecting the board power supply.|
+| void softReset()|Resets the entire state (returning to initial state), without dropping the connection.|
+| void sync()|Sends a message to the IOIO and waits for an echo.|
+| void waitForConnect()|Establishes connection with the IOIO board.|
+| void waitForDisconnect()|Blocks until IOIO has been disconnected and all connection-related resources have been freed so that a new connection can be attempted.|

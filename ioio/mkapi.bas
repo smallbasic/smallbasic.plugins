@@ -5,7 +5,7 @@ rem
 tload "api.json", s, 1
 api = array(s)
 
-baseApi = ["beginBatch", "disconnect", "endBatch", "hardReset", "softReset", "sync", "waitForConnect", "waitForDisconnect"]
+ioioApi = ["beginBatch", "disconnect", "endBatch", "hardReset", "softReset", "sync", "waitForConnect", "waitForDisconnect"]
 
 func get_method_name(method)
   local result
@@ -80,9 +80,40 @@ sub generate_constructor(byref obj)
   for method in obj.methods
      print "  v_create_callback(map, \"" + method.name + "\", cmd_" + lower(obj.name) + "_" + lower(method.name) + ");"
   next
-  for s in baseApi
+  print "}"
+  print
+end
+
+sub generate_ioio_constructor()
+  print "static void create_ioio(var_t *map) {"
+  local s
+  for s in ioioApi
     print "  v_create_callback(map, \"" + s + "\", cmd_" + lower(s) + ");"
   next
+  print "}"
+  print
+end
+
+sub generate_open_function(byref obj)
+  print "static int cmd_open" + lower(obj.name) + "(int argc, slib_par_t *params, var_t *retval) {"
+  print "  int result;"
+  print "  int pin = get_param_int(argc, params, 0, 0);"
+  print "  int id = ++nextId;"
+  print "  IOClass &instance = _classMap[id];"
+  print "  if (instance.create(CLASS_" + upper(obj.name) + ") &&"
+  print "      instance.open(pin, retval)) {"
+  print "    map_init_id(retval, id, CLASS_IOCLASS);"
+  print "    create_" + lower(obj.name) + "(retval);"
+  print "    if (get_param_int(argc, params, 1, 0)) {"
+  print "      create_ioio(retval);"
+  print "    }"
+  print "    result = 1;"
+  print "  } else {"
+  print "    _classMap.erase(id);"
+  print "    error(retval, \"open" + obj.name + "() failed\");"
+  print "    result = 0;"
+  print "  }"
+  print "  return result;"
   print "}"
   print
 end
@@ -93,7 +124,7 @@ for obj in api
   next
 next
 
-for s in baseApi
+for s in ioioApi
   method.name = s
   method.rtn = "void"
   method.arg = "void"  
@@ -103,3 +134,10 @@ next
 for obj in api
   generate_constructor(obj)
 next
+
+generate_ioio_constructor()
+
+for obj in api
+  generate_open_function(obj)
+next
+

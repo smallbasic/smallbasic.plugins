@@ -1,6 +1,6 @@
 import ioio
 
-out = ioio.openDigitalOutput(0)
+out = ioio.openDigitalOutput(0, 1)
 
 print "wait for connect"
 out.waitForConnect()
