@@ -1,12 +1,12 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import ioio.lib.api.IOIO;
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooperProvider;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public abstract class AbstractLooperProvider implements IOIOLooperProvider {
   static final protected String TAG = "AbstractLooperProvider";
@@ -23,6 +23,11 @@ public abstract class AbstractLooperProvider implements IOIOLooperProvider {
     invoke(IOIO::beginBatch);
   }
 
+  public void close() {
+    this.controller.stop();
+    this.ready = false;
+  }
+
   public void disconnect() {
     invoke(IOIO::disconnect);
   }
@@ -37,11 +42,6 @@ public abstract class AbstractLooperProvider implements IOIOLooperProvider {
 
   public void softReset() {
     invoke(IOIO::softReset);
-  }
-
-  public void stop() {
-    this.controller.stop();
-    this.ready = false;
   }
 
   public void sync() {

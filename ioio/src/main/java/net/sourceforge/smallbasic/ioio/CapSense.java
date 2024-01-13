@@ -7,44 +7,42 @@ import ioio.lib.util.IOIOLooper;
 
 import java.util.concurrent.BlockingQueue;
 
-public class AnalogInput extends AbstractLooperProvider {
-  private static final String TAG = "AnalogInput";
-  private AnalogInputLooper looper;
+public class CapSense extends AbstractLooperProvider {
+  private static final String TAG = "CapSense";
+  private CapSenseLooper looper;
 
-  public AnalogInput() {
+  public CapSense() {
     super();
     Log.i(TAG, "created");
   }
 
-  @Override
   public void close() {
     super.close();
     this.looper.close();
-    this.looper = null;
+    looper = null;
   }
 
   @Override
-  public IOIOLooper createIOIOLooper(String connectionType, Object extra) {
+  public IOIOLooper createIOIOLooper(String type, Object extra) {
     return looper;
   }
 
   public void open(int pin) {
-    Log.i(TAG, "openInput");
-    looper = new AnalogInputLooper(QUEUE, pin);
+    Log.i(TAG, "open");
+    looper = new CapSenseLooper(QUEUE, pin);
     start();
   }
 
-  static class AnalogInputLooper extends AbstractLooper {
-    private ioio.lib.api.AnalogInput analogInput;
+  static class CapSenseLooper extends AbstractLooper {
+    private ioio.lib.api.CapSense capSense;
 
-    public AnalogInputLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
+    public CapSenseLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
       super(queue, pin);
-      Log.i(TAG, "creating AnalogInputLooper");
     }
 
     public void close() {
-      this.analogInput.close();
-      this.analogInput = null;
+      this.capSense.close();
+      this.capSense = null;
     }
 
     @Override
@@ -52,7 +50,7 @@ public class AnalogInput extends AbstractLooperProvider {
       Log.i(TAG, "setup entered");
       super.setup(ioio);
       try {
-        analogInput = ioio.openAnalogInput(pin);
+        this.capSense = ioio.openCapSense(pin);
       }
       catch (ConnectionLostException e) {
         throw new RuntimeException(e);
@@ -60,3 +58,4 @@ public class AnalogInput extends AbstractLooperProvider {
     }
   }
 }
+

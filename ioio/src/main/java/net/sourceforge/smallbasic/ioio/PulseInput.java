@@ -7,44 +7,43 @@ import ioio.lib.util.IOIOLooper;
 
 import java.util.concurrent.BlockingQueue;
 
-public class AnalogInput extends AbstractLooperProvider {
-  private static final String TAG = "AnalogInput";
-  private AnalogInputLooper looper;
+public class PulseInput extends AbstractLooperProvider {
+  private static final String TAG = "PulseInput";
+  private static ioio.lib.api.PulseInput.PulseMode pulseMode = ioio.lib.api.PulseInput.PulseMode.NEGATIVE;
+  private PulseInputLooper looper;
 
-  public AnalogInput() {
+  public PulseInput() {
     super();
     Log.i(TAG, "created");
   }
 
-  @Override
   public void close() {
     super.close();
     this.looper.close();
-    this.looper = null;
+    looper = null;
   }
 
   @Override
-  public IOIOLooper createIOIOLooper(String connectionType, Object extra) {
+  public IOIOLooper createIOIOLooper(String type, Object extra) {
     return looper;
   }
 
   public void open(int pin) {
-    Log.i(TAG, "openInput");
-    looper = new AnalogInputLooper(QUEUE, pin);
+    Log.i(TAG, "open");
+    looper = new PulseInputLooper(QUEUE, pin);
     start();
   }
 
-  static class AnalogInputLooper extends AbstractLooper {
-    private ioio.lib.api.AnalogInput analogInput;
+  static class PulseInputLooper extends AbstractLooper {
+    private ioio.lib.api.PulseInput input;
 
-    public AnalogInputLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
+    public PulseInputLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
       super(queue, pin);
-      Log.i(TAG, "creating AnalogInputLooper");
     }
 
     public void close() {
-      this.analogInput.close();
-      this.analogInput = null;
+      this.input.close();
+      this.input = null;
     }
 
     @Override
@@ -52,7 +51,7 @@ public class AnalogInput extends AbstractLooperProvider {
       Log.i(TAG, "setup entered");
       super.setup(ioio);
       try {
-        analogInput = ioio.openAnalogInput(pin);
+        this.input = ioio.openPulseInput(pin, pulseMode);
       }
       catch (ConnectionLostException e) {
         throw new RuntimeException(e);

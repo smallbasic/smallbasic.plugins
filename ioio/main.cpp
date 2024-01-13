@@ -196,7 +196,10 @@ SBLIB_API void sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
     case CLASS_IOCLASS:
-      _classMap.erase(id);
+      if (id != -1 && _classMap.find(id) != _classMap.end()) {
+        _classMap.at(id).invokeVoidVoid("close", nullptr);
+        _classMap.erase(id);
+      }
       break;
     }
   }
