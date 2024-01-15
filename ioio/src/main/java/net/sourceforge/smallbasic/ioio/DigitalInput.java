@@ -7,7 +7,7 @@ import ioio.lib.util.IOIOLooper;
 
 import java.util.concurrent.BlockingQueue;
 
-public class DigitalInput extends AbstractLooperProvider {
+public class DigitalInput extends AbstractLooperProvider implements ioio.lib.api.DigitalInput {
   private static final String TAG = "DigitalInput";
   private DigitalInputLooper looper;
 
@@ -16,6 +16,7 @@ public class DigitalInput extends AbstractLooperProvider {
     Log.i(TAG, "created DigitalInput");
   }
 
+  @Override
   public void close() {
     super.close();
     this.looper.close();
@@ -33,8 +34,14 @@ public class DigitalInput extends AbstractLooperProvider {
     start();
   }
 
-  public int read() {
-    return looper.getValue() ? 1 : 0;
+  @Override
+  public boolean read() {
+    return looper.getValue();
+  }
+
+  @Override
+  public void waitForValue(boolean value) throws InterruptedException, ConnectionLostException {
+
   }
 
   static class DigitalInputLooper extends AbstractLooper {

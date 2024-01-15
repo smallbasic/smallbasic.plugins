@@ -61,7 +61,7 @@ public abstract class AbstractLooperProvider implements IOIOLooperProvider {
     this.ready = true;
   }
 
-  private void invoke(Consumer<IOIO> consumer) {
+  protected void invoke(Consumer<IOIO> consumer) {
     final CountDownLatch latch = new CountDownLatch(1);
     try {
       if (this.ready) {

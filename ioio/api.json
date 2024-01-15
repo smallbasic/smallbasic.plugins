@@ -34,12 +34,6 @@
         "comment": "This is very similar to read(), but will wait for a new sample to arrive before returning."
       },
       {
-        "name": "setBuffer",
-        "rtn": "void",
-        "arg": "int",
-        "comment": "Initializes or destroys an internal buffer, used for queuing sampled data."
-      },
-      {
         "name": "getOverflowCount",
         "rtn": "int",
         "arg": "void",
@@ -94,12 +88,6 @@
         "comment": "Reads a single measurement from the queue. If the queue is empty, will block until more data arrives."
       },
       {
-        "name": "waitPulseGetDuration",
-        "rtn": "float",
-        "arg": "void",
-        "comment": "@deprecated Please use getDurationBuffered() instead."
-      },
-      {
         "name": "getFrequency",
         "rtn": "float",
         "arg": "void",
@@ -119,7 +107,7 @@
     "methods": [
       {
         "name": "read",
-      "rtn": "boolean",
+        "rtn": "boolean",
         "arg": "void",
         "comment": "Read the value sensed on the pin. May block for a few milliseconds if called right after creation of the instance."
       },
@@ -210,5 +198,3 @@
     ]
   }
 ]
-
-

@@ -7,9 +7,9 @@ import ioio.lib.util.IOIOLooper;
 
 import java.util.concurrent.BlockingQueue;
 
-public class PulseInput extends AbstractLooperProvider {
+public class PulseInput extends AbstractLooperProvider implements ioio.lib.api.PulseInput {
   private static final String TAG = "PulseInput";
-  private static ioio.lib.api.PulseInput.PulseMode pulseMode = ioio.lib.api.PulseInput.PulseMode.NEGATIVE;
+  private static final ioio.lib.api.PulseInput.PulseMode pulseMode = ioio.lib.api.PulseInput.PulseMode.NEGATIVE;
   private PulseInputLooper looper;
 
   public PulseInput() {
@@ -26,6 +26,36 @@ public class PulseInput extends AbstractLooperProvider {
   @Override
   public IOIOLooper createIOIOLooper(String type, Object extra) {
     return looper;
+  }
+
+  @Override
+  public float getDuration() throws InterruptedException, ConnectionLostException {
+    return 0;
+  }
+
+  @Override
+  public float getDurationSync() throws InterruptedException, ConnectionLostException {
+    return 0;
+  }
+
+  @Override
+  public float getDurationBuffered() throws InterruptedException, ConnectionLostException {
+    return 0;
+  }
+
+  @Override
+  public float waitPulseGetDuration() throws InterruptedException, ConnectionLostException {
+    return 0;
+  }
+
+  @Override
+  public float getFrequency() throws InterruptedException, ConnectionLostException {
+    return 0;
+  }
+
+  @Override
+  public float getFrequencySync() throws InterruptedException, ConnectionLostException {
+    return 0;
   }
 
   public void open(int pin) {

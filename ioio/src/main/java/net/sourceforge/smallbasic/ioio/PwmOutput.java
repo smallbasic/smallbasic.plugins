@@ -7,7 +7,7 @@ import ioio.lib.util.IOIOLooper;
 
 import java.util.concurrent.BlockingQueue;
 
-public class PwmOutput extends AbstractLooperProvider {
+public class PwmOutput extends AbstractLooperProvider implements ioio.lib.api.PwmOutput {
   private static final String TAG = "PulseInput";
   private PwmOutputLooper looper;
 
@@ -31,6 +31,21 @@ public class PwmOutput extends AbstractLooperProvider {
     Log.i(TAG, "open");
     looper = new PwmOutputLooper(QUEUE, pin, freqHz);
     start();
+  }
+
+  @Override
+  public void setDutyCycle(float dutyCycle) throws ConnectionLostException {
+
+  }
+
+  @Override
+  public void setPulseWidth(int pulseWidthUs) throws ConnectionLostException {
+
+  }
+
+  @Override
+  public void setPulseWidth(float pulseWidthUs) throws ConnectionLostException {
+
   }
 
   static class PwmOutputLooper extends AbstractLooper {

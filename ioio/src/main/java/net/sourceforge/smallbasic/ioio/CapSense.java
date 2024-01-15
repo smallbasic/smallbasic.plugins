@@ -7,7 +7,7 @@ import ioio.lib.util.IOIOLooper;
 
 import java.util.concurrent.BlockingQueue;
 
-public class CapSense extends AbstractLooperProvider {
+public class CapSense extends AbstractLooperProvider implements ioio.lib.api.CapSense {
   private static final String TAG = "CapSense";
   private CapSenseLooper looper;
 
@@ -31,6 +31,41 @@ public class CapSense extends AbstractLooperProvider {
     Log.i(TAG, "open");
     looper = new CapSenseLooper(QUEUE, pin);
     start();
+  }
+
+  @Override
+  public float read() throws InterruptedException, ConnectionLostException {
+    return 0;
+  }
+
+  @Override
+  public float readSync() throws InterruptedException, ConnectionLostException {
+    return 0;
+  }
+
+  @Override
+  public void setFilterCoef(float t) throws ConnectionLostException {
+
+  }
+
+  @Override
+  public void waitOver(float threshold) throws ConnectionLostException, InterruptedException {
+
+  }
+
+  @Override
+  public void waitOverSync(float threshold) throws ConnectionLostException, InterruptedException {
+
+  }
+
+  @Override
+  public void waitUnder(float threshold) throws ConnectionLostException, InterruptedException {
+
+  }
+
+  @Override
+  public void waitUnderSync(float threshold) throws ConnectionLostException, InterruptedException {
+
   }
 
   static class CapSenseLooper extends AbstractLooper {
