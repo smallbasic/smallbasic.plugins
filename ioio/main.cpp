@@ -67,12 +67,40 @@ struct IOClass {
     return exc;
   }
 
+  // boolean foo(void)
+  int invokeBoolVoid(const char *name, var_s *retval) {
+    int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, name, "()Z");
+      int value = 0;
+      if (method != nullptr) {
+        value = env->CallBooleanMethod(_instance, method);
+      }
+      if (!checkException()) {
+        v_setint(retval, value);
+        result = 1;
+      }
+    }
+    return result;
+  }
+
   // float foo(void)
   int invokeFloatVoid(const char *name, var_s *retval) {
     int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, name, "()F");
+      var_num_t value = 0;
+      if (method != nullptr) {
+        value = env->CallFloatMethod(_instance, method);
+      }
+      if (!checkException()) {
+        v_setreal(retval, value);
+        result = 1;
+      }
+    }
     return result;
   }
-  
+
   // int foo(void)
   int invokeIntVoid(const char *name, var_s *retval) {
     int result = 0;
@@ -90,12 +118,36 @@ struct IOClass {
     return result;
   }
 
+  // void foo(boolean)
+  int invokeVoidBool(const char *name, int value, var_s *retval) {
+    int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, name, "(Z)V");
+      if (method != nullptr) {
+        env->CallVoidMethod(_instance, method, value);
+      }
+      if (!checkException()) {
+        result = 1;
+      }
+    }
+    return result;
+  }
+
   // void foo(float)
   int invokeVoidFloat(const char *name, var_num_t value, var_s *retval) {
     int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, name, "()F");
+      if (method != nullptr) {
+        env->CallVoidMethod(_instance, method, value);
+      }
+      if (!checkException()) {
+        result = 1;
+      }
+    }
     return result;
   }
-  
+
   // void foo(int)
   int invokeVoidInt(const char *name, int value, var_s *retval) {
     int result = 0;

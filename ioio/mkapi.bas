@@ -12,16 +12,20 @@ func get_method_name(method)
 
   if (method.rtn == "void") then
     result = "invokeVoid"
-  else if (method.rtn == "boolean" || method.rtn == "int") then
+  else if (method.rtn == "int") then
     result = "invokeInt"
+  else if (method.rtn == "boolean") then
+    result = "invokeBool"
   else if (method.rtn == "float") then
     result = "invokeFloat"
   endif
 
   if (method.arg == "void") then
     result += "Void"
-  else if (method.arg == "boolean" || method.arg == "int") then
+  else if (method.arg == method.arg == "int") then
     result += "Int"
+  else if (method.arg == "boolean") then
+    result += "Bool"
   else if (method.arg == "float") then
     result += "Float"
   endif

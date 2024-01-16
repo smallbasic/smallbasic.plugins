@@ -15,7 +15,6 @@ This interface represents AnalogInput functionality, providing methods to obtain
 |float getReference(void)|Gets the maximum value against which read() values are scaled.|
 |float read(void)|Gets the analog input reading, as a scaled real value between 0 and 1.|
 |float readSync(void)|This is very similar to read(), but will wait for a new sample to arrive before returning.|
-|void setBuffer(int)|Initializes or destroys an internal buffer, used for queuing sampled data.|
 |int getOverflowCount(void)|Gets the number of samples that have been dropped as a result of overflow.|
 |int available(void)|Gets the number of samples currently in the buffer. Reading that many samples is guaranteed not to block.|
 |float readBuffered(void)|Read a sample from the internal buffer. This method will block until at least one sample is available.|
@@ -33,7 +32,6 @@ This interface represents PulseInput functionality, providing methods for pulse 
 |float getDuration(void)|Gets the pulse duration in case of pulse measurement mode, or the period in case of frequency mode.|
 |float getDurationSync(void)|This is very similar to getDuration(), but will wait for a new sample to arrive before returning.|
 |float getDurationBuffered(void)|Reads a single measurement from the queue. If the queue is empty, will block until more data arrives.|
-|float waitPulseGetDuration(void)|@deprecated Please use getDurationBuffered() instead.|
 |float getFrequency(void)|Gets the momentary frequency of the measured signal. When scaling is used, this is compensated for here.|
 |float getFrequencySync(void)|This is very similar to getFrequency(), but will wait for a new sample to arrive before returning.|
 
