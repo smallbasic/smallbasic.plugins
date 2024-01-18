@@ -5,18 +5,20 @@ import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.api.exception.IncompatibilityException;
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
+import ioio.lib.api.AnalogInput;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class AnalogInput extends AbstractLooperProvider implements ioio.lib.api.AnalogInput {
+public class AnalogInputImpl extends AbstractLooperProvider implements AnalogInput {
   private static final String TAG = "AnalogInput";
   private AnalogInputLooper looper;
-  static final protected BlockingQueue<FloatConsumer<ioio.lib.api.AnalogInput>> INPUT_QUEUE = new LinkedBlockingQueue<>();
+  protected BlockingQueue<FloatConsumer<AnalogInput>> inputQueue;
 
-  public AnalogInput() {
+  public AnalogInputImpl() {
     super();
+    inputQueue = new LinkedBlockingQueue<>();
     Log.i(TAG, "created");
   }
 
@@ -39,53 +41,53 @@ public class AnalogInput extends AbstractLooperProvider implements ioio.lib.api.
 
   @Override
   public int getOverflowCount() {
-    return (int) invokeFloat(ioio.lib.api.AnalogInput::getOverflowCount);
+    return (int) invokeFloat(AnalogInput::getOverflowCount);
   }
 
   @Override
   public float getReference() {
-    return invokeFloat(ioio.lib.api.AnalogInput::getReference);
+    return invokeFloat(AnalogInput::getReference);
   }
 
   @Override
   public float getSampleRate() {
-    return invokeFloat(ioio.lib.api.AnalogInput::getSampleRate);
+    return invokeFloat(AnalogInput::getSampleRate);
   }
 
   @Override
   public float getVoltage() {
-    return invokeFloat(ioio.lib.api.AnalogInput::getVoltage);
+    return invokeFloat(AnalogInput::getVoltage);
   }
 
   @Override
   public float getVoltageBuffered() {
-    return invokeFloat(ioio.lib.api.AnalogInput::getVoltageBuffered);
+    return invokeFloat(AnalogInput::getVoltageBuffered);
   }
 
   @Override
   public float getVoltageSync() {
-    return invokeFloat(ioio.lib.api.AnalogInput::getVoltageSync);
+    return invokeFloat(AnalogInput::getVoltageSync);
   }
 
   public void open(int pin) {
     Log.i(TAG, "openInput");
-    looper = new AnalogInputLooper(QUEUE, pin);
+    looper = new AnalogInputLooper(QUEUE, inputQueue, pin);
     start();
   }
 
   @Override
   public float read() throws InterruptedException, ConnectionLostException {
-    return invokeFloat(ioio.lib.api.AnalogInput::read);
+    return invokeFloat(AnalogInput::read);
   }
 
   @Override
   public float readBuffered() {
-    return invokeFloat(ioio.lib.api.AnalogInput::readBuffered);
+    return invokeFloat(AnalogInput::readBuffered);
   }
 
   @Override
   public float readSync() {
-    return invokeFloat(ioio.lib.api.AnalogInput::readSync);
+    return invokeFloat(AnalogInput::readSync);
   }
 
   @Override
@@ -93,11 +95,11 @@ public class AnalogInput extends AbstractLooperProvider implements ioio.lib.api.
 
   }
 
-  protected float invokeFloat(FloatConsumer<ioio.lib.api.AnalogInput> consumer) {
+  protected float invokeFloat(FloatConsumer<AnalogInput> consumer) {
     final CountDownLatch latch = new CountDownLatch(1);
     final float[] result = new float[1];
     try {
-      INPUT_QUEUE.put(e -> {
+      inputQueue.put(e -> {
         result[0] = consumer.invoke(e);
         latch.countDown();
         return result[0];
@@ -111,10 +113,14 @@ public class AnalogInput extends AbstractLooperProvider implements ioio.lib.api.
   }
 
   static class AnalogInputLooper extends AbstractLooper {
-    private ioio.lib.api.AnalogInput analogInput;
+    private AnalogInput analogInput;
+    private final BlockingQueue<FloatConsumer<AnalogInput>> inputQueue;
 
-    public AnalogInputLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
+    public AnalogInputLooper(BlockingQueue<Consumer<IOIO>> queue,
+                             BlockingQueue<FloatConsumer<AnalogInput>> inputQueue,
+                             int pin) {
       super(queue, pin);
+      this.inputQueue = inputQueue;
       Log.i(TAG, "creating AnalogInputLooper");
     }
 
@@ -126,9 +132,9 @@ public class AnalogInput extends AbstractLooperProvider implements ioio.lib.api.
     @Override
     public void loop() throws InterruptedException, ConnectionLostException {
       super.loop();
-      if (!INPUT_QUEUE.isEmpty()) {
+      if (!inputQueue.isEmpty()) {
         try {
-          INPUT_QUEUE.take().invoke(analogInput);
+          inputQueue.take().invoke(analogInput);
         }
         catch (ConnectionLostException | IncompatibilityException e) {
           throw new RuntimeException(e);

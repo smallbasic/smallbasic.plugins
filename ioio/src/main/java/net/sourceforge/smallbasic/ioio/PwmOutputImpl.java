@@ -1,17 +1,18 @@
 package net.sourceforge.smallbasic.ioio;
 
 import ioio.lib.api.IOIO;
+import ioio.lib.api.PwmOutput;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
 
 import java.util.concurrent.BlockingQueue;
 
-public class PwmOutput extends AbstractLooperProvider implements ioio.lib.api.PwmOutput {
+public class PwmOutputImpl extends AbstractLooperProvider implements PwmOutput {
   private static final String TAG = "PulseInput";
   private PwmOutputLooper looper;
 
-  public PwmOutput() {
+  public PwmOutputImpl() {
     super();
     Log.i(TAG, "created");
   }

@@ -5,7 +5,7 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 #
 # export LD_LIBRARY_PATH=/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server:$LD_LIBRARY_PATH
-# javap -s -p -cp target/ioio-1.0.jar 'net.sourceforge.smallbasic.ioio.AnalogInput'
+# javap -s -p -cp target/ioio-1.0.jar 'net.sourceforge.smallbasic.ioio.AnalogInputImpl'
 #
 
 sbasic=sbasic

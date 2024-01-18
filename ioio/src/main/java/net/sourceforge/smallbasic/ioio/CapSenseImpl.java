@@ -1,5 +1,6 @@
 package net.sourceforge.smallbasic.ioio;
 
+import ioio.lib.api.CapSense;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
@@ -7,11 +8,11 @@ import ioio.lib.util.IOIOLooper;
 
 import java.util.concurrent.BlockingQueue;
 
-public class CapSense extends AbstractLooperProvider implements ioio.lib.api.CapSense {
+public class CapSenseImpl extends AbstractLooperProvider implements CapSense {
   private static final String TAG = "CapSense";
   private CapSenseLooper looper;
 
-  public CapSense() {
+  public CapSenseImpl() {
     super();
     Log.i(TAG, "created");
   }
@@ -69,7 +70,7 @@ public class CapSense extends AbstractLooperProvider implements ioio.lib.api.Cap
   }
 
   static class CapSenseLooper extends AbstractLooper {
-    private ioio.lib.api.CapSense capSense;
+    private CapSense capSense;
 
     public CapSenseLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
       super(queue, pin);

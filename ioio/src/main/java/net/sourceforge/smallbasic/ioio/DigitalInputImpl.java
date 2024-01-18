@@ -1,25 +1,29 @@
 package net.sourceforge.smallbasic.ioio;
 
+import ioio.lib.api.DigitalInput;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 
-public class DigitalInput extends AbstractLooperProvider implements ioio.lib.api.DigitalInput {
+public class DigitalInputImpl extends AbstractLooperProvider implements DigitalInput {
   private static final String TAG = "DigitalInput";
   private DigitalInputLooper looper;
+  private CountDownLatch latch;
 
-  public DigitalInput() {
+  public DigitalInputImpl() {
     super();
+    looper = null;
+    latch = null;
     Log.i(TAG, "created DigitalInput");
   }
 
   @Override
   public void close() {
     super.close();
-    this.looper.close();
     looper = null;
   }
 
@@ -41,7 +45,6 @@ public class DigitalInput extends AbstractLooperProvider implements ioio.lib.api
 
   @Override
   public void waitForValue(boolean value) throws InterruptedException, ConnectionLostException {
-
   }
 
   static class DigitalInputLooper extends AbstractLooper {
@@ -63,7 +66,6 @@ public class DigitalInput extends AbstractLooperProvider implements ioio.lib.api
     public void loop() throws InterruptedException, ConnectionLostException {
       super.loop();
       value = input.read();
-      Thread.sleep(10);
     }
 
     @Override

@@ -20,12 +20,12 @@ JNIEnv *env;
 JavaVM *jvm;
 int nextId = 1;
 
-#define CLASS_ANALOGINPUT "net/sourceforge/smallbasic/ioio/AnalogInput"
-#define CLASS_DIGITALINPUT "net/sourceforge/smallbasic/ioio/DigitalInput"
-#define CLASS_DIGITALOUTPUT "net/sourceforge/smallbasic/ioio/DigitalOutput"
-#define CLASS_PULSEINPUT "net/sourceforge/smallbasic/ioio/PulseInput"
-#define CLASS_PWMOUTPUT "net/sourceforge/smallbasic/ioio/PwmOutput"
-#define CLASS_CAPSENSE "net/sourceforge/smallbasic/ioio/Capsense"
+#define CLASS_ANALOGINPUT "net/sourceforge/smallbasic/ioio/AnalogInputImpl"
+#define CLASS_DIGITALINPUT "net/sourceforge/smallbasic/ioio/DigitalInputImpl"
+#define CLASS_DIGITALOUTPUT "net/sourceforge/smallbasic/ioio/DigitalOutputImpl"
+#define CLASS_PULSEINPUT "net/sourceforge/smallbasic/ioio/PulseInputImpl"
+#define CLASS_PWMOUTPUT "net/sourceforge/smallbasic/ioio/PwmOutputImpl"
+#define CLASS_CAPSENSE "net/sourceforge/smallbasic/ioio/CapsenseImpl"
 #define CLASS_IOCLASS 1
 
 struct IOClass {
@@ -58,11 +58,20 @@ struct IOClass {
     return result;
   }
 
-  bool checkException() {
+  bool checkException(var_s *retval) {
     auto exc = env->ExceptionOccurred();
     if (exc) {
-      env->ExceptionDescribe();
-      env->ExceptionClear();
+      if (retval) {
+        jclass clazz = env->FindClass("java/lang/Object");
+        jmethodID methodId = env->GetMethodID(clazz, "toString", "()Ljava/lang/String;");
+        jstring jstr = (jstring) env->CallObjectMethod(exc, methodId);
+        const char *message = env->GetStringUTFChars(jstr, JNI_FALSE);
+        error(retval, message);
+        env->ReleaseStringUTFChars(jstr, message);        
+      } else {
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+      }
     }
     return exc;
   }
@@ -76,7 +85,7 @@ struct IOClass {
       if (method != nullptr) {
         value = env->CallBooleanMethod(_instance, method);
       }
-      if (!checkException()) {
+      if (!checkException(retval)) {
         v_setint(retval, value);
         result = 1;
       }
@@ -93,7 +102,7 @@ struct IOClass {
       if (method != nullptr) {
         value = env->CallFloatMethod(_instance, method);
       }
-      if (!checkException()) {
+      if (!checkException(retval)) {
         v_setreal(retval, value);
         result = 1;
       }
@@ -110,7 +119,7 @@ struct IOClass {
       if (method != nullptr) {
         value = env->CallIntMethod(_instance, method);
       }
-      if (!checkException()) {
+      if (!checkException(retval)) {
         v_setint(retval, value);
         result = 1;
       }
@@ -126,7 +135,7 @@ struct IOClass {
       if (method != nullptr) {
         env->CallVoidMethod(_instance, method, value);
       }
-      if (!checkException()) {
+      if (!checkException(retval)) {
         result = 1;
       }
     }
@@ -141,7 +150,7 @@ struct IOClass {
       if (method != nullptr) {
         env->CallVoidMethod(_instance, method, value);
       }
-      if (!checkException()) {
+      if (!checkException(retval)) {
         result = 1;
       }
     }
@@ -156,7 +165,7 @@ struct IOClass {
       if (method != nullptr) {
         env->CallVoidMethod(_instance, method, value);
       }
-      if (!checkException()) {
+      if (!checkException(retval)) {
         result = 1;
       }
     }
@@ -171,7 +180,7 @@ struct IOClass {
       if (method != nullptr) {
         env->CallVoidMethod(_instance, method);
       }
-      if (!checkException()) {
+      if (!checkException(retval)) {
         result = 1;
       }
     }

@@ -1,18 +1,19 @@
 package net.sourceforge.smallbasic.ioio;
 
 import ioio.lib.api.IOIO;
+import ioio.lib.api.PulseInput;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
 
 import java.util.concurrent.BlockingQueue;
 
-public class PulseInput extends AbstractLooperProvider implements ioio.lib.api.PulseInput {
+public class PulseInputImpl extends AbstractLooperProvider implements PulseInput {
   private static final String TAG = "PulseInput";
-  private static final ioio.lib.api.PulseInput.PulseMode pulseMode = ioio.lib.api.PulseInput.PulseMode.NEGATIVE;
+  private static final PulseInput.PulseMode pulseMode = PulseInput.PulseMode.NEGATIVE;
   private PulseInputLooper looper;
 
-  public PulseInput() {
+  public PulseInputImpl() {
     super();
     Log.i(TAG, "created");
   }
@@ -65,7 +66,7 @@ public class PulseInput extends AbstractLooperProvider implements ioio.lib.api.P
   }
 
   static class PulseInputLooper extends AbstractLooper {
-    private ioio.lib.api.PulseInput input;
+    private PulseInput input;
 
     public PulseInputLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
       super(queue, pin);
