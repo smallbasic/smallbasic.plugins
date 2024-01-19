@@ -78,21 +78,24 @@ sub generate_command(objName, method)
   print
 end
 
+sub generate_ioio_command(name)
+  print "static int cmd_" + lower(name)  + "(int argc, slib_par_t *arg, var_s *retval) {"
+  print "  int result = 0;"
+  print "  if (argc != 0) {"
+  print "    error(retval, \"" + name + "\", 0);"
+  print "  } else {"
+  print "    result = ioioClass->invokeVoidVoid(\"" + name + "\", retval);"
+  print "  }"
+  print "  return result;"
+  print "}"
+  print
+end
+
 sub generate_constructor(byref obj)
   print "static void create_" + lower(obj.name) + "(var_t *map) {"
   local method
   for method in obj.methods
      print "  v_create_callback(map, \"" + method.name + "\", cmd_" + lower(obj.name) + "_" + lower(method.name) + ");"
-  next
-  print "}"
-  print
-end
-
-sub generate_ioio_constructor()
-  print "static void create_ioio(var_t *map) {"
-  local s
-  for s in ioioApi
-    print "  v_create_callback(map, \"" + s + "\", cmd_" + lower(s) + ");"
   next
   print "}"
   print
@@ -106,11 +109,8 @@ sub generate_open_function(byref obj)
   print "  IOClass &instance = _classMap[id];"
   print "  if (instance.create(CLASS_" + upper(obj.name) + ") &&"
   print "      instance.open(pin, retval)) {"
-  print "    map_init_id(retval, id, CLASS_IOCLASS);"
+  print "    map_init_id(retval, id, CLASS_IOCLASS_ID);"
   print "    create_" + lower(obj.name) + "(retval);"
-  print "    if (get_param_int(argc, params, 1, 0)) {"
-  print "      create_ioio(retval);"
-  print "    }"
   print "    result = 1;"
   print "  } else {"
   print "    _classMap.erase(id);"
@@ -129,17 +129,12 @@ for obj in api
 next
 
 for s in ioioApi
-  method.name = s
-  method.rtn = "void"
-  method.arg = "void"  
-  generate_command(0, method)
+  generate_ioio_command(s)
 next
 
 for obj in api
   generate_constructor(obj)
 next
-
-generate_ioio_constructor()
 
 for obj in api
   generate_open_function(obj)

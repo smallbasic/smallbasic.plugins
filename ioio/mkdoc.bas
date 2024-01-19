@@ -61,12 +61,21 @@ print
 print "see: https://github.com/ytai/ioio/wiki"
 print
 
+print "## IOIO"
+print
+print "| Name    | Description   |"
+print "|---------|---------------|"
+for obj in ioioApi
+  print "| void ioio." + obj.name + "()|" + obj.comment + "|"
+next s
+print
+
 for obj in api
   print "## " + obj.name
   print
   print obj.comment
   print
-  print "`io = open" + obj.name + "(pin [, 1])`"
+  print "`io = ioio.open" + obj.name + "(pin)`"
   print ""
   print "| Name    | Description   |"
   print "|---------|---------------|"
@@ -75,15 +84,4 @@ for obj in api
   next
   print
 next
-
-print "## Optional second argument"
-print
-print "Option second argument `1` causes the following additional IOIO methods to be attached:"
-print
-print "| Name    | Description   |"
-print "|---------|---------------|"
-for obj in ioioApi
-  print "| void " + obj.name + "()|" + obj.comment + "|"
-next s
-
 

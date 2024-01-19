@@ -16,8 +16,11 @@
 #include <pthread.h>
 #include "robin-hood-hashing/src/include/robin_hood.h"
 
+struct IOClass;
+
 JNIEnv *env;
 JavaVM *jvm;
+IOClass *ioioClass;
 int nextId = 1;
 
 #define CLASS_ANALOGINPUT "net/sourceforge/smallbasic/ioio/AnalogInputImpl"
@@ -26,7 +29,8 @@ int nextId = 1;
 #define CLASS_PULSEINPUT "net/sourceforge/smallbasic/ioio/PulseInputImpl"
 #define CLASS_PWMOUTPUT "net/sourceforge/smallbasic/ioio/PwmOutputImpl"
 #define CLASS_CAPSENSE "net/sourceforge/smallbasic/ioio/CapsenseImpl"
-#define CLASS_IOCLASS 1
+#define CLASS_IOIO "net/sourceforge/smallbasic/ioio/IOIOImpl"
+#define CLASS_IOCLASS_ID 1
 
 struct IOClass {
   IOClass(): _clazz(nullptr), _instance(nullptr) {}
@@ -221,6 +225,14 @@ FUNC_SIG lib_func[] = {
   {1, 2, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
   {1, 2, "OPENPULSEINPUT", cmd_openpulseinput},
   {1, 2, "OPENPWMOUTPUT", cmd_openpwmoutput},
+  {0, 0, "BEGINBATCH", cmd_beginbatch},
+  {0, 0, "DISCONNECT", cmd_disconnect},
+  {0, 0, "ENDBATCH", cmd_endbatch},
+  {0, 0, "HARDRESET", cmd_hardreset},
+  {0, 0, "SOFTRESET", cmd_softreset},
+  {0, 0, "SYNC", cmd_sync},
+  {0, 0, "WAITFORCONNECT", cmd_waitforconnect},
+  {0, 0, "WAITFORDISCONNECT", cmd_waitfordisconnect},
 };
 
 FUNC_SIG lib_proc[] = {};
@@ -250,13 +262,19 @@ int sblib_init(const char *sourceFile) {
   if (!result) {
     fprintf(stderr, "Failed to create JVM\n");
   }
+
+  ioioClass = new IOClass();
+  if (!ioioClass || !ioioClass->create(CLASS_IOIO)) {
+    fprintf(stderr, "Failed to IOIOClass\n");
+    result = 0;
+  }
   return result;
 }
 
 SBLIB_API void sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
-    case CLASS_IOCLASS:
+    case CLASS_IOCLASS_ID:
       if (id != -1 && _classMap.find(id) != _classMap.end()) {
         _classMap.at(id).invokeVoidVoid("close", nullptr);
         _classMap.erase(id);
@@ -267,6 +285,9 @@ SBLIB_API void sblib_free(int cls_id, int id) {
 }
 
 void sblib_close(void) {
+  if (ioioClass) {
+    delete ioioClass;
+  }
   if (!_classMap.empty()) {
     fprintf(stderr, "IOClass leak detected\n");
     _classMap.clear();
