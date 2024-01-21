@@ -1,16 +1,15 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-
 import ioio.lib.api.IOIO;
 import ioio.lib.api.PwmOutput;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 
-public class PwmOutputImpl implements PwmOutput, IOTask {
+import java.io.IOException;
+
+public class PwmOutputImpl extends IOTask implements PwmOutput {
   private static final String TAG = "PulseInput";
   private PwmOutput output;
-  private int pin;
   private int freqHz;
 
   public PwmOutputImpl() {
@@ -20,15 +19,9 @@ public class PwmOutputImpl implements PwmOutput, IOTask {
 
   @Override
   public void close() {
-    IOService.getInstance().removeTask(this);
+    super.close();
     output.close();
     output = null;
-  }
-
-
-  @Override
-  public int getPin() {
-    return pin;
   }
 
   @Override
@@ -37,9 +30,8 @@ public class PwmOutputImpl implements PwmOutput, IOTask {
   }
 
   public void open(int pin, int freqHz) throws IOException {
-    Log.i(TAG, "open");
-    this.pin = pin;
-    IOService.getInstance().addTask(this);
+    this.open(pin);
+    this.freqHz = freqHz;
   }
 
   @Override

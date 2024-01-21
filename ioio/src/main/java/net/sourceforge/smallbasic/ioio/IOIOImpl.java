@@ -1,16 +1,16 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.api.exception.IncompatibilityException;
 import ioio.lib.spi.Log;
 
-public class IOIOImpl implements IOTask {
+import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+
+public class IOIOImpl extends IOTask {
   private static final String TAG = "IOIOImpl";
   private final BlockingQueue<Consumer<IOIO>> queue = new LinkedBlockingQueue<>();
   private IOIO ioio;
@@ -64,15 +64,12 @@ public class IOIOImpl implements IOTask {
     invoke(IOIO::softReset);
   }
 
-  public void start() {
-    IOService.getInstance().start();
-  }
-
   public void sync() {
     invoke(IOIO::sync);
   }
 
   public void waitForConnect() {
+    IOService.getInstance().start();
     invoke(IOIO::waitForConnect);
   }
 
@@ -84,9 +81,9 @@ public class IOIOImpl implements IOTask {
     CountDownLatch latch = new CountDownLatch(1);
     try {
       queue.put(ioio -> {
-          consumer.invoke(ioio);
-          latch.countDown();
-        });
+        consumer.invoke(ioio);
+        latch.countDown();
+      });
       latch.await();
     } catch (InterruptedException e) {
       Log.e(TAG, "Error putting message handler to the queue: ", e);

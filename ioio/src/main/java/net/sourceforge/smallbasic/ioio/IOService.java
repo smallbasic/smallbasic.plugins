@@ -1,14 +1,14 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
 import ioio.lib.util.IOIOLooperProvider;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class IOService implements IOIOLooperProvider  {
   private static final String TAG = "IOService";
@@ -45,6 +45,9 @@ public class IOService implements IOIOLooperProvider  {
   }
 
   public void removeTask(IOTask task) {
+    if (task.getPin() != -1) {
+      usedPins[task.getPin()] = false;
+    }
     ioTasks.remove(task);
   }
 
@@ -57,7 +60,7 @@ public class IOService implements IOIOLooperProvider  {
       if (pin < 0 || pin >= MAX_PINS) {
         throw new IOException("invalid pin: " + pin);
       }
-      if (usedPins[pin] != null) {
+      if (usedPins[pin] != null && usedPins[pin]) {
         throw new IOException("pin already used: " + pin);
       }
       usedPins[pin] = true;

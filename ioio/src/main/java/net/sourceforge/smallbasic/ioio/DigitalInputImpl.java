@@ -1,18 +1,16 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-
 import ioio.lib.api.DigitalInput;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 
-public class DigitalInputImpl implements DigitalInput, IOTask {
+import java.util.concurrent.CountDownLatch;
+
+public class DigitalInputImpl extends IOTask implements DigitalInput {
   private static final String TAG = "DigitalInput";
   private CountDownLatch latch;
   private DigitalInput input;
-  private int pin;
   private volatile boolean value;
 
   public DigitalInputImpl() {
@@ -23,25 +21,14 @@ public class DigitalInputImpl implements DigitalInput, IOTask {
 
   @Override
   public void close() {
-    IOService.getInstance().removeTask(this);
+    super.close();
     input.close();
     input = null;
   }
 
   @Override
-  public int getPin() {
-    return pin;
-  }
-
-  @Override
   public void loop() throws InterruptedException, ConnectionLostException {
     value = input.read();
-  }
-
-  public void open(int pin) throws IOException {
-    Log.i(TAG, "open");
-    this.pin = pin;
-    IOService.getInstance().addTask(this);
   }
 
   @Override

@@ -8,7 +8,6 @@ see: https://github.com/ytai/ioio/wiki
 |---------|---------------|
 | void ioio.beginBatch()|Start a batch of operations. This is strictly an optimization and will not change functionality|
 | void ioio.disconnect()|Closes the connection to the board, or aborts a connection process started with waitForConnect()|
-| void ioio.start()|Starts processing|
 | void ioio.endBatch()|End a batch of operations.|
 | void ioio.hardReset()|Equivalent to disconnecting and reconnecting the board power supply.|
 | void ioio.softReset()|Resets the entire state (returning to initial state), without dropping the connection.|

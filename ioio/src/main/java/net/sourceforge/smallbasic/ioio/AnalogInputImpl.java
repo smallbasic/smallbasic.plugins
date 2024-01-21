@@ -1,21 +1,19 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import ioio.lib.api.AnalogInput;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.api.exception.IncompatibilityException;
 import ioio.lib.spi.Log;
 
-public class AnalogInputImpl implements AnalogInput, IOTask {
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+
+public class AnalogInputImpl extends IOTask implements AnalogInput {
   private static final String TAG = "AnalogInput";
   private final BlockingQueue<FloatConsumer<AnalogInput>> queue = new LinkedBlockingQueue<>();
   private AnalogInput input;
-  private int pin;
 
   public AnalogInputImpl() {
     super();
@@ -29,7 +27,7 @@ public class AnalogInputImpl implements AnalogInput, IOTask {
 
   @Override
   public void close() {
-    IOService.getInstance().removeTask(this);
+    super.close();
     input.close();
     input = null;
   }
@@ -65,11 +63,6 @@ public class AnalogInputImpl implements AnalogInput, IOTask {
   }
 
   @Override
-  public int getPin() {
-    return pin;
-  }
-
-  @Override
   public void loop() throws InterruptedException, ConnectionLostException {
     if (!queue.isEmpty()) {
       try {
@@ -79,12 +72,6 @@ public class AnalogInputImpl implements AnalogInput, IOTask {
         throw new RuntimeException(e);
       }
     }
-  }
-
-  public void open(int pin) throws IOException {
-    Log.i(TAG, "openInput");
-    this.pin = pin;
-    IOService.getInstance().addTask(this);
   }
 
   @Override

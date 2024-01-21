@@ -1,17 +1,14 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-
 import ioio.lib.api.DigitalOutput;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 
-public class DigitalOutputImpl implements DigitalOutput, IOTask {
+public class DigitalOutputImpl extends IOTask implements DigitalOutput {
   private static final String TAG = "DigitalOutput";
   private DigitalOutput output;
   private volatile boolean value;
-  private int pin;
 
   public DigitalOutputImpl() {
     super();
@@ -20,25 +17,14 @@ public class DigitalOutputImpl implements DigitalOutput, IOTask {
 
   @Override
   public void close() {
-    IOService.getInstance().removeTask(this);
+    super.close();
     output.close();
     output = null;
   }
 
   @Override
-  public int getPin() {
-    return pin;
-  }
-
-  @Override
   public void loop() throws InterruptedException, ConnectionLostException {
     output.write(value);
-  }
-
-  public void open(int pin) throws IOException {
-    Log.i(TAG, "open");
-    this.pin = pin;
-    IOService.getInstance().addTask(this);
   }
 
   @Override

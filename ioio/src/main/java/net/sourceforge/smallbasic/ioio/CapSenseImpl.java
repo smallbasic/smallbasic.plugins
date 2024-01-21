@@ -1,16 +1,13 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-
 import ioio.lib.api.CapSense;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 
-public class CapSenseImpl implements CapSense, IOTask {
+public class CapSenseImpl extends IOTask implements CapSense {
   private static final String TAG = "CapSense";
   private CapSense capSense;
-  private int pin;
 
   public CapSenseImpl() {
     super();
@@ -19,24 +16,13 @@ public class CapSenseImpl implements CapSense, IOTask {
 
   @Override
   public void close() {
-    IOService.getInstance().removeTask(this);
+    super.close();
     capSense.close();
     capSense = null;
   }
 
   @Override
-  public int getPin() {
-    return pin;
-  }
-
-  @Override
   public void loop() throws ConnectionLostException, InterruptedException {
-  }
-
-  public void open(int pin) throws IOException {
-    Log.i(TAG, "open");
-    this.pin = pin;
-    IOService.getInstance().addTask(this);
   }
 
   @Override
