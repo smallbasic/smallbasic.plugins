@@ -23,8 +23,14 @@ public class DigitalInputImpl implements DigitalInput, IOTask {
 
   @Override
   public void close() {
+    IOService.getInstance().removeTask(this);
     input.close();
     input = null;
+  }
+
+  @Override
+  public int getPin() {
+    return pin;
   }
 
   @Override
@@ -35,7 +41,7 @@ public class DigitalInputImpl implements DigitalInput, IOTask {
   public void open(int pin) throws IOException {
     Log.i(TAG, "open");
     this.pin = pin;
-    IOService.getInstance().addTask(this, pin);
+    IOService.getInstance().addTask(this);
   }
 
   @Override

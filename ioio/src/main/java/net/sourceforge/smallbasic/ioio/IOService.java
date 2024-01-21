@@ -34,8 +34,8 @@ public class IOService implements IOIOLooperProvider  {
     return instance;
   }
 
-  public void addTask(IOTask ioTask, int pin) throws IOException {
-    registerPin(pin);
+  public void addTask(IOTask ioTask) throws IOException {
+    registerPin(ioTask.getPin());
     ioTasks.add(ioTask);
   }
 
@@ -44,18 +44,24 @@ public class IOService implements IOIOLooperProvider  {
     return looper;
   }
 
+  public void removeTask(IOTask task) {
+    ioTasks.remove(task);
+  }
+
   public void start() {
     connectionController.start();
   }
 
   private void registerPin(int pin) throws IOException {
-    if (pin < 0 || pin >= MAX_PINS) {
-      throw new IOException("invalid pin: " + pin);
+    if (pin != -1) {
+      if (pin < 0 || pin >= MAX_PINS) {
+        throw new IOException("invalid pin: " + pin);
+      }
+      if (usedPins[pin] != null) {
+        throw new IOException("pin already used: " + pin);
+      }
+      usedPins[pin] = true;
     }
-    if (usedPins[pin] != null) {
-      throw new IOException("pin already used: " + pin);
-    }
-    usedPins[pin] = true;
   }
 
   public class IOServiceLooper implements IOIOLooper {

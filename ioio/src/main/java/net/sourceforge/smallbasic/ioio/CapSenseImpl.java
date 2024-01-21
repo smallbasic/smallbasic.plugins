@@ -19,8 +19,14 @@ public class CapSenseImpl implements CapSense, IOTask {
 
   @Override
   public void close() {
+    IOService.getInstance().removeTask(this);
     capSense.close();
     capSense = null;
+  }
+
+  @Override
+  public int getPin() {
+    return pin;
   }
 
   @Override
@@ -30,7 +36,7 @@ public class CapSenseImpl implements CapSense, IOTask {
   public void open(int pin) throws IOException {
     Log.i(TAG, "open");
     this.pin = pin;
-    IOService.getInstance().addTask(this, pin);
+    IOService.getInstance().addTask(this);
   }
 
   @Override

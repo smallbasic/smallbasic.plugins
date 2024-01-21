@@ -5,7 +5,7 @@ rem
 tload "api.json", s, 1
 api = array(s)
 
-ioioApi = ["beginBatch", "disconnect", "endBatch", "hardReset", "softReset", "sync", "waitForConnect", "waitForDisconnect"]
+ioioApi = ["beginBatch", "disconnect", "endBatch", "hardReset", "softReset", "start", "sync", "waitForConnect", "waitForDisconnect"]
 
 func get_method_name(method)
   local result

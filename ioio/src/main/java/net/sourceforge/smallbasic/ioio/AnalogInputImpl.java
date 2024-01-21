@@ -29,6 +29,7 @@ public class AnalogInputImpl implements AnalogInput, IOTask {
 
   @Override
   public void close() {
+    IOService.getInstance().removeTask(this);
     input.close();
     input = null;
   }
@@ -64,6 +65,11 @@ public class AnalogInputImpl implements AnalogInput, IOTask {
   }
 
   @Override
+  public int getPin() {
+    return pin;
+  }
+
+  @Override
   public void loop() throws InterruptedException, ConnectionLostException {
     if (!queue.isEmpty()) {
       try {
@@ -78,7 +84,7 @@ public class AnalogInputImpl implements AnalogInput, IOTask {
   public void open(int pin) throws IOException {
     Log.i(TAG, "openInput");
     this.pin = pin;
-    IOService.getInstance().addTask(this, pin);
+    IOService.getInstance().addTask(this);
   }
 
   @Override

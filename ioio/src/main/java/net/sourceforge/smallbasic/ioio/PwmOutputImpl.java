@@ -20,10 +20,16 @@ public class PwmOutputImpl implements PwmOutput, IOTask {
 
   @Override
   public void close() {
+    IOService.getInstance().removeTask(this);
     output.close();
     output = null;
   }
 
+
+  @Override
+  public int getPin() {
+    return pin;
+  }
 
   @Override
   public void loop() throws ConnectionLostException, InterruptedException {
@@ -33,7 +39,7 @@ public class PwmOutputImpl implements PwmOutput, IOTask {
   public void open(int pin, int freqHz) throws IOException {
     Log.i(TAG, "open");
     this.pin = pin;
-    IOService.getInstance().addTask(this, pin);
+    IOService.getInstance().addTask(this);
   }
 
   @Override

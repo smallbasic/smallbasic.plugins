@@ -1,5 +1,6 @@
 package net.sourceforge.smallbasic.ioio;
 
+import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -14,8 +15,9 @@ public class IOIOImpl implements IOTask {
   private final BlockingQueue<Consumer<IOIO>> queue = new LinkedBlockingQueue<>();
   private IOIO ioio;
 
-  public IOIOImpl() {
+  public IOIOImpl() throws IOException {
     Log.i(TAG, "created");
+    IOService.getInstance().addTask(this);
   }
 
   public void beginBatch() {
@@ -28,6 +30,11 @@ public class IOIOImpl implements IOTask {
 
   public void endBatch() {
     invoke(IOIO::endBatch);
+  }
+
+  @Override
+  public int getPin() {
+    return -1;
   }
 
   public void hardReset() {
@@ -57,6 +64,10 @@ public class IOIOImpl implements IOTask {
     invoke(IOIO::softReset);
   }
 
+  public void start() {
+    IOService.getInstance().start();
+  }
+
   public void sync() {
     invoke(IOIO::sync);
   }
@@ -70,7 +81,7 @@ public class IOIOImpl implements IOTask {
   }
 
   protected void invoke(Consumer<IOIO> consumer) {
-    final CountDownLatch latch = new CountDownLatch(1);
+    CountDownLatch latch = new CountDownLatch(1);
     try {
       queue.put(ioio -> {
           consumer.invoke(ioio);

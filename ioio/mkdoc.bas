@@ -11,6 +11,9 @@ ioioApi = [{
   "name": "disconnect",
   "comment": "Closes the connection to the board, or aborts a connection process started with waitForConnect()"
 },{
+  "name": "start",
+  "comment": "Starts processing"
+},{
   "name": "endBatch",
   "comment": "End a batch of operations."
 },{

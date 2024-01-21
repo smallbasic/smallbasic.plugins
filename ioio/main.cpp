@@ -234,6 +234,7 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "HARDRESET", cmd_hardreset},
   {0, 0, "SOFTRESET", cmd_softreset},
   {0, 0, "SYNC", cmd_sync},
+  {0, 0, "START", cmd_start},
   {0, 0, "WAITFORCONNECT", cmd_waitforconnect},
   {0, 0, "WAITFORDISCONNECT", cmd_waitfordisconnect},
 };

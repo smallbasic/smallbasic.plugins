@@ -20,8 +20,14 @@ public class DigitalOutputImpl implements DigitalOutput, IOTask {
 
   @Override
   public void close() {
+    IOService.getInstance().removeTask(this);
     output.close();
     output = null;
+  }
+
+  @Override
+  public int getPin() {
+    return pin;
   }
 
   @Override
@@ -32,7 +38,7 @@ public class DigitalOutputImpl implements DigitalOutput, IOTask {
   public void open(int pin) throws IOException {
     Log.i(TAG, "open");
     this.pin = pin;
-    IOService.getInstance().addTask(this, pin);
+    IOService.getInstance().addTask(this);
   }
 
   @Override
