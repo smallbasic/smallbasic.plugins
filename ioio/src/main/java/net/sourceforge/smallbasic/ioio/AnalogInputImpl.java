@@ -1,24 +1,24 @@
 package net.sourceforge.smallbasic.ioio;
 
-import ioio.lib.api.IOIO;
-import ioio.lib.api.exception.ConnectionLostException;
-import ioio.lib.api.exception.IncompatibilityException;
-import ioio.lib.spi.Log;
-import ioio.lib.util.IOIOLooper;
-import ioio.lib.api.AnalogInput;
-
+import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class AnalogInputImpl extends AbstractLooperProvider implements AnalogInput {
+import ioio.lib.api.AnalogInput;
+import ioio.lib.api.IOIO;
+import ioio.lib.api.exception.ConnectionLostException;
+import ioio.lib.api.exception.IncompatibilityException;
+import ioio.lib.spi.Log;
+
+public class AnalogInputImpl implements AnalogInput, IOTask {
   private static final String TAG = "AnalogInput";
-  private AnalogInputLooper looper;
-  protected BlockingQueue<FloatConsumer<AnalogInput>> inputQueue;
+  private final BlockingQueue<FloatConsumer<AnalogInput>> queue = new LinkedBlockingQueue<>();
+  private AnalogInput input;
+  private int pin;
 
   public AnalogInputImpl() {
     super();
-    inputQueue = new LinkedBlockingQueue<>();
     Log.i(TAG, "created");
   }
 
@@ -29,129 +29,103 @@ public class AnalogInputImpl extends AbstractLooperProvider implements AnalogInp
 
   @Override
   public void close() {
-    super.close();
-    this.looper.close();
-    this.looper = null;
-  }
-
-  @Override
-  public IOIOLooper createIOIOLooper(String connectionType, Object extra) {
-    return looper;
+    input.close();
+    input = null;
   }
 
   @Override
   public int getOverflowCount() {
-    return (int) invokeFloat(AnalogInput::getOverflowCount);
+    return (int) invoke(AnalogInput::getOverflowCount);
   }
 
   @Override
   public float getReference() {
-    return invokeFloat(AnalogInput::getReference);
+    return invoke(AnalogInput::getReference);
   }
 
   @Override
   public float getSampleRate() {
-    return invokeFloat(AnalogInput::getSampleRate);
+    return invoke(AnalogInput::getSampleRate);
   }
 
   @Override
   public float getVoltage() {
-    return invokeFloat(AnalogInput::getVoltage);
+    return invoke(AnalogInput::getVoltage);
   }
 
   @Override
   public float getVoltageBuffered() {
-    return invokeFloat(AnalogInput::getVoltageBuffered);
+    return invoke(AnalogInput::getVoltageBuffered);
   }
 
   @Override
   public float getVoltageSync() {
-    return invokeFloat(AnalogInput::getVoltageSync);
+    return invoke(AnalogInput::getVoltageSync);
   }
 
-  public void open(int pin) {
+  @Override
+  public void loop() throws InterruptedException, ConnectionLostException {
+    if (!queue.isEmpty()) {
+      try {
+        queue.take().invoke(input);
+      }
+      catch (ConnectionLostException | IncompatibilityException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  public void open(int pin) throws IOException {
     Log.i(TAG, "openInput");
-    looper = new AnalogInputLooper(QUEUE, inputQueue, pin);
-    start();
+    this.pin = pin;
+    IOService.getInstance().addTask(this, pin);
   }
 
   @Override
   public float read() throws InterruptedException, ConnectionLostException {
-    return invokeFloat(AnalogInput::read);
+    return invoke(AnalogInput::read);
   }
 
   @Override
   public float readBuffered() {
-    return invokeFloat(AnalogInput::readBuffered);
+    return invoke(AnalogInput::readBuffered);
   }
 
   @Override
   public float readSync() {
-    return invokeFloat(AnalogInput::readSync);
+    return invoke(AnalogInput::readSync);
   }
 
   @Override
   public void setBuffer(int capacity) {
-
+    throw new UnsupportedOperationException();
   }
 
-  protected float invokeFloat(FloatConsumer<AnalogInput> consumer) {
-    final CountDownLatch latch = new CountDownLatch(1);
-    final float[] result = new float[1];
+  @Override
+  public void setup(IOIO ioio) {
+    Log.i(TAG, "setup entered");
     try {
-      inputQueue.put(e -> {
-        result[0] = consumer.invoke(e);
-        latch.countDown();
-        return result[0];
-      });
+      input = ioio.openAnalogInput(pin);
+    }
+    catch (ConnectionLostException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  protected float invoke(FloatConsumer<AnalogInput> consumer) {
+    CountDownLatch latch = new CountDownLatch(1);
+    float[] result = new float[1];
+    try {
+      queue.put(e -> {
+          result[0] = consumer.invoke(e);
+          latch.countDown();
+          return result[0];
+        });
       latch.await();
     }
     catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
     return result[0];
-  }
-
-  static class AnalogInputLooper extends AbstractLooper {
-    private AnalogInput analogInput;
-    private final BlockingQueue<FloatConsumer<AnalogInput>> inputQueue;
-
-    public AnalogInputLooper(BlockingQueue<Consumer<IOIO>> queue,
-                             BlockingQueue<FloatConsumer<AnalogInput>> inputQueue,
-                             int pin) {
-      super(queue, pin);
-      this.inputQueue = inputQueue;
-      Log.i(TAG, "creating AnalogInputLooper");
-    }
-
-    public void close() {
-      this.analogInput.close();
-      this.analogInput = null;
-    }
-
-    @Override
-    public void loop() throws InterruptedException, ConnectionLostException {
-      super.loop();
-      if (!inputQueue.isEmpty()) {
-        try {
-          inputQueue.take().invoke(analogInput);
-        }
-        catch (ConnectionLostException | IncompatibilityException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    }
-
-    @Override
-    public void setup(IOIO ioio) {
-      Log.i(TAG, "setup entered");
-      super.setup(ioio);
-      try {
-        analogInput = ioio.openAnalogInput(pin);
-      }
-      catch (ConnectionLostException e) {
-        throw new RuntimeException(e);
-      }
-    }
   }
 }

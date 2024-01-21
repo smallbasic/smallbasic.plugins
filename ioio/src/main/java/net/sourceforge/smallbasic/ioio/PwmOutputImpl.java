@@ -1,37 +1,39 @@
 package net.sourceforge.smallbasic.ioio;
 
+import java.io.IOException;
+
 import ioio.lib.api.IOIO;
 import ioio.lib.api.PwmOutput;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
-import ioio.lib.util.IOIOLooper;
 
-import java.util.concurrent.BlockingQueue;
-
-public class PwmOutputImpl extends AbstractLooperProvider implements PwmOutput {
+public class PwmOutputImpl implements PwmOutput, IOTask {
   private static final String TAG = "PulseInput";
-  private PwmOutputLooper looper;
+  private PwmOutput output;
+  private int pin;
+  private int freqHz;
 
   public PwmOutputImpl() {
     super();
     Log.i(TAG, "created");
   }
 
+  @Override
   public void close() {
-    super.close();
-    this.looper.close();
-    looper = null;
+    output.close();
+    output = null;
   }
+
 
   @Override
-  public IOIOLooper createIOIOLooper(String type, Object extra) {
-    return looper;
+  public void loop() throws ConnectionLostException, InterruptedException {
+
   }
 
-  public void open(int pin, int freqHz) {
+  public void open(int pin, int freqHz) throws IOException {
     Log.i(TAG, "open");
-    looper = new PwmOutputLooper(QUEUE, pin, freqHz);
-    start();
+    this.pin = pin;
+    IOService.getInstance().addTask(this, pin);
   }
 
   @Override
@@ -49,30 +51,14 @@ public class PwmOutputImpl extends AbstractLooperProvider implements PwmOutput {
 
   }
 
-  static class PwmOutputLooper extends AbstractLooper {
-    private ioio.lib.api.PwmOutput output;
-    private final int freqHz;
-
-    public PwmOutputLooper(BlockingQueue<Consumer<IOIO>> queue, int pin, int freqHz) {
-      super(queue, pin);
-      this.freqHz = freqHz;
+  @Override
+  public void setup(IOIO ioio) {
+    Log.i(TAG, "setup entered");
+    try {
+      output = ioio.openPwmOutput(pin, freqHz);
     }
-
-    public void close() {
-      output.close();
-      output = null;
-    }
-
-    @Override
-    public void setup(IOIO ioio) {
-      Log.i(TAG, "setup entered");
-      super.setup(ioio);
-      try {
-        output = ioio.openPwmOutput(pin, freqHz);
-      }
-      catch (ConnectionLostException e) {
-        throw new RuntimeException(e);
-      }
+    catch (ConnectionLostException e) {
+      throw new RuntimeException(e);
     }
   }
 }

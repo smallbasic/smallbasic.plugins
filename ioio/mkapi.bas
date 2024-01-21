@@ -65,11 +65,11 @@ sub generate_command(objName, method)
   endif
 
   if (method.rtn == "void") then
-    print "      result = _classMap.at(id)." + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
+    print "      result = _ioTaskMap.at(id)." + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
   else if (method.rtn == "boolean" || method.rtn == "int") then
-    print "      result = _classMap.at(id)." + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
+    print "      result = _ioTaskMap.at(id)." + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
   else if (method.rtn == "float") then
-    print "      result = _classMap.at(id)." + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
+    print "      result = _ioTaskMap.at(id)." + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
   endif
   print "    }"
   print "  }"
@@ -84,7 +84,7 @@ sub generate_ioio_command(name)
   print "  if (argc != 0) {"
   print "    error(retval, \"" + name + "\", 0);"
   print "  } else {"
-  print "    result = ioioClass->invokeVoidVoid(\"" + name + "\", retval);"
+  print "    result = ioioTask->invokeVoidVoid(\"" + name + "\", retval);"
   print "  }"
   print "  return result;"
   print "}"
@@ -106,14 +106,14 @@ sub generate_open_function(byref obj)
   print "  int result;"
   print "  int pin = get_param_int(argc, params, 0, 0);"
   print "  int id = ++nextId;"
-  print "  IOClass &instance = _classMap[id];"
+  print "  IOTask &instance = _ioTaskMap[id];"
   print "  if (instance.create(CLASS_" + upper(obj.name) + ") &&"
   print "      instance.open(pin, retval)) {"
-  print "    map_init_id(retval, id, CLASS_IOCLASS_ID);"
+  print "    map_init_id(retval, id, CLASS_IOTASK_ID);"
   print "    create_" + lower(obj.name) + "(retval);"
   print "    result = 1;"
   print "  } else {"
-  print "    _classMap.erase(id);"
+  print "    _ioTaskMap.erase(id);"
   print "    error(retval, \"open" + obj.name + "() failed\");"
   print "    result = 0;"
   print "  }"

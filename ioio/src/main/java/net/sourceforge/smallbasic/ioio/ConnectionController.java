@@ -11,13 +11,13 @@ public class ConnectionController extends IOIOBaseApplicationHelper {
   static {
     IOIOConnectionRegistry.addBootstraps(new String[]{
         "ioio.lib.pc.SerialPortIOIOConnectionBootstrap"
-    });
+      });
     /*
-    IOIOConnectionRegistry.addBootstraps(new String[]{
-        "ioio.lib.impl.SocketIOIOConnectionBootstrap",
-        "ioio.lib.android.accessory.AccessoryConnectionBootstrap",
-        "ioio.lib.android.bluetooth.BluetoothIOIOConnectionBootstrap",
-        "ioio.lib.android.device.DeviceConnectionBootstrap"});
+      IOIOConnectionRegistry.addBootstraps(new String[]{
+      "ioio.lib.impl.SocketIOIOConnectionBootstrap",
+      "ioio.lib.android.accessory.AccessoryConnectionBootstrap",
+      "ioio.lib.android.bluetooth.BluetoothIOIOConnectionBootstrap",
+      "ioio.lib.android.device.DeviceConnectionBootstrap"});
     */
   }
 

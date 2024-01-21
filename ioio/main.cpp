@@ -16,11 +16,11 @@
 #include <pthread.h>
 #include "robin-hood-hashing/src/include/robin_hood.h"
 
-struct IOClass;
+struct IOTask;
 
 JNIEnv *env;
 JavaVM *jvm;
-IOClass *ioioClass;
+IOTask *ioioTask;
 int nextId = 1;
 
 #define CLASS_ANALOGINPUT "net/sourceforge/smallbasic/ioio/AnalogInputImpl"
@@ -30,12 +30,12 @@ int nextId = 1;
 #define CLASS_PWMOUTPUT "net/sourceforge/smallbasic/ioio/PwmOutputImpl"
 #define CLASS_CAPSENSE "net/sourceforge/smallbasic/ioio/CapsenseImpl"
 #define CLASS_IOIO "net/sourceforge/smallbasic/ioio/IOIOImpl"
-#define CLASS_IOCLASS_ID 1
+#define CLASS_IOTASK_ID 1
 
-struct IOClass {
-  IOClass(): _clazz(nullptr), _instance(nullptr) {}
+struct IOTask {
+  IOTask(): _clazz(nullptr), _instance(nullptr) {}
 
-  virtual ~IOClass() {
+  virtual ~IOTask() {
     _clazz = nullptr;
     _instance = nullptr;
   }
@@ -200,18 +200,18 @@ struct IOClass {
   jobject _instance;
 };
 
-robin_hood::unordered_map<int, IOClass> _classMap;
+robin_hood::unordered_map<int, IOTask> _ioTaskMap;
 
 static int get_io_class_id(var_s *map, var_s *retval) {
   int result = -1;
   if (is_map(map)) {
     int id = map->v.m.id;
-    if (id != -1 && _classMap.find(id) != _classMap.end()) {
+    if (id != -1 && _ioTaskMap.find(id) != _ioTaskMap.end()) {
       result = id;
     }
   }
   if (result == -1) {
-    error(retval, "IOClass not found");
+    error(retval, "IOTask not found");
   }
   return result;
 }
@@ -225,6 +225,9 @@ FUNC_SIG lib_func[] = {
   {1, 2, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
   {1, 2, "OPENPULSEINPUT", cmd_openpulseinput},
   {1, 2, "OPENPWMOUTPUT", cmd_openpwmoutput},
+};
+
+FUNC_SIG lib_proc[] = {
   {0, 0, "BEGINBATCH", cmd_beginbatch},
   {0, 0, "DISCONNECT", cmd_disconnect},
   {0, 0, "ENDBATCH", cmd_endbatch},
@@ -234,8 +237,6 @@ FUNC_SIG lib_func[] = {
   {0, 0, "WAITFORCONNECT", cmd_waitforconnect},
   {0, 0, "WAITFORDISCONNECT", cmd_waitfordisconnect},
 };
-
-FUNC_SIG lib_proc[] = {};
 
 SBLIB_API int sblib_proc_count() {
   return (sizeof(lib_proc) / sizeof(lib_proc[0]));
@@ -263,9 +264,9 @@ int sblib_init(const char *sourceFile) {
     fprintf(stderr, "Failed to create JVM\n");
   }
 
-  ioioClass = new IOClass();
-  if (!ioioClass || !ioioClass->create(CLASS_IOIO)) {
-    fprintf(stderr, "Failed to IOIOClass\n");
+  ioioTask = new IOTask();
+  if (!ioioTask || !ioioTask->create(CLASS_IOIO)) {
+    fprintf(stderr, "Failed to IOIOTask\n");
     result = 0;
   }
   return result;
@@ -274,10 +275,10 @@ int sblib_init(const char *sourceFile) {
 SBLIB_API void sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
-    case CLASS_IOCLASS_ID:
-      if (id != -1 && _classMap.find(id) != _classMap.end()) {
-        _classMap.at(id).invokeVoidVoid("close", nullptr);
-        _classMap.erase(id);
+    case CLASS_IOTASK_ID:
+      if (id != -1 && _ioTaskMap.find(id) != _ioTaskMap.end()) {
+        _ioTaskMap.at(id).invokeVoidVoid("close", nullptr);
+        _ioTaskMap.erase(id);
       }
       break;
     }
@@ -285,12 +286,12 @@ SBLIB_API void sblib_free(int cls_id, int id) {
 }
 
 void sblib_close(void) {
-  if (ioioClass) {
-    delete ioioClass;
+  if (ioioTask) {
+    delete ioioTask;
   }
-  if (!_classMap.empty()) {
-    fprintf(stderr, "IOClass leak detected\n");
-    _classMap.clear();
+  if (!_ioTaskMap.empty()) {
+    fprintf(stderr, "IOTask leak detected\n");
+    _ioTaskMap.clear();
   }
   jvm->DetachCurrentThread();
   // calling this hangs

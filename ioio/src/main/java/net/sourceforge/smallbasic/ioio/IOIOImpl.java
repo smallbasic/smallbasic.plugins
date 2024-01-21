@@ -1,31 +1,25 @@
 package net.sourceforge.smallbasic.ioio;
 
-import ioio.lib.api.IOIO;
-import ioio.lib.spi.Log;
-import ioio.lib.util.IOIOLooperProvider;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public abstract class AbstractLooperProvider implements IOIOLooperProvider {
-  static final protected String TAG = "AbstractLooperProvider";
-  static final protected BlockingQueue<Consumer<IOIO>> QUEUE = new LinkedBlockingQueue<>();
-  final protected ConnectionController controller;
-  protected boolean ready;
+import ioio.lib.api.IOIO;
+import ioio.lib.api.exception.ConnectionLostException;
+import ioio.lib.api.exception.IncompatibilityException;
+import ioio.lib.spi.Log;
 
-  protected AbstractLooperProvider() {
-    this.controller = new ConnectionController(this);
-    this.ready = false;
+public class IOIOImpl implements IOTask {
+  private static final String TAG = "IOIOImpl";
+  private final BlockingQueue<Consumer<IOIO>> queue = new LinkedBlockingQueue<>();
+  private IOIO ioio;
+
+  public IOIOImpl() {
+    Log.i(TAG, "created");
   }
 
   public void beginBatch() {
     invoke(IOIO::beginBatch);
-  }
-
-  public void close() {
-    this.controller.stop();
-    this.ready = false;
   }
 
   public void disconnect() {
@@ -38,6 +32,25 @@ public abstract class AbstractLooperProvider implements IOIOLooperProvider {
 
   public void hardReset() {
     invoke(IOIO::hardReset);
+  }
+
+  @Override
+  public void loop() throws InterruptedException, ConnectionLostException {
+    if (!queue.isEmpty()) {
+      System.out.println("queue has item");
+      try {
+        queue.take().invoke(ioio);
+        System.out.println("invoked");
+      }
+      catch (ConnectionLostException | IncompatibilityException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  @Override
+  public void setup(IOIO ioio) {
+    this.ioio = ioio;
   }
 
   public void softReset() {
@@ -56,23 +69,14 @@ public abstract class AbstractLooperProvider implements IOIOLooperProvider {
     invoke(IOIO::waitForDisconnect);
   }
 
-  protected void start() {
-    this.controller.start();
-    this.ready = true;
-  }
-
   protected void invoke(Consumer<IOIO> consumer) {
     final CountDownLatch latch = new CountDownLatch(1);
     try {
-      if (this.ready) {
-        QUEUE.put(ioio -> {
+      queue.put(ioio -> {
           consumer.invoke(ioio);
           latch.countDown();
         });
-        latch.await();
-      } else {
-        Log.e(TAG, "Connection not ready");
-      }
+      latch.await();
     } catch (InterruptedException e) {
       Log.e(TAG, "Error putting message handler to the queue: ", e);
     }

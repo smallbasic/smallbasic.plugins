@@ -1,87 +1,60 @@
 package net.sourceforge.smallbasic.ioio;
 
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+
 import ioio.lib.api.DigitalInput;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
-import ioio.lib.util.IOIOLooper;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-
-public class DigitalInputImpl extends AbstractLooperProvider implements DigitalInput {
+public class DigitalInputImpl implements DigitalInput, IOTask {
   private static final String TAG = "DigitalInput";
-  private DigitalInputLooper looper;
   private CountDownLatch latch;
+  private DigitalInput input;
+  private int pin;
+  private volatile boolean value;
 
   public DigitalInputImpl() {
     super();
-    looper = null;
     latch = null;
     Log.i(TAG, "created DigitalInput");
   }
 
   @Override
   public void close() {
-    super.close();
-    looper = null;
+    input.close();
+    input = null;
   }
 
   @Override
-  public IOIOLooper createIOIOLooper(String type, Object extra) {
-    return looper;
+  public void loop() throws InterruptedException, ConnectionLostException {
+    value = input.read();
   }
 
-  public void open(int pin) {
+  public void open(int pin) throws IOException {
     Log.i(TAG, "open");
-    looper = new DigitalInputLooper(QUEUE, pin);
-    start();
+    this.pin = pin;
+    IOService.getInstance().addTask(this, pin);
   }
 
   @Override
   public boolean read() {
-    return looper.getValue();
+    return value;
+  }
+
+  @Override
+  public void setup(IOIO ioio) {
+    Log.i(TAG, "setup entered");
+    try {
+      input = ioio.openDigitalInput(pin);
+    }
+    catch (ConnectionLostException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public void waitForValue(boolean value) throws InterruptedException, ConnectionLostException {
-  }
-
-  static class DigitalInputLooper extends AbstractLooper {
-    private ioio.lib.api.DigitalInput input;
-    private volatile boolean value;
-
-    public DigitalInputLooper(BlockingQueue<Consumer<IOIO>> queue, int pin) {
-      super(queue, pin);
-      value = false;
-      Log.i(TAG, "creating DigitalInputLooper");
-    }
-
-    public void close() {
-      this.input.close();
-      this.input = null;
-    }
-
-    @Override
-    public void loop() throws InterruptedException, ConnectionLostException {
-      super.loop();
-      value = input.read();
-    }
-
-    @Override
-    public void setup(IOIO ioio) {
-      Log.i(TAG, "setup entered");
-      super.setup(ioio);
-      try {
-        this.input = ioio.openDigitalInput(pin);
-      }
-      catch (ConnectionLostException e) {
-        throw new RuntimeException(e);
-      }
-    }
-
-    boolean getValue() {
-      return this.value;
-    }
   }
 }

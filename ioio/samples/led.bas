@@ -4,7 +4,7 @@ out = ioio.openDigitalOutput(0, 1)
 
 print "wait for connect"
 ioio.waitForConnect()
-print "ready"
+print "ready!!!"
 
 value = false
 for i = 0 to 5

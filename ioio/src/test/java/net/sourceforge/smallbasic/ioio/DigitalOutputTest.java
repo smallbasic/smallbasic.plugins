@@ -1,12 +1,15 @@
 package net.sourceforge.smallbasic.ioio;
 
+import java.io.IOException;
+
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 
 class DigitalOutputTest {
-  public static void main(String[] args) throws InterruptedException, ConnectionLostException {
+  public static void main(String[] args) throws InterruptedException, ConnectionLostException, IOException {
     DigitalOutputImpl output = new DigitalOutputImpl();
     output.open(IOIO.LED_PIN);
+    IOService.getInstance().start();
     System.err.println("done open");
     boolean value = true;
     while (true) {
