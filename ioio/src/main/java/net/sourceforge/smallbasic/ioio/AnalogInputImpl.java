@@ -3,17 +3,12 @@ package net.sourceforge.smallbasic.ioio;
 import ioio.lib.api.AnalogInput;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
-import ioio.lib.api.exception.IncompatibilityException;
 import ioio.lib.spi.Log;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class AnalogInputImpl extends IOTask implements AnalogInput {
   private static final String TAG = "AnalogInput";
-  private final BlockingQueue<FloatConsumer<AnalogInput>> queue = new LinkedBlockingQueue<>();
-  private AnalogInput input;
+  private static final IOLock<AnalogInput> lock = new IOLock<>();
+  private AnalogInput input = null;
 
   public AnalogInputImpl() {
     super();
@@ -22,7 +17,7 @@ public class AnalogInputImpl extends IOTask implements AnalogInput {
 
   @Override
   public int available() throws ConnectionLostException {
-    return 0;
+    return lock.invokeInt(AnalogInput::available);
   }
 
   @Override
@@ -34,59 +29,52 @@ public class AnalogInputImpl extends IOTask implements AnalogInput {
 
   @Override
   public int getOverflowCount() {
-    return (int) invoke(AnalogInput::getOverflowCount);
+    return lock.invokeInt(AnalogInput::getOverflowCount);
   }
 
   @Override
   public float getReference() {
-    return invoke(AnalogInput::getReference);
+    return lock.invoke(AnalogInput::getReference);
   }
 
   @Override
   public float getSampleRate() {
-    return invoke(AnalogInput::getSampleRate);
+    return lock.invoke(AnalogInput::getSampleRate);
   }
 
   @Override
   public float getVoltage() {
-    return invoke(AnalogInput::getVoltage);
+    return lock.invoke(AnalogInput::getVoltage);
   }
 
   @Override
   public float getVoltageBuffered() {
-    return invoke(AnalogInput::getVoltageBuffered);
+    return lock.invoke(AnalogInput::getVoltageBuffered);
   }
 
   @Override
   public float getVoltageSync() {
-    return invoke(AnalogInput::getVoltageSync);
+    return lock.invoke(AnalogInput::getVoltageSync);
   }
 
   @Override
   public void loop() throws InterruptedException, ConnectionLostException {
-    if (!queue.isEmpty()) {
-      try {
-        queue.take().invoke(input);
-      }
-      catch (ConnectionLostException | IncompatibilityException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    lock.process(input);
   }
 
   @Override
   public float read() throws InterruptedException, ConnectionLostException {
-    return invoke(AnalogInput::read);
+    return lock.invoke(AnalogInput::read);
   }
 
   @Override
   public float readBuffered() {
-    return invoke(AnalogInput::readBuffered);
+    return lock.invoke(AnalogInput::readBuffered);
   }
 
   @Override
   public float readSync() {
-    return invoke(AnalogInput::readSync);
+    return lock.invoke(AnalogInput::readSync);
   }
 
   @Override
@@ -103,22 +91,5 @@ public class AnalogInputImpl extends IOTask implements AnalogInput {
     catch (ConnectionLostException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  protected float invoke(FloatConsumer<AnalogInput> consumer) {
-    CountDownLatch latch = new CountDownLatch(1);
-    float[] result = new float[1];
-    try {
-      queue.put(e -> {
-          result[0] = consumer.invoke(e);
-          latch.countDown();
-          return result[0];
-        });
-      latch.await();
-    }
-    catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-    return result[0];
   }
 }

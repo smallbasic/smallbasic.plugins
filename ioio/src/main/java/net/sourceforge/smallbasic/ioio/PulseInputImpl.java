@@ -3,17 +3,12 @@ package net.sourceforge.smallbasic.ioio;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.PulseInput;
 import ioio.lib.api.exception.ConnectionLostException;
-import ioio.lib.api.exception.IncompatibilityException;
 import ioio.lib.spi.Log;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class PulseInputImpl extends IOTask implements PulseInput {
   private static final String TAG = "PulseInput";
   private static final PulseInput.PulseMode pulseMode = PulseInput.PulseMode.NEGATIVE;
-  private final BlockingQueue<FloatConsumer<PulseInput>> queue = new LinkedBlockingQueue<>();
+  private static final IOLock<PulseInput> lock = new IOLock<>();
   private PulseInput input;
 
   public PulseInputImpl() {
@@ -30,39 +25,32 @@ public class PulseInputImpl extends IOTask implements PulseInput {
 
   @Override
   public float getDuration() throws InterruptedException, ConnectionLostException {
-    return invoke(PulseInput::getDuration);
+    return lock.invoke(PulseInput::getDuration);
   }
 
   @Override
   public float getDurationBuffered() throws InterruptedException, ConnectionLostException {
-    return invoke(PulseInput::getDurationBuffered);
+    return lock.invoke(PulseInput::getDurationBuffered);
   }
 
   @Override
   public float getDurationSync() throws InterruptedException, ConnectionLostException {
-    return invoke(PulseInput::getDurationSync);
+    return lock.invoke(PulseInput::getDurationSync);
   }
 
   @Override
   public float getFrequency() throws InterruptedException, ConnectionLostException {
-    return invoke(PulseInput::getFrequency);
+    return lock.invoke(PulseInput::getFrequency);
   }
 
   @Override
   public float getFrequencySync() throws InterruptedException, ConnectionLostException {
-    return invoke(PulseInput::getFrequencySync);
+    return lock.invoke(PulseInput::getFrequencySync);
   }
 
   @Override
   public void loop() throws InterruptedException, ConnectionLostException {
-    if (!queue.isEmpty()) {
-      try {
-        queue.take().invoke(input);
-      }
-      catch (ConnectionLostException | IncompatibilityException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    lock.process(input);
   }
 
   @Override
@@ -79,22 +67,5 @@ public class PulseInputImpl extends IOTask implements PulseInput {
   @Override
   public float waitPulseGetDuration() throws InterruptedException, ConnectionLostException {
     throw new UnsupportedOperationException();
-  }
-
-  protected float invoke(FloatConsumer<PulseInput> consumer) {
-    CountDownLatch latch = new CountDownLatch(1);
-    float[] result = new float[1];
-    try {
-      queue.put(e -> {
-          result[0] = consumer.invoke(e);
-          latch.countDown();
-          return result[0];
-        });
-      latch.await();
-    }
-    catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-    return result[0];
   }
 }

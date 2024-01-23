@@ -5,17 +5,13 @@ import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 
-import java.util.concurrent.CountDownLatch;
-
 public class DigitalInputImpl extends IOTask implements DigitalInput {
   private static final String TAG = "DigitalInput";
-  private CountDownLatch latch;
   private DigitalInput input;
   private volatile boolean value;
 
   public DigitalInputImpl() {
     super();
-    latch = null;
     Log.i(TAG, "created DigitalInput");
   }
 
@@ -49,5 +45,6 @@ public class DigitalInputImpl extends IOTask implements DigitalInput {
 
   @Override
   public void waitForValue(boolean value) throws InterruptedException, ConnectionLostException {
+    throw new UnsupportedOperationException();
   }
 }

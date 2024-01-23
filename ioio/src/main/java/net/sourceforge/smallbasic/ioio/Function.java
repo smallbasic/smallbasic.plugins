@@ -4,6 +4,6 @@ import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.api.exception.IncompatibilityException;
 
 @FunctionalInterface
-public interface FloatConsumer<T>  {
-  float invoke(T t) throws ConnectionLostException, InterruptedException, IncompatibilityException;
+public interface Function<T, I> {
+  T apply(I i) throws ConnectionLostException, InterruptedException, IncompatibilityException;
 }

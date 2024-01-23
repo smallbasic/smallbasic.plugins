@@ -5,5 +5,5 @@ import ioio.lib.api.exception.IncompatibilityException;
 
 @FunctionalInterface
 public interface Consumer<T>  {
-  void invoke(T t) throws ConnectionLostException, InterruptedException, IncompatibilityException;
+  void accept(T t) throws ConnectionLostException, InterruptedException, IncompatibilityException;
 }
