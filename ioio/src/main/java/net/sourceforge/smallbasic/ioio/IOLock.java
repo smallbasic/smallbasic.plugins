@@ -13,7 +13,7 @@ public class IOLock<I> {
   private Consumer<I> consumer;
 
   public float invoke(Function<Float, I> function) {
-    CountDownLatch latch = getLatch();
+    CountDownLatch latch = beginLatch();
     lock.writeLock().lock();
     AtomicReference<Float> result = new AtomicReference<>();
     try {
@@ -21,37 +21,31 @@ public class IOLock<I> {
         result.set(function.apply(i));
         latch.countDown();
       };
-      latch.await();
-    }
-    catch (InterruptedException e) {
-      throw new RuntimeException(e);
     }
     finally {
       lock.writeLock().unlock();
     }
+    endLatch(latch);
     return result.get();
   }
 
   public void invoke(Consumer<I> consumer) {
-    CountDownLatch latch = getLatch();
+    CountDownLatch latch = beginLatch();
     lock.writeLock().lock();
     try {
       this.consumer = (i) -> {
         consumer.accept(i);
         latch.countDown();
       };
-      latch.await();
-    }
-    catch (InterruptedException e) {
-      throw new RuntimeException(e);
     }
     finally {
       lock.writeLock().unlock();
     }
+    endLatch(latch);
   }
 
   public int invokeInt(Function<Integer, I> function) {
-    CountDownLatch latch = getLatch();
+    CountDownLatch latch = beginLatch();
     lock.writeLock().lock();
     AtomicReference<Integer> result = new AtomicReference<>();
     try {
@@ -59,14 +53,11 @@ public class IOLock<I> {
         result.set(function.apply(i));
         latch.countDown();
       };
-      latch.await();
-    }
-    catch (InterruptedException e) {
-      throw new RuntimeException(e);
     }
     finally {
       lock.writeLock().unlock();
     }
+    endLatch(latch);
     return result.get();
   }
 
@@ -89,7 +80,18 @@ public class IOLock<I> {
   /**
    * CountDownLatch ensures the calling method returns once process has completed
    */
-  private static CountDownLatch getLatch() {
+  private CountDownLatch beginLatch() {
     return new CountDownLatch(1);
+  }
+
+  /**
+   * Wait for the looper to process the next consumer
+   */
+  private void endLatch(CountDownLatch latch) {
+    try {
+      latch.await();
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

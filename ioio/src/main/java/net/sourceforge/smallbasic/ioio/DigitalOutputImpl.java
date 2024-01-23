@@ -1,5 +1,7 @@
 package net.sourceforge.smallbasic.ioio;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import ioio.lib.api.DigitalOutput;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
@@ -7,8 +9,8 @@ import ioio.lib.spi.Log;
 
 public class DigitalOutputImpl extends IOTask implements DigitalOutput {
   private static final String TAG = "DigitalOutput";
+  private final AtomicBoolean value = new AtomicBoolean(false);
   private DigitalOutput output;
-  private volatile boolean value;
 
   public DigitalOutputImpl() {
     super();
@@ -24,7 +26,7 @@ public class DigitalOutputImpl extends IOTask implements DigitalOutput {
 
   @Override
   public void loop() throws InterruptedException, ConnectionLostException {
-    output.write(value);
+    output.write(value.get());
   }
 
   @Override
@@ -40,6 +42,6 @@ public class DigitalOutputImpl extends IOTask implements DigitalOutput {
 
   @Override
   public void write(boolean value) throws ConnectionLostException {
-    this.value = value;
+    this.value.set(value);
   }
 }
