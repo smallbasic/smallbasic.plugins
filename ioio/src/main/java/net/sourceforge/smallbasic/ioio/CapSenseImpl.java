@@ -7,6 +7,7 @@ import ioio.lib.spi.Log;
 
 public class CapSenseImpl extends IOTask implements CapSense {
   private static final String TAG = "CapSense";
+  private static final IOLock<CapSense> lock = new IOLock<>();
   private CapSense capSense;
 
   public CapSenseImpl() {
@@ -23,21 +24,22 @@ public class CapSenseImpl extends IOTask implements CapSense {
 
   @Override
   public void loop() throws ConnectionLostException, InterruptedException {
+    lock.process(capSense);
   }
 
   @Override
   public float read() throws InterruptedException, ConnectionLostException {
-    return 0;
+    return lock.invoke(CapSense::read);
   }
 
   @Override
   public float readSync() throws InterruptedException, ConnectionLostException {
-    return 0;
+    return lock.invoke(CapSense::readSync);
   }
 
   @Override
   public void setFilterCoef(float t) throws ConnectionLostException {
-
+    throw new UnsupportedOperationException();
   }
 
   @Override
