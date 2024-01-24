@@ -8,7 +8,7 @@ import ioio.lib.spi.Log;
 public class PulseInputImpl extends IOTask implements PulseInput {
   private static final String TAG = "PulseInput";
   private static final PulseInput.PulseMode pulseMode = PulseInput.PulseMode.NEGATIVE;
-  private static final IOLock<PulseInput> lock = new IOLock<>();
+  private final IOLock<PulseInput> lock = new IOLock<>();
   private PulseInput input;
 
   public PulseInputImpl() {
@@ -24,32 +24,32 @@ public class PulseInputImpl extends IOTask implements PulseInput {
   }
 
   @Override
-  public float getDuration() throws InterruptedException, ConnectionLostException {
+  public float getDuration() {
     return lock.invoke(PulseInput::getDuration);
   }
 
   @Override
-  public float getDurationBuffered() throws InterruptedException, ConnectionLostException {
+  public float getDurationBuffered() {
     return lock.invoke(PulseInput::getDurationBuffered);
   }
 
   @Override
-  public float getDurationSync() throws InterruptedException, ConnectionLostException {
+  public float getDurationSync() {
     return lock.invoke(PulseInput::getDurationSync);
   }
 
   @Override
-  public float getFrequency() throws InterruptedException, ConnectionLostException {
+  public float getFrequency() {
     return lock.invoke(PulseInput::getFrequency);
   }
 
   @Override
-  public float getFrequencySync() throws InterruptedException, ConnectionLostException {
+  public float getFrequencySync() {
     return lock.invoke(PulseInput::getFrequencySync);
   }
 
   @Override
-  public void loop() throws InterruptedException, ConnectionLostException {
+  public void loop() {
     lock.process(input);
   }
 
@@ -65,7 +65,7 @@ public class PulseInputImpl extends IOTask implements PulseInput {
   }
 
   @Override
-  public float waitPulseGetDuration() throws InterruptedException, ConnectionLostException {
-    throw new UnsupportedOperationException();
+  public float waitPulseGetDuration() {
+    return lock.invoke(PulseInput::getDurationBuffered);
   }
 }

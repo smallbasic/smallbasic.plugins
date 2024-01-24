@@ -44,7 +44,7 @@ public class DigitalInputImpl extends IOTask implements DigitalInput {
   }
 
   @Override
-  public void waitForValue(boolean value) throws InterruptedException, ConnectionLostException {
+  public void waitForValue(boolean value) {
     throw new UnsupportedOperationException();
   }
 }

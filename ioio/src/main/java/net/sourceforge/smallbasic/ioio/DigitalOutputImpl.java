@@ -25,7 +25,7 @@ public class DigitalOutputImpl extends IOTask implements DigitalOutput {
   }
 
   @Override
-  public void loop() throws InterruptedException, ConnectionLostException {
+  public void loop() throws ConnectionLostException {
     output.write(value.get());
   }
 
@@ -41,7 +41,7 @@ public class DigitalOutputImpl extends IOTask implements DigitalOutput {
   }
 
   @Override
-  public void write(boolean value) throws ConnectionLostException {
+  public void write(boolean value) {
     this.value.set(value);
   }
 }

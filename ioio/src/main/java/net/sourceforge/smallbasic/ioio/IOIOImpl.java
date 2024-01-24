@@ -1,14 +1,13 @@
 package net.sourceforge.smallbasic.ioio;
 
-import ioio.lib.api.IOIO;
-import ioio.lib.api.exception.ConnectionLostException;
-import ioio.lib.spi.Log;
-
 import java.io.IOException;
+
+import ioio.lib.api.IOIO;
+import ioio.lib.spi.Log;
 
 public class IOIOImpl extends IOTask {
   private static final String TAG = "IOIOImpl";
-  private static final IOLock<IOIO> lock = new IOLock<>();
+  private final IOLock<IOIO> lock = new IOLock<>();
   private IOIO ioio;
 
   public IOIOImpl() throws IOException {
@@ -38,7 +37,7 @@ public class IOIOImpl extends IOTask {
   }
 
   @Override
-  public void loop() throws InterruptedException, ConnectionLostException {
+  public void loop() {
     lock.process(ioio);
   }
 

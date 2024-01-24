@@ -7,7 +7,7 @@ import ioio.lib.spi.Log;
 
 public class AnalogInputImpl extends IOTask implements AnalogInput {
   private static final String TAG = "AnalogInput";
-  private static final IOLock<AnalogInput> lock = new IOLock<>();
+  private final IOLock<AnalogInput> lock = new IOLock<>();
   private AnalogInput input = null;
 
   public AnalogInputImpl() {
@@ -16,7 +16,7 @@ public class AnalogInputImpl extends IOTask implements AnalogInput {
   }
 
   @Override
-  public int available() throws ConnectionLostException {
+  public int available() {
     return lock.invokeInt(AnalogInput::available);
   }
 
@@ -58,12 +58,12 @@ public class AnalogInputImpl extends IOTask implements AnalogInput {
   }
 
   @Override
-  public void loop() throws InterruptedException, ConnectionLostException {
+  public void loop() {
     lock.process(input);
   }
 
   @Override
-  public float read() throws InterruptedException, ConnectionLostException {
+  public float read() {
     return lock.invoke(AnalogInput::read);
   }
 

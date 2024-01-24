@@ -7,7 +7,7 @@ import ioio.lib.spi.Log;
 
 public class CapSenseImpl extends IOTask implements CapSense {
   private static final String TAG = "CapSense";
-  private static final IOLock<CapSense> lock = new IOLock<>();
+  private final IOLock<CapSense> lock = new IOLock<>();
   private CapSense capSense;
 
   public CapSenseImpl() {
@@ -23,22 +23,22 @@ public class CapSenseImpl extends IOTask implements CapSense {
   }
 
   @Override
-  public void loop() throws ConnectionLostException, InterruptedException {
+  public void loop() {
     lock.process(capSense);
   }
 
   @Override
-  public float read() throws InterruptedException, ConnectionLostException {
+  public float read() {
     return lock.invoke(CapSense::read);
   }
 
   @Override
-  public float readSync() throws InterruptedException, ConnectionLostException {
+  public float readSync() {
     return lock.invoke(CapSense::readSync);
   }
 
   @Override
-  public void setFilterCoef(float t) throws ConnectionLostException {
+  public void setFilterCoef(float t) {
     throw new UnsupportedOperationException();
   }
 
@@ -54,23 +54,31 @@ public class CapSenseImpl extends IOTask implements CapSense {
   }
 
   @Override
-  public void waitOver(float threshold) throws ConnectionLostException, InterruptedException {
-
+  public void waitOver(float threshold) {
+    lock.invoke((i) -> {
+      capSense.waitOver(threshold);
+    });
   }
 
   @Override
-  public void waitOverSync(float threshold) throws ConnectionLostException, InterruptedException {
-
+  public void waitOverSync(float threshold) {
+    lock.invoke((i) -> {
+      capSense.waitOverSync(threshold);
+    });
   }
 
   @Override
-  public void waitUnder(float threshold) throws ConnectionLostException, InterruptedException {
-
+  public void waitUnder(float threshold) {
+    lock.invoke((i) -> {
+      capSense.waitUnder(threshold);
+    });
   }
 
   @Override
-  public void waitUnderSync(float threshold) throws ConnectionLostException, InterruptedException {
-
+  public void waitUnderSync(float threshold) {
+    lock.invoke((i) -> {
+      capSense.waitUnderSync(threshold);
+    });
   }
 }
 
