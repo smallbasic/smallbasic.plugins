@@ -6,6 +6,7 @@ import java.util.List;
 
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
+import ioio.lib.pc.Timer;
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
 import ioio.lib.util.IOIOLooperProvider;
@@ -69,6 +70,7 @@ public class IOService implements IOIOLooperProvider  {
 
   public class IOServiceLooper implements IOIOLooper {
     public IOIO ioio;
+    private long lastAccessMillis;
 
     @Override
     public void disconnected() {
@@ -88,7 +90,7 @@ public class IOService implements IOIOLooperProvider  {
 
     @Override
     public void loop() throws ConnectionLostException, InterruptedException {
-      Thread.sleep(10);
+      lastAccessMillis = Timer.tick(lastAccessMillis);
       for (IOTask next: ioTasks) {
         next.loop();
       }
@@ -97,6 +99,7 @@ public class IOService implements IOIOLooperProvider  {
     @Override
     public void setup(IOIO ioio) {
       this.ioio = ioio;
+      this.lastAccessMillis = System.currentTimeMillis();
       for (IOTask next: ioTasks) {
         next.setup(ioio);
       }

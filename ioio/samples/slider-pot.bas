@@ -8,7 +8,7 @@ print "ready!!!"
 
 while 1
   print analogIn.read()
-  delay 100
+  delay 10
 wend
 
 print "done"

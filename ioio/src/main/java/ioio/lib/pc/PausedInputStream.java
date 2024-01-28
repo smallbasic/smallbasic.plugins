@@ -8,8 +8,11 @@ import java.io.InputStream;
  * Pause between read() to avoid excessive CPU usage
  */
 class PausedInputStream extends BufferedInputStream {
+  private long lastAccessMillis;
+
   public PausedInputStream(InputStream inputStream) {
     super(inputStream);
+    lastAccessMillis = System.currentTimeMillis();
   }
 
   @Override
@@ -32,7 +35,7 @@ class PausedInputStream extends BufferedInputStream {
 
   private void pause() throws IOException {
     try {
-      Thread.sleep(10);
+      lastAccessMillis = Timer.tick(lastAccessMillis);
     } catch (InterruptedException e) {
       throw new IOException(e);
     }
