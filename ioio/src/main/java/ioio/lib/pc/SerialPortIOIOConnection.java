@@ -68,11 +68,10 @@ class SerialPortIOIOConnection implements IOIOConnection {
             serialPort_.enableReceiveThreshold(1);
             serialPort_.enableReceiveTimeout(500);
 
-            inputStream_ = new FixedReadBufferedInputStream(new GracefullyClosingInputStream(serialPort_.getInputStream()), 1024);
+            inputStream_ = new FixedReadBufferedInputStream(new PausedInputStream(serialPort_.getInputStream()), 1024);
             outputStream_ = new BufferedOutputStream(serialPort_.getOutputStream(), 256);
 
-            // This is only required on Windows and OSX El Capitan, but otherwise
-            // harmless.
+            // This is only required on Windows and OSX El Capitan, but otherwise harmless.
             //serialPort_.setDTR(false);
             serialPort_.setDTR(true);
             Thread.sleep(100);

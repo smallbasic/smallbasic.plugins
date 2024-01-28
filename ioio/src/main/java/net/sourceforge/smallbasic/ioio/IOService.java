@@ -88,7 +88,7 @@ public class IOService implements IOIOLooperProvider  {
 
     @Override
     public void loop() throws ConnectionLostException, InterruptedException {
-      Thread.sleep(100);
+      Thread.sleep(10);
       for (IOTask next: ioTasks) {
         next.loop();
       }
