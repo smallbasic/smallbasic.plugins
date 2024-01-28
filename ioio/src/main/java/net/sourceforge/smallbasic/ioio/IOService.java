@@ -12,7 +12,7 @@ import ioio.lib.util.IOIOLooperProvider;
 
 public class IOService implements IOIOLooperProvider  {
   private static final String TAG = "IOService";
-  private static final int MAX_PINS = 43;
+  private static final int MAX_PINS = 46;
   private static IOService instance = null;
 
   private final ConnectionController connectionController;
@@ -24,7 +24,7 @@ public class IOService implements IOIOLooperProvider  {
     connectionController = new ConnectionController(this);
     looper = new IOServiceLooper();
     ioTasks = new ArrayList<>();
-    usedPins = new Boolean[MAX_PINS];
+    usedPins = new Boolean[MAX_PINS + 1];
   }
 
   public static IOService getInstance() {
@@ -57,7 +57,7 @@ public class IOService implements IOIOLooperProvider  {
 
   private void registerPin(int pin) throws IOException {
     if (pin != -1) {
-      if (pin < 0 || pin >= MAX_PINS) {
+      if (pin < 0 || pin > MAX_PINS) {
         throw new IOException("invalid pin: " + pin);
       }
       if (usedPins[pin] != null && usedPins[pin]) {
@@ -88,6 +88,7 @@ public class IOService implements IOIOLooperProvider  {
 
     @Override
     public void loop() throws ConnectionLostException, InterruptedException {
+      Thread.sleep(100);
       for (IOTask next: ioTasks) {
         next.loop();
       }
