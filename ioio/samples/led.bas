@@ -3,7 +3,7 @@ import ioio
 out = ioio.openDigitalOutput(0)
 
 print "wait for connect"
-ioio.waitForConnect()
+ioio.waitForConnect(10)
 print "ready!!!"
 
 value = false

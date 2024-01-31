@@ -1,15 +1,15 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
-import ioio.lib.pc.Timer;
+import ioio.TimerUtil;
 import ioio.lib.spi.Log;
 import ioio.lib.util.IOIOLooper;
 import ioio.lib.util.IOIOLooperProvider;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class IOService implements IOIOLooperProvider  {
   private static final String TAG = "IOService";
@@ -90,7 +90,7 @@ public class IOService implements IOIOLooperProvider  {
 
     @Override
     public void loop() throws ConnectionLostException, InterruptedException {
-      lastAccessMillis = Timer.tick(lastAccessMillis);
+      lastAccessMillis = TimerUtil.tick(lastAccessMillis);
       for (IOTask next: ioTasks) {
         next.loop();
       }

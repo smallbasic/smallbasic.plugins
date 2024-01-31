@@ -28,20 +28,20 @@
  */
 package ioio.lib.pc;
 
+import ioio.PausedInputStream;
 import ioio.lib.api.IOIOConnection;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.impl.FixedReadBufferedInputStream;
-
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import ioio.lib.spi.Log;
 import purejavacomm.CommPort;
 import purejavacomm.CommPortIdentifier;
 import purejavacomm.NoSuchPortException;
 import purejavacomm.SerialPort;
+
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 class SerialPortIOIOConnection implements IOIOConnection {
   private final String name_;

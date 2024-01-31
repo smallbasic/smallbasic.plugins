@@ -1,5 +1,52 @@
 [
   {
+    "name": "IOIO":
+    "comment": "This interface provides control over all the IOIO board functions.",
+    "methods": [
+      {
+        "name": "beginBatch"
+        "rtn": "void",
+        "arg": "void",
+        "comment" : "Start a batch of operations. This is strictly an optimization and will not change functionality."
+      },{
+        "name": "disconnect"
+        "rtn": "void",
+        "arg": "void",
+        "comment" : "Closes the connection to the board, or aborts a connection process started with waitForConnect()."
+      },{
+        "name": "endBatch"
+        "rtn": "void",
+        "arg": "void",
+        "comment" : "End a batch of operations."
+      },{
+        "name": "hardReset"
+        "rtn": "void",
+        "arg": "void",
+        "comment" : "Equivalent to disconnecting and reconnecting the board power supply."
+      },{
+        "name": "softReset"
+        "rtn": "void",
+        "arg": "void",
+        "comment" : "Resets the entire state (returning to initial state), without dropping the connection."
+      },{
+        "name": "sync"
+        "rtn": "void",
+        "arg": "void",
+        "comment" : "Sends a message to the IOIO and waits for an echo."
+      },{
+        "name": "waitForConnect"
+        "rtn": "void",
+        "arg": "int",
+        "comment": "Establishes connection with the IOIO board."
+      },{
+        "name": "waitForDisconnect"
+        "rtn": "void",
+        "arg": "void",
+        "comment" : "Blocks until IOIO has been disconnected and all connection-related resources have been freed, so that a new connection can be attempted."
+      }
+    ]
+  },
+  {
     "name": "AnalogInput",
     "comment": "This interface represents AnalogInput functionality, providing methods to obtain analog input readings and buffered samples.",
     "methods": [
@@ -196,5 +243,10 @@
         "comment": "Sets the pulse width of the PWM output. The pulse width is duration of the high-time within a single period of the signal. For relative control of the pulse with, consider using setDutyCycle."
       }
     ]
+  },
+  {
+    "name": "TwiMaster":
+    "comment": "An interface for controlling a TWI module, in TWI bus-master mode, enabling communication with multiple TWI-enabled slave modules.",
+    "methods": []
   }
 ]

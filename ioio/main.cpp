@@ -29,6 +29,7 @@ int nextId = 1;
 #define CLASS_PULSEINPUT "net/sourceforge/smallbasic/ioio/PulseInputImpl"
 #define CLASS_PWMOUTPUT "net/sourceforge/smallbasic/ioio/PwmOutputImpl"
 #define CLASS_CAPSENSE "net/sourceforge/smallbasic/ioio/CapsenseImpl"
+#define CLASS_TWIMASTER "net/sourceforge/smallbasic/ioio/TwiMasterImpl"
 #define CLASS_IOIO "net/sourceforge/smallbasic/ioio/IOIOImpl"
 #define CLASS_IOTASK_ID 1
 
@@ -216,6 +217,21 @@ static int get_io_class_id(var_s *map, var_s *retval) {
   return result;
 }
 
+static int cmd_twimaster_writeread(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 0) {
+    error(retval, "writeRead", 0);
+  } else {
+    // TODO
+    //result = ioioTask->invokeVoidVoid("waitForDisconnect", retval);
+  }
+  return result;
+}
+
+static void create_twimaster(var_t *map) {
+  v_create_callback(map, "writeRead", cmd_twimaster_writeread);
+}
+
 #include "api.h"
 
 FUNC_SIG lib_func[] = {
@@ -225,17 +241,18 @@ FUNC_SIG lib_func[] = {
   {1, 2, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
   {1, 2, "OPENPULSEINPUT", cmd_openpulseinput},
   {1, 2, "OPENPWMOUTPUT", cmd_openpwmoutput},
+  {1, 2, "OPENTWIMASTER", cmd_opentwimaster},
 };
 
 FUNC_SIG lib_proc[] = {
-  {0, 0, "BEGINBATCH", cmd_beginbatch},
-  {0, 0, "DISCONNECT", cmd_disconnect},
-  {0, 0, "ENDBATCH", cmd_endbatch},
-  {0, 0, "HARDRESET", cmd_hardreset},
-  {0, 0, "SOFTRESET", cmd_softreset},
-  {0, 0, "SYNC", cmd_sync},
-  {0, 0, "WAITFORCONNECT", cmd_waitforconnect},
-  {0, 0, "WAITFORDISCONNECT", cmd_waitfordisconnect},
+  {0, 0, "BEGINBATCH", cmd_ioio_beginbatch},
+  {0, 0, "DISCONNECT", cmd_ioio_disconnect},
+  {0, 0, "ENDBATCH", cmd_ioio_endbatch},
+  {0, 0, "HARDRESET", cmd_ioio_hardreset},
+  {0, 0, "SOFTRESET", cmd_ioio_softreset},
+  {0, 0, "SYNC", cmd_ioio_sync},
+  {0, 0, "WAITFORCONNECT", cmd_ioio_waitforconnect},
+  {0, 0, "WAITFORDISCONNECT", cmd_ioio_waitfordisconnect},
 };
 
 SBLIB_API int sblib_proc_count() {

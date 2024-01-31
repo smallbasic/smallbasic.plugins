@@ -1,12 +1,12 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
-
 import ioio.lib.api.IOIO;
 import ioio.lib.api.PwmOutput;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
+
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class PwmOutputImpl extends IOTask implements PwmOutput {
   private static final String TAG = "PulseInput";

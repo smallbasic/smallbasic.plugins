@@ -5,8 +5,6 @@ rem
 tload "api.json", s, 1
 api = array(s)
 
-ioioApi = ["beginBatch", "disconnect", "endBatch", "hardReset", "softReset", "sync", "waitForConnect", "waitForDisconnect"]
-
 func get_method_name(method)
   local result
 
@@ -22,7 +20,7 @@ func get_method_name(method)
 
   if (method.arg == "void") then
     result += "Void"
-  else if (method.arg == method.arg == "int") then
+  else if (method.arg == "int") then
     result += "Int"
   else if (method.arg == "boolean") then
     result += "Bool"
@@ -47,44 +45,46 @@ sub generate_command(objName, method)
     err_name = method.name
   endif
 
-  print "static int cmd_" + cmd_name + "(var_s *self, int argc, slib_par_t *arg, var_s *retval) {"
+  if (objName == "IOIO") then
+    print "static int cmd_" + cmd_name + "(int argc, slib_par_t *arg, var_s *retval) {"
+  else
+    print "static int cmd_" + cmd_name + "(var_s *self, int argc, slib_par_t *arg, var_s *retval) {"
+  endif
   print "  int result = 0;"
   print "  if (argc != " + param_count + ") {"
   print "    error(retval, \"" + err_name + "\", " + param_count + ");"
   print "  } else {"
-  print "    int id = get_io_class_id(self, retval);"
-  print "    if (id != -1) {"
+ 
+  local getter, indent
+  if (objName == "IOIO") then
+    getter = "ioioTask->"
+    indent = "    "
+  else 
+    getter = "_ioTaskMap.at(id)."
+    indent = "      "
+    print "    int id = get_io_class_id(self, retval);"
+    print "    if (id != -1) {"
+  endif    
 
   local argument = ""
   if (method.arg == "boolean" || method.arg == "int") then
-    print "      auto value = get_param_int(argc, arg, 0, 0);"
+    print indent + "auto value = get_param_int(argc, arg, 0, 0);"
     argument = ", value"
   else if (method.arg == "float") then
-    print "      auto value = get_param_num(argc, arg, 0, 0);"
+    print indent + "auto value = get_param_num(argc, arg, 0, 0);"
     argument = ", value"
   endif
 
   if (method.rtn == "void") then
-    print "      result = _ioTaskMap.at(id)." + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
+    print indent + "result = " + getter + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
   else if (method.rtn == "boolean" || method.rtn == "int") then
-    print "      result = _ioTaskMap.at(id)." + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
+    print indent + "result = " + getter + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
   else if (method.rtn == "float") then
-    print "      result = _ioTaskMap.at(id)." + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
+    print indent + "result = " + getter + invoke + "(\"" + method.name + "\"" + argument + ", retval);"
   endif
-  print "    }"
-  print "  }"
-  print "  return result;"
-  print "}"
-  print
-end
-
-sub generate_ioio_command(name)
-  print "static int cmd_" + lower(name)  + "(int argc, slib_par_t *arg, var_s *retval) {"
-  print "  int result = 0;"
-  print "  if (argc != 0) {"
-  print "    error(retval, \"" + name + "\", 0);"
-  print "  } else {"
-  print "    result = ioioTask->invokeVoidVoid(\"" + name + "\", retval);"
+  if (objName != "IOIO") then
+    print "    }"
+  endif
   print "  }"
   print "  return result;"
   print "}"
@@ -128,15 +128,15 @@ for obj in api
   next
 next
 
-for s in ioioApi
-  generate_ioio_command(s)
+for obj in api
+  if (len(obj.methods) > 0 && obj.name != "IOIO") then
+    generate_constructor(obj)
+  endif
 next
 
 for obj in api
-  generate_constructor(obj)
-next
-
-for obj in api
-  generate_open_function(obj)
+  if (obj.name != "IOIO") then
+    generate_open_function(obj)
+  endif    
 next
 

@@ -1,10 +1,10 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
+
+import java.io.Closeable;
+import java.io.IOException;
 
 /**
  * IOTask - setup() and loop() are invoked in the looper thread

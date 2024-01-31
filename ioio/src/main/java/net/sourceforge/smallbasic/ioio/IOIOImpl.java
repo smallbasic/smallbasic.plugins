@@ -1,9 +1,10 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-
+import ioio.TimerUtil;
 import ioio.lib.api.IOIO;
 import ioio.lib.spi.Log;
+
+import java.io.IOException;
 
 public class IOIOImpl extends IOTask {
   private static final String TAG = "IOIOImpl";
@@ -54,7 +55,8 @@ public class IOIOImpl extends IOTask {
     lock.invoke(IOIO::sync);
   }
 
-  public void waitForConnect() {
+  public void waitForConnect(int latency) {
+    TimerUtil.setLatency(latency);
     IOService.getInstance().start();
     lock.invoke(IOIO::waitForConnect);
   }

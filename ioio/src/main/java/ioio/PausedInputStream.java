@@ -1,4 +1,4 @@
-package ioio.lib.pc;
+package ioio;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -7,7 +7,7 @@ import java.io.InputStream;
 /**
  * Pause between read() to avoid excessive CPU usage
  */
-class PausedInputStream extends BufferedInputStream {
+public class PausedInputStream extends BufferedInputStream {
   private long lastAccessMillis;
 
   public PausedInputStream(InputStream inputStream) {
@@ -35,7 +35,7 @@ class PausedInputStream extends BufferedInputStream {
 
   private void pause() throws IOException {
     try {
-      lastAccessMillis = Timer.tick(lastAccessMillis);
+      lastAccessMillis = TimerUtil.tick(lastAccessMillis);
     } catch (InterruptedException e) {
       throw new IOException(e);
     }

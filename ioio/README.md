@@ -4,16 +4,18 @@ see: https://github.com/ytai/ioio/wiki
 
 ## IOIO
 
+This interface provides control over all the IOIO board functions.
+
 | Name    | Description   |
 |---------|---------------|
-| void ioio.beginBatch()|Start a batch of operations. This is strictly an optimization and will not change functionality|
-| void ioio.disconnect()|Closes the connection to the board, or aborts a connection process started with waitForConnect()|
-| void ioio.endBatch()|End a batch of operations.|
-| void ioio.hardReset()|Equivalent to disconnecting and reconnecting the board power supply.|
-| void ioio.softReset()|Resets the entire state (returning to initial state), without dropping the connection.|
-| void ioio.sync()|Sends a message to the IOIO and waits for an echo.|
-| void ioio.waitForConnect()|Establishes connection with the IOIO board.|
-| void ioio.waitForDisconnect()|Blocks until IOIO has been disconnected and all connection-related resources have been freed so that a new connection can be attempted.|
+|void beginBatch(void)|Start a batch of operations. This is strictly an optimization and will not change functionality.|
+|void disconnect(void)|Closes the connection to the board, or aborts a connection process started with waitForConnect().|
+|void endBatch(void)|End a batch of operations.|
+|void hardReset(void)|Equivalent to disconnecting and reconnecting the board power supply.|
+|void softReset(void)|Resets the entire state (returning to initial state), without dropping the connection.|
+|void sync(void)|Sends a message to the IOIO and waits for an echo.|
+|void waitForConnect(int)|Establishes connection with the IOIO board.|
+|void waitForDisconnect(void)|Blocks until IOIO has been disconnected and all connection-related resources have been freed, so that a new connection can be attempted.|
 
 ## AnalogInput
 
@@ -95,4 +97,13 @@ A pin used for PWM (Pulse-Width Modulation) output. A PWM pin produces a logic-l
 |---------|---------------|
 |void setDutyCycle(float)|Sets the duty cycle of the PWM output. The duty cycle is defined to be the pulse width divided by the total cycle period. For absolute control of the pulse with, consider using setPulseWidth.|
 |void setPulseWidth(float)|Sets the pulse width of the PWM output. The pulse width is duration of the high-time within a single period of the signal. For relative control of the pulse with, consider using setDutyCycle.|
+
+## TwiMaster
+
+An interface for controlling a TWI module, in TWI bus-master mode, enabling communication with multiple TWI-enabled slave modules.
+
+`io = ioio.openTwiMaster(pin)`
+
+| Name    | Description   |
+|---------|---------------|
 
