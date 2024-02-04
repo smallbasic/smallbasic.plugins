@@ -1,79 +1,62 @@
 package net.sourceforge.smallbasic.ioio;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.api.exception.IncompatibilityException;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 public class IOLock<I> {
-  private final ReadWriteLock lock = new ReentrantReadWriteLock();
+  private final Object mutex = new Object();
   private Consumer<I> consumer;
-
-  public float invoke(Function<Float, I> function) {
-    CountDownLatch latch = beginLatch();
-    lock.writeLock().lock();
-    AtomicReference<Float> result = new AtomicReference<>();
-    try {
-      this.consumer = (i) -> {
-        result.set(function.apply(i));
-        latch.countDown();
-      };
-    }
-    finally {
-      lock.writeLock().unlock();
-    }
-    endLatch(latch);
-    return result.get();
-  }
 
   public void invoke(Consumer<I> consumer) {
     CountDownLatch latch = beginLatch();
-    lock.writeLock().lock();
-    try {
+    synchronized (mutex) {
       this.consumer = (i) -> {
         consumer.accept(i);
         latch.countDown();
       };
     }
-    finally {
-      lock.writeLock().unlock();
-    }
     endLatch(latch);
   }
 
-  public int invokeInt(Function<Integer, I> function) {
+  public float invoke(Function<Float, I> function) {
     CountDownLatch latch = beginLatch();
-    lock.writeLock().lock();
-    AtomicReference<Integer> result = new AtomicReference<>();
-    try {
+    AtomicReference<Float> result = new AtomicReference<>();
+    synchronized (mutex) {
       this.consumer = (i) -> {
         result.set(function.apply(i));
         latch.countDown();
       };
     }
-    finally {
-      lock.writeLock().unlock();
+    endLatch(latch);
+    return result.get();
+  }
+
+  public int invokeInt(Function<Integer, I> function) {
+    CountDownLatch latch = beginLatch();
+    AtomicReference<Integer> result = new AtomicReference<>();
+    synchronized (mutex) {
+      this.consumer = (i) -> {
+        result.set(function.apply(i));
+        latch.countDown();
+      };
     }
     endLatch(latch);
     return result.get();
   }
 
   public void process(I input) {
-    lock.readLock().lock();
-    try {
+    synchronized (mutex) {
       if (input != null && consumer != null) {
-        consumer.accept(input);
+        try {
+          consumer.accept(input);
+        } catch (ConnectionLostException | InterruptedException | IncompatibilityException e) {
+          throw new RuntimeException(e);
+        }
         consumer = null;
       }
-    }
-    catch (IncompatibilityException | ConnectionLostException | InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-    finally {
-      lock.readLock().unlock();
     }
   }
 

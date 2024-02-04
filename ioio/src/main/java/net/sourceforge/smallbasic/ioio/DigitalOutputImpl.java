@@ -5,11 +5,9 @@ import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 public class DigitalOutputImpl extends IOTask implements DigitalOutput {
   private static final String TAG = "DigitalOutput";
-  private final AtomicBoolean value = new AtomicBoolean(false);
+  private final IOLock<DigitalOutput> lock = new IOLock<>();
   private DigitalOutput output;
 
   public DigitalOutputImpl() {
@@ -26,7 +24,7 @@ public class DigitalOutputImpl extends IOTask implements DigitalOutput {
 
   @Override
   public void loop() throws ConnectionLostException {
-    output.write(value.get());
+    lock.process(output);
   }
 
   @Override
@@ -41,7 +39,10 @@ public class DigitalOutputImpl extends IOTask implements DigitalOutput {
   }
 
   @Override
-  public void write(boolean value) {
-    this.value.set(value);
+  public void write(final boolean value) {
+    handleError();
+    lock.invoke((i) -> {
+      i.write(value);
+    });
   }
 }

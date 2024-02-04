@@ -20,6 +20,3 @@ for i = 0 to 5
 next
 
 print "done"
-
-
-

@@ -1,10 +1,11 @@
 package net.sourceforge.smallbasic.ioio;
 
-import ioio.lib.api.IOIO;
-import ioio.lib.api.exception.ConnectionLostException;
-
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
+
+import ioio.lib.api.IOIO;
+import ioio.lib.api.exception.ConnectionLostException;
 
 /**
  * IOTask - setup() and loop() are invoked in the looper thread
@@ -13,15 +14,27 @@ import java.io.IOException;
  */
 public abstract class IOTask implements Closeable {
   protected int pin;
+  private AtomicReference<String> error;
 
   @Override
   public void close() {
     IOService.getInstance().removeTask(this);
   }
 
+  public void handleError() {
+    if (error.get() != null) {
+      throw new RuntimeException(error.get());
+    }
+  }
+
   public void open(int pin) throws IOException {
     this.pin = pin;
+    this.error = new AtomicReference<>(null);
     IOService.getInstance().addTask(this);
+  }
+
+  public void setError(String error) {
+    this.error.set(error);
   }
 
   int getPin() {

@@ -251,7 +251,7 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "HARDRESET", cmd_ioio_hardreset},
   {0, 0, "SOFTRESET", cmd_ioio_softreset},
   {0, 0, "SYNC", cmd_ioio_sync},
-  {0, 0, "WAITFORCONNECT", cmd_ioio_waitforconnect},
+  {1, 1, "WAITFORCONNECT", cmd_ioio_waitforconnect},
   {0, 0, "WAITFORDISCONNECT", cmd_ioio_waitfordisconnect},
 };
 

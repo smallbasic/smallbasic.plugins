@@ -48,19 +48,20 @@ const dinPin = 2
 const csPin = 3
 const clkPin = 4
 
-ioio.waitForConnect(10)
-
 din = ioio.openDigitalOutput(dinPin)
 cs = ioio.openDigitalOutput(csPin)
 clk = ioio.openDigitalOutput(clkPin)
 
+ioio.waitForConnect(10)
+
 while 1
-  shiftOut(0x55)  
+  shiftOut(0x55) 
+  delay 10000
 wend
 
 sub shiftOut(_data)
   cs.write(false); ' Enable the chip
-  for i = 7 to 0
+  for i = 7 to 0 step -1
     clk.write(false) ' Start clock pulse
     din.write((_data band (1 lshift i)) != 0) ' Send bit
     clk.write(true) ' End clock pulse
