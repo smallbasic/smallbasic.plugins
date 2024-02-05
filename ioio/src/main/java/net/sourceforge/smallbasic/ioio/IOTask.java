@@ -53,5 +53,5 @@ public abstract class IOTask implements Closeable {
    * Subclasses should override this method for performing operations to be
    * done once as soon as IOIO communication is established.
    */
-  abstract void setup(IOIO ioio);
+  abstract void setup(IOIO ioio) throws ConnectionLostException;
 }

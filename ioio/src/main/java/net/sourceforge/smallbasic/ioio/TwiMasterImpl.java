@@ -28,13 +28,8 @@ public class TwiMasterImpl extends IOTask {
   }
 
   @Override
-  void setup(IOIO ioio) {
+  void setup(IOIO ioio) throws ConnectionLostException {
     Log.i(TAG, "setup entered");
-    try {
-      twiMaster = ioio.openTwiMaster(twiNum, rate, smbus);
-    }
-    catch (ConnectionLostException e) {
-      throw new RuntimeException(e);
-    }
+    twiMaster = ioio.openTwiMaster(twiNum, rate, smbus);
   }
 }

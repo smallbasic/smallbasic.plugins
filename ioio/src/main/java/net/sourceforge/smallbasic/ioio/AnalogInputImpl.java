@@ -83,13 +83,8 @@ public class AnalogInputImpl extends IOTask implements AnalogInput {
   }
 
   @Override
-  public void setup(IOIO ioio) {
+  public void setup(IOIO ioio) throws ConnectionLostException {
     Log.i(TAG, "setup entered");
-    try {
-      input = ioio.openAnalogInput(pin);
-    }
-    catch (ConnectionLostException e) {
-      throw new RuntimeException(e);
-    }
+    input = ioio.openAnalogInput(pin);
   }
 }

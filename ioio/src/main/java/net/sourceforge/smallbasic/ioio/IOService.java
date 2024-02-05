@@ -96,6 +96,7 @@ public class IOService implements IOIOLooperProvider  {
           next.loop();
         } catch (Throwable e) {
           next.setError(e.getLocalizedMessage());
+          break;
         }
       }
     }
@@ -105,7 +106,12 @@ public class IOService implements IOIOLooperProvider  {
       this.ioio = ioio;
       this.lastAccessMillis = System.currentTimeMillis();
       for (IOTask next: ioTasks) {
-        next.setup(ioio);
+        try {
+          next.setup(ioio);
+        } catch (Throwable e) {
+          next.setError(e.getLocalizedMessage());
+          break;
+        }
       }
     }
   }

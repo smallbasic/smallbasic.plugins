@@ -30,6 +30,7 @@ int nextId = 1;
 #define CLASS_PWMOUTPUT "net/sourceforge/smallbasic/ioio/PwmOutputImpl"
 #define CLASS_CAPSENSE "net/sourceforge/smallbasic/ioio/CapsenseImpl"
 #define CLASS_TWIMASTER "net/sourceforge/smallbasic/ioio/TwiMasterImpl"
+#define CLASS_SPIMASTER "net/sourceforge/smallbasic/ioio/SpiMasterImpl"
 #define CLASS_IOIO "net/sourceforge/smallbasic/ioio/IOIOImpl"
 #define CLASS_IOTASK_ID 1
 
@@ -228,8 +229,23 @@ static int cmd_twimaster_writeread(var_s *self, int argc, slib_par_t *arg, var_s
   return result;
 }
 
+static int cmd_spimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 2) {
+    error(retval, "writeRead", 0);
+  } else {
+    // TODO
+    //result = ioioTask->invokeVoidVoid("waitForDisconnect", retval);
+  }
+  return result;
+}
+
 static void create_twimaster(var_t *map) {
   v_create_callback(map, "writeRead", cmd_twimaster_writeread);
+}
+
+static void create_spimaster(var_t *map) {
+  v_create_callback(map, "write", cmd_spimaster_write);
 }
 
 #include "api.h"

@@ -11,9 +11,9 @@ import ioio.lib.spi.Log;
 public class PwmOutputImpl extends IOTask implements PwmOutput {
   private static final String TAG = "PulseInput";
   private static final float UNSET = -1f;
-  private PwmOutput output;
   private final AtomicReference<Float> dutyCycle = new AtomicReference<>(UNSET);
   private final AtomicReference<Float> pulseWidth = new AtomicReference<>(UNSET);
+  private PwmOutput output;
   private int freqHz;
 
   public PwmOutputImpl() {
@@ -59,13 +59,7 @@ public class PwmOutputImpl extends IOTask implements PwmOutput {
   }
 
   @Override
-  public void setup(IOIO ioio) {
-    Log.i(TAG, "setup entered");
-    try {
-      output = ioio.openPwmOutput(pin, freqHz);
-    }
-    catch (ConnectionLostException e) {
-      throw new RuntimeException(e);
-    }
+  public void setup(IOIO ioio) throws ConnectionLostException {
+    output = ioio.openPwmOutput(pin, freqHz);
   }
 }

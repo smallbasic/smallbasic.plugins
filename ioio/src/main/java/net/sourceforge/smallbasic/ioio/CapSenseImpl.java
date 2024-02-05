@@ -43,14 +43,9 @@ public class CapSenseImpl extends IOTask implements CapSense {
   }
 
   @Override
-  public void setup(IOIO ioio) {
+  public void setup(IOIO ioio) throws ConnectionLostException {
     Log.i(TAG, "setup entered");
-    try {
-      capSense = ioio.openCapSense(pin);
-    }
-    catch (ConnectionLostException e) {
-      throw new RuntimeException(e);
-    }
+    capSense = ioio.openCapSense(pin);
   }
 
   @Override

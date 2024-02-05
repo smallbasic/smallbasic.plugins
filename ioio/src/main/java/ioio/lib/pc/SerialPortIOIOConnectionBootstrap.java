@@ -29,11 +29,6 @@
 
 package ioio.lib.pc;
 
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.List;
-
 import ioio.lib.api.IOIOConnection;
 import ioio.lib.spi.IOIOConnectionBootstrap;
 import ioio.lib.spi.IOIOConnectionFactory;
@@ -41,6 +36,11 @@ import ioio.lib.spi.Log;
 import purejavacomm.CommPort;
 import purejavacomm.CommPortIdentifier;
 import purejavacomm.PortInUseException;
+
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.LinkedList;
+import java.util.List;
 
 public class SerialPortIOIOConnectionBootstrap implements IOIOConnectionBootstrap {
   private static final String TAG = "SerialPortIOIOConnectionBootstrap";

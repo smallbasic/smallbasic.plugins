@@ -5,10 +5,12 @@ import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class DigitalInputImpl extends IOTask implements DigitalInput {
   private static final String TAG = "DigitalInput";
+  private final AtomicBoolean value = new AtomicBoolean();
   private DigitalInput input;
-  private volatile boolean value;
 
   public DigitalInputImpl() {
     super();
@@ -24,23 +26,18 @@ public class DigitalInputImpl extends IOTask implements DigitalInput {
 
   @Override
   public void loop() throws InterruptedException, ConnectionLostException {
-    value = input.read();
+    value.set(input.read());
   }
 
   @Override
   public boolean read() {
-    return value;
+    return value.get();
   }
 
   @Override
-  public void setup(IOIO ioio) {
+  public void setup(IOIO ioio) throws ConnectionLostException {
     Log.i(TAG, "setup entered");
-    try {
-      input = ioio.openDigitalInput(pin);
-    }
-    catch (ConnectionLostException e) {
-      throw new RuntimeException(e);
-    }
+    input = ioio.openDigitalInput(pin);
   }
 
   @Override
