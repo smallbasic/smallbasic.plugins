@@ -31,6 +31,7 @@ public class DigitalInputImpl extends IOTask implements DigitalInput {
 
   @Override
   public boolean read() {
+    handleError();
     return value.get();
   }
 

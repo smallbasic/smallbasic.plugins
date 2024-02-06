@@ -367,7 +367,9 @@ void sblib_close(void) {
     fprintf(stderr, "IOTask leak detected\n");
     _ioTaskMap.clear();
   }
-  jvm->DetachCurrentThread();
+  if (jvm) {
+    jvm->DetachCurrentThread();
+  }
   // calling this hangs
   //jvm->DestroyJavaVM();
   env = nullptr;

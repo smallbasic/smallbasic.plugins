@@ -29,7 +29,7 @@ public class DigitalOutputImpl extends IOTask implements DigitalOutput {
 
   @Override
   public void setup(IOIO ioio) throws ConnectionLostException {
-    Log.i(TAG, "setup entered");
+    Log.i(TAG, "setup entered: " + pin);
     output = ioio.openDigitalOutput(pin);
   }
 
