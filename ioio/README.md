@@ -107,3 +107,12 @@ An interface for controlling a TWI module, in TWI bus-master mode, enabling comm
 | Name    | Description   |
 |---------|---------------|
 
+## SpiMaster
+
+An interface for controlling an SPI module, in SPI bus-master mode, enabling communication with multiple SPI-enabled slave modules
+
+`io = ioio.openSpiMaster(pin)`
+
+| Name    | Description   |
+|---------|---------------|
+

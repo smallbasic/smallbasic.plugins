@@ -102,13 +102,22 @@ sub generate_constructor(byref obj)
 end
 
 sub generate_open_function(byref obj)
+  local pin
+  local openFunc = "open(pin1, "
   print "static int cmd_open" + lower(obj.name) + "(int argc, slib_par_t *params, var_t *retval) {"
   print "  int result;"
-  print "  int pin = get_param_int(argc, params, 0, 0);"
+  print "  int pin1 = get_param_int(argc, params, 0, -1);"
+  if (isnumber(obj.pins) && obj.pins > 0) then
+    openFunc = "open" + obj.pins + "(pin1, "
+    for pin = 2 to obj.pins
+      openFunc += "pin" + pin + ", "
+      print "  int pin" + pin + " = get_param_int(argc, params, " + (pin - 1) + ", -1);"
+    next 
+  endif
   print "  int id = ++nextId;"
   print "  IOTask &instance = _ioTaskMap[id];"
   print "  if (instance.create(CLASS_" + upper(obj.name) + ") &&"
-  print "      instance.open(pin, retval)) {"
+  print "      instance." + openFunc + "retval)) {"
   print "    map_init_id(retval, id, CLASS_IOTASK_ID);"
   print "    create_" + lower(obj.name) + "(retval);"
   print "    result = 1;"

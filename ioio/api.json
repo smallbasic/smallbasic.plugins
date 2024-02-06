@@ -247,11 +247,13 @@
   {
     "name": "TwiMaster":
     "comment": "An interface for controlling a TWI module, in TWI bus-master mode, enabling communication with multiple TWI-enabled slave modules.",
-    "methods": []
+    "methods": [],
+    "pins": 2
   },
   {
     "name": "SpiMaster":
     "comment": "An interface for controlling an SPI module, in SPI bus-master mode, enabling communication with multiple SPI-enabled slave modules",
-    "methods": []
+    "methods": [],
+    "pins": 4
   }
 ]

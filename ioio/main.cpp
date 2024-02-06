@@ -73,7 +73,7 @@ struct IOTask {
         jstring jstr = (jstring) env->CallObjectMethod(exc, methodId);
         const char *message = env->GetStringUTFChars(jstr, JNI_FALSE);
         error(retval, message);
-        env->ReleaseStringUTFChars(jstr, message);        
+        env->ReleaseStringUTFChars(jstr, message);
       } else {
         env->ExceptionDescribe();
         env->ExceptionClear();
@@ -178,6 +178,34 @@ struct IOTask {
     return result;
   }
 
+  int invokeVoidInt2(const char *name, int value1, int value2, var_s *retval) {
+    int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, name, "(II)V");
+      if (method != nullptr) {
+        env->CallVoidMethod(_instance, method, value1, value2);
+      }
+      if (!checkException(retval)) {
+        result = 1;
+      }
+    }
+    return result;
+  }
+
+  int invokeVoidInt4(const char *name, int value1, int value2, int value3, int value4, var_s *retval) {
+    int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, name, "(IIII)V");
+      if (method != nullptr) {
+        env->CallVoidMethod(_instance, method, value1, value2, value3, value4);
+      }
+      if (!checkException(retval)) {
+        result = 1;
+      }
+    }
+    return result;
+  }
+
   // void foo(void)
   int invokeVoidVoid(const char *name, var_s *retval) {
     int result = 0;
@@ -195,6 +223,14 @@ struct IOTask {
 
   int open(int pin, var_s *retval) {
     return invokeVoidInt("open", pin, retval);
+  }
+
+  int open2(int pin1, int pin2, var_s *retval) {
+    return invokeVoidInt2("open", pin1, pin2, retval);
+  }
+
+  int open4(int pin1, int pin2, int pin3, int pin4, var_s *retval) {
+    return invokeVoidInt4("open", pin1, pin2, pin3, pin4, retval);
   }
 
   private:
@@ -221,7 +257,7 @@ static int get_io_class_id(var_s *map, var_s *retval) {
 static int cmd_twimaster_writeread(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
   if (argc != 0) {
-    error(retval, "writeRead", 0);
+    error(retval, "TwiMaster.writeRead", 0);
   } else {
     // TODO
     //result = ioioTask->invokeVoidVoid("waitForDisconnect", retval);
@@ -232,10 +268,14 @@ static int cmd_twimaster_writeread(var_s *self, int argc, slib_par_t *arg, var_s
 static int cmd_spimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
   if (argc != 2) {
-    error(retval, "writeRead", 0);
+    error(retval, "SpiMaster.write", 0);
   } else {
-    // TODO
-    //result = ioioTask->invokeVoidVoid("waitForDisconnect", retval);
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      auto address = get_param_int(argc, arg, 0, 0);
+      auto data = get_param_int(argc, arg, 1, 0);
+      result = _ioTaskMap.at(id).invokeVoidInt2("write", address, data, retval);
+    }
   }
   return result;
 }
@@ -251,13 +291,14 @@ static void create_spimaster(var_t *map) {
 #include "api.h"
 
 FUNC_SIG lib_func[] = {
-  {1, 2, "OPENANALOGINPUT", cmd_openanaloginput},
-  {1, 2, "OPENCAPSENSE", cmd_opencapsense},
-  {1, 2, "OPENDIGITALINPUT", cmd_opendigitalinput},
-  {1, 2, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
-  {1, 2, "OPENPULSEINPUT", cmd_openpulseinput},
-  {1, 2, "OPENPWMOUTPUT", cmd_openpwmoutput},
-  {1, 2, "OPENTWIMASTER", cmd_opentwimaster},
+  {1, 1, "OPENANALOGINPUT", cmd_openanaloginput},
+  {1, 1, "OPENCAPSENSE", cmd_opencapsense},
+  {1, 1, "OPENDIGITALINPUT", cmd_opendigitalinput},
+  {1, 1, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
+  {1, 1, "OPENPULSEINPUT", cmd_openpulseinput},
+  {1, 1, "OPENPWMOUTPUT", cmd_openpwmoutput},
+  {2, 2, "OPENTWIMASTER", cmd_opentwimaster},
+  {4, 4, "OPENSPIMASTER", cmd_openspimaster},
 };
 
 FUNC_SIG lib_proc[] = {
