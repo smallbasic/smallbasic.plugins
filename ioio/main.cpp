@@ -268,7 +268,7 @@ static int cmd_twimaster_writeread(var_s *self, int argc, slib_par_t *arg, var_s
 static int cmd_spimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
   if (argc != 2) {
-    error(retval, "SpiMaster.write", 0);
+    error(retval, "SpiMaster.write", 2);
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
