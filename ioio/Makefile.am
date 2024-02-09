@@ -19,11 +19,11 @@ all-am: $(generated)
 CLEANFILES = $(generated)
 
 AM_CXXFLAGS=-fno-rtti -std=c++14
-AM_CPPFLAGS = -I../include -I/usr/lib/jvm/java-1.8.0-openjdk-amd64/include -I/usr/lib/jvm/java-1.8.0-openjdk-amd64/include/linux -Wall
+AM_CPPFLAGS = -I../include -Wall @IOIO_CPPFLAGS@
 lib_LTLIBRARIES = libioio.la
 
 libioio_la_SOURCES = ../include/param.cpp ../include/hashmap.cpp ../include/apiexec.cpp main.cpp $(generated)
-libioio_la_LDFLAGS = -module -rpath '$(libdir)' @PLATFORM_LDFLAGS@ -L/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server -ljvm
+libioio_la_LDFLAGS = -module -rpath '$(libdir)' @PLATFORM_LDFLAGS@ @IOIO_LDFLAGS@
 
 $(generated): api.json mkapi.bas mkdoc.bas
 	$(sbasic) mkapi.bas > $@

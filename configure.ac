@@ -62,6 +62,8 @@ case "${host_os}" in
     WEBSOCKET_LDFLAGS="-lwsock32"
     GTK_SERVER_LDFLAGS=""
     GTK_SERVER_CPPFLAGS="-DGTK_SERVER_WIN32"
+    IOIO_CPPFLAGS=""
+    IOIO_LDFLAGS=""
     ;;
 
   *)
@@ -72,6 +74,8 @@ case "${host_os}" in
     GTK_SERVER_LDFLAGS="`pkg-config --libs gtk+-3.0` -lXm -lXt"
     GTK_SERVER_CPPFLAGS="`pkg-config --cflags gtk+-3.0` -DGTK_SERVER_FFI -DGTK_SERVER_LIBRARY -DGTK_SERVER_UNIX -DGTK_SERVER_GTK3x"
     RAYLIB_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
+    IOIO_CPPFLAGS="-I/usr/lib/jvm/java-1.8.0-openjdk-amd64/include -I/usr/lib/jvm/java-1.8.0-openjdk-amd64/include/linux"
+    IOIO_LDFLAGS="-L/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server -ljvm"
 esac
 
 AC_SUBST(DEBUG_LDFLAGS)
@@ -82,6 +86,8 @@ AC_SUBST(WEBSOCKET_LDFLAGS)
 AC_SUBST(PLATFORM_LDFLAGS)
 AC_SUBST(GTK_SERVER_LDFLAGS)
 AC_SUBST(GTK_SERVER_CPPFLAGS)
+AC_SUBST(IOIO_LDFLAGS)
+AC_SUBST(IOIO_CPPFLAGS)
 
 dnl change default aru setting to avoid warning
 ARFLAGS=cr

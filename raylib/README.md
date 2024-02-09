@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (604)
+Implemented APIs (610)
 ----------------
 
 | Name    | Description   |
@@ -160,6 +160,7 @@ Implemented APIs (604)
 | func ExportImageAsCode(image, fileName) | Export image as code file defining an array of bytes, returns true on success |
 | func ExportImageToMemory(image, fileType, fileSize) | Export image to memory buffer |
 | func ExportMesh(mesh, fileName) | Export mesh data to file, returns true on success |
+| func ExportMeshAsCode(mesh, fileName) | Export mesh as code file (.h) defining multiple arrays of vertex attributes |
 | func ExportWave(wave, fileName) | Export wave data to file, returns true on success |
 | func ExportWaveAsCode(wave, fileName) | Export wave sample data to code (.h), returns true on success |
 | func Fade(color, alpha) | Get color with alpha applied, alpha goes from 0.0f to 1.0f |
@@ -262,6 +263,8 @@ Implemented APIs (604)
 | func GetScreenWidth() | Get current screen width |
 | func GetShaderLocation(shader, uniformName) | Get shader uniform location |
 | func GetShaderLocationAttrib(shader, attribName) | Get shader attribute location |
+| func GetShapesTexture() | Get texture that is used for shapes drawing |
+| func GetShapesTextureRectangle() | Get texture source rectangle that is used for shapes drawing |
 | func GetSplinePointBasis(p1, p2, p3, p4, t) | Get (evaluate) spline point: B-Spline |
 | func GetSplinePointBezierCubic(p1, c2, c3, p4, t) | Get (evaluate) spline point: Cubic Bezier |
 | func GetSplinePointBezierQuad(p1, c2, p3, t) | Get (evaluate) spline point: Quadratic Bezier |
@@ -273,6 +276,7 @@ Implemented APIs (604)
 | func GetTouchPosition(index) | Get touch position XY for a touch point index (relative to screen size) |
 | func GetTouchX() | Get touch position X for touch point 0 (relative to screen size) |
 | func GetTouchY() | Get touch position Y for touch point 0 (relative to screen size) |
+| func GetViewRay(mousePosition, camera, width, height) | Get a ray trace from mouse position in a viewport |
 | func GetWindowHandle() | Get native window handle |
 | func GetWindowPosition() | Get window position XY on monitor |
 | func GetWindowScaleDPI() | Get window scale DPI factor |
@@ -425,6 +429,7 @@ Implemented APIs (604)
 | func LoadFontFromMemory(fileType, fileData, dataSize, fontSize, codepoints, codepointCount) | Load font from memory buffer, fileType refers to extension: i.e. '.ttf' |
 | func LoadImage(fileName) | Load image from file into CPU memory (RAM) |
 | func LoadImageAnim(fileName, frames) | Load image sequence from file (frames appended to image.data) |
+| func LoadImageAnimFromMemory(fileType, fileData, dataSize, frames) | Load image sequence from memory buffer |
 | func LoadImageColors(image) | Load color data from image as a Color array (RGBA - 32bit) |
 | func LoadImageFromMemory(fileType, fileData, dataSize) | Load image from memory buffer, fileType refers to extension: i.e. '.png' |
 | func LoadImageFromScreen() | Load image from screen buffer and (screenshot) |
@@ -566,6 +571,7 @@ Implemented APIs (604)
 | func TextLength(text) | Get text length, checks for '\\0' ending |
 | func TextReplace(text, replace, by) | Replace text string (WARNING: memory must be freed!) |
 | func TextSubtext(text, position, length) | Get a piece of a text string |
+| func TextToFloat(text) | Get float value from text (negative values not supported) |
 | func TextToInteger(text) | Get integer value from text (negative values not supported) |
 | func TextToLower(text) | Get lower case version of provided string |
 | func TextToPascal(text) | Get Pascal case notation version of provided string |

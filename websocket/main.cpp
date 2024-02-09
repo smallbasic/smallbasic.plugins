@@ -123,16 +123,16 @@ static void server_ev_close(mg_connection *conn, Session *session) {
   }
 }
 
-static void server_handler(struct mg_connection *conn, int event, void *eventData, void *session) {
+static void server_handler(struct mg_connection *conn, int event, void *eventData) {
   switch (event) {
   case MG_EV_HTTP_MSG:
-    server_http_msg(conn, (mg_http_message *)eventData, (Session *)session);
+    server_http_msg(conn, (mg_http_message *)eventData, (Session *)conn->fn_data);
     break;
   case MG_EV_WS_MSG:
     server_ws_msg(conn, (mg_ws_message *)eventData);
     break;
   case MG_EV_CLOSE:
-    server_ev_close(conn, (Session *)session);
+    server_ev_close(conn, (Session *)conn->fn_data);
     break;
   default:
     break;
@@ -171,19 +171,19 @@ static void client_ws_msg(mg_connection *conn, mg_ws_message *message, Session *
   }
 }
 
-static void client_handler(mg_connection *conn, int event, void *eventData, void *fnData) {
+static void client_handler(mg_connection *conn, int event, void *eventData) {
   switch (event) {
   case MG_EV_ERROR:
     fprintf(stderr, "ERROR: [%p] %s", conn->fd, (char *)eventData);
     break;
   case MG_EV_WS_OPEN:
-    client_ws_open(conn, (Session *)fnData);
+    client_ws_open(conn, (Session *)conn->fn_data);
     break;
   case MG_EV_WS_MSG:
-    client_ws_msg(conn, (mg_ws_message *)eventData, (Session *)fnData);
+    client_ws_msg(conn, (mg_ws_message *)eventData, (Session *)conn->fn_data);
     break;
   case MG_EV_CLOSE:
-    ((Session *)fnData)->_state = kClosed;
+    ((Session *)conn->fn_data)->_state = kClosed;
     break;
   default:
     break;

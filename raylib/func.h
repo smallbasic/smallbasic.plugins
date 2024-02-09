@@ -453,6 +453,23 @@ static int cmd_exportmesh(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Export mesh as code file (.h) defining multiple arrays of vertex attributes
+//
+static int cmd_exportmeshascode(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int mesh_id = get_mesh_id(argc, params, 0, retval);
+  if (mesh_id != -1) {
+    auto fileName = get_param_str(argc, params, 1, 0);
+    auto fnResult = ExportMeshAsCode(_meshMap.at(mesh_id), fileName);
+    v_setint(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Export wave data to file, returns true on success
 //
 static int cmd_exportwave(int argc, slib_par_t *params, var_t *retval) {
@@ -1532,6 +1549,24 @@ static int cmd_getshaderlocationattrib(int argc, slib_par_t *params, var_t *retv
 }
 
 //
+// Get texture that is used for shapes drawing
+//
+static int cmd_getshapestexture(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetShapesTexture();
+  v_settexture2d(retval, fnResult);
+  return 1;
+}
+
+//
+// Get texture source rectangle that is used for shapes drawing
+//
+static int cmd_getshapestexturerectangle(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetShapesTextureRectangle();
+  v_setrect(retval, fnResult);
+  return 1;
+}
+
+//
 // Get (evaluate) spline point: B-Spline
 //
 static int cmd_getsplinepointbasis(int argc, slib_par_t *params, var_t *retval) {
@@ -1651,6 +1686,19 @@ static int cmd_gettouchx(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_gettouchy(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetTouchY();
   v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Get a ray trace from mouse position in a viewport
+//
+static int cmd_getviewray(int argc, slib_par_t *params, var_t *retval) {
+  auto mousePosition = get_param_vec2(argc, params, 0);
+  auto camera = get_camera_3d(argc, params, 1);
+  auto width = get_param_num(argc, params, 2, 0);
+  auto height = get_param_num(argc, params, 3, 0);
+  auto fnResult = GetViewRay(mousePosition, camera, width, height);
+  v_setray(retval, fnResult);
   return 1;
 }
 
@@ -2474,6 +2522,19 @@ static int cmd_loadimageanim(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Load image sequence from memory buffer
+//
+static int cmd_loadimageanimfrommemory(int argc, slib_par_t *params, var_t *retval) {
+  auto fileType = get_param_str(argc, params, 0, 0);
+  auto fileData = (const unsigned char *)get_param_str(argc, params, 1, 0);
+  auto dataSize = get_param_int(argc, params, 2, 0);
+  auto frames = (int *)0;
+  auto fnResult = LoadImageAnimFromMemory(fileType, fileData, dataSize, frames);
+  v_setimage(retval, fnResult);
+  return 1;
+}
+
+//
 // Load color data from image as a Color array (RGBA - 32bit)
 //
 static int cmd_loadimagecolors(int argc, slib_par_t *params, var_t *retval) {
@@ -2918,7 +2979,7 @@ static int cmd_textlength(int argc, slib_par_t *params, var_t *retval) {
 // Replace text string (WARNING: memory must be freed!)
 //
 static int cmd_textreplace(int argc, slib_par_t *params, var_t *retval) {
-  auto text = (char *)get_param_str(argc, params, 0, 0);
+  auto text = get_param_str(argc, params, 0, 0);
   auto replace = get_param_str(argc, params, 1, 0);
   auto by = get_param_str(argc, params, 2, 0);
   auto fnResult = (const char *)TextReplace(text, replace, by);
@@ -2935,6 +2996,16 @@ static int cmd_textsubtext(int argc, slib_par_t *params, var_t *retval) {
   auto length = get_param_int(argc, params, 2, 0);
   auto fnResult = (const char *)TextSubtext(text, position, length);
   v_setstr(retval, fnResult);
+  return 1;
+}
+
+//
+// Get float value from text (negative values not supported)
+//
+static int cmd_texttofloat(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto fnResult = TextToFloat(text);
+  v_setreal(retval, fnResult);
   return 1;
 }
 

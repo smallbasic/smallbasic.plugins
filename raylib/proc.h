@@ -2996,7 +2996,7 @@ static int cmd_unloadautomationeventlist(int argc, slib_par_t *params, var_t *re
   int result;
   int list_id = get_automationeventlist_id(argc, params, 0, retval);
   if (list_id != -1) {
-    UnloadAutomationEventList(&_automationEventListMap.at(list_id));
+    UnloadAutomationEventList(_automationEventListMap.at(list_id));
     _automationEventListMap.erase(list_id);
     result = 1;
   } else {
