@@ -1,11 +1,11 @@
 package net.sourceforge.smallbasic.ioio;
 
+import java.io.IOException;
+
 import ioio.lib.api.IOIO;
 import ioio.lib.api.SpiMaster;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
-
-import java.io.IOException;
 
 public class SpiMasterImpl extends IOTask {
   private static final String TAG = "SpiMasterImpl";
@@ -19,6 +19,12 @@ public class SpiMasterImpl extends IOTask {
   public SpiMasterImpl() {
     super();
     Log.i(TAG, "created");
+  }
+
+  @Override
+  public void close() {
+    super.close();
+    spiMaster.close();
   }
 
   public void open(int miso, int mosi, int clk, int slaveSelect) throws IOException {

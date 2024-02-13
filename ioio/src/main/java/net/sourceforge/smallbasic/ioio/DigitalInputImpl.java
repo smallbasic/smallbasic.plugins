@@ -1,11 +1,11 @@
 package net.sourceforge.smallbasic.ioio;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import ioio.lib.api.DigitalInput;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DigitalInputImpl extends IOTask implements DigitalInput {
   private static final String TAG = "DigitalInput";

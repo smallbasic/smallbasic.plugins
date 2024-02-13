@@ -133,6 +133,23 @@ struct IOTask {
     return result;
   }
 
+  // int foo(int)
+  int invokeIntInt(const char *name, int value, var_s *retval) {
+    int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, name, "(I)I");
+      var_num_t value = 0;
+      if (method != nullptr) {
+        value = env->CallIntMethod(_instance, method, value);
+      }
+      if (!checkException(retval)) {
+        v_setint(retval, value);
+        result = 1;
+      }
+    }
+    return result;
+  }
+
   // void foo(boolean)
   int invokeVoidBool(const char *name, int value, var_s *retval) {
     int result = 0;
@@ -254,13 +271,31 @@ static int get_io_class_id(var_s *map, var_s *retval) {
   return result;
 }
 
-static int cmd_twimaster_writeread(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+static int cmd_twimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
-  if (argc != 0) {
-    error(retval, "TwiMaster.writeRead", 0);
+  if (argc != 2) {
+    error(retval, "TwiMaster.write", 2);
   } else {
-    // TODO
-    //result = ioioTask->invokeVoidVoid("waitForDisconnect", retval);
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      auto address = get_param_int(argc, arg, 0, 0);
+      auto data = get_param_int(argc, arg, 1, 0);
+      result = _ioTaskMap.at(id).invokeVoidInt2("write", address, data, retval);
+    }
+  }
+  return result;
+}
+
+static int cmd_twimaster_read(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "TwiMaster.read", 1);
+  } else {
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      auto address = get_param_int(argc, arg, 0, 0);
+      result = _ioTaskMap.at(id).invokeIntInt("read", address, retval);
+    }
   }
   return result;
 }
@@ -281,7 +316,8 @@ static int cmd_spimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *re
 }
 
 static void create_twimaster(var_t *map) {
-  v_create_callback(map, "writeRead", cmd_twimaster_writeread);
+  v_create_callback(map, "write", cmd_twimaster_write);
+  v_create_callback(map, "read", cmd_twimaster_read);
 }
 
 static void create_spimaster(var_t *map) {
