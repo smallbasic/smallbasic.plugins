@@ -1,11 +1,11 @@
 package net.sourceforge.smallbasic.ioio;
 
-import java.io.IOException;
-
 import ioio.lib.api.IOIO;
 import ioio.lib.api.SpiMaster;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
+
+import java.io.IOException;
 
 public class SpiMasterImpl extends IOTask {
   private static final String TAG = "SpiMasterImpl";
@@ -27,6 +27,7 @@ public class SpiMasterImpl extends IOTask {
     this.mosi = mosi;
     this.clk = clk;
     this.slaveSelect = slaveSelect;
+    validatePins();
   }
 
   public void write(int address, int data) {
@@ -46,5 +47,28 @@ public class SpiMasterImpl extends IOTask {
   void setup(IOIO ioio) throws ConnectionLostException {
     Log.i(TAG, "setup entered: " + miso + " " + mosi + " " + clk + " " + slaveSelect);
     spiMaster = ioio.openSpiMaster(miso, mosi, clk, slaveSelect, SpiMaster.Rate.RATE_1M);
+  }
+
+  private void pinError(String name) {
+    setError("Incorrect " + name + " pin value");
+  }
+
+  private void validatePins() {
+    if (miso < 1) {
+      pinError("miso");
+    } else if (mosi < 1) {
+      pinError("mosi");
+    } else if (clk < 1) {
+      pinError("clk");
+    } else if (slaveSelect < 1) {
+      pinError("slaveSelect");
+    } else if (miso == mosi ||
+               miso == clk ||
+               miso == slaveSelect ||
+               mosi == clk ||
+               mosi == slaveSelect ||
+               clk == slaveSelect) {
+      setError("One or pins have duplicate values");
+    }
   }
 }
