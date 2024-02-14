@@ -133,23 +133,6 @@ struct IOTask {
     return result;
   }
 
-  // int foo(int)
-  int invokeIntInt(const char *name, int value, var_s *retval) {
-    int result = 0;
-    if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "(I)I");
-      var_num_t value = 0;
-      if (method != nullptr) {
-        value = env->CallIntMethod(_instance, method, value);
-      }
-      if (!checkException(retval)) {
-        v_setint(retval, value);
-        result = 1;
-      }
-    }
-    return result;
-  }
-
   // void foo(boolean)
   int invokeVoidBool(const char *name, int value, var_s *retval) {
     int result = 0;
@@ -238,6 +221,61 @@ struct IOTask {
     return result;
   }
 
+  // int readWrite(int address, byte[] write) {
+  int invokeReadWrite(int argc, slib_par_t *arg, var_s *retval) {
+    int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, "readWrite", "(I[B)I");
+      var_num_t value = 0;
+      if (method != nullptr) {
+        jbyteArray array = env->NewByteArray(argc - 1);
+        jbyte *elements = env->GetByteArrayElements(array, nullptr);
+        populateByteArray(argc, arg, elements);
+        auto address = get_param_int(argc, arg, 0, 0);
+
+        value = env->CallIntMethod(_instance, method, address, array);
+        releaseArray(array, elements);
+      }
+      if (!checkException(retval)) {
+        v_setint(retval, value);
+        result = 1;
+      }
+    }
+    return result;
+  }
+
+  // int readWrite(int address, byte[] write) {
+  int invokeWrite(int argc, slib_par_t *arg, var_s *retval) {
+    int result = 0;
+    if (_instance != nullptr) {
+      jmethodID method = env->GetMethodID(_clazz, "write", "(I[B)V");
+      if (method != nullptr) {
+        jbyteArray array = env->NewByteArray(argc - 1);
+        jbyte *elements = env->GetByteArrayElements(array, nullptr);
+        populateByteArray(argc, arg, elements);
+        auto address = get_param_int(argc, arg, 0, 0);
+
+        env->CallVoidMethod(_instance, method, address, array);
+        releaseArray(array, elements);
+      }
+      if (!checkException(retval)) {
+        result = 1;
+      }
+    }
+    return result;
+  }
+
+  void populateByteArray(int argc, slib_par_t *arg, jbyte *elements) {
+    for (int i = 1; i < argc; i++) {
+      elements[i] = get_param_int(argc, arg, i, 0);
+    }
+  }
+
+  void releaseArray(jbyteArray array, jbyte *elements) {
+    env->ReleaseByteArrayElements(array, elements, 0);
+    env->DeleteLocalRef(array);
+  }
+
   int open(int pin, var_s *retval) {
     return invokeVoidInt("open", pin, retval);
   }
@@ -271,30 +309,27 @@ static int get_io_class_id(var_s *map, var_s *retval) {
   return result;
 }
 
-static int cmd_twimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+static int cmd_twimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
-  if (argc != 2) {
-    error(retval, "TwiMaster.write", 2);
+  if (argc < 2) {
+    error(retval, "TwiMaster.readWrite", 2, 10);
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
-      auto address = get_param_int(argc, arg, 0, 0);
-      auto data = get_param_int(argc, arg, 1, 0);
-      result = _ioTaskMap.at(id).invokeVoidInt2("write", address, data, retval);
+      result = _ioTaskMap.at(id).invokeReadWrite(argc, arg, retval);
     }
   }
   return result;
 }
 
-static int cmd_twimaster_read(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+static int cmd_twimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
-  if (argc != 1) {
-    error(retval, "TwiMaster.read", 1);
+  if (argc < 2) {
+    error(retval, "TwiMaster.write", 2, 10);
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
-      auto address = get_param_int(argc, arg, 0, 0);
-      result = _ioTaskMap.at(id).invokeIntInt("read", address, retval);
+      result = _ioTaskMap.at(id).invokeWrite(argc, arg, retval);
     }
   }
   return result;
@@ -317,7 +352,7 @@ static int cmd_spimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *re
 
 static void create_twimaster(var_t *map) {
   v_create_callback(map, "write", cmd_twimaster_write);
-  v_create_callback(map, "read", cmd_twimaster_read);
+  v_create_callback(map, "readWrite", cmd_twimaster_readwrite);
 }
 
 static void create_spimaster(var_t *map) {

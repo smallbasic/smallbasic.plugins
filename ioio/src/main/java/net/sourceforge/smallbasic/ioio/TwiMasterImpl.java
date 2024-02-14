@@ -1,7 +1,6 @@
 package net.sourceforge.smallbasic.ioio;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import ioio.lib.api.IOIO;
 import ioio.lib.api.TwiMaster;
@@ -34,23 +33,22 @@ public class TwiMasterImpl extends IOTask {
     this.smbus = (smbus == 1);
   }
 
-  public int read(int address) {
+  public int readWrite(int address, byte[] write) {
     handleError();
-    AtomicInteger atomicLong = new AtomicInteger();
-    lock.invoke((i) -> {
-      byte[] buffer = new byte[4];
-      twiMaster.writeRead(address, false, null, 0, buffer, 4);
-      int value = 0; // TODO read buffer into value
-      atomicLong.set(value);
+    return lock.invokeInt((i) -> {
+      byte[] read = new byte[4];
+      twiMaster.writeRead(address, false, write, write.length, read, read.length);
+      Log.i(TAG, "read = " + read.length + " " + address + " "
+        + read[0] + " " + read[1] + " " + read[2] + " " + read[3]);
+      int value = 0; // TODO read read into value
+      return value;
     });
-    return atomicLong.get();
   }
 
-  public void write(int address, int data) {
+  public void write(int address, byte[] write) {
     handleError();
     lock.invoke((i) -> {
-      byte[] buffer = {(byte) data};
-      twiMaster.writeRead(address, false, buffer, buffer.length, null, 0);
+      twiMaster.writeRead(address, false, write, write.length, null, 0);
     });
   }
 
@@ -61,7 +59,7 @@ public class TwiMasterImpl extends IOTask {
 
   @Override
   void setup(IOIO ioio) throws ConnectionLostException {
-    Log.i(TAG, "setup entered");
+    Log.i(TAG, "setup entered: " + twiNum);
     twiMaster = ioio.openTwiMaster(twiNum, rate, smbus);
   }
 }
