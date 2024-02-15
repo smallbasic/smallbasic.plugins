@@ -1,6 +1,7 @@
 rem
 rem https://learn.sparkfun.com/tutorials/qwiic-ambient-light-sensor-veml6030-hookup-guide/all
 rem https://piico.dev/p3
+rem https://www.vishay.com/docs/84366/veml6030.pdf
 rem PiicoDev Ambient Light Sensor VEML6030
 rem
 
@@ -11,6 +12,9 @@ const address = 0x10
 
 rem register where the light sensing data is stored
 const alsDataReg = 0x04
+
+rem measure the total brightness of the ambient light regardless of its color
+const whiteDataReg = 0x05
 
 rem ambient light sensing configuration register
 const alsConfReg = 0
@@ -26,7 +30,7 @@ ioio.waitForConnect(10)
 rem configure default settings
 p3.write(address, alsConfReg, alsConf)
 
-while 1
+for i = 0 to 10
   print p3.readWrite(address, alsDataReg)
-  delay 2000
-wend
+  delay 1000
+next

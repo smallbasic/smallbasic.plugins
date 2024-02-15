@@ -33,22 +33,19 @@ public class TwiMasterImpl extends IOTask {
     this.smbus = (smbus == 1);
   }
 
-  public int readWrite(int address, byte[] write) {
+  public int readWrite(int address, final byte[] write, int len) {
     handleError();
     return lock.invokeInt((i) -> {
-      byte[] read = new byte[4];
-      twiMaster.writeRead(address, false, write, write.length, read, read.length);
-      Log.i(TAG, "read = " + read.length + " " + address + " "
-        + read[0] + " " + read[1] + " " + read[2] + " " + read[3]);
-      int value = 0; // TODO read read into value
-      return value;
+      byte[] read = new byte[2];
+      twiMaster.writeRead(address, false, write, len, read, read.length);
+      return (read[1] << 8) + read[0];
     });
   }
 
-  public void write(int address, byte[] write) {
+  public void write(int address, final byte[] write, int len) {
     handleError();
     lock.invoke((i) -> {
-      twiMaster.writeRead(address, false, write, write.length, null, 0);
+      twiMaster.writeRead(address, false, write, len, null, 0);
     });
   }
 

@@ -33,13 +33,22 @@ int nextId = 1;
 #define CLASS_SPIMASTER "net/sourceforge/smallbasic/ioio/SpiMasterImpl"
 #define CLASS_IOIO "net/sourceforge/smallbasic/ioio/IOIOImpl"
 #define CLASS_IOTASK_ID 1
+#define ARRAY_SIZE 10
 
 struct IOTask {
-  IOTask(): _clazz(nullptr), _instance(nullptr) {}
+  IOTask():
+    _clazz(nullptr),
+    _instance(nullptr),
+    _array(nullptr) {
+  }
 
   virtual ~IOTask() {
+    if (_array) {
+      env->DeleteLocalRef(_array);
+    }
     _clazz = nullptr;
     _instance = nullptr;
+    _array = nullptr;
   }
 
   bool create(const char *path) {
@@ -225,16 +234,12 @@ struct IOTask {
   int invokeReadWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, "readWrite", "(I[B)I");
+      jmethodID method = env->GetMethodID(_clazz, "readWrite", "(I[BI)I");
       var_num_t value = 0;
       if (method != nullptr) {
-        jbyteArray array = env->NewByteArray(argc - 1);
-        jbyte *elements = env->GetByteArrayElements(array, nullptr);
-        populateByteArray(argc, arg, elements);
         auto address = get_param_int(argc, arg, 0, 0);
-
-        value = env->CallIntMethod(_instance, method, address, array);
-        releaseArray(array, elements);
+        populateByteArray(argc, arg, 1);
+        value = env->CallIntMethod(_instance, method, address, _array, argc - 1);
       }
       if (!checkException(retval)) {
         v_setint(retval, value);
@@ -248,15 +253,11 @@ struct IOTask {
   int invokeWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, "write", "(I[B)V");
+      jmethodID method = env->GetMethodID(_clazz, "write", "(I[BI)V");
       if (method != nullptr) {
-        jbyteArray array = env->NewByteArray(argc - 1);
-        jbyte *elements = env->GetByteArrayElements(array, nullptr);
-        populateByteArray(argc, arg, elements);
         auto address = get_param_int(argc, arg, 0, 0);
-
-        env->CallVoidMethod(_instance, method, address, array);
-        releaseArray(array, elements);
+        populateByteArray(argc, arg, 1);
+        env->CallVoidMethod(_instance, method, address, _array, argc - 1);
       }
       if (!checkException(retval)) {
         result = 1;
@@ -265,15 +266,15 @@ struct IOTask {
     return result;
   }
 
-  void populateByteArray(int argc, slib_par_t *arg, jbyte *elements) {
-    for (int i = 1; i < argc; i++) {
-      elements[i] = get_param_int(argc, arg, i, 0);
+  void populateByteArray(int argc, slib_par_t *arg, int offset) {
+    if (!_array) {
+      _array = env->NewByteArray(ARRAY_SIZE);
     }
-  }
-
-  void releaseArray(jbyteArray array, jbyte *elements) {
-    env->ReleaseByteArrayElements(array, elements, 0);
-    env->DeleteLocalRef(array);
+    jbyte *elements = env->GetByteArrayElements(_array, nullptr);
+    for (int i = offset, j = 0; i < argc && i < ARRAY_SIZE; i++, j++) {
+      elements[j] = get_param_int(argc, arg, i, 0);
+    }
+    env->ReleaseByteArrayElements(_array, elements, 0);
   }
 
   int open(int pin, var_s *retval) {
@@ -291,6 +292,7 @@ struct IOTask {
   private:
   jclass _clazz;
   jobject _instance;
+  jbyteArray _array;
 };
 
 robin_hood::unordered_map<int, IOTask> _ioTaskMap;
@@ -312,7 +314,7 @@ static int get_io_class_id(var_s *map, var_s *retval) {
 static int cmd_twimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
   if (argc < 2) {
-    error(retval, "TwiMaster.readWrite", 2, 10);
+    error(retval, "TwiMaster.readWrite", 2, ARRAY_SIZE);
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
@@ -325,7 +327,7 @@ static int cmd_twimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s
 static int cmd_twimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
   if (argc < 2) {
-    error(retval, "TwiMaster.write", 2, 10);
+    error(retval, "TwiMaster.write", 2, ARRAY_SIZE);
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
