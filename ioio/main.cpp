@@ -187,6 +187,7 @@ struct IOTask {
     return result;
   }
 
+  // void foo(int, int)
   int invokeVoidInt2(const char *name, int value1, int value2, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
@@ -201,6 +202,7 @@ struct IOTask {
     return result;
   }
 
+  // void foo(int, int, int, int)
   int invokeVoidInt4(const char *name, int value1, int value2, int value3, int value4, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
@@ -249,7 +251,7 @@ struct IOTask {
     return result;
   }
 
-  // int readWrite(int address, byte[] write) {
+  // int write(int address, byte[] write) {
   int invokeWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
@@ -266,13 +268,24 @@ struct IOTask {
     return result;
   }
 
-  void populateByteArray(int argc, slib_par_t *arg, int offset) {
+  // populate the java byte array with the contents of the basic array
+  void populateByteArray(int argc, slib_par_t *params, int offset) {
     if (!_array) {
       _array = env->NewByteArray(ARRAY_SIZE);
     }
     jbyte *elements = env->GetByteArrayElements(_array, nullptr);
-    for (int i = offset, j = 0; i < argc && i < ARRAY_SIZE; i++, j++) {
-      elements[j] = get_param_int(argc, arg, i, 0);
+    if ((argc - offset) == 1 && is_param_array(argc, params, offset)) {
+      // argument is an array (assume of ints)
+      var_s *array = params[offset].var_p;
+      int size = v_asize(array);
+      for (int i = 0; i < size && i < ARRAY_SIZE; i++) {
+        var_s *elem = v_elem(array, i);
+        elements[i] = v_is_type(elem, V_INT) ? elem->v.i : 0;
+      }
+    } else {
+      for (int i = offset, j = 0; i < argc && i < ARRAY_SIZE; i++, j++) {
+        elements[j] = get_param_int(argc, params, i, 0);
+      }
     }
     env->ReleaseByteArrayElements(_array, elements, 0);
   }
