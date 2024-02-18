@@ -236,12 +236,13 @@ struct IOTask {
   int invokeReadWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, "readWrite", "(I[BI)I");
-      var_num_t value = 0;
+      jmethodID method = env->GetMethodID(_clazz, "readWrite", "(II[BI)J");
+      var_int_t value = 0;
       if (method != nullptr) {
         auto address = get_param_int(argc, arg, 0, 0);
-        populateByteArray(argc, arg, 1);
-        value = env->CallIntMethod(_instance, method, address, _array, argc - 1);
+        auto readBytes = get_param_int(argc, arg, 1, 2);
+        populateByteArray(argc, arg, 2);
+        value = env->CallIntMethod(_instance, method, address, readBytes, _array, argc - 1);
       }
       if (!checkException(retval)) {
         v_setint(retval, value);
@@ -280,13 +281,14 @@ struct IOTask {
       int size = v_asize(array);
       for (int i = 0; i < size && i < ARRAY_SIZE; i++) {
         var_s *elem = v_elem(array, i);
-        elements[i] = v_is_type(elem, V_INT) ? elem->v.i : 0;
+        elements[i] = v_is_type(elem, V_INT) ? elem->v.i : elem->v.n;
       }
     } else {
       for (int i = offset, j = 0; i < argc && i < ARRAY_SIZE; i++, j++) {
         elements[j] = get_param_int(argc, params, i, 0);
       }
     }
+    // make the changes available to the java side
     env->ReleaseByteArrayElements(_array, elements, 0);
   }
 
@@ -327,7 +329,7 @@ static int get_io_class_id(var_s *map, var_s *retval) {
 static int cmd_twimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
   if (argc < 2) {
-    error(retval, "TwiMaster.readWrite", 2, ARRAY_SIZE);
+    error(retval, "TwiMaster.readWrite(address, bytes, [data]", 2, ARRAY_SIZE);
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {

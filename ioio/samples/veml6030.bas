@@ -30,7 +30,7 @@ ioio.waitForConnect(10)
 rem configure default settings
 p3.write(address, alsConfReg, alsConf)
 
-for i = 0 to 10
-  print p3.readWrite(address, alsDataReg)
+for i = 0 to 5
+  print p3.readWrite(address, 2, [alsDataReg])
   delay 1000
 next

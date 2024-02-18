@@ -1,6 +1,8 @@
 package net.sourceforge.smallbasic.ioio;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import ioio.lib.api.exception.ConnectionLostException;
@@ -36,7 +38,20 @@ public class IOLock<I> {
 
   public int invokeInt(Function<Integer, I> function) {
     CountDownLatch latch = beginLatch();
-    AtomicReference<Integer> result = new AtomicReference<>();
+    AtomicInteger result = new AtomicInteger();
+    synchronized (mutex) {
+      this.consumer = (i) -> {
+        result.set(function.apply(i));
+        latch.countDown();
+      };
+    }
+    endLatch(latch);
+    return result.get();
+  }
+
+  public long invokeLong(Function<Long, I> function) {
+    CountDownLatch latch = beginLatch();
+    AtomicLong result = new AtomicLong();
     synchronized (mutex) {
       this.consumer = (i) -> {
         result.set(function.apply(i));
