@@ -40,7 +40,7 @@ public class TwiMasterImpl extends IOTask {
       twiMaster.writeRead(address, false, write, writeLen, read, read.length);
       long result = 0;
       for (int index = 0; index < read.length; index++) {
-        result += ((long)read[index]) << (index * 8);
+        result += ((long)Byte.toUnsignedInt(read[index])) << (index * 8);
       }
       return result;
     });

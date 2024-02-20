@@ -410,14 +410,15 @@ SBLIB_API int sblib_func_count() {
 
 int sblib_init(const char *sourceFile) {
   JavaVMInitArgs vm_args;
-  JavaVMOption options[2];
+  JavaVMOption options[3];
   options[0].optionString = (char *)"-Djava.class.path=./target/ioio-1.0-jar-with-dependencies.jar";
   options[1].optionString = (char *)"-Dioio.SerialPorts=IOIO0";
+  options[2].optionString = (char *)"-Xrs";
   //options[2].optionString = "-Xdebug";
   //options[3].optionString = "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=y";
   //options[2].optionString = (char *)"-Xcheck:jni";
   vm_args.version = JNI_VERSION_1_8;
-  vm_args.nOptions = 2;
+  vm_args.nOptions = 3;
   vm_args.options = options;
   vm_args.ignoreUnrecognized = 0;
   int result = (JNI_CreateJavaVM(&jvm, (void **)&env, &vm_args) == JNI_OK &&
