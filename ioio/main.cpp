@@ -328,8 +328,11 @@ static int get_io_class_id(var_s *map, var_s *retval) {
 
 static int cmd_twimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
+  auto readBytes = get_param_int(argc, arg, 1, 0);
   if (argc < 2) {
-    error(retval, "TwiMaster.readWrite(address, bytes, [data]", 2, ARRAY_SIZE);
+    error(retval, "TwiMaster.readWrite(address, read-bytes, [data]", 2, ARRAY_SIZE);
+  } else if (readBytes < 1 || readBytes > 8) {
+    error(retval, "read-bytes value out of range. Expected a number between 1 and 8");
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
