@@ -80,7 +80,7 @@ func bme280_init(t_mode, p_mode, h_mode, iir)
   result.H4 = (read8(0xE4) lshift 4) + (a mod 16)
   result.H5 = (read8(0xE6) lshift 4) + (a rshift 4)
   result.H6 = read8(0xE7)
-  if H6 > 127 then result.H6 -= 256
+  if result.H6 > 127 then result.H6 -= 256
 
   write8(0xF2, h_mode)
   sleep_ms(10)

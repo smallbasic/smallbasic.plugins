@@ -59,10 +59,10 @@ public class IOService implements IOIOLooperProvider  {
   private void registerPin(int pin) throws IOException {
     if (pin != -1) {
       if (pin < 0 || pin > MAX_PINS) {
-        throw new IOException("invalid pin: " + pin);
+        throw new IOException("Invalid pin: " + pin);
       }
       if (usedPins[pin] != null && usedPins[pin]) {
-        throw new IOException("pin already used: " + pin);
+        throw new IOException("Pin already used: " + pin);
       }
       usedPins[pin] = true;
     }

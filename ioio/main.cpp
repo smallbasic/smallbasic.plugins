@@ -51,24 +51,23 @@ struct IOTask {
     _array = nullptr;
   }
 
-  bool create(const char *path) {
+  bool create(const char *path, var_s *retval) {
     bool result;
     if (_instance != nullptr) {
-      // error when already constructed
+      error(retval, "Internal error - already constructed");
       result = false;
     } else {
       _clazz = env->FindClass(path);
-      if (_clazz == nullptr) {
-        env->ExceptionDescribe();
-      } else {
+      if (_clazz != nullptr) {
         jmethodID constructor = env->GetMethodID(_clazz, "<init>", "()V");
-        if (constructor == nullptr) {
-          env->ExceptionDescribe();
-        } else {
+        if (constructor != nullptr) {
           _instance = env->NewObject(_clazz, constructor);
         }
       }
       result = _instance != nullptr;
+      if (!result) {
+        checkException(retval);
+      }
     }
     return result;
   }
@@ -431,7 +430,7 @@ int sblib_init(const char *sourceFile) {
   }
 
   ioioTask = new IOTask();
-  if (!ioioTask || !ioioTask->create(CLASS_IOIO)) {
+  if (!ioioTask || !ioioTask->create(CLASS_IOIO, nullptr)) {
     fprintf(stderr, "Failed to IOIOTask\n");
     result = 0;
   }
