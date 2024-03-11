@@ -19,7 +19,7 @@ all-am: $(generated)
 CLEANFILES = $(generated)
 
 AM_CXXFLAGS=-fno-rtti -std=c++14
-AM_CPPFLAGS = -I../include -Wall @IOIO_CPPFLAGS@
+AM_CPPFLAGS = -DDESKTOP_MODULE -I../include -Wall @IOIO_CPPFLAGS@
 lib_LTLIBRARIES = libioio.la
 
 libioio_la_SOURCES = ../include/param.cpp ../include/hashmap.cpp ../include/apiexec.cpp main.cpp $(generated)

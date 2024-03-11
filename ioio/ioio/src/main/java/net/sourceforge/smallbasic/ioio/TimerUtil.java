@@ -1,4 +1,4 @@
-package ioio;
+package net.sourceforge.smallbasic.ioio;
 
 public class TimerUtil {
   private static int latency = 50;

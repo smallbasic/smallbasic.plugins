@@ -411,9 +411,10 @@ SBLIB_API int sblib_func_count() {
 }
 
 int sblib_init(const char *sourceFile) {
+#if defined(DESKTOP_MODULE)
   JavaVMInitArgs vm_args;
   JavaVMOption options[3];
-  options[0].optionString = (char *)"-Djava.class.path=./target/ioio-1.0-jar-with-dependencies.jar";
+  options[0].optionString = (char *)"-Djava.class.path=./android/target/ioio-1.0-jar-with-dependencies.jar";
   options[1].optionString = (char *)"-Dioio.SerialPorts=IOIO0";
   options[2].optionString = (char *)"-Xrs";
   //options[2].optionString = "-Xdebug";
@@ -428,13 +429,21 @@ int sblib_init(const char *sourceFile) {
   if (!result) {
     fprintf(stderr, "Failed to create JVM\n");
   }
-
+#else
+  int result = 1;
+#endif
   ioioTask = new IOTask();
-  if (!ioioTask || !ioioTask->create(CLASS_IOIO, nullptr)) {
-    fprintf(stderr, "Failed to IOIOTask\n");
+  var_t retval;
+  if (!ioioTask || !ioioTask->create(CLASS_IOIO, &retval)) {
+    fprintf(stderr, "Failed to IOIOTask: %s\n", v_getstr(&retval));
     result = 0;
   }
   return result;
+}
+
+extern "C" JNIEXPORT void JNICALL
+  Java_net_sourceforge_smallbasic_ioio_IOIOLoader_init(JNIEnv *androidEnv, jclass /*clazz*/) {
+  env = androidEnv;
 }
 
 SBLIB_API void sblib_free(int cls_id, int id) {
@@ -458,11 +467,13 @@ void sblib_close(void) {
     fprintf(stderr, "IOTask leak detected\n");
     _ioTaskMap.clear();
   }
+#if defined(DESKTOP_MODULE)  
   if (jvm) {
     jvm->DetachCurrentThread();
   }
   // calling this hangs
   //jvm->DestroyJavaVM();
+#endif  
   env = nullptr;
   jvm = nullptr;
 }

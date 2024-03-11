@@ -1,0 +1,25 @@
+buildscript {
+  // configure the repositories and dependencies for Gradle itself
+  repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+  }
+  dependencies {
+    classpath 'com.android.tools.build:gradle:8.3.0'
+  }
+}
+
+allprojects {
+  repositories {
+    google()
+    mavenCentral()
+  }
+}
+
+apply plugin: 'idea'
+
+tasks.register('clean', Delete) {
+  delete rootProject.buildDir
+}
+

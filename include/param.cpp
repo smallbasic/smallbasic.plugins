@@ -144,6 +144,10 @@ void v_free(var_t *var) {
   }
 }
 
+char *v_getstr(var_t *v) {
+  return (char *)(v->type != V_STR ? "" : v->v.p.ptr);
+}
+
 int set_param_int(int argc, slib_par_t *params, int param, int value, var_t *retval) {
   int result;
   if (argc < param || !params[param].byref || params[param].var_p->type != V_INT) {

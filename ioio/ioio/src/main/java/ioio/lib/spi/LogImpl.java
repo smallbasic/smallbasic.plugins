@@ -28,13 +28,30 @@
  */
 package ioio.lib.spi;
 
+import ioio.lib.RuntimeUtil;
 import ioio.lib.spi.Log.ILogger;
 
 public class LogImpl implements ILogger {
   private static final char[] LEVELS = {'0', '1', 'V', 'D', 'I', 'W', 'E', 'F'};
+  private static final ILogger logger = RuntimeUtil.isRunningOnAndroid() ? getAndroidLogger() : null;
 
   @Override
-  public void write(int priority, String tag, String msg) {
-    System.err.println("[" + LEVELS[priority] + "/" + tag + "] " + msg);
+  public void write(int level, String tag, String message) {
+    if (logger == null) {
+      System.err.println("[" + LEVELS[level] + "/" + tag + "] " + message);
+    } else {
+      logger.write(level, tag, message);
+    }
+  }
+
+  private static ILogger getAndroidLogger() {
+    ILogger result;
+    try {
+      result = (ILogger) Class.forName("ioio.lib.android.AndroidLogger").newInstance();
+    }
+    catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+      result = null;
+    }
+    return result;
   }
 }

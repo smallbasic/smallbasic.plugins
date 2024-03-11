@@ -1,0 +1,39 @@
+plugins {
+  id 'com.android.library'
+}
+
+android {
+  sourceSets {
+    main {
+      java {
+        exclude 'ioio/lib/pc/**'
+      }
+    }
+  }
+
+  namespace 'net.sourceforge.smallbasic.ioio'
+  compileSdk 34
+
+  defaultConfig {
+    minSdk 19
+  }
+
+  buildTypes {
+    release {
+      ndk {
+        debugSymbolLevel = 'FULL'
+      }
+      minifyEnabled true
+      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    }
+  }
+  externalNativeBuild {
+    ndkBuild {
+      path './Android.mk'
+    }
+  }
+}
+
+dependencies {
+  implementation 'com.github.ytai.ioio:IOIOLibCore:5.07'
+}

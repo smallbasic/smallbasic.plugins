@@ -2,7 +2,6 @@ package net.sourceforge.smallbasic.ioio;
 
 import java.io.IOException;
 
-import ioio.TimerUtil;
 import ioio.lib.api.IOIO;
 import ioio.lib.spi.Log;
 
