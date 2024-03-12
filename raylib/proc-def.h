@@ -179,6 +179,7 @@
   {1, 1, "SETCLIPBOARDTEXT", cmd_setclipboardtext},
   {1, 1, "SETCONFIGFLAGS", cmd_setconfigflags},
   {1, 1, "SETEXITKEY", cmd_setexitkey},
+  {3, 3, "SETGAMEPADVIBRATION", cmd_setgamepadvibration},
   {1, 1, "SETGESTURESENABLED", cmd_setgesturesenabled},
   {1, 1, "SETMASTERVOLUME", cmd_setmastervolume},
   {3, 3, "SETMODELMESHMATERIAL", cmd_setmodelmeshmaterial},

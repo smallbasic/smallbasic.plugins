@@ -2440,6 +2440,17 @@ static int cmd_setexitkey(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Set gamepad vibration for both motors
+//
+static int cmd_setgamepadvibration(int argc, slib_par_t *params, var_t *retval) {
+  auto gamepad = get_param_int(argc, params, 0, 0);
+  auto leftMotor = get_param_num(argc, params, 1, 0);
+  auto rightMotor = get_param_num(argc, params, 2, 0);
+  SetGamepadVibration(gamepad, leftMotor, rightMotor);
+  return 1;
+}
+
+//
 // Enable a set of gestures using flags
 //
 static int cmd_setgesturesenabled(int argc, slib_par_t *params, var_t *retval) {

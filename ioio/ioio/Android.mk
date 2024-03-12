@@ -6,8 +6,6 @@
 # 
 
 JNI_PATH := $(call my-dir)
-
-include $(call all-subdir-makefiles)
 LOCAL_PATH := $(JNI_PATH)
 
 include $(CLEAR_VARS)

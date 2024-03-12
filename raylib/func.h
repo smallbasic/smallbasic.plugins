@@ -235,6 +235,17 @@ static int cmd_colorfromnormalized(int argc, slib_par_t *params, var_t *retval) 
 }
 
 //
+// Check if two colors are equal
+//
+static int cmd_colorisequal(int argc, slib_par_t *params, var_t *retval) {
+  auto col1 = get_param_color(argc, params, 0);
+  auto col2 = get_param_color(argc, params, 1);
+  auto fnResult = ColorIsEqual(col1, col2);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
 // Get Color normalized as float [0..1]
 //
 static int cmd_colornormalize(int argc, slib_par_t *params, var_t *retval) {
@@ -266,7 +277,7 @@ static int cmd_colortohsv(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get hexadecimal value for a Color
+// Get hexadecimal value for a Color (0xRRGGBBAA)
 //
 static int cmd_colortoint(int argc, slib_par_t *params, var_t *retval) {
   auto color = get_param_color(argc, params, 0);
@@ -1289,17 +1300,6 @@ static int cmd_getmouseposition(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get a ray trace from mouse position
-//
-static int cmd_getmouseray(int argc, slib_par_t *params, var_t *retval) {
-  auto mousePosition = get_param_vec2(argc, params, 0);
-  auto camera = get_camera_3d(argc, params, 1);
-  auto fnResult = GetMouseRay(mousePosition, camera);
-  v_setray(retval, fnResult);
-  return 1;
-}
-
-//
 // Get mouse wheel movement for X or Y, whichever is larger
 //
 static int cmd_getmousewheelmove(int argc, slib_par_t *params, var_t *retval) {
@@ -1518,6 +1518,30 @@ static int cmd_getscreentoworld2d(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Get a ray trace from screen position (i.e mouse)
+//
+static int cmd_getscreentoworldray(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec2(argc, params, 0);
+  auto camera = get_camera_3d(argc, params, 1);
+  auto fnResult = GetScreenToWorldRay(position, camera);
+  v_setray(retval, fnResult);
+  return 1;
+}
+
+//
+// Get a ray trace from screen position (i.e mouse) in a viewport
+//
+static int cmd_getscreentoworldrayex(int argc, slib_par_t *params, var_t *retval) {
+  auto position = get_param_vec2(argc, params, 0);
+  auto camera = get_camera_3d(argc, params, 1);
+  auto width = get_param_num(argc, params, 2, 0);
+  auto height = get_param_num(argc, params, 3, 0);
+  auto fnResult = GetScreenToWorldRayEx(position, camera, width, height);
+  v_setray(retval, fnResult);
+  return 1;
+}
+
+//
 // Get current screen width
 //
 static int cmd_getscreenwidth(int argc, slib_par_t *params, var_t *retval) {
@@ -1686,19 +1710,6 @@ static int cmd_gettouchx(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_gettouchy(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetTouchY();
   v_setint(retval, fnResult);
-  return 1;
-}
-
-//
-// Get a ray trace from mouse position in a viewport
-//
-static int cmd_getviewray(int argc, slib_par_t *params, var_t *retval) {
-  auto mousePosition = get_param_vec2(argc, params, 0);
-  auto camera = get_camera_3d(argc, params, 1);
-  auto width = get_param_num(argc, params, 2, 0);
-  auto height = get_param_num(argc, params, 3, 0);
-  auto fnResult = GetViewRay(mousePosition, camera, width, height);
-  v_setray(retval, fnResult);
   return 1;
 }
 

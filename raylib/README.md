@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (610)
+Implemented APIs (612)
 ----------------
 
 | Name    | Description   |
@@ -41,10 +41,11 @@ Implemented APIs (610)
 | func ColorContrast(color, contrast) | Get color with contrast correction, contrast values between -1.0f and 1.0f |
 | func ColorFromHSV(hue, saturation, value) | Get a Color from HSV values, hue [0..360], saturation/value [0..1] |
 | func ColorFromNormalized(normalized) | Get Color from normalized values [0..1] |
+| func ColorIsEqual(col1, col2) | Check if two colors are equal |
 | func ColorNormalize(color) | Get Color normalized as float [0..1] |
 | func ColorTint(color, tint) | Get color multiplied with another color |
 | func ColorToHSV(color) | Get HSV values for a Color, hue [0..360], saturation/value [0..1] |
-| func ColorToInt(color) | Get hexadecimal value for a Color |
+| func ColorToInt(color) | Get hexadecimal value for a Color (0xRRGGBBAA) |
 | func CompressData(data, dataSize, compDataSize) | Compress data (DEFLATE algorithm), memory must be MemFree() |
 | func createPhysicsbodycircle() | n/a |
 | func createPhysicsbodypolygon() | n/a |
@@ -235,7 +236,6 @@ Implemented APIs (610)
 | func GetMonitorWidth(monitor) | Get specified monitor width (current video mode used by monitor) |
 | func GetMouseDelta() | Get mouse delta between frames |
 | func GetMousePosition() | Get mouse position XY |
-| func GetMouseRay(mousePosition, camera) | Get a ray trace from mouse position |
 | func GetMouseWheelMove() | Get mouse wheel movement for X or Y, whichever is larger |
 | func GetMouseWheelMoveV() | Get mouse wheel movement for both X and Y |
 | func GetMouseX() | Get mouse position X |
@@ -260,6 +260,8 @@ Implemented APIs (610)
 | func GetRenderWidth() | Get current render width (it considers HiDPI) |
 | func GetScreenHeight() | Get current screen height |
 | func GetScreenToWorld2D(position, camera) | Get the world space position for a 2d camera screen space position |
+| func GetScreenToWorldRay(position, camera) | Get a ray trace from screen position (i.e mouse) |
+| func GetScreenToWorldRayEx(position, camera, width, height) | Get a ray trace from screen position (i.e mouse) in a viewport |
 | func GetScreenWidth() | Get current screen width |
 | func GetShaderLocation(shader, uniformName) | Get shader uniform location |
 | func GetShaderLocationAttrib(shader, attribName) | Get shader attribute location |
@@ -276,7 +278,6 @@ Implemented APIs (610)
 | func GetTouchPosition(index) | Get touch position XY for a touch point index (relative to screen size) |
 | func GetTouchX() | Get touch position X for touch point 0 (relative to screen size) |
 | func GetTouchY() | Get touch position Y for touch point 0 (relative to screen size) |
-| func GetViewRay(mousePosition, camera, width, height) | Get a ray trace from mouse position in a viewport |
 | func GetWindowHandle() | Get native window handle |
 | func GetWindowPosition() | Get window position XY on monitor |
 | func GetWindowScaleDPI() | Get window scale DPI factor |
@@ -496,6 +497,7 @@ Implemented APIs (610)
 | sub SetConfigFlags(flags) | Setup init configuration flags (view FLAGS) |
 | sub SetExitKey(key) | Set a custom key to exit program (default is ESC) |
 | func SetGamepadMappings(mappings) | Set internal gamepad mappings (SDL_GameControllerDB) |
+| sub SetGamepadVibration(gamepad, leftMotor, rightMotor) | Set gamepad vibration for both motors |
 | sub SetGesturesEnabled(flags) | Enable a set of gestures using flags |
 | sub SetMasterVolume(volume) | Set master volume (listener) |
 | func setmodeldiffusetexture() | n/a |
