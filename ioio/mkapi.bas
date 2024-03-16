@@ -57,10 +57,10 @@ sub generate_command(objName, method)
  
   local getter, indent
   if (objName == "IOIO") then
-    getter = "ioioTask->"
+    getter = "g_ioioTask->"
     indent = "    "
   else 
-    getter = "_ioTaskMap.at(id)."
+    getter = "g_ioTaskMap.at(id)."
     indent = "      "
     print "    int id = get_io_class_id(self, retval);"
     print "    if (id != -1) {"
@@ -114,15 +114,15 @@ sub generate_open_function(byref obj)
       print "  int pin" + pin + " = get_param_int(argc, params, " + (pin - 1) + ", -1);"
     next 
   endif
-  print "  int id = ++nextId;"
-  print "  IOTask &instance = _ioTaskMap[id];"
+  print "  int id = ++g_nextId;"
+  print "  IOTask &instance = g_ioTaskMap[id];"
   print "  if (instance.create(CLASS_" + upper(obj.name) + ", retval) &&"
   print "      instance." + openFunc + "retval)) {"
   print "    map_init_id(retval, id, CLASS_IOTASK_ID);"
   print "    create_" + lower(obj.name) + "(retval);"
   print "    result = 1;"
   print "  } else {"
-  print "    _ioTaskMap.erase(id);"
+  print "    g_ioTaskMap.erase(id);"
   print "    result = 0;"
   print "  }"
   print "  return result;"

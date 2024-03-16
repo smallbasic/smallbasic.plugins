@@ -10,7 +10,7 @@ LOCAL_PATH := $(JNI_PATH)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE     := ioio
-LOCAL_CFLAGS     := -DHAVE_CONFIG_H=1 -Wno-unknown-pragmas -I../ -I../../ -I../include
+LOCAL_CFLAGS     := -DHAVE_CONFIG_H=1 -DANDROID_MODULE -Wno-unknown-pragmas -I../ -I../../ -I../include
 LOCAL_SRC_FILES  := ../../include/param.cpp \
                     ../../include/hashmap.cpp \
                     ../../include/apiexec.cpp \

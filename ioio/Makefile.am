@@ -29,3 +29,7 @@ $(generated): api.json mkapi.bas mkdoc.bas
 	$(sbasic) mkapi.bas > $@
 	$(sbasic) mkdoc.bas > README.md
 	@touch main.cpp
+
+
+android:
+	./gradlew clean :ioio:assemble && ls -l ioio/build/outputs/aar/ && cp ioio/build/outputs/aar/ioio-* ~/src/SmallBASIC/src/platform/android/app/libs/

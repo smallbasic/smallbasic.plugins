@@ -11,6 +11,7 @@ android {
     }
   }
 
+
   namespace 'net.sourceforge.smallbasic.ioio'
   compileSdk 34
 
@@ -37,3 +38,21 @@ android {
 dependencies {
   implementation 'com.github.ytai.ioio:IOIOLibCore:5.07'
 }
+
+configurations.implementation.setCanBeResolved(true)
+
+tasks.register('jarWithDependencies', Jar) {
+  def libDir = file("${project.buildDir}/../lib")
+  configurations.implementation.files.each { dependencyJar ->
+    zipTree(dependencyJar).visit { details ->
+      if (!details.directory) {
+        copy {
+          from details.file
+          into "${libDir}/${details.path}"
+        }
+      }
+    }
+  }
+}
+
+assemble.dependsOn jarWithDependencies

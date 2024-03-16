@@ -55,6 +55,11 @@ public class IOService implements IOIOLooperProvider  {
     connectionController.start();
   }
 
+  public void stop() {
+    looper.ioio.disconnect();
+    connectionController.stop();
+  }
+
   private void registerPin(int pin) throws IOException {
     if (pin != -1) {
       if (pin < 0 || pin > MAX_PINS) {

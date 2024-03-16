@@ -19,6 +19,11 @@ public class IOIOImpl extends IOTask {
     lock.invoke(IOIO::beginBatch);
   }
 
+  public void close() {
+    super.close();
+    IOService.getInstance().stop();
+  }
+
   public void disconnect() {
     lock.invoke(IOIO::disconnect);
   }
