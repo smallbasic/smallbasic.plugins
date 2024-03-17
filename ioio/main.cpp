@@ -45,20 +45,48 @@ jobject g_activity;
 #define CLASS_IOTASK_ID 1
 #define ARRAY_SIZE 10
 
-jclass findClass(const char *path) {
 #if defined(ANDROID_MODULE)
-  // calls MainActivity.findClass() to return the loaded jclass for path
+//
+// calls MainActivity.findClass() to return the loaded jclass for path
+//
+jclass findClass(const char *path) {
   jclass clazz = g_env->GetObjectClass(g_activity);
   jmethodID methodId = g_env->GetMethodID(clazz, "findClass", "(Ljava/lang/String;)Ljava/lang/Class;");
   jstring className = g_env->NewStringUTF(path);
-  jclass result = (jclass) g_env->CallObjectMethod(g_activity, methodId, className);
+  jclass result = (jclass)g_env->CallObjectMethod(g_activity, methodId, className);
   g_env->DeleteLocalRef(className);
   g_env->DeleteLocalRef(clazz);
-  return result;
-#else
-  return g_env->FindClass(path);
-#endif
+  return reinterpret_cast<jclass>(g_env->NewGlobalRef(result));
 }
+
+jobject createInstance(jclass clazz) {
+  jmethodID constructor = g_env->GetMethodID(clazz, "<init>", "()V");
+  jobject result;
+  if (constructor != nullptr) {
+    result = g_env->NewObject(clazz, constructor);
+    result = reinterpret_cast<jclass>(g_env->NewGlobalRef(result));
+  } else {
+    result = nullptr;
+  }
+  return result;
+}
+
+#else
+jclass findClass(const char *path) {
+  return g_env->FindClass(path);
+}
+
+jobject createInstance() {
+  jmethodID constructor = g_env->GetMethodID(clazz, "<init>", "()V");
+  jobject result;
+  if (constructor != nullptr) {
+    result = g_env->NewObject(clazz, constructor);
+  } else {
+    result = nullptr;
+  }
+  return result;
+}
+#endif
 
 struct IOTask {
   IOTask():
@@ -68,9 +96,15 @@ struct IOTask {
   }
 
   virtual ~IOTask() {
+    attachCurrentThread();
     if (_array) {
       g_env->DeleteLocalRef(_array);
     }
+#if defined(ANDROID_MODULE)
+    g_env->DeleteGlobalRef(_clazz);
+    g_env->DeleteGlobalRef(_instance);
+#endif
+    detachCurrentThread();
     _clazz = nullptr;
     _instance = nullptr;
     _array = nullptr;
@@ -85,10 +119,7 @@ struct IOTask {
       attachCurrentThread();
       _clazz = findClass(path);
       if (_clazz != nullptr) {
-        jmethodID constructor = g_env->GetMethodID(_clazz, "<init>", "()V");
-        if (constructor != nullptr) {
-          _instance = g_env->NewObject(_clazz, constructor);
-        }
+        _instance = createInstance(_clazz);
       }
       result = _instance != nullptr;
       if (!result) {
@@ -457,6 +488,9 @@ SBLIB_API int sblib_func_count() {
   return (sizeof(lib_func) / sizeof(lib_func[0]));
 }
 
+//
+// Program startup
+//
 int sblib_init(const char *sourceFile) {
 #if defined(DESKTOP_MODULE)
   JavaVMInitArgs vm_args;
@@ -490,12 +524,15 @@ int sblib_init(const char *sourceFile) {
 }
 
 #if defined(ANDROID_MODULE)
-extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+//
+// Stores the Android JavaVM reference
+// 
+extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void* reserved) {
   logEntered();
   g_jvm = vm;
 
   jint result;
-  if (g_jvm->GetEnv((void**)&g_env, JNI_VERSION_1_6) != JNI_OK) {
+  if (g_jvm->GetEnv((void **)&g_env, JNI_VERSION_1_6) != JNI_OK) {
     result = JNI_ERR;
   } else {
     result = JNI_VERSION_1_6;
@@ -504,10 +541,12 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
   return result;
 }
 
+//
+// Retrieves the _app->activity->clazz value sent from App/JNI to Java to IOIOLoader
+//
 extern "C" JNIEXPORT void JNICALL Java_net_sourceforge_smallbasic_ioio_IOIOLoader_init
   (JNIEnv *env, jclass clazz, jobject activity) {
   logEntered();
-  // get the long value from jobject activity
   jclass longClass = env->FindClass("java/lang/Long");
   jmethodID longValueMethod = env->GetMethodID(longClass, "longValue", "()J");
   g_activity = (jobject)env->CallLongMethod(activity, longValueMethod);
@@ -516,6 +555,9 @@ extern "C" JNIEXPORT void JNICALL Java_net_sourceforge_smallbasic_ioio_IOIOLoade
 
 #endif
 
+//
+// Release ioio variables falling out of scope
+//
 SBLIB_API void sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
@@ -529,6 +571,9 @@ SBLIB_API void sblib_free(int cls_id, int id) {
   }
 }
 
+//
+// Program termination
+//
 void sblib_close(void) {
   if (g_ioioTask) {
     g_ioioTask->invokeVoidVoid("close", nullptr);

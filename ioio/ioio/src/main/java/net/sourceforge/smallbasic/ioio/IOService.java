@@ -56,7 +56,9 @@ public class IOService implements IOIOLooperProvider  {
   }
 
   public void stop() {
-    looper.ioio.disconnect();
+    if (looper.ioio != null) {
+      looper.ioio.disconnect();
+    }
     connectionController.stop();
   }
 
