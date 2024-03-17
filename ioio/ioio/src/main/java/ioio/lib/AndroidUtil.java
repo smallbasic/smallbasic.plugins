@@ -1,12 +1,12 @@
 package ioio.lib;
 
-public class RuntimeUtil {
+public class AndroidUtil {
   private static final boolean isRunningOnAndroid;
   static {
     isRunningOnAndroid = getIsRunningOnAndroid();
   }
 
-  public static boolean isRunningOnAndroid() {
+  public static boolean isAndroid() {
     return isRunningOnAndroid;
   }
 

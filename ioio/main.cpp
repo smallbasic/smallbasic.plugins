@@ -6,6 +6,7 @@
 // Copyright(C) 2024 Chris Warren-Smith
 
 #include "config.h"
+#include "log.h"
 #include "include/var.h"
 #include "include/module.h"
 #include "include/param.h"
@@ -18,10 +19,19 @@
 
 struct IOTask;
 
-JNIEnv *env;
-JavaVM *jvm;
-IOTask *ioioTask;
-int nextId = 1;
+JNIEnv *g_env;
+JavaVM *g_jvm;
+IOTask *g_ioioTask;
+int     g_nextId = 1;
+jobject g_activity;
+
+#if defined(ANDROID_MODULE)
+  #define attachCurrentThread() g_jvm->AttachCurrentThread(&g_env, nullptr)
+  #define detachCurrentThread() g_jvm->DetachCurrentThread()
+#else
+  #define attachCurrentThread()
+  #define detachCurrentThread()
+#endif
 
 #define CLASS_ANALOGINPUT "net/sourceforge/smallbasic/ioio/AnalogInputImpl"
 #define CLASS_DIGITALINPUT "net/sourceforge/smallbasic/ioio/DigitalInputImpl"
@@ -35,6 +45,21 @@ int nextId = 1;
 #define CLASS_IOTASK_ID 1
 #define ARRAY_SIZE 10
 
+jclass findClass(const char *path) {
+#if defined(ANDROID_MODULE)
+  // calls MainActivity.findClass() to return the loaded jclass for path
+  jclass clazz = g_env->GetObjectClass(g_activity);
+  jmethodID methodId = g_env->GetMethodID(clazz, "findClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+  jstring className = g_env->NewStringUTF(path);
+  jclass result = (jclass) g_env->CallObjectMethod(g_activity, methodId, className);
+  g_env->DeleteLocalRef(className);
+  g_env->DeleteLocalRef(clazz);
+  return result;
+#else
+  return g_env->FindClass(path);
+#endif
+}
+
 struct IOTask {
   IOTask():
     _clazz(nullptr),
@@ -44,7 +69,7 @@ struct IOTask {
 
   virtual ~IOTask() {
     if (_array) {
-      env->DeleteLocalRef(_array);
+      g_env->DeleteLocalRef(_array);
     }
     _clazz = nullptr;
     _instance = nullptr;
@@ -57,34 +82,36 @@ struct IOTask {
       error(retval, "Internal error - already constructed");
       result = false;
     } else {
-      _clazz = env->FindClass(path);
+      attachCurrentThread();
+      _clazz = findClass(path);
       if (_clazz != nullptr) {
-        jmethodID constructor = env->GetMethodID(_clazz, "<init>", "()V");
+        jmethodID constructor = g_env->GetMethodID(_clazz, "<init>", "()V");
         if (constructor != nullptr) {
-          _instance = env->NewObject(_clazz, constructor);
+          _instance = g_env->NewObject(_clazz, constructor);
         }
       }
       result = _instance != nullptr;
       if (!result) {
         checkException(retval);
       }
+      detachCurrentThread();
     }
     return result;
   }
 
   bool checkException(var_s *retval) {
-    auto exc = env->ExceptionOccurred();
+    auto exc = g_env->ExceptionOccurred();
     if (exc) {
       if (retval) {
-        jclass clazz = env->FindClass("java/lang/Object");
-        jmethodID methodId = env->GetMethodID(clazz, "toString", "()Ljava/lang/String;");
-        jstring jstr = (jstring) env->CallObjectMethod(exc, methodId);
-        const char *message = env->GetStringUTFChars(jstr, JNI_FALSE);
+        jclass clazz = g_env->FindClass("java/lang/Object");
+        jmethodID methodId = g_env->GetMethodID(clazz, "toString", "()Ljava/lang/String;");
+        jstring jstr = (jstring) g_env->CallObjectMethod(exc, methodId);
+        const char *message = g_env->GetStringUTFChars(jstr, JNI_FALSE);
         error(retval, message);
-        env->ReleaseStringUTFChars(jstr, message);
+        g_env->ReleaseStringUTFChars(jstr, message);
       } else {
-        env->ExceptionDescribe();
-        env->ExceptionClear();
+        g_env->ExceptionDescribe();
+        g_env->ExceptionClear();
       }
     }
     return exc;
@@ -94,10 +121,10 @@ struct IOTask {
   int invokeBoolVoid(const char *name, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "()Z");
+      jmethodID method = g_env->GetMethodID(_clazz, name, "()Z");
       int value = 0;
       if (method != nullptr) {
-        value = env->CallBooleanMethod(_instance, method);
+        value = g_env->CallBooleanMethod(_instance, method);
       }
       if (!checkException(retval)) {
         v_setint(retval, value);
@@ -111,15 +138,17 @@ struct IOTask {
   int invokeFloatVoid(const char *name, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "()F");
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, name, "()F");
       var_num_t value = 0;
       if (method != nullptr) {
-        value = env->CallFloatMethod(_instance, method);
+        value = g_env->CallFloatMethod(_instance, method);
       }
       if (!checkException(retval)) {
         v_setreal(retval, value);
         result = 1;
       }
+      detachCurrentThread();
     }
     return result;
   }
@@ -128,15 +157,17 @@ struct IOTask {
   int invokeIntVoid(const char *name, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "()I");
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, name, "()I");
       int value = 0;
       if (method != nullptr) {
-        value = env->CallIntMethod(_instance, method);
+        value = g_env->CallIntMethod(_instance, method);
       }
       if (!checkException(retval)) {
         v_setint(retval, value);
         result = 1;
       }
+      detachCurrentThread();
     }
     return result;
   }
@@ -145,13 +176,15 @@ struct IOTask {
   int invokeVoidBool(const char *name, int value, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "(Z)V");
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, name, "(Z)V");
       if (method != nullptr) {
-        env->CallVoidMethod(_instance, method, value);
+        g_env->CallVoidMethod(_instance, method, value);
       }
       if (!checkException(retval)) {
         result = 1;
       }
+      detachCurrentThread();
     }
     return result;
   }
@@ -160,13 +193,15 @@ struct IOTask {
   int invokeVoidFloat(const char *name, var_num_t value, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "()F");
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, name, "()F");
       if (method != nullptr) {
-        env->CallVoidMethod(_instance, method, value);
+        g_env->CallVoidMethod(_instance, method, value);
       }
       if (!checkException(retval)) {
         result = 1;
       }
+      detachCurrentThread();
     }
     return result;
   }
@@ -175,13 +210,15 @@ struct IOTask {
   int invokeVoidInt(const char *name, int value, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "(I)V");
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, name, "(I)V");
       if (method != nullptr) {
-        env->CallVoidMethod(_instance, method, value);
+        g_env->CallVoidMethod(_instance, method, value);
       }
       if (!checkException(retval)) {
         result = 1;
       }
+      detachCurrentThread();
     }
     return result;
   }
@@ -190,13 +227,15 @@ struct IOTask {
   int invokeVoidInt2(const char *name, int value1, int value2, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "(II)V");
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, name, "(II)V");
       if (method != nullptr) {
-        env->CallVoidMethod(_instance, method, value1, value2);
+        g_env->CallVoidMethod(_instance, method, value1, value2);
       }
       if (!checkException(retval)) {
         result = 1;
       }
+      detachCurrentThread();
     }
     return result;
   }
@@ -205,13 +244,15 @@ struct IOTask {
   int invokeVoidInt4(const char *name, int value1, int value2, int value3, int value4, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "(IIII)V");
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, name, "(IIII)V");
       if (method != nullptr) {
-        env->CallVoidMethod(_instance, method, value1, value2, value3, value4);
+        g_env->CallVoidMethod(_instance, method, value1, value2, value3, value4);
       }
       if (!checkException(retval)) {
         result = 1;
       }
+      detachCurrentThread();
     }
     return result;
   }
@@ -220,13 +261,15 @@ struct IOTask {
   int invokeVoidVoid(const char *name, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, name, "()V");
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, name, "()V");
       if (method != nullptr) {
-        env->CallVoidMethod(_instance, method);
+        g_env->CallVoidMethod(_instance, method);
       }
       if (!checkException(retval)) {
         result = 1;
       }
+      detachCurrentThread();
     }
     return result;
   }
@@ -235,18 +278,20 @@ struct IOTask {
   int invokeReadWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, "readWrite", "(II[BI)J");
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, "readWrite", "(II[BI)J");
       var_int_t value = 0;
       if (method != nullptr) {
         auto address = get_param_int(argc, arg, 0, 0);
         auto readBytes = get_param_int(argc, arg, 1, 2);
         populateByteArray(argc, arg, 2);
-        value = env->CallIntMethod(_instance, method, address, readBytes, _array, argc - 1);
+        value = g_env->CallIntMethod(_instance, method, address, readBytes, _array, argc - 1);
       }
       if (!checkException(retval)) {
         v_setint(retval, value);
         result = 1;
       }
+      detachCurrentThread();
     }
     return result;
   }
@@ -255,15 +300,17 @@ struct IOTask {
   int invokeWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
     if (_instance != nullptr) {
-      jmethodID method = env->GetMethodID(_clazz, "write", "(I[BI)V");
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, "write", "(I[BI)V");
       if (method != nullptr) {
         auto address = get_param_int(argc, arg, 0, 0);
         populateByteArray(argc, arg, 1);
-        env->CallVoidMethod(_instance, method, address, _array, argc - 1);
+        g_env->CallVoidMethod(_instance, method, address, _array, argc - 1);
       }
       if (!checkException(retval)) {
         result = 1;
       }
+      detachCurrentThread();
     }
     return result;
   }
@@ -271,9 +318,9 @@ struct IOTask {
   // populate the java byte array with the contents of the basic array
   void populateByteArray(int argc, slib_par_t *params, int offset) {
     if (!_array) {
-      _array = env->NewByteArray(ARRAY_SIZE);
+      _array = g_env->NewByteArray(ARRAY_SIZE);
     }
-    jbyte *elements = env->GetByteArrayElements(_array, nullptr);
+    jbyte *elements = g_env->GetByteArrayElements(_array, nullptr);
     if ((argc - offset) == 1 && is_param_array(argc, params, offset)) {
       // argument is an array (assume of ints)
       var_s *array = params[offset].var_p;
@@ -288,7 +335,7 @@ struct IOTask {
       }
     }
     // make the changes available to the java side
-    env->ReleaseByteArrayElements(_array, elements, 0);
+    g_env->ReleaseByteArrayElements(_array, elements, 0);
   }
 
   int open(int pin, var_s *retval) {
@@ -309,13 +356,13 @@ struct IOTask {
   jbyteArray _array;
 };
 
-robin_hood::unordered_map<int, IOTask> _ioTaskMap;
+robin_hood::unordered_map<int, IOTask> g_ioTaskMap;
 
 static int get_io_class_id(var_s *map, var_s *retval) {
   int result = -1;
   if (is_map(map)) {
     int id = map->v.m.id;
-    if (id != -1 && _ioTaskMap.find(id) != _ioTaskMap.end()) {
+    if (id != -1 && g_ioTaskMap.find(id) != g_ioTaskMap.end()) {
       result = id;
     }
   }
@@ -335,7 +382,7 @@ static int cmd_twimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
-      result = _ioTaskMap.at(id).invokeReadWrite(argc, arg, retval);
+      result = g_ioTaskMap.at(id).invokeReadWrite(argc, arg, retval);
     }
   }
   return result;
@@ -348,7 +395,7 @@ static int cmd_twimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *re
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
-      result = _ioTaskMap.at(id).invokeWrite(argc, arg, retval);
+      result = g_ioTaskMap.at(id).invokeWrite(argc, arg, retval);
     }
   }
   return result;
@@ -363,7 +410,7 @@ static int cmd_spimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *re
     if (id != -1) {
       auto address = get_param_int(argc, arg, 0, 0);
       auto data = get_param_int(argc, arg, 1, 0);
-      result = _ioTaskMap.at(id).invokeVoidInt2("write", address, data, retval);
+      result = g_ioTaskMap.at(id).invokeVoidInt2("write", address, data, retval);
     }
   }
   return result;
@@ -424,35 +471,58 @@ int sblib_init(const char *sourceFile) {
   vm_args.nOptions = 3;
   vm_args.options = options;
   vm_args.ignoreUnrecognized = 0;
-  int result = (JNI_CreateJavaVM(&jvm, (void **)&env, &vm_args) == JNI_OK &&
-                jvm->AttachCurrentThread((void **)&env, nullptr) == JNI_OK);
+  int result = (JNI_CreateJavaVM(&g_jvm, (void **)&g_env, &vm_args) == JNI_OK &&
+                g_jvm->AttachCurrentThread((void **)&g_env, nullptr) == JNI_OK);
   if (!result) {
     fprintf(stderr, "Failed to create JVM\n");
   }
 #else
   int result = 1;
 #endif
-  ioioTask = new IOTask();
+
+  g_ioioTask = new IOTask();
   var_t retval;
-  if (!ioioTask || !ioioTask->create(CLASS_IOIO, &retval)) {
+  if (!g_ioioTask || !g_ioioTask->create(CLASS_IOIO, &retval)) {
     fprintf(stderr, "Failed to IOIOTask: %s\n", v_getstr(&retval));
     result = 0;
   }
   return result;
 }
 
-extern "C" JNIEXPORT void JNICALL
-  Java_net_sourceforge_smallbasic_ioio_IOIOLoader_init(JNIEnv *androidEnv, jclass /*clazz*/) {
-  env = androidEnv;
+#if defined(ANDROID_MODULE)
+extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+  logEntered();
+  g_jvm = vm;
+
+  jint result;
+  if (g_jvm->GetEnv((void**)&g_env, JNI_VERSION_1_6) != JNI_OK) {
+    result = JNI_ERR;
+  } else {
+    result = JNI_VERSION_1_6;
+  }
+  logLeaving();
+  return result;
 }
+
+extern "C" JNIEXPORT void JNICALL Java_net_sourceforge_smallbasic_ioio_IOIOLoader_init
+  (JNIEnv *env, jclass clazz, jobject activity) {
+  logEntered();
+  // get the long value from jobject activity
+  jclass longClass = env->FindClass("java/lang/Long");
+  jmethodID longValueMethod = env->GetMethodID(longClass, "longValue", "()J");
+  g_activity = (jobject)env->CallLongMethod(activity, longValueMethod);
+  g_env = env;
+}
+
+#endif
 
 SBLIB_API void sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
     case CLASS_IOTASK_ID:
-      if (id != -1 && _ioTaskMap.find(id) != _ioTaskMap.end()) {
-        _ioTaskMap.at(id).invokeVoidVoid("close", nullptr);
-        _ioTaskMap.erase(id);
+      if (id != -1 && g_ioTaskMap.find(id) != g_ioTaskMap.end()) {
+        g_ioTaskMap.at(id).invokeVoidVoid("close", nullptr);
+        g_ioTaskMap.erase(id);
       }
       break;
     }
@@ -460,21 +530,21 @@ SBLIB_API void sblib_free(int cls_id, int id) {
 }
 
 void sblib_close(void) {
-  if (ioioTask) {
-    delete ioioTask;
+  if (g_ioioTask) {
+    g_ioioTask->invokeVoidVoid("close", nullptr);
+    delete g_ioioTask;
   }
-  if (!_ioTaskMap.empty()) {
+  if (!g_ioTaskMap.empty()) {
     fprintf(stderr, "IOTask leak detected\n");
-    _ioTaskMap.clear();
+    g_ioTaskMap.clear();
   }
 #if defined(DESKTOP_MODULE)  
-  if (jvm) {
-    jvm->DetachCurrentThread();
+  if (g_jvm) {
+    g_jvm->DetachCurrentThread();
   }
   // calling this hangs
   //jvm->DestroyJavaVM();
+  g_env = nullptr;
+  g_jvm = nullptr;
 #endif  
-  env = nullptr;
-  jvm = nullptr;
 }
-
