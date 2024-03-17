@@ -30,6 +30,8 @@ $(generated): api.json mkapi.bas mkdoc.bas
 	$(sbasic) mkdoc.bas > README.md
 	@touch main.cpp
 
-
 android:
-	./gradlew clean :ioio:assemble && ls -l ioio/build/outputs/aar/ && cp ioio/build/outputs/aar/ioio-* ~/src/SmallBASIC/src/platform/android/app/libs/
+	@./gradlew clean mergeJars && \
+   (cd ioio/build/libs && zip ../outputs/aar/ioio-debug.aar classes.jar) && \
+   (cd ioio/build/libs && zip ../outputs/aar/ioio-release.aar classes.jar) && \
+   cp ioio/build/outputs/aar/ioio-* ~/src/SmallBASIC/src/platform/android/app/libs/

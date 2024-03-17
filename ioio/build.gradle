@@ -3,9 +3,12 @@ buildscript {
   repositories {
     google()
     mavenCentral()
+    gradlePluginPortal()
   }
+
   dependencies {
     classpath 'com.android.tools.build:gradle:8.3.0'
+    classpath "com.github.johnrengelman:shadow:8.1.1"
   }
 }
 
@@ -17,7 +20,9 @@ allprojects {
 }
 
 apply plugin: 'idea'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 tasks.register('clean', Delete) {
   delete rootProject.buildDir
 }
+

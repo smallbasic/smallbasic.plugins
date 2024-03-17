@@ -1,5 +1,6 @@
 plugins {
   id 'com.android.library'
+  id 'com.github.johnrengelman.shadow'
 }
 
 android {
@@ -10,7 +11,6 @@ android {
       }
     }
   }
-
 
   namespace 'net.sourceforge.smallbasic.ioio'
   compileSdk 34
@@ -24,10 +24,11 @@ android {
       ndk {
         debugSymbolLevel = 'FULL'
       }
-      minifyEnabled true
+      minifyEnabled false
       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
     }
   }
+
   externalNativeBuild {
     ndkBuild {
       path './Android.mk'
@@ -36,23 +37,34 @@ android {
 }
 
 dependencies {
-  implementation 'com.github.ytai.ioio:IOIOLibCore:5.07'
+  api 'com.github.ytai.ioio:IOIOLibCore:5.07'
+  shadow 'com.github.ytai.ioio:IOIOLibCore:5.07'
 }
 
-configurations.implementation.setCanBeResolved(true)
+//
+// Builds a jar from the dependencies, then merges this with the intermediate
+// classes.jar to build a 'fat' jar. The makefile eventually inserts the
+// updated classes.jar into the final .aar files
+// not really the correct or ideal approach but it works.
+//
 
-tasks.register('jarWithDependencies', Jar) {
-  def libDir = file("${project.buildDir}/../lib")
-  configurations.implementation.files.each { dependencyJar ->
-    zipTree(dependencyJar).visit { details ->
-      if (!details.directory) {
-        copy {
-          from details.file
-          into "${libDir}/${details.path}"
-        }
-      }
-    }
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+tasks.register('shadowJar', ShadowJar) {
+  configurations = [project.configurations.shadow]
+  dependsOn assemble
+}
+
+tasks.register('mergeJars', ShadowJar) {
+  archiveClassifier.set('')
+  archiveFileName = 'classes.jar'
+  dependsOn 'shadowJar'
+  configurations.runtimeClasspath.each { File file ->
+    from(zipTree(file.absolutePath))
   }
 }
 
-assemble.dependsOn jarWithDependencies
+mergeJars {
+  from 'build/libs/ioio.jar'
+  from 'build/intermediates/aar_main_jar/release/syncReleaseLibJars/classes.jar'
+}
