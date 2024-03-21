@@ -6,7 +6,7 @@
 # 
 
 AM_CXXFLAGS=-fno-rtti -std=c++14
-AM_CPPFLAGS = -D_GLFW_BUILD_DLL=1 \
+AM_CPPFLAGS = -D_GLFW_BUILD_DLL=1 -D_GLFW_X11=1 \
   -I../raylib/raylib/src/external/glfw/include \
   -I../raylib/raylib/src/external/glfw/deps
 lib_LTLIBRARIES = libnuklear.la
