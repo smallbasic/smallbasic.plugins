@@ -24,8 +24,10 @@ public class PwmOutputImpl extends IOTask implements PwmOutput {
   @Override
   public void close() {
     super.close();
-    output.close();
-    output = null;
+    if (output != null) {
+      output.close();
+      output = null;
+    }
   }
 
   @Override

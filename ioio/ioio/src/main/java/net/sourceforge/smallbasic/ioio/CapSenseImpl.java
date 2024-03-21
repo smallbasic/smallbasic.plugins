@@ -18,8 +18,10 @@ public class CapSenseImpl extends IOTask implements CapSense {
   @Override
   public void close() {
     super.close();
-    capSense.close();
-    capSense = null;
+    if (capSense != null) {
+      capSense.close();
+      capSense = null;
+    }
   }
 
   @Override

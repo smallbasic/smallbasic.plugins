@@ -19,8 +19,10 @@ public class PulseInputImpl extends IOTask implements PulseInput {
   @Override
   public void close() {
     super.close();
-    input.close();
-    input = null;
+    if (input != null) {
+      input.close();
+      input = null;
+    }
   }
 
   @Override

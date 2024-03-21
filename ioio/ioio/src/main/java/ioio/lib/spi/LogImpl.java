@@ -28,7 +28,7 @@
  */
 package ioio.lib.spi;
 
-import ioio.lib.AndroidUtil;
+import ioio.lib.android.AndroidUtil;
 import ioio.lib.spi.Log.ILogger;
 
 public class LogImpl implements ILogger {

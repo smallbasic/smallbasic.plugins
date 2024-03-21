@@ -20,8 +20,10 @@ public class DigitalInputImpl extends IOTask implements DigitalInput {
   @Override
   public void close() {
     super.close();
-    input.close();
-    input = null;
+    if (input != null) {
+      input.close();
+      input = null;
+    }
   }
 
   @Override

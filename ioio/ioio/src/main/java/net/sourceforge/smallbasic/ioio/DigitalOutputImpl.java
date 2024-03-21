@@ -18,8 +18,10 @@ public class DigitalOutputImpl extends IOTask implements DigitalOutput {
   @Override
   public void close() {
     super.close();
-    output.close();
-    output = null;
+    if (output != null) {
+      output.close();
+      output = null;
+    }
   }
 
   @Override

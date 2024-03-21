@@ -24,7 +24,10 @@ public class SpiMasterImpl extends IOTask {
   @Override
   public void close() {
     super.close();
-    spiMaster.close();
+    if (spiMaster != null) {
+      spiMaster.close();
+      spiMaster = null;
+    }
   }
 
   public void open(int miso, int mosi, int clk, int slaveSelect) throws IOException {

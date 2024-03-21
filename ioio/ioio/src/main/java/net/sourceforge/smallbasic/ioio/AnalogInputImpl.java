@@ -23,8 +23,10 @@ public class AnalogInputImpl extends IOTask implements AnalogInput {
   @Override
   public void close() {
     super.close();
-    input.close();
-    input = null;
+    if (input != null) {
+      input.close();
+      input = null;
+    }
   }
 
   @Override

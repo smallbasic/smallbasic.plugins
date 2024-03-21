@@ -1,6 +1,6 @@
 package net.sourceforge.smallbasic.ioio;
 
-import ioio.lib.AndroidUtil;
+import ioio.lib.android.AndroidUtil;
 import ioio.lib.util.IOIOBaseApplicationHelper;
 import ioio.lib.util.IOIOConnectionManager;
 import ioio.lib.util.IOIOConnectionRegistry;
@@ -12,10 +12,7 @@ public class ConnectionController extends IOIOBaseApplicationHelper {
   static {
     if (AndroidUtil.isAndroid()) {
       IOIOConnectionRegistry.addBootstraps(new String[]{
-          "ioio.lib.impl.SocketIOIOConnectionBootstrap",
-          "ioio.lib.android.accessory.AccessoryConnectionBootstrap",
-          "ioio.lib.android.bluetooth.BluetoothIOIOConnectionBootstrap",
-          "ioio.lib.android.device.DeviceConnectionBootstrap"});
+          "ioio.lib.android.accessory.AccessoryConnectionBootstrap"});
     } else {
       IOIOConnectionRegistry.addBootstraps(new String[]{
           "ioio.lib.pc.SerialPortIOIOConnectionBootstrap"

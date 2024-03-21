@@ -23,8 +23,10 @@ public class TwiMasterImpl extends IOTask {
   @Override
   public void close() {
     super.close();
-    twiMaster.close();
-    twiMaster = null;
+    if (twiMaster != null) {
+      twiMaster.close();
+      twiMaster = null;
+    }
   }
 
   public void open(int twiNum, int smbus) throws IOException {

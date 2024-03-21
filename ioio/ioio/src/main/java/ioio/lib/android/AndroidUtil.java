@@ -1,4 +1,4 @@
-package ioio.lib;
+package ioio.lib.android;
 
 public class AndroidUtil {
   private static final boolean isRunningOnAndroid;
