@@ -37,7 +37,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
-import android.util.Log;
 
 import net.sourceforge.smallbasic.ioio.IOIOLoader;
 
@@ -56,6 +55,7 @@ import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.impl.FixedReadBufferedInputStream;
 import ioio.lib.spi.IOIOConnectionBootstrap;
 import ioio.lib.spi.IOIOConnectionFactory;
+import ioio.lib.spi.Log;
 import ioio.lib.spi.NoRuntimeSupportException;
 
 public class AccessoryConnectionBootstrap extends BroadcastReceiver implements IOIOConnectionBootstrap, IOIOConnectionFactory {
@@ -191,8 +191,7 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     if (!usbManager.hasPermission(accessory)) {
       if (pendingIntent == null) {
         Log.v(TAG, "Requesting permission.");
-        pendingIntent = PendingIntent.getBroadcast(activity, 0, new Intent(
-                                                                             ACTION_USB_PERMISSION), 0);
+        pendingIntent = PendingIntent.getBroadcast(activity, 0, new Intent(ACTION_USB_PERMISSION), 0);
         usbManager.requestPermission(accessory, pendingIntent);
       }
       return false;
@@ -228,7 +227,7 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
         // bug:
         // http://code.google.com/p/android/issues/detail?id=20545
         while (inputStream.read() != 1) {
-          trySleep(1000);
+          trySleep();
         }
 
         success = true;
@@ -262,10 +261,10 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     }
   }
 
-  private void trySleep(long time) {
+  private void trySleep() {
     synchronized (AccessoryConnectionBootstrap.this) {
       try {
-        AccessoryConnectionBootstrap.this.wait(time);
+        AccessoryConnectionBootstrap.this.wait(1000);
       } catch (InterruptedException e) {
         Log.e(TAG, e.toString());
       }

@@ -134,18 +134,13 @@ struct IOTask {
     auto exc = g_env->ExceptionOccurred();
     if (exc) {
       if (retval) {
-#if defined(ANDROID_MODULE)
-        // avoid: JNI DETECTED ERROR IN APPLICATION: JNI FindClass called with pending exception
-        error(retval, "Java exception - see adb logcat");
         g_env->ExceptionClear();
-#else
         jclass clazz = g_env->FindClass("java/lang/Object");
         jmethodID methodId = g_env->GetMethodID(clazz, "toString", "()Ljava/lang/String;");
         jstring jstr = (jstring) g_env->CallObjectMethod(exc, methodId);
         const char *message = g_env->GetStringUTFChars(jstr, JNI_FALSE);
         error(retval, message);
         g_env->ReleaseStringUTFChars(jstr, message);
-#endif
       } else {
         g_env->ExceptionDescribe();
         g_env->ExceptionClear();
