@@ -27,50 +27,44 @@
  * or implied.
  */
 
-package ioio.lib.android.accessory;
+package ioio.lib.android;
 
-import ioio.lib.spi.NoRuntimeSupportException;
 import android.app.PendingIntent;
 import android.content.Context;
-import android.content.ContextWrapper;
-
 import android.hardware.usb.UsbAccessory;
 import android.hardware.usb.UsbManager;
 import android.os.ParcelFileDescriptor;
 
+import ioio.lib.spi.Log;
+import ioio.lib.spi.NoRuntimeSupportException;
+
 /**
- * This class serves as a common interface for USB accessory for either com.android.future.usb or
+ * This class serves as a common interface for USB accessory for android.hardware.usb.UsbManager
  *
- * When this class is instantiated, it will throw a {@link NoRuntimeSupportException} if none of the
- * underlying implementations exist. Otherwise, the client may call
- * {@link #getManager(ContextWrapper)}, which returns an interface that is equivalent to UsbManager
- * on either API. Likewise, the {@link UsbAccessoryInterface} interface is a wrapper around
- * UsbAccessory.
- *
+ * When this class is instantiated, it will throw a {@link NoRuntimeSupportException} if the
+ * underlying implementation does not exist.
  */
-class Adapter {
-  Adapter() throws NoRuntimeSupportException {
+class UsbManagerAdapter {
+  private static final String TAG = UsbManagerAdapter.class.getSimpleName();
+
+  UsbManagerAdapter() throws NoRuntimeSupportException {
     try {
-      Class.forName("UsbManager");
+      Class.forName("android.hardware.usb.UsbManager");
     } catch (ClassNotFoundException e) {
-      throw new NoRuntimeSupportException("No support for USB accesory mode.");
+      Log.d(TAG, e.toString());
+      throw new NoRuntimeSupportException("No support for USB accessory mode.");
     }
   }
 
-  AbstractUsbManager getManager(ContextWrapper wrapper) {
-    return getManagerNew(wrapper);
-  }
-
-  private AbstractUsbManager getManagerNew(ContextWrapper wrapper) {
+  AbstractUsbManager getManager(Context wrapper) {
     final UsbManager manager = (UsbManager) wrapper.getSystemService(Context.USB_SERVICE);
-    return new NewUsbManager(manager);
+    return new UsbManagerImpl(manager);
   }
 
   static abstract class AbstractUsbManager {
     final String EXTRA_PERMISSION_GRANTED;
-    protected AbstractUsbManager(String action_usb_accessory_detached,
-                                 String extra_permission_granted) {
-      EXTRA_PERMISSION_GRANTED = extra_permission_granted;
+    protected AbstractUsbManager() {
+      EXTRA_PERMISSION_GRANTED = UsbManager.EXTRA_PERMISSION_GRANTED;
     }
 
     abstract UsbAccessoryInterface[] getAccessoryList();
@@ -79,12 +73,11 @@ class Adapter {
     abstract void requestPermission(UsbAccessoryInterface accessory, PendingIntent pendingIntent);
   }
 
-  private static final class NewUsbManager extends AbstractUsbManager {
+  private static final class UsbManagerImpl extends AbstractUsbManager {
     private final UsbManager manager;
 
-    private NewUsbManager(UsbManager manager) {
-      super(UsbManager.ACTION_USB_ACCESSORY_DETACHED,
-            UsbManager.EXTRA_PERMISSION_GRANTED);
+    private UsbManagerImpl(UsbManager manager) {
+      super();
       this.manager = manager;
     }
 
@@ -127,6 +120,6 @@ class Adapter {
     }
   }
 
-  static interface UsbAccessoryInterface {
+  interface UsbAccessoryInterface {
   }
 }

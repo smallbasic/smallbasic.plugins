@@ -27,15 +27,19 @@
  * or implied.
  */
 
-package ioio.lib.android.accessory;
+package ioio.lib.android;
 
-import ioio.lib.android.accessory.Adapter.UsbAccessoryInterface;
-import ioio.lib.api.IOIOConnection;
-import ioio.lib.api.exception.ConnectionLostException;
-import ioio.lib.impl.FixedReadBufferedInputStream;
-import ioio.lib.spi.IOIOConnectionBootstrap;
-import ioio.lib.spi.IOIOConnectionFactory;
-import ioio.lib.spi.NoRuntimeSupportException;
+import android.annotation.TargetApi;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Build;
+import android.os.ParcelFileDescriptor;
+import android.util.Log;
+
+import net.sourceforge.smallbasic.ioio.IOIOLoader;
 
 import java.io.BufferedOutputStream;
 import java.io.FileDescriptor;
@@ -46,22 +50,20 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
 
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.ParcelFileDescriptor;
-import android.util.Log;
+import ioio.lib.android.UsbManagerAdapter.UsbAccessoryInterface;
+import ioio.lib.api.IOIOConnection;
+import ioio.lib.api.exception.ConnectionLostException;
+import ioio.lib.impl.FixedReadBufferedInputStream;
+import ioio.lib.spi.IOIOConnectionBootstrap;
+import ioio.lib.spi.IOIOConnectionFactory;
+import ioio.lib.spi.NoRuntimeSupportException;
 
 public class AccessoryConnectionBootstrap extends BroadcastReceiver implements IOIOConnectionBootstrap, IOIOConnectionFactory {
   private static final String TAG = AccessoryConnectionBootstrap.class.getSimpleName();
   private static final String ACTION_USB_PERMISSION = "ioio.lib.accessory.action.USB_PERMISSION";
 
-  private ContextWrapper activity;
-  private final Adapter adapter;
-  private Adapter.AbstractUsbManager usbManager;
+  private final Context activity;
+  private final UsbManagerAdapter.AbstractUsbManager usbManager;
   private boolean shouldTryOpen = false;
   private PendingIntent pendingIntent;
   private ParcelFileDescriptor fileDescriptor;
@@ -69,19 +71,16 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
   private OutputStream outputStream;
 
   public AccessoryConnectionBootstrap() throws NoRuntimeSupportException {
-    adapter = new Adapter();
-  }
-
-  //@Override
-  public void onCreate(ContextWrapper wrapper) {
-    activity = wrapper;
-    usbManager = adapter.getManager(wrapper);
+    Log.d(TAG, "creating AccessoryConnectionBootstrap");
+    UsbManagerAdapter usbManagerAdapter = new UsbManagerAdapter();
+    activity = IOIOLoader.getContext();
+    usbManager = usbManagerAdapter.getManager(activity);
     registerReceiver();
   }
 
   //@Override
   public void onDestroy() {
-    unregisterReceiver();
+    activity.unregisterReceiver(this);
   }
 
   @Override
@@ -107,12 +106,9 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     notifyAll();
   }
 
-  //@Override
-  public synchronized void close() {
-  }
-
   private synchronized void disconnect() {
     // This should abort any current open attempt.
+    Log.d(TAG, "private disconnect");
     shouldTryOpen = false;
     notifyAll();
 
@@ -130,6 +126,7 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
       pendingIntent.cancel();
       pendingIntent = null;
     }
+    Log.d(TAG, "leaving private disconnect");
   }
 
   @Override
@@ -257,13 +254,12 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     }
   }
 
+  @TargetApi(Build.VERSION_CODES.TIRAMISU)
   private void registerReceiver() {
     IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-    activity.registerReceiver(this, filter);
-  }
-
-  private void unregisterReceiver() {
-    activity.unregisterReceiver(this);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      activity.registerReceiver(this, filter, Context.RECEIVER_NOT_EXPORTED);
+    }
   }
 
   private void trySleep(long time) {
@@ -271,24 +267,25 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
       try {
         AccessoryConnectionBootstrap.this.wait(time);
       } catch (InterruptedException e) {
+        Log.e(TAG, e.toString());
       }
     }
   }
 
-  private static enum InstanceState {
+  private enum InstanceState {
     INIT, CONNECTED, DEAD
-  };
+  }
 
   private class Connection implements IOIOConnection {
     private InstanceState instanceState_ = InstanceState.INIT;
 
     @Override
-    public InputStream getInputStream() throws ConnectionLostException {
+    public InputStream getInputStream() {
       return inputStream;
     }
 
     @Override
-    public OutputStream getOutputStream() throws ConnectionLostException {
+    public OutputStream getOutputStream() {
       return outputStream;
     }
 
@@ -316,6 +313,7 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
 
     @Override
     public void disconnect() {
+      Log.d(TAG, "disconnect");
       synchronized(AccessoryConnectionBootstrap.this) {
         if (instanceState_ != InstanceState.DEAD) {
           AccessoryConnectionBootstrap.this.disconnect();

@@ -134,12 +134,18 @@ struct IOTask {
     auto exc = g_env->ExceptionOccurred();
     if (exc) {
       if (retval) {
+#if defined(ANDROID_MODULE)
+        // avoid: JNI DETECTED ERROR IN APPLICATION: JNI FindClass called with pending exception
+        error(retval, "Java exception - see adb logcat");
+        g_env->ExceptionClear();
+#else
         jclass clazz = g_env->FindClass("java/lang/Object");
         jmethodID methodId = g_env->GetMethodID(clazz, "toString", "()Ljava/lang/String;");
         jstring jstr = (jstring) g_env->CallObjectMethod(exc, methodId);
         const char *message = g_env->GetStringUTFChars(jstr, JNI_FALSE);
         error(retval, message);
         g_env->ReleaseStringUTFChars(jstr, message);
+#endif
       } else {
         g_env->ExceptionDescribe();
         g_env->ExceptionClear();
@@ -513,12 +519,15 @@ int sblib_init(const char *sourceFile) {
 #else
   int result = 1;
 #endif
-
-  g_ioioTask = new IOTask();
-  var_t retval;
-  if (!g_ioioTask || !g_ioioTask->create(CLASS_IOIO, &retval)) {
-    fprintf(stderr, "Failed to IOIOTask: %s\n", v_getstr(&retval));
+  if (g_jvm == nullptr) {
     result = 0;
+  } else {
+    g_ioioTask = new IOTask();
+    var_t retval;
+    if (!g_ioioTask || !g_ioioTask->create(CLASS_IOIO, &retval)) {
+      fprintf(stderr, "Failed to IOIOTask: %s\n", v_getstr(&retval));
+      result = 0;
+    }
   }
   return result;
 }
@@ -526,7 +535,7 @@ int sblib_init(const char *sourceFile) {
 #if defined(ANDROID_MODULE)
 //
 // Stores the Android JavaVM reference
-// 
+//
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void* reserved) {
   logEntered();
   g_jvm = vm;
@@ -583,7 +592,7 @@ void sblib_close(void) {
     fprintf(stderr, "IOTask leak detected\n");
     g_ioTaskMap.clear();
   }
-#if defined(DESKTOP_MODULE)  
+#if defined(DESKTOP_MODULE)
   if (g_jvm) {
     g_jvm->DetachCurrentThread();
   }
@@ -591,5 +600,5 @@ void sblib_close(void) {
   //jvm->DestroyJavaVM();
   g_env = nullptr;
   g_jvm = nullptr;
-#endif  
+#endif
 }

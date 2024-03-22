@@ -11,12 +11,9 @@ public class ConnectionController extends IOIOBaseApplicationHelper {
 
   static {
     if (AndroidUtil.isAndroid()) {
-      IOIOConnectionRegistry.addBootstraps(new String[]{
-          "ioio.lib.android.accessory.AccessoryConnectionBootstrap"});
+      IOIOConnectionRegistry.addBootstraps(new String[]{"ioio.lib.android.AccessoryConnectionBootstrap"});
     } else {
-      IOIOConnectionRegistry.addBootstraps(new String[]{
-          "ioio.lib.pc.SerialPortIOIOConnectionBootstrap"
-      });
+      IOIOConnectionRegistry.addBootstraps(new String[]{"ioio.lib.pc.SerialPortIOIOConnectionBootstrap"});
     }
   }
 

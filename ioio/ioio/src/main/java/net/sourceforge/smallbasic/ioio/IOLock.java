@@ -1,6 +1,7 @@
 package net.sourceforge.smallbasic.ioio;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -10,6 +11,7 @@ import ioio.lib.api.exception.IncompatibilityException;
 
 public class IOLock<I> {
   private final Object mutex = new Object();
+  private static final int TIMEOUT_SECS = 5;
   private Consumer<I> consumer;
 
   public void invoke(Consumer<I> consumer) {
@@ -87,7 +89,9 @@ public class IOLock<I> {
    */
   private void endLatch(CountDownLatch latch) {
     try {
-      latch.await();
+      if (!latch.await(TIMEOUT_SECS, TimeUnit.SECONDS)) {
+        throw new RuntimeException("Timeout waiting for latch");
+      }
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
