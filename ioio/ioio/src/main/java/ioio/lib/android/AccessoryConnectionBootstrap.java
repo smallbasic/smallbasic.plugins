@@ -35,6 +35,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.usb.UsbAccessory;
+import android.hardware.usb.UsbManager;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 
@@ -47,7 +49,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
 
-import ioio.lib.android.UsbManagerAdapter.UsbAccessoryInterface;
 import ioio.lib.api.IOIOConnection;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.impl.FixedReadBufferedInputStream;
@@ -59,21 +60,45 @@ import ioio.lib.spi.NoRuntimeSupportException;
 public class AccessoryConnectionBootstrap extends BroadcastReceiver implements IOIOConnectionBootstrap, IOIOConnectionFactory {
   private static final String TAG = AccessoryConnectionBootstrap.class.getSimpleName();
   private static final String ACTION_USB_PERMISSION = "ioio.lib.accessory.action.USB_PERMISSION";
+  private static final String EXTRA_PERMISSION_GRANTED = UsbManager.EXTRA_PERMISSION_GRANTED;
 
   private final Context activity;
-  private final UsbManagerAdapter.AbstractUsbManager usbManager;
+  private final UsbManager usbManager;
   private boolean shouldTryOpen = false;
   private PendingIntent pendingIntent;
   private ParcelFileDescriptor fileDescriptor;
   private InputStream inputStream;
   private OutputStream outputStream;
 
+  private enum InstanceState {
+    INIT, CONNECTED, DEAD
+  }
+
   public AccessoryConnectionBootstrap() throws NoRuntimeSupportException {
     Log.d(TAG, "creating AccessoryConnectionBootstrap");
-    UsbManagerAdapter usbManagerAdapter = new UsbManagerAdapter();
-    activity = IOIOLoader.getContext();
-    usbManager = usbManagerAdapter.getManager(activity);
+    this.activity = IOIOLoader.getContext();
+    this.usbManager = (UsbManager) activity.getSystemService(Context.USB_SERVICE);
     registerReceiver();
+  }
+
+  @Override
+  public IOIOConnection createConnection() {
+    return new Connection();
+  }
+
+  @Override
+  public Object getExtra() {
+    return null;
+  }
+
+  @Override
+  public void getFactories(Collection<IOIOConnectionFactory> result) {
+    result.add(this);
+  }
+
+  @Override
+  public String getType() {
+    return Connection.class.getCanonicalName();
   }
 
   //@Override
@@ -86,7 +111,7 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     final String action = intent.getAction();
     if (ACTION_USB_PERMISSION.equals(action)) {
       pendingIntent = null;
-      if (intent.getBooleanExtra(usbManager.EXTRA_PERMISSION_GRANTED, false)) {
+      if (intent.getBooleanExtra(EXTRA_PERMISSION_GRANTED, false)) {
         notifyAll();
       } else {
         Log.e(TAG, "Permission denied");
@@ -127,46 +152,6 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     Log.d(TAG, "leaving private disconnect");
   }
 
-  @Override
-  public IOIOConnection createConnection() {
-    return new Connection();
-  }
-
-  @Override
-  public void getFactories(Collection<IOIOConnectionFactory> result) {
-    result.add(this);
-  }
-
-  @Override
-  public String getType() {
-    return Connection.class.getCanonicalName();
-  }
-
-  @Override
-  public Object getExtra() {
-    return null;
-  }
-
-  private synchronized void waitForConnect(Connection connection) throws ConnectionLostException {
-    // In order to simplify the connection process in face of many different sequences of events
-    // that might occur, we collapsed the entire sequence into one non-blocking method,
-    // tryOpen(), which tries the entire process from the beginning, undoes everything if
-    // something along the way fails and always returns immediately.
-    // This method, simply calls tryOpen() in a loop until it succeeds or until we're no longer
-    // interested. Between attempts, it waits until "something interesting" has happened, which
-    // may be permission granted, the client telling us to try again (via reopen()) or stop
-    // trying, etc.
-    shouldTryOpen = true;
-    while (shouldTryOpen) {
-      if (tryOpen()) {
-        // Success!
-        return;
-      }
-      forceWait();
-    }
-    throw new ConnectionLostException();
-  }
-
   private void forceWait() {
     try {
       wait();
@@ -175,10 +160,18 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     }
   }
 
+  @TargetApi(Build.VERSION_CODES.TIRAMISU)
+  private void registerReceiver() {
+    IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      activity.registerReceiver(this, filter, Context.RECEIVER_NOT_EXPORTED);
+    }
+  }
+
   private boolean tryOpen() {
     // Find the accessory.
-    UsbAccessoryInterface[] accessories = usbManager.getAccessoryList();
-    UsbAccessoryInterface accessory = (accessories == null ? null : accessories[0]);
+    UsbAccessory[] accessories = usbManager.getAccessoryList();
+    UsbAccessory accessory = (accessories == null ? null : accessories[0]);
 
     if (accessory == null) {
       Log.v(TAG, "No accessory found.");
@@ -251,14 +244,6 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.TIRAMISU)
-  private void registerReceiver() {
-    IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      activity.registerReceiver(this, filter, Context.RECEIVER_NOT_EXPORTED);
-    }
-  }
-
   private void trySleep() {
     synchronized (AccessoryConnectionBootstrap.this) {
       try {
@@ -269,12 +254,44 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     }
   }
 
-  private enum InstanceState {
-    INIT, CONNECTED, DEAD
+  private synchronized void waitForConnect(Connection connection) throws ConnectionLostException {
+    // In order to simplify the connection process in face of many different sequences of events
+    // that might occur, we collapsed the entire sequence into one non-blocking method,
+    // tryOpen(), which tries the entire process from the beginning, undoes everything if
+    // something along the way fails and always returns immediately.
+    // This method, simply calls tryOpen() in a loop until it succeeds or until we're no longer
+    // interested. Between attempts, it waits until "something interesting" has happened, which
+    // may be permission granted, the client telling us to try again (via reopen()) or stop
+    // trying, etc.
+    shouldTryOpen = true;
+    while (shouldTryOpen) {
+      if (tryOpen()) {
+        // Success!
+        return;
+      }
+      forceWait();
+    }
+    throw new ConnectionLostException();
   }
 
   private class Connection implements IOIOConnection {
     private InstanceState instanceState_ = InstanceState.INIT;
+
+    @Override
+    public boolean canClose() {
+      return false;
+    }
+
+    @Override
+    public void disconnect() {
+      Log.d(TAG, "disconnect");
+      synchronized(AccessoryConnectionBootstrap.this) {
+        if (instanceState_ != InstanceState.DEAD) {
+          AccessoryConnectionBootstrap.this.disconnect();
+          instanceState_ = InstanceState.DEAD;
+        }
+      }
+    }
 
     @Override
     public InputStream getInputStream() {
@@ -284,11 +301,6 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     @Override
     public OutputStream getOutputStream() {
       return outputStream;
-    }
-
-    @Override
-    public boolean canClose() {
-      return false;
     }
 
     @Override
@@ -309,18 +321,7 @@ public class AccessoryConnectionBootstrap extends BroadcastReceiver implements I
     }
 
     @Override
-    public void disconnect() {
-      Log.d(TAG, "disconnect");
-      synchronized(AccessoryConnectionBootstrap.this) {
-        if (instanceState_ != InstanceState.DEAD) {
-          AccessoryConnectionBootstrap.this.disconnect();
-          instanceState_ = InstanceState.DEAD;
-        }
-      }
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
+    protected void finalize() {
       disconnect();
     }
   }

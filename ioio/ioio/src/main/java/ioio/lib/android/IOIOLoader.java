@@ -6,6 +6,9 @@ import java.lang.ref.WeakReference;
 
 import ioio.lib.spi.Log;
 
+/**
+ * IOIOLoader - Invoked from the "app" to commence loading
+ */
 public class IOIOLoader {
   private static final String TAG = "IOIOLoader";
   public static native void init(Long app);

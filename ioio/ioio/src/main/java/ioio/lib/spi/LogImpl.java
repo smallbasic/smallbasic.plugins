@@ -28,12 +28,11 @@
  */
 package ioio.lib.spi;
 
-import ioio.lib.android.AndroidUtil;
 import ioio.lib.spi.Log.ILogger;
 
 public class LogImpl implements ILogger {
   private static final char[] LEVELS = {'0', '1', 'V', 'D', 'I', 'W', 'E', 'F'};
-  private static final ILogger logger = AndroidUtil.isAndroid() ? getAndroidLogger() : null;
+  private static final ILogger logger = getAndroidLogger();
 
   @Override
   public void write(int level, String tag, String message) {

@@ -11,7 +11,7 @@ import ioio.lib.api.exception.IncompatibilityException;
 
 public class IOLock<I> {
   private final Object mutex = new Object();
-  private static final int TIMEOUT_SECS = 20;
+  private static final int TIMEOUT_SECS = 5;
   private Consumer<I> consumer;
 
   public void invoke(Consumer<I> consumer) {

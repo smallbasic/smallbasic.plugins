@@ -36,6 +36,6 @@ android:
    (cd ioio/build/libs && zip ../outputs/aar/ioio-release.aar classes.jar) && \
    cp ioio/build/outputs/aar/ioio-* ~/src/SmallBASIC/src/platform/android/app/libs/
 
-desktop:
+desktop: all
 	@(cd ioio && mvn clean package && cp target/ioio-1.0-jar-with-dependencies.jar ..)
 
