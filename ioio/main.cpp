@@ -76,7 +76,7 @@ jclass findClass(const char *path) {
   return g_env->FindClass(path);
 }
 
-jobject createInstance() {
+jobject createInstance(jclass clazz) {
   jmethodID constructor = g_env->GetMethodID(clazz, "<init>", "()V");
   jobject result;
   if (constructor != nullptr) {
@@ -496,7 +496,7 @@ int sblib_init(const char *sourceFile) {
 #if defined(DESKTOP_MODULE)
   JavaVMInitArgs vm_args;
   JavaVMOption options[3];
-  options[0].optionString = (char *)"-Djava.class.path=./android/target/ioio-1.0-jar-with-dependencies.jar";
+  options[0].optionString = (char *)"-Djava.class.path=./ioio-1.0-jar-with-dependencies.jar";
   options[1].optionString = (char *)"-Dioio.SerialPorts=IOIO0";
   options[2].optionString = (char *)"-Xrs";
   //options[2].optionString = "-Xdebug";

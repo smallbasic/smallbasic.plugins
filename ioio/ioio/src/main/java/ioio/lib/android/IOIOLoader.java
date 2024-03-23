@@ -1,4 +1,4 @@
-package net.sourceforge.smallbasic.ioio;
+package ioio.lib.android;
 
 import android.content.Context;
 

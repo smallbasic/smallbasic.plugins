@@ -38,8 +38,6 @@ import android.content.IntentFilter;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 
-import net.sourceforge.smallbasic.ioio.IOIOLoader;
-
 import java.io.BufferedOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
