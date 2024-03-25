@@ -33,15 +33,15 @@ jobject g_activity;
   #define detachCurrentThread()
 #endif
 
-#define CLASS_ANALOGINPUT "net/sourceforge/smallbasic/ioio/AnalogInputImpl"
-#define CLASS_DIGITALINPUT "net/sourceforge/smallbasic/ioio/DigitalInputImpl"
-#define CLASS_DIGITALOUTPUT "net/sourceforge/smallbasic/ioio/DigitalOutputImpl"
-#define CLASS_PULSEINPUT "net/sourceforge/smallbasic/ioio/PulseInputImpl"
-#define CLASS_PWMOUTPUT "net/sourceforge/smallbasic/ioio/PwmOutputImpl"
-#define CLASS_CAPSENSE "net/sourceforge/smallbasic/ioio/CapsenseImpl"
-#define CLASS_TWIMASTER "net/sourceforge/smallbasic/ioio/TwiMasterImpl"
-#define CLASS_SPIMASTER "net/sourceforge/smallbasic/ioio/SpiMasterImpl"
-#define CLASS_IOIO "net/sourceforge/smallbasic/ioio/IOIOImpl"
+#define CLASS_ANALOGINPUT "ioio/smallbasic/AnalogInputImpl"
+#define CLASS_DIGITALINPUT "ioio/smallbasic/DigitalInputImpl"
+#define CLASS_DIGITALOUTPUT "ioio/smallbasic/DigitalOutputImpl"
+#define CLASS_PULSEINPUT "ioio/smallbasic/PulseInputImpl"
+#define CLASS_PWMOUTPUT "ioio/smallbasic/PwmOutputImpl"
+#define CLASS_CAPSENSE "ioio/smallbasic/CapsenseImpl"
+#define CLASS_TWIMASTER "ioio/smallbasic/TwiMasterImpl"
+#define CLASS_SPIMASTER "ioio/smallbasic/SpiMasterImpl"
+#define CLASS_IOIO "ioio/smallbasic/IOIOImpl"
 #define CLASS_IOTASK_ID 1
 #define ARRAY_SIZE 10
 
@@ -135,8 +135,8 @@ struct IOTask {
     if (exc) {
       if (retval) {
         g_env->ExceptionClear();
-        jclass clazz = g_env->FindClass("java/lang/Object");
-        jmethodID methodId = g_env->GetMethodID(clazz, "toString", "()Ljava/lang/String;");
+        jclass clazz = g_env->FindClass("java/lang/Throwable");
+        jmethodID methodId = g_env->GetMethodID(clazz, "getMessage", "()Ljava/lang/String;");
         jstring jstr = (jstring) g_env->CallObjectMethod(exc, methodId);
         const char *message = g_env->GetStringUTFChars(jstr, JNI_FALSE);
         error(retval, message);
@@ -548,7 +548,7 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void* reserved) {
 //
 // Retrieves the _app->activity->clazz value sent from App/JNI to Java to IOIOLoader
 //
-extern "C" JNIEXPORT void JNICALL Java_net_sourceforge_smallbasic_ioio_IOIOLoader_init
+extern "C" JNIEXPORT void JNICALL Java_ioio_smallbasic_android_IOIOLoader_init
   (JNIEnv *env, jclass clazz, jobject activity) {
   logEntered();
   jclass longClass = env->FindClass("java/lang/Long");
@@ -566,7 +566,7 @@ SBLIB_API void sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
     case CLASS_IOTASK_ID:
-      if (id != -1 && g_ioTaskMap.find(id) != g_ioTaskMap.end()) {
+      if (g_ioTaskMap.find(id) != g_ioTaskMap.end()) {
         g_ioTaskMap.at(id).invokeVoidVoid("close", nullptr);
         g_ioTaskMap.erase(id);
       }

@@ -46,7 +46,7 @@ public class LogImpl implements ILogger {
   private static ILogger getAndroidLogger() {
     ILogger result;
     try {
-      result = (ILogger) Class.forName("ioio.lib.android.AndroidLogger").newInstance();
+      result = (ILogger) Class.forName("ioio.smallbasic.android.AndroidLogger").newInstance();
     }
     catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
       result = null;

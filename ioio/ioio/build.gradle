@@ -7,7 +7,7 @@ android {
   sourceSets {
     main {
       java {
-        exclude 'ioio/lib/pc/**'
+        exclude 'ioio/smallbasic/pc/**'
       }
     }
   }
