@@ -8,16 +8,16 @@ import ioio.lib.util.IOIOLooperProvider;
 public class ConnectionController extends IOIOBaseApplicationHelper {
   private final IOIOConnectionManager manager = new IOIOConnectionManager(this);
   private static final boolean isAndroid;
-  private static final String ANDROID_BOOTSTRAP = "ioio.smallbasic.android.AccessoryConnectionBootstrap";
-  private static final String PERMISSION_MANAGER = "ioio.smallbasic.android.AccessoryPermissionManager";
-  private static final String DESKTOP_BOOTSTRAP = "ioio.smallbasic.pc.SerialPortIOIOConnectionBootstrap";
+  private static final String ACCESSORY_BOOTSTRAP = "ioio.smallbasic.android.AccessoryConnectionBootstrap";
+  private static final String SERIAL_PORT_BOOTSTRAP = "ioio.smallbasic.pc.SerialPortIOIOConnectionBootstrap";
+  private static final String PERMISSION_CHECK = "ioio.smallbasic.android.AccessoryPermissionCheck";
 
   static {
     isAndroid = getIsAndroidBuild();
     if (isAndroid) {
-      IOIOConnectionRegistry.addBootstraps(new String[] { ANDROID_BOOTSTRAP });
+      IOIOConnectionRegistry.addBootstraps(new String[] { ACCESSORY_BOOTSTRAP });
     } else {
-      IOIOConnectionRegistry.addBootstraps(new String[] { DESKTOP_BOOTSTRAP });
+      IOIOConnectionRegistry.addBootstraps(new String[] { SERIAL_PORT_BOOTSTRAP });
     }
   }
 
@@ -27,9 +27,9 @@ public class ConnectionController extends IOIOBaseApplicationHelper {
 
   public void start() {
     if (isAndroid) {
-      validateAccessoryPermission();
+      permitAccessory();
     }
-    //manager.start();
+    manager.start();
   }
 
   public void stop() {
@@ -39,7 +39,7 @@ public class ConnectionController extends IOIOBaseApplicationHelper {
   private static boolean getIsAndroidBuild() {
     boolean result;
     try {
-      Class.forName(ANDROID_BOOTSTRAP);
+      Class.forName(ACCESSORY_BOOTSTRAP);
       result = true;
     } catch (ClassNotFoundException e) {
       result = false;
@@ -47,12 +47,12 @@ public class ConnectionController extends IOIOBaseApplicationHelper {
     return result;
   }
 
-  private static void validateAccessoryPermission() {
+  private static void permitAccessory() {
     try {
-      Class.forName(PERMISSION_MANAGER).newInstance();
+      Class.forName(PERMISSION_CHECK).newInstance();
     }
     catch (Exception e) {
-      throw new IOIOException(e.toString());
+      throw new IOIOException(e);
     }
   }
 }
