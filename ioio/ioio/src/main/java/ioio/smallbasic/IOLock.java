@@ -11,7 +11,7 @@ import ioio.lib.api.exception.IncompatibilityException;
 
 public class IOLock<I> {
   private final Object mutex = new Object();
-  private static final int TIMEOUT_SECS = 5;
+  private static final int TIMEOUT_SECS = 10;
   private Consumer<I> consumer;
 
   public void invoke(Consumer<I> consumer) {
@@ -90,6 +90,7 @@ public class IOLock<I> {
   private void endLatch(CountDownLatch latch) {
     try {
       if (!latch.await(TIMEOUT_SECS, TimeUnit.SECONDS)) {
+        IOService.setHardReset(true);
         throw new IOIOException("Timeout waiting for device");
       }
     } catch (InterruptedException e) {

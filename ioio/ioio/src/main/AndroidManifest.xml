@@ -3,9 +3,9 @@
   <uses-feature android:name="android.hardware.usb.accessory" android:required="true" />
   <uses-permission android:name="android.permission.USB_PERMISSION" />
   <application>
-    <receiver android:name="ioio.smallbasic.android.AccessoryPermissionCheck" android:exported="true">
+    <receiver android:name="ioio.smallbasic.android.AccessoryPermissionCheck" android:exported="false">
       <intent-filter>
-        <action android:name="android.hardware.usb.action.USB_PERMISSION" />
+        <action android:name="ioio.smallbasic.android.USB_PERMISSION" />
       </intent-filter>
     </receiver>
     <meta-data android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" android:resource="@xml/device_filter" />

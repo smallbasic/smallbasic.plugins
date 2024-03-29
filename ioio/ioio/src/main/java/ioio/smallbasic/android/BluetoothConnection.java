@@ -41,14 +41,18 @@ import java.io.OutputStream;
 
 import ioio.lib.api.IOIOConnection;
 import ioio.lib.api.exception.ConnectionLostException;
-import ioio.lib.impl.FixedReadBufferedInputStream;
 import ioio.lib.spi.Log;
 import ioio.smallbasic.IOIOException;
+import ioio.smallbasic.IOService;
 
 class BluetoothConnection implements IOIOConnection {
   private static final String TAG = BluetoothConnection.class.getSimpleName();
+  private static final int HARD_RESET = 0x00;
+  private static final int SOFT_RESET = 0x01;
+  private static final int ESTABLISH_CONNECTION = 0x00;
+
   private ConnectionState state;
-  private InputStream inputStream;
+  private FixedReadBufferedInputStream inputStream;
   private OutputStream outputStream;
   private ParcelFileDescriptor fileDescriptor;
 
@@ -126,22 +130,27 @@ class BluetoothConnection implements IOIOConnection {
       inputStream = new FixedReadBufferedInputStream(new FileInputStream(fd), 1024);
       outputStream = new BufferedOutputStream(new FileOutputStream(fd), 1024);
 
-      // Soft-open the connection
-      outputStream.write(0x00);
+      // open the connection
+      if (IOService.getHardReset()) {
+        outputStream.write(HARD_RESET);
+        outputStream.write('I');
+        outputStream.write('O');
+        outputStream.write('I');
+        outputStream.write('O');
+        IOService.setHardReset(false);
+      } else {
+        outputStream.write(SOFT_RESET);
+      }
       outputStream.flush();
 
-      Log.i(TAG, "created streams");
-
-      // Ytai mentions http://code.google.com/p/android/issues/detail?id=20545
-      // which is now closed, but waiting still seems to be required.
-      //   "We're going to block now. We're counting on the IOIO to
-      //    write back a byte, or otherwise we're locked until
-      //    physical disconnection"
-      while (inputStream.read() != 1) {
-        wait(1000);
+      // ensure IOIOProtocol.run() first see's ESTABLISH_CONNECTION(0x00) and not SOFT_RESET(0x01)
+      // to avoid an NPE in IncomingState.handleSoftReset(). This method relies on initialisation in
+      // IncomingState.handleEstablishConnection
+      if (inputStream.positionTo(ESTABLISH_CONNECTION)) {
+        Log.i(TAG, "created streams");
+      } else {
+        Log.i(TAG, "created streams - failed to position data");
       }
-
-      Log.i(TAG, "success");
       result = true;
     } catch (Exception e) {
       Log.v(TAG, "Failed to open streams", e);

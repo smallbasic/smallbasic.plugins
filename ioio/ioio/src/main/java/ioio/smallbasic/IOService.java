@@ -3,6 +3,7 @@ package ioio.smallbasic;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
@@ -13,6 +14,7 @@ import ioio.lib.util.IOIOLooperProvider;
 public class IOService implements IOIOLooperProvider  {
   private static final String TAG = "IOService";
   private static final int MAX_PINS = 46;
+  private static final AtomicBoolean HARD_RESET = new AtomicBoolean(false);
   private static IOService instance = null;
 
   private final ConnectionController connectionController;
@@ -27,11 +29,19 @@ public class IOService implements IOIOLooperProvider  {
     usedPins = new Boolean[MAX_PINS + 1];
   }
 
+  public static boolean getHardReset() {
+    return HARD_RESET.get();
+  }
+
   public static IOService getInstance() {
     if (instance == null) {
       instance = new IOService();
     }
     return instance;
+  }
+
+  public static void setHardReset(boolean hardReset) {
+    IOService.HARD_RESET.set(hardReset);
   }
 
   public void addTask(IOTask ioTask) throws IOException {
