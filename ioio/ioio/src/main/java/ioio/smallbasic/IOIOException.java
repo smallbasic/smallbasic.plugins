@@ -1,19 +1,20 @@
 package ioio.smallbasic;
 
 public class IOIOException extends RuntimeException {
+  public IOIOException() {
+    super();
+  }
+
   public IOIOException(Exception exception) {
-    super(exception.getMessage());
+    this(exception.getMessage());
   }
 
   public IOIOException(String message) {
     super(message);
+    IOUtil.setError(message);
   }
 
   public String getMessage() {
-    String result = super.getMessage();
-    if (result != null) {
-      result = result.replace("ioio.smallbasic.IOIOException:", "").trim();
-    }
-    return result;
+    return IOUtil.getError();
   }
 }

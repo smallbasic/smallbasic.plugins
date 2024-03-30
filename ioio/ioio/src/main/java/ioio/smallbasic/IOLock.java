@@ -90,7 +90,6 @@ public class IOLock<I> {
   private void endLatch(CountDownLatch latch) {
     try {
       if (!latch.await(TIMEOUT_SECS, TimeUnit.SECONDS)) {
-        IOService.setHardReset(true);
         throw new IOIOException("Timeout waiting for device");
       }
     } catch (InterruptedException e) {

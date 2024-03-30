@@ -4,8 +4,6 @@ import java.io.IOException;
 
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
-import ioio.smallbasic.DigitalOutputImpl;
-import ioio.smallbasic.IOService;
 
 class DigitalOutputTest {
   public static void main(String[] args) throws InterruptedException, ConnectionLostException, IOException {

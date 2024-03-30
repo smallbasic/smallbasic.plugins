@@ -29,32 +29,20 @@
 
 package ioio.smallbasic.android;
 
-import android.content.Context;
-import android.hardware.usb.UsbAccessory;
-import android.hardware.usb.UsbManager;
-
 import java.util.Collection;
 
 import ioio.lib.api.IOIOConnection;
 import ioio.lib.spi.IOIOConnectionBootstrap;
 import ioio.lib.spi.IOIOConnectionFactory;
-import ioio.lib.spi.Log;
-import ioio.lib.spi.NoRuntimeSupportException;
 
 public class AccessoryConnectionBootstrap implements IOIOConnectionBootstrap, IOIOConnectionFactory {
-  private static final String TAG = AccessoryConnectionBootstrap.class.getSimpleName();
-
-  public AccessoryConnectionBootstrap() throws NoRuntimeSupportException {
-    Log.d(TAG, "creating AccessoryConnectionBootstrap");
+  public AccessoryConnectionBootstrap() {
+    super();
   }
 
   @Override
   public IOIOConnection createConnection() {
-    Log.i(TAG, "createConnection");
-    Context activity = IOIOLoader.getContext();
-    UsbManager usbManager = (UsbManager) activity.getSystemService(Context.USB_SERVICE);
-    UsbAccessory accessory = usbManager.getAccessoryList()[0];
-    return new BluetoothConnection(getUsbManager().openAccessory(accessory));
+    return new UsbConnection();
   }
 
   @Override
@@ -69,11 +57,6 @@ public class AccessoryConnectionBootstrap implements IOIOConnectionBootstrap, IO
 
   @Override
   public String getType() {
-    return BluetoothConnection.class.getCanonicalName();
-  }
-
-  private UsbManager getUsbManager() {
-    Context activity = IOIOLoader.getContext();
-    return (UsbManager) activity.getSystemService(Context.USB_SERVICE);
+    return UsbConnection.class.getCanonicalName();
   }
 }

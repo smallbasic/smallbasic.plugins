@@ -59,7 +59,7 @@ public class SpiMasterImpl extends IOTask {
   }
 
   private void pinError(String name) {
-    setError("Incorrect " + name + " pin value");
+    IOUtil.setError("Incorrect " + name + " pin value");
   }
 
   private void validatePins() {
@@ -77,7 +77,7 @@ public class SpiMasterImpl extends IOTask {
                mosi == clk ||
                mosi == slaveSelect ||
                clk == slaveSelect) {
-      setError("One or pins have duplicate values");
+      IOUtil.setError("One or pins have duplicate values");
     }
   }
 }

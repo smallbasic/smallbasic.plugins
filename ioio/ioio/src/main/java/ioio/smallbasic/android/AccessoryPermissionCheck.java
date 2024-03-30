@@ -23,12 +23,12 @@ public class AccessoryPermissionCheck extends BroadcastReceiver {
   @TargetApi(Build.VERSION_CODES.TIRAMISU)
   public AccessoryPermissionCheck() {
     Log.d(TAG, "AccessoryPermissionCheck entered");
-    UsbManager usbManager = (UsbManager) IOIOLoader.getContext().getSystemService(Context.USB_SERVICE);
-    UsbAccessory[] accessories = usbManager.getAccessoryList();
-    UsbAccessory accessory = (accessories == null ? null : accessories[0]);
+    UsbAccessory accessory = UsbUtil.getUsbAccessory();
     if (accessory == null) {
       throw new IOIOException("No usb accessory found.");
     }
+
+    UsbManager usbManager = (UsbManager) IOIOLoader.getContext().getSystemService(Context.USB_SERVICE);
     if (!usbManager.hasPermission(accessory)) {
       new Handler(Looper.getMainLooper()).post(() -> {
         Context context = IOIOLoader.getContext();
@@ -40,7 +40,7 @@ public class AccessoryPermissionCheck extends BroadcastReceiver {
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, flags);
         usbManager.requestPermission(accessory, pendingIntent);
       });
-      // for some reason using a latch caused an ANR here
+      // for some reason using a latch here caused an ANR
       Log.d(TAG, "requesting permission");
       throw new IOIOException(PERMISSION_ERROR);
     }

@@ -60,6 +60,7 @@ public class IOIOImpl extends IOTask {
   }
 
   public void waitForConnect(int latency) {
+    IOUtil.setError(null);
     TimerUtil.setLatency(latency);
     IOService.getInstance().start();
     lock.invoke(IOIO::waitForConnect);

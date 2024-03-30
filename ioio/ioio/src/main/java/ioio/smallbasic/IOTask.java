@@ -2,7 +2,6 @@ package ioio.smallbasic;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
@@ -14,7 +13,6 @@ import ioio.lib.api.exception.ConnectionLostException;
  */
 public abstract class IOTask implements Closeable {
   protected int pin;
-  private AtomicReference<String> error;
 
   @Override
   public void close() {
@@ -22,19 +20,14 @@ public abstract class IOTask implements Closeable {
   }
 
   public void handleError() {
-    if (error.get() != null) {
-      throw new IOIOException(error.get());
+    if (IOUtil.getError() != null) {
+      throw new IOIOException();
     }
   }
 
   public void open(int pin) throws IOException {
     this.pin = pin;
-    this.error = new AtomicReference<>(null);
     IOService.getInstance().addTask(this);
-  }
-
-  public void setError(String error) {
-    this.error.set(error);
   }
 
   int getPin() {

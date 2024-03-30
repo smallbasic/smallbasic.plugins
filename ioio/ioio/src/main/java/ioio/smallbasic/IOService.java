@@ -111,7 +111,7 @@ public class IOService implements IOIOLooperProvider  {
         try {
           next.loop();
         } catch (Throwable e) {
-          next.setError(e.getLocalizedMessage());
+          IOUtil.setError(e.getLocalizedMessage());
           break;
         }
       }
@@ -125,7 +125,7 @@ public class IOService implements IOIOLooperProvider  {
         try {
           next.setup(ioio);
         } catch (Throwable e) {
-          next.setError(e.getLocalizedMessage());
+          IOUtil.setError(e.getLocalizedMessage());
           break;
         }
       }
