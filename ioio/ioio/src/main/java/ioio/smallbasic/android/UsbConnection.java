@@ -35,6 +35,7 @@ import java.io.BufferedOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -47,6 +48,8 @@ import ioio.smallbasic.IOUtil;
 class UsbConnection implements IOIOConnection {
   private static final String TAG = UsbConnection.class.getSimpleName();
   private static final int SOFT_RESET = 0x01;
+  private static final int HARD_RESET = 0x00;
+  private static final int MAX_RETRIES = 10;
   private ConnectionState state;
   private FixedReadBufferedInputStream inputStream;
   private OutputStream outputStream;
@@ -73,17 +76,8 @@ class UsbConnection implements IOIOConnection {
   public synchronized void disconnect() {
     Log.i(TAG, "disconnect entered");
     if (this.state != ConnectionState.DISCONNECTED) {
-      this.state = ConnectionState.DISCONNECTED;
       IOUtil.setError("USB disconnected");
-      if (fileDescriptor != null) {
-        try {
-          fileDescriptor.close();
-        } catch (java.io.IOException e) {
-          IOUtil.setError("Failed to close file descriptor");
-          Log.e(TAG, "Failed to close file descriptor.", e);
-        }
-        fileDescriptor = null;
-      }
+      close();
     }
     Log.d(TAG, "leaving disconnect");
   }
@@ -103,10 +97,6 @@ class UsbConnection implements IOIOConnection {
     if (state != ConnectionState.INIT) {
       throw new IllegalStateException("waitForConnect() may only be called once");
     }
-    this.fileDescriptor = UsbUtil.getParcelFileDescriptor();
-    if (this.fileDescriptor == null) {
-      throw new IOIOException("Failed to obtain descriptor");
-    }
     if (open()) {
       state = ConnectionState.CONNECTED;
     } else {
@@ -119,34 +109,87 @@ class UsbConnection implements IOIOConnection {
     disconnect();
   }
 
+  private void close() {
+    state = ConnectionState.DISCONNECTED;
+    try {
+      if (inputStream != null) {
+        inputStream.close();
+      }
+      if (outputStream != null) {
+        outputStream.close();
+      }
+      if (fileDescriptor != null) {
+        fileDescriptor.close();
+      }
+      inputStream = null;
+      outputStream = null;
+      fileDescriptor = null;
+    } catch (java.io.IOException e) {
+      IOUtil.setError("Failed to close file descriptor: " + e);
+      Log.e(TAG, "Failed to close file descriptor.", e);
+    }
+  }
+
+  private void handleResetResponse(int attempt) throws IOException {
+    if (attempt > 0) {
+      int response = inputStream.read();
+      Log.e(TAG, "Response:" + response + " available:" + inputStream.available());
+      if (response != SOFT_RESET) {
+        // fail
+        if (inputStream.available() == 0) {
+          try {
+            Thread.sleep(100);
+          }
+          catch (InterruptedException e) {
+            throw new IOIOException(e);
+          }
+        }
+        handleResetResponse(attempt - 1);
+      }
+    } else {
+      throw new IOIOException("USB connection failure");
+    }
+  }
+
   private boolean open() {
     boolean result = false;
     Log.i(TAG, "open() entered");
 
     try {
-      FileDescriptor fd = fileDescriptor.getFileDescriptor();
-      inputStream = new FixedReadBufferedInputStream(new FileInputStream(fd), 1024);
-      outputStream = new BufferedOutputStream(new FileOutputStream(fd), 1024);
-      outputStream.write(SOFT_RESET);
-      outputStream.flush();
-      int response = inputStream.read();
-      if (response == SOFT_RESET) {
-        result = true;
-      } else {
-        IOUtil.setError("Unexpected response: " + response);
-      }
+      openStreams();
+      resetBoard();
+      handleResetResponse(MAX_RETRIES);
+      result = true;
     } catch (java.io.IOException e) {
       IOUtil.setError("Failed to open streams: " + e);
     } finally {
       if (!result) {
-        try {
-          fileDescriptor.close();
-        } catch (java.io.IOException e) {
-          Log.e(TAG, "Failed to close file descriptor.", e);
-        }
-        fileDescriptor = null;
+        close();
       }
     }
     return result;
+  }
+
+  private void openStreams() {
+    this.fileDescriptor = UsbUtil.getParcelFileDescriptor();
+    if (this.fileDescriptor == null) {
+      throw new IOIOException("Failed to obtain descriptor");
+    }
+    FileDescriptor fd = fileDescriptor.getFileDescriptor();
+    inputStream = new FixedReadBufferedInputStream(new FileInputStream(fd), 1024);
+    outputStream = new BufferedOutputStream(new FileOutputStream(fd), 1024);
+  }
+
+  private void resetBoard() throws IOException {
+    if (IOUtil.getHardReset()) {
+      outputStream.write(HARD_RESET);
+      outputStream.write('I');
+      outputStream.write('O');
+      outputStream.write('I');
+      outputStream.write('O');
+    } else {
+      outputStream.write(SOFT_RESET);
+    }
+    outputStream.flush();
   }
 }

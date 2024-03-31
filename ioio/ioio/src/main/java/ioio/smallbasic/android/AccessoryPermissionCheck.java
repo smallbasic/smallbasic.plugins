@@ -11,9 +11,11 @@ import android.hardware.usb.UsbManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.widget.Toast;
 
 import ioio.lib.spi.Log;
 import ioio.smallbasic.IOIOException;
+import ioio.smallbasic.IOUtil;
 
 public class AccessoryPermissionCheck extends BroadcastReceiver {
   private static final String TAG = AccessoryPermissionCheck.class.getSimpleName();
@@ -28,7 +30,7 @@ public class AccessoryPermissionCheck extends BroadcastReceiver {
       throw new IOIOException("No usb accessory found.");
     }
 
-    UsbManager usbManager = (UsbManager) IOIOLoader.getContext().getSystemService(Context.USB_SERVICE);
+    UsbManager usbManager = UsbUtil.getUsbManager();
     if (!usbManager.hasPermission(accessory)) {
       new Handler(Looper.getMainLooper()).post(() -> {
         Context context = IOIOLoader.getContext();
@@ -40,8 +42,9 @@ public class AccessoryPermissionCheck extends BroadcastReceiver {
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, flags);
         usbManager.requestPermission(accessory, pendingIntent);
       });
-      // for some reason using a latch here caused an ANR
+      // for some reason using a latch here causes an ANR
       Log.d(TAG, "requesting permission");
+      IOUtil.setHardReset(true);
       throw new IOIOException(PERMISSION_ERROR);
     }
   }
@@ -50,8 +53,11 @@ public class AccessoryPermissionCheck extends BroadcastReceiver {
   public synchronized void onReceive(final Context context, Intent intent) {
     Log.d(TAG, "onReceive entered");
     if (ACTION_USB_PERMISSION.equals(intent.getAction())) {
+      boolean permitted = UsbUtil.getUsbManager().hasPermission(UsbUtil.getUsbAccessory());
+      final String message = "USB access " + (permitted ? "permitted" : "denied");
       final BroadcastReceiver receiver = this;
       new Handler(Looper.getMainLooper()).post(() -> {
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
         context.unregisterReceiver(receiver);
       });
     }
