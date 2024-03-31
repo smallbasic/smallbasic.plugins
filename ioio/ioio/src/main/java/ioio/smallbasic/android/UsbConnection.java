@@ -126,7 +126,7 @@ class UsbConnection implements IOIOConnection {
       inputStream = null;
       outputStream = null;
       fileDescriptor = null;
-    } catch (java.io.IOException e) {
+    } catch (IOException e) {
       IOUtil.setError("Failed to close file descriptor: " + e);
       Log.e(TAG, "Failed to close file descriptor.", e);
     }

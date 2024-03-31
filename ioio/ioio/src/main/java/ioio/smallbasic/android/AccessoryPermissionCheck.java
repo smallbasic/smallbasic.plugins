@@ -15,7 +15,6 @@ import android.widget.Toast;
 
 import ioio.lib.spi.Log;
 import ioio.smallbasic.IOIOException;
-import ioio.smallbasic.IOUtil;
 
 public class AccessoryPermissionCheck extends BroadcastReceiver {
   private static final String TAG = AccessoryPermissionCheck.class.getSimpleName();
@@ -26,8 +25,8 @@ public class AccessoryPermissionCheck extends BroadcastReceiver {
   public AccessoryPermissionCheck() {
     Log.d(TAG, "AccessoryPermissionCheck entered");
     UsbAccessory accessory = UsbUtil.getUsbAccessory();
-    if (accessory == null) {
-      throw new IOIOException("No usb accessory found.");
+    if (accessory == null || !"IOIO".equals(accessory.getModel())) {
+      throw new IOIOException("IOIO board not found.");
     }
 
     UsbManager usbManager = UsbUtil.getUsbManager();
@@ -52,8 +51,10 @@ public class AccessoryPermissionCheck extends BroadcastReceiver {
   public synchronized void onReceive(final Context context, Intent intent) {
     Log.d(TAG, "onReceive entered");
     if (ACTION_USB_PERMISSION.equals(intent.getAction())) {
-      boolean permitted = UsbUtil.getUsbManager().hasPermission(UsbUtil.getUsbAccessory());
-      final String message = "USB access " + (permitted ? "permitted" : "denied");
+      UsbAccessory accessory = UsbUtil.getUsbAccessory();
+      String version = accessory != null ? accessory.getVersion() : "";
+      boolean permitted = UsbUtil.getUsbManager().hasPermission(accessory);
+      final String message = "IOIO board [" + version + "] access " + (permitted ? "permitted" : "denied");
       final BroadcastReceiver receiver = this;
       new Handler(Looper.getMainLooper()).post(() -> {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show();
