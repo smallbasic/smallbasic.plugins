@@ -49,6 +49,7 @@ class UsbConnection implements IOIOConnection {
   private static final String TAG = UsbConnection.class.getSimpleName();
   private static final int SOFT_RESET = 0x01;
   private static final int HARD_RESET = 0x00;
+  private static final int SYNC = 0x23;
   private static final int MAX_RETRIES = 10;
   private ConnectionState state;
   private FixedReadBufferedInputStream inputStream;
@@ -60,7 +61,7 @@ class UsbConnection implements IOIOConnection {
   }
 
   UsbConnection() {
-    Log.i(TAG, "creating UsbConnection");
+    Log.d(TAG, "creating UsbConnection");
     this.state = ConnectionState.INIT;
     this.inputStream = null;
     this.outputStream = null;
@@ -74,8 +75,8 @@ class UsbConnection implements IOIOConnection {
 
   @Override
   public synchronized void disconnect() {
-    Log.i(TAG, "disconnect entered");
-    if (this.state != ConnectionState.DISCONNECTED) {
+    Log.d(TAG, "disconnect entered: " + state);
+    if (state != ConnectionState.DISCONNECTED) {
       IOUtil.setError("USB disconnected");
       close();
     }
@@ -110,6 +111,7 @@ class UsbConnection implements IOIOConnection {
   }
 
   private void close() {
+    Log.d(TAG, "close streams");
     state = ConnectionState.DISCONNECTED;
     try {
       if (inputStream != null) {
@@ -131,12 +133,12 @@ class UsbConnection implements IOIOConnection {
   }
 
   private void handleResetResponse(int attempt) throws IOException {
-    if (attempt > 0) {
+    if (attempt < MAX_RETRIES) {
       int response = inputStream.read();
-      Log.e(TAG, "Response:" + response + " available:" + inputStream.available());
+      Log.d(TAG, "Response:" + response + " available:" + inputStream.available() + " attempt:" + attempt);
       if (response != SOFT_RESET) {
-        // fail
-        if (inputStream.available() == 0) {
+        // unexpected
+        if (inputStream.available() < 1) {
           try {
             Thread.sleep(100);
           }
@@ -144,7 +146,7 @@ class UsbConnection implements IOIOConnection {
             throw new IOIOException(e);
           }
         }
-        handleResetResponse(attempt - 1);
+        handleResetResponse(attempt + 1);
       }
     } else {
       throw new IOIOException("USB connection failure");
@@ -153,12 +155,12 @@ class UsbConnection implements IOIOConnection {
 
   private boolean open() {
     boolean result = false;
-    Log.i(TAG, "open() entered");
+    Log.d(TAG, "open() entered");
 
     try {
       openStreams();
       resetBoard();
-      handleResetResponse(MAX_RETRIES);
+      handleResetResponse(0);
       result = true;
     } catch (java.io.IOException e) {
       IOUtil.setError("Failed to open streams: " + e);
@@ -182,13 +184,15 @@ class UsbConnection implements IOIOConnection {
 
   private void resetBoard() throws IOException {
     if (IOUtil.getHardReset()) {
+      Log.d(TAG, "hard reset");
       outputStream.write(HARD_RESET);
       outputStream.write('I');
       outputStream.write('O');
       outputStream.write('I');
       outputStream.write('O');
     } else {
-      outputStream.write(SOFT_RESET);
+      Log.d(TAG, "soft reset");
+      outputStream.write(SYNC);
     }
     outputStream.flush();
   }

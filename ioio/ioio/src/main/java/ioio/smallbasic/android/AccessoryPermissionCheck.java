@@ -44,7 +44,6 @@ public class AccessoryPermissionCheck extends BroadcastReceiver {
       });
       // for some reason using a latch here causes an ANR
       Log.d(TAG, "requesting permission");
-      IOUtil.setHardReset(true);
       throw new IOIOException(PERMISSION_ERROR);
     }
   }

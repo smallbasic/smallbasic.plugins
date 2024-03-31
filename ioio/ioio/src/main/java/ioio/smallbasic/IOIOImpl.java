@@ -64,13 +64,13 @@ public class IOIOImpl extends IOTask {
     if (latency < 0) {
       IOUtil.setHardReset(true);
     } else {
-      IOUtil.setHardReset(false);
       TimerUtil.setLatency(latency);
     }
     IOService.getInstance().start();
     handleError();
     lock.invoke(IOIO::waitForConnect);
     handleError();
+    IOUtil.setHardReset(false);
   }
 
   public void waitForDisconnect() {
