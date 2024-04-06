@@ -15,13 +15,13 @@ public class UsbUtil {
   }
 
   static UsbAccessory getUsbAccessory() {
-    UsbManager usbManager = (UsbManager) IOIOLoader.getContext().getSystemService(Context.USB_SERVICE);
+    UsbManager usbManager = (UsbManager) ModuleLoader.getContext().getSystemService(Context.USB_SERVICE);
     UsbAccessory[] accessories = usbManager.getAccessoryList();
     return (accessories == null ? null : accessories[0]);
   }
 
   static UsbManager getUsbManager() {
-    Context activity = IOIOLoader.getContext();
+    Context activity = ModuleLoader.getContext();
     return (UsbManager) activity.getSystemService(Context.USB_SERVICE);
   }
 }

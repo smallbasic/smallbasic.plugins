@@ -32,7 +32,7 @@ public class AccessoryPermissionCheck extends BroadcastReceiver {
     UsbManager usbManager = UsbUtil.getUsbManager();
     if (!usbManager.hasPermission(accessory)) {
       new Handler(Looper.getMainLooper()).post(() -> {
-        Context context = IOIOLoader.getContext();
+        Context context = ModuleLoader.getContext();
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY - 1);
         context.registerReceiver(this, filter, Context.RECEIVER_NOT_EXPORTED);

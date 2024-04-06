@@ -12,7 +12,7 @@ android {
     }
   }
 
-  namespace 'net.sourceforge.smallbasic.ioio'
+  namespace 'ioio.smallbasic'
   compileSdk 34
 
   defaultConfig {

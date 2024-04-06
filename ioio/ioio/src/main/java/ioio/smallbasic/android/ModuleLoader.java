@@ -7,18 +7,18 @@ import java.lang.ref.WeakReference;
 import ioio.lib.spi.Log;
 
 /**
- * IOIOLoader - Invoked from the "app" to commence loading
+ * ModuleLoader - Invoked from the "app" to commence loading
  */
-public class IOIOLoader {
-  private static final String TAG = "IOIOLoader";
+public class ModuleLoader {
+  private static final String TAG = "ModuleLoader";
   public static native void init(Long app);
 
   private static WeakReference<Context> context;
 
-  public IOIOLoader(Long activity, Context context) {
+  public ModuleLoader(Long activity, Context context) {
     super();
-    Log.d(TAG, "IOIOLoader: " + activity);
-    IOIOLoader.context = new WeakReference<>(context);
+    Log.d(TAG, "ModuleLoader: " + activity);
+    ModuleLoader.context = new WeakReference<>(context);
     init(activity);
   }
 
