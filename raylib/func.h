@@ -1534,8 +1534,8 @@ static int cmd_getscreentoworldray(int argc, slib_par_t *params, var_t *retval) 
 static int cmd_getscreentoworldrayex(int argc, slib_par_t *params, var_t *retval) {
   auto position = get_param_vec2(argc, params, 0);
   auto camera = get_camera_3d(argc, params, 1);
-  auto width = get_param_num(argc, params, 2, 0);
-  auto height = get_param_num(argc, params, 3, 0);
+  auto width = get_param_int(argc, params, 2, 0);
+  auto height = get_param_int(argc, params, 3, 0);
   auto fnResult = GetScreenToWorldRayEx(position, camera, width, height);
   v_setray(retval, fnResult);
   return 1;

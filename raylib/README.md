@@ -627,8 +627,8 @@ Unimplemented APIs
 
 | Name    | Description   |
 |---------|---------------|
-| AttachAudioMixedProcessor | Attach audio stream processor to the entire audio pipeline, receives the samples as <float>s |
-| AttachAudioStreamProcessor | Attach audio stream processor to stream, receives the samples as <float>s |
+| AttachAudioMixedProcessor | Attach audio stream processor to the entire audio pipeline, receives the samples as 'float' |
+| AttachAudioStreamProcessor | Attach audio stream processor to stream, receives the samples as 'float' |
 | BeginVrStereoMode | Begin stereo rendering (requires VR simulator) |
 | DetachAudioMixedProcessor | Detach audio stream processor from the entire audio pipeline |
 | DetachAudioStreamProcessor | Detach audio stream processor from stream |
