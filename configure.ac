@@ -64,6 +64,7 @@ case "${host_os}" in
     GTK_SERVER_CPPFLAGS="-DGTK_SERVER_WIN32"
     IOIO_CPPFLAGS=""
     IOIO_LDFLAGS=""
+    NUKLEAR_CPPFLAGS=""
     ;;
 
   *)
@@ -76,6 +77,7 @@ case "${host_os}" in
     RAYLIB_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
     JVM_CPPFLAGS="-I/usr/lib/jvm/java-1.8.0-openjdk-amd64/include -I/usr/lib/jvm/java-1.8.0-openjdk-amd64/include/linux"
     JVM_LDFLAGS="-L/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server -ljvm"
+    NUKLEAR_CPPFLAGS="-D_GLFW_X11=1"
 esac
 
 AC_SUBST(DEBUG_LDFLAGS)
@@ -88,6 +90,7 @@ AC_SUBST(GTK_SERVER_LDFLAGS)
 AC_SUBST(GTK_SERVER_CPPFLAGS)
 AC_SUBST(JVM_LDFLAGS)
 AC_SUBST(JVM_CPPFLAGS)
+AC_SUBST(NUKLEAR_CPPFLAGS)
 
 dnl change default aru setting to avoid warning
 ARFLAGS=cr
