@@ -820,15 +820,27 @@ static int cmd_drawrectanglerounded(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
-// Draw rectangle with rounded edges outline
+// Draw rectangle lines with rounded edges
 //
 static int cmd_drawrectangleroundedlines(int argc, slib_par_t *params, var_t *retval) {
   auto rec = get_param_rect(argc, params, 0);
   auto roundness = get_param_num(argc, params, 1, 0);
   auto segments = get_param_int(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawRectangleRoundedLines(rec, roundness, segments, color);
+  return 1;
+}
+
+//
+// Draw rectangle with rounded edges outline
+//
+static int cmd_drawrectangleroundedlinesex(int argc, slib_par_t *params, var_t *retval) {
+  auto rec = get_param_rect(argc, params, 0);
+  auto roundness = get_param_num(argc, params, 1, 0);
+  auto segments = get_param_int(argc, params, 2, 0);
   auto lineThick = get_param_num(argc, params, 3, 0);
   auto color = get_param_color(argc, params, 4);
-  DrawRectangleRoundedLines(rec, roundness, segments, lineThick, color);
+  DrawRectangleRoundedLinesEx(rec, roundness, segments, lineThick, color);
   return 1;
 }
 

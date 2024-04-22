@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (612)
+Implemented APIs (613)
 ----------------
 
 | Name    | Description   |
@@ -109,7 +109,8 @@ Implemented APIs (612)
 | sub DrawRectanglePro(rec, origin, rotation, color) | Draw a color-filled rectangle with pro parameters |
 | sub DrawRectangleRec(rec, color) | Draw a color-filled rectangle |
 | sub DrawRectangleRounded(rec, roundness, segments, color) | Draw rectangle with rounded edges |
-| sub DrawRectangleRoundedLines(rec, roundness, segments, lineThick, color) | Draw rectangle with rounded edges outline |
+| sub DrawRectangleRoundedLines(rec, roundness, segments, color) | Draw rectangle lines with rounded edges |
+| sub DrawRectangleRoundedLinesEx(rec, roundness, segments, lineThick, color) | Draw rectangle with rounded edges outline |
 | sub DrawRectangleV(position, size, color) | Draw a color-filled rectangle (Vector version) |
 | sub DrawRing(center, innerRadius, outerRadius, startAngle, endAngle, segments, color) | Draw ring |
 | sub DrawRingLines(center, innerRadius, outerRadius, startAngle, endAngle, segments, color) | Draw ring outline |

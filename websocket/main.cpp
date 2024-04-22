@@ -78,7 +78,7 @@ static void send(mg_connection *conn, const char *msg, int len) {
 }
 
 static void server_http_msg(mg_connection *conn, mg_http_message *message, Session *session) {
-  if (mg_http_match_uri(message, "/")) {
+  if (mg_match(message->uri, mg_str("/"), NULL)) {
     mg_ws_upgrade(conn, message, NULL);
     session->_conns.push_back(new Session(conn));
   } else {
@@ -103,7 +103,7 @@ static void server_send(Session *session, const char *buf, size_t len, int id) {
 static void server_ws_msg(mg_connection *conn, mg_ws_message *message) {
   Session *session = sessions[conn->id];
   if (session != nullptr) {
-    session->_recv.append((char *)message->data.ptr, message->data.len);
+    session->_recv.append((char *)message->data.buf, message->data.len);
   }
   mg_iobuf_del(&conn->recv, 0, conn->recv.len);
 }
@@ -164,9 +164,9 @@ static void client_ws_open(mg_connection *conn, Session *session) {
 static void client_ws_msg(mg_connection *conn, mg_ws_message *message, Session *session) {
   if (message->data.len && session->_state == kClient) {
     if (!session->_recv.empty()) {
-      session->_recv.insert(0, (char *)message->data.ptr, message->data.len);
+      session->_recv.insert(0, (char *)message->data.buf, message->data.len);
     } else {
-      session->_recv.append((char *)message->data.ptr, message->data.len);
+      session->_recv.append((char *)message->data.buf, message->data.len);
     }
   }
 }
