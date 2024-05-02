@@ -205,7 +205,7 @@ struct JavaProxy {
     int result = 0;
     if (_instance != nullptr) {
       attachCurrentThread();
-      jmethodID method = g_env->GetMethodID(_clazz, name, "()F");
+      jmethodID method = g_env->GetMethodID(_clazz, name, "(F)V");
       if (method != nullptr) {
         g_env->CallVoidMethod(_instance, method, value);
       }

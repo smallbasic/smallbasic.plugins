@@ -13,7 +13,7 @@
 #include "include/var.h"
 #include "include/module.h"
 #include "include/param.h"
-#include "include/proxy.h"
+#include "include/javaproxy.h"
 
 #define CLASS_ANALOGINPUT "ioio/smallbasic/AnalogInputImpl"
 #define CLASS_DIGITALINPUT "ioio/smallbasic/DigitalInputImpl"
@@ -122,7 +122,7 @@ FUNC_SIG lib_func[] = {
   {1, 1, "OPENDIGITALINPUT", cmd_opendigitalinput},
   {1, 1, "OPENDIGITALOUTPUT", cmd_opendigitaloutput},
   {1, 1, "OPENPULSEINPUT", cmd_openpulseinput},
-  {1, 1, "OPENPWMOUTPUT", cmd_openpwmoutput},
+  {2, 2, "OPENPWMOUTPUT", cmd_openpwmoutput},
   {2, 2, "OPENTWIMASTER", cmd_opentwimaster},
   {4, 4, "OPENSPIMASTER", cmd_openspimaster},
 };

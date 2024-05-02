@@ -30,17 +30,16 @@
 package ioio.smallbasic.pc;
 
 import com.fazecast.jSerialComm.SerialPort;
+import ioio.lib.api.IOIOConnection;
+import ioio.lib.spi.IOIOConnectionBootstrap;
+import ioio.lib.spi.IOIOConnectionFactory;
+import ioio.lib.spi.Log;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-
-import ioio.lib.api.IOIOConnection;
-import ioio.lib.spi.IOIOConnectionBootstrap;
-import ioio.lib.spi.IOIOConnectionFactory;
-import ioio.lib.spi.Log;
 
 public class SerialPortIOIOConnectionBootstrap implements IOIOConnectionBootstrap {
   private static final String TAG = "SerialPortIOIOConnectionBootstrap";
