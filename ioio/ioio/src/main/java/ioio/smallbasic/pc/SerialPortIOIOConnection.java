@@ -1,14 +1,13 @@
 package ioio.smallbasic.pc;
 
 import com.fazecast.jSerialComm.SerialPort;
+import ioio.lib.api.IOIOConnection;
+import ioio.lib.api.exception.ConnectionLostException;
+import ioio.lib.spi.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import ioio.lib.api.IOIOConnection;
-import ioio.lib.api.exception.ConnectionLostException;
-import ioio.lib.spi.Log;
 
 public class SerialPortIOIOConnection implements IOIOConnection {
   private static final String TAG = "SerialPortIOIOConnection";
@@ -27,14 +26,8 @@ public class SerialPortIOIOConnection implements IOIOConnection {
   }
 
   @Override
-  public void waitForConnect() throws ConnectionLostException {
-    if (!abort && serialPort.openPort()) {
-      inputStream = serialPort.getInputStream();
-      outputStream = serialPort.getOutputStream();
-      serialPort.setDTR();
-    } else {
-      throw new ConnectionLostException();
-    }
+  public boolean canClose() {
+    return serialPort.isOpen();
   }
 
   @Override
@@ -67,7 +60,13 @@ public class SerialPortIOIOConnection implements IOIOConnection {
   }
 
   @Override
-  public boolean canClose() {
-    return true;
+  public void waitForConnect() throws ConnectionLostException {
+    if (!abort && serialPort.openPort()) {
+      inputStream = serialPort.getInputStream();
+      outputStream = serialPort.getOutputStream();
+      serialPort.setDTR();
+    } else {
+      throw new ConnectionLostException();
+    }
   }
 }
