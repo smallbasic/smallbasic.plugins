@@ -109,7 +109,7 @@ Opens a TWI module number TWINumber in master mode, using its dedicated SDA and 
 | Name    | Description   |
 |---------|---------------|
 |void write(Address, Register, DataByte) | Writes a byte of data to the given register of an I2C device with given address.|
-|int readwrite(Address, NumReceiveBytes, Register, DataByte) | Writes a byte of data to the given register of an I2C deice with address and reads NumReceiveBytes. NumReceiveBytes can be max 8 bytes long.|
+|int readwrite(Address, NumReceiveBytes, Register, DataByte) | Writes a byte of data to the given register of an I2C device with given address and reads NumReceiveBytes. NumReceiveBytes can be max 8 bytes long.|
 
 ## SpiMaster
 
