@@ -91,7 +91,7 @@ A pin used for digital output. A digital output pin can be used to generate logi
 
 A pin used for PWM (Pulse-Width Modulation) output. A PWM pin produces a logic-level PWM signal. These signals are typically used for simulating analog outputs for controlling the intensity of LEDs, the rotation speed of motors, etc. They are also frequently used for controlling hobby servo motors. PwmOutput instances are obtained by calling IOIO#openPwmOutput. When used for motors and LEDs, a frequency of several KHz is typically used, where there is a trade-off between switching power-loses and smoothness of operation. The pulse width is typically set by specifying the duty cycle, with the setDutyCycle method. A duty cycle of 0 is \"off\", a duty cycle of 1 is \"on\", and every intermediate value produces an intermediate intensity. Please note that any devices consuming more than 20mA of current (e.g. motors) should not by directly connected the the IOIO pins, but rather through an amplification circuit suited for the specific load. When used for hobby servos, the PWM signal is rather used for encoding of the desired angle the motor should go to. By standard, a 100Hz signal is used and the pulse width is varied between 1ms and 2ms (corresponding to both extremes of the shaft angle), using setPulseWidth. The instance is alive since its creation. If the connection with the IOIO drops at any point, the instance transitions to a disconnected state, in which every attempt to use the pin (except close()) will throw a ConnectionLostException. Whenever close() is invoked the instance may no longer be used. Any resources associated with it are freed and can be reused. Typical usage (fading LED):
 
-`io = ioio.openPwmOutput(pin)`
+`io = ioio.openPwmOutput(pin, frequency)`
 
 | Name    | Description   |
 |---------|---------------|
@@ -102,10 +102,14 @@ A pin used for PWM (Pulse-Width Modulation) output. A PWM pin produces a logic-l
 
 An interface for controlling a TWI module, in TWI bus-master mode, enabling communication with multiple TWI-enabled slave modules.
 
-`io = ioio.openTwiMaster(pin)`
+`io = ioio.openTwiMaster(TWINumber, mode)`
+
+Opens a TWI module number TWINumber in master mode, using its dedicated SDA and SCL pins. The TWI module will run at 100KHz and will use I2C voltage levels if mode = false (pass true for SMBus levels).
 
 | Name    | Description   |
 |---------|---------------|
+|void write(Address, Register, DataByte) | Writes a byte of data to the given register of an I2C device with given address.|
+|int readwrite(Address, NumReceiveBytes, Register, DataByte) | Writes a byte of data to the given register of an I2C deice with address and reads NumReceiveBytes. NumReceiveBytes can be max 8 bytes long.|
 
 ## SpiMaster
 
