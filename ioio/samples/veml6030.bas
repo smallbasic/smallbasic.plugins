@@ -34,7 +34,7 @@ p3 = ioio.openTwiMaster(1, 0)
 ioio.waitForConnect(10)
 
 rem configure default settings
-p3.write(address, [alsConfReg, alsConf])
+p3.write(address, alsConfReg, alsConf)
 
 for i = 0 to 5
   print p3.readWrite(address, 2, [alsDataReg])

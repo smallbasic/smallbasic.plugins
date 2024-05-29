@@ -1,6 +1,7 @@
 package ioio.smallbasic;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import ioio.lib.api.IOIO;
 import ioio.lib.api.SpiMaster;
@@ -39,10 +40,12 @@ public class SpiMasterImpl extends IOTask {
     validatePins();
   }
 
-  public void write(int address, int data) {
+  public void write(int address, final byte[] write, int writeLen) {
     handleError();
     lock.invoke((i) -> {
-      byte[] buffer = {(byte) address, (byte) data};
+      byte[] buffer = new byte[writeLen + 1];
+      buffer[0] = (byte)address;
+      System.arraycopy(write, 0, buffer, 1, writeLen);
       spiMaster.writeRead(buffer, buffer.length, buffer.length, null, 0);
     });
   }
@@ -54,7 +57,7 @@ public class SpiMasterImpl extends IOTask {
 
   @Override
   void setup(IOIO ioio) throws ConnectionLostException {
-    Log.i(TAG, "setup entered: " + miso + " " + mosi + " " + clk + " " + slaveSelect);
+    Log.i(TAG, "setup entered: miso:" + miso + " mosi:" + mosi + " clk:" + clk + " cs:" + slaveSelect);
     spiMaster = ioio.openSpiMaster(miso, mosi, clk, slaveSelect, SpiMaster.Rate.RATE_1M);
   }
 

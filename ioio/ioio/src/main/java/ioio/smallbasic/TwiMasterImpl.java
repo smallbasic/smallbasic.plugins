@@ -48,10 +48,10 @@ public class TwiMasterImpl extends IOTask {
     });
   }
 
-  public void write(int address, final byte[] write, int len) {
+  public void write(int address, final byte[] write, int writeLen) {
     handleError();
     lock.invoke((i) -> {
-      twiMaster.writeRead(address, false, write, len, null, 0);
+      twiMaster.writeRead(address, false, write, writeLen, null, 0);
     });
   }
 

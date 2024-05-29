@@ -93,13 +93,11 @@ static int cmd_twimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *re
 static int cmd_spimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
   if (argc != 2) {
-    error(retval, "SpiMaster.write", 2);
+    error(retval, "SpiMaster.write", ARRAY_SIZE);
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
-      auto address = get_param_int(argc, arg, 0, 0);
-      auto data = get_param_int(argc, arg, 1, 0);
-      result = g_ioTaskMap.at(id).invokeVoidInt2("write", address, data, retval);
+      result = g_ioTaskMap.at(id).invokeWrite(argc, arg, retval);
     }
   }
   return result;
