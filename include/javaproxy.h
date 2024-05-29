@@ -16,7 +16,7 @@ JNIEnv *g_env;
 JavaVM *g_jvm;
 jobject g_activity;
 
-#define ARRAY_SIZE 10
+#define ARRAY_SIZE 32
 
 #if defined(ANDROID_MODULE)
   #define attachCurrentThread() g_jvm->AttachCurrentThread(&g_env, nullptr)
@@ -288,15 +288,17 @@ struct JavaProxy {
   // int readWrite(int address, byte[] write) {
   int invokeReadWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
-    if (_instance != nullptr) {
+    int writeLen = populateByteArray(argc, arg, 2);
+    if (writeLen > ARRAY_SIZE) {
+      error(retval, "write array", 1, ARRAY_SIZE);
+    } else if (_instance != nullptr) {
       attachCurrentThread();
       jmethodID method = g_env->GetMethodID(_clazz, "readWrite", "(II[BI)J");
       var_int_t value = 0;
       if (method != nullptr) {
         auto address = get_param_int(argc, arg, 0, 0);
         auto readBytes = get_param_int(argc, arg, 1, 2);
-        populateByteArray(argc, arg, 2);
-        value = g_env->CallIntMethod(_instance, method, address, readBytes, _array, argc - 1);
+        value = g_env->CallIntMethod(_instance, method, address, readBytes, _array, writeLen);
       }
       if (!checkException(retval)) {
         v_setint(retval, value);
@@ -310,13 +312,15 @@ struct JavaProxy {
   // int write(int address, byte[] write) {
   int invokeWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
-    if (_instance != nullptr) {
+    int writeLen = populateByteArray(argc, arg, 1);
+    if (writeLen > ARRAY_SIZE) {
+      error(retval, "write array", 1, ARRAY_SIZE);
+    } else if (_instance != nullptr) {
       attachCurrentThread();
       jmethodID method = g_env->GetMethodID(_clazz, "write", "(I[BI)V");
       if (method != nullptr) {
         auto address = get_param_int(argc, arg, 0, 0);
-        populateByteArray(argc, arg, 1);
-        g_env->CallVoidMethod(_instance, method, address, _array, argc - 1);
+        g_env->CallVoidMethod(_instance, method, address, _array, writeLen);
       }
       if (!checkException(retval)) {
         result = 1;
@@ -327,7 +331,8 @@ struct JavaProxy {
   }
 
   // populate the java byte array with the contents of the basic array
-  void populateByteArray(int argc, slib_par_t *params, int offset) {
+  int populateByteArray(int argc, slib_par_t *params, int offset) {
+    int result;
     if (!_array) {
       _array = g_env->NewByteArray(ARRAY_SIZE);
     }
@@ -340,13 +345,16 @@ struct JavaProxy {
         var_s *elem = v_elem(array, i);
         elements[i] = v_is_type(elem, V_INT) ? elem->v.i : elem->v.n;
       }
+      result = size;
     } else {
       for (int i = offset, j = 0; i < argc && i < ARRAY_SIZE; i++, j++) {
         elements[j] = get_param_int(argc, params, i, 0);
       }
+      result = argc - 1;
     }
     // make the changes available to the java side
     g_env->ReleaseByteArrayElements(_array, elements, 0);
+    return result;
   }
 
   protected:
