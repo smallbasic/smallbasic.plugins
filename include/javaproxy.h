@@ -285,51 +285,6 @@ struct JavaProxy {
     return result;
   }
 
-  // int readWrite(int address, byte[] write) {
-  int invokeReadWrite(int argc, slib_par_t *arg, var_s *retval) {
-    int result = 0;
-    int writeLen = populateByteArray(argc, arg, 2);
-    if (writeLen > ARRAY_SIZE) {
-      error(retval, "write array", 1, ARRAY_SIZE);
-    } else if (_instance != nullptr) {
-      attachCurrentThread();
-      jmethodID method = g_env->GetMethodID(_clazz, "readWrite", "(II[BI)J");
-      var_int_t value = 0;
-      if (method != nullptr) {
-        auto address = get_param_int(argc, arg, 0, 0);
-        auto readBytes = get_param_int(argc, arg, 1, 2);
-        value = g_env->CallIntMethod(_instance, method, address, readBytes, _array, writeLen);
-      }
-      if (!checkException(retval)) {
-        v_setint(retval, value);
-        result = 1;
-      }
-      detachCurrentThread();
-    }
-    return result;
-  }
-
-  // int write(int address, byte[] write) {
-  int invokeWrite(int argc, slib_par_t *arg, var_s *retval) {
-    int result = 0;
-    int writeLen = populateByteArray(argc, arg, 1);
-    if (writeLen > ARRAY_SIZE) {
-      error(retval, "write array", 1, ARRAY_SIZE);
-    } else if (_instance != nullptr) {
-      attachCurrentThread();
-      jmethodID method = g_env->GetMethodID(_clazz, "write", "(I[BI)V");
-      if (method != nullptr) {
-        auto address = get_param_int(argc, arg, 0, 0);
-        g_env->CallVoidMethod(_instance, method, address, _array, writeLen);
-      }
-      if (!checkException(retval)) {
-        result = 1;
-      }
-      detachCurrentThread();
-    }
-    return result;
-  }
-
   // populate the java byte array with the contents of the basic array
   int populateByteArray(int argc, slib_par_t *params, int offset) {
     int result;
@@ -350,7 +305,7 @@ struct JavaProxy {
       for (int i = offset, j = 0; i < argc && i < ARRAY_SIZE; i++, j++) {
         elements[j] = get_param_int(argc, params, i, 0);
       }
-      result = argc - 1;
+      result = argc - offset;
     }
     // make the changes available to the java side
     g_env->ReleaseByteArrayElements(_array, elements, 0);
@@ -382,7 +337,7 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void* reserved) {
 
 #else
 
-int createJVM(const char *arg1, const char *arg2) {
+int createJVM(const char *arg1, const char *arg2, bool debug) {
   JavaVMInitArgs vm_args;
   JavaVMOption options[6];
   options[0].optionString = (char *)"-Xrs";
@@ -392,11 +347,7 @@ int createJVM(const char *arg1, const char *arg2) {
   options[4].optionString = (char *)"-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=y";
   options[5].optionString = (char *)"-Xcheck:jni";
   vm_args.version = JNI_VERSION_1_8;
-#if defined(DEBUG)
-  vm_args.nOptions = 6;
-#else
-  vm_args.nOptions = 3;
-#endif
+  vm_args.nOptions = debug ? 6 : 3;
   vm_args.ignoreUnrecognized = 1;
   vm_args.options = options;
   int result = (JNI_CreateJavaVM(&g_jvm, (void **)&g_env, &vm_args) == JNI_OK &&

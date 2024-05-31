@@ -40,13 +40,23 @@ public class SpiMasterImpl extends IOTask {
     validatePins();
   }
 
-  public void write(int address, final byte[] write, int writeLen) {
+  public long readWrite(int readLen, final byte[] write, int writeLen) {
+    handleError();
+    return lock.invokeLong((i) -> {
+      byte[] read = new byte[readLen];
+      spiMaster.writeRead(write, writeLen, writeLen, read, read.length);
+      long result = 0;
+      for (int index = 0; index < read.length; index++) {
+        result += ((long)Byte.toUnsignedInt(read[index])) << (index * 8);
+      }
+      return result;
+    });
+  }
+
+  public void write(final byte[] write, int writeLen) {
     handleError();
     lock.invoke((i) -> {
-      byte[] buffer = new byte[writeLen + 1];
-      buffer[0] = (byte)address;
-      System.arraycopy(write, 0, buffer, 1, writeLen);
-      spiMaster.writeRead(buffer, buffer.length, buffer.length, null, 0);
+      spiMaster.writeRead(write, write.length, write.length, null, 0);
     });
   }
 

@@ -41,6 +41,94 @@ struct IOTask : JavaProxy {
   int open4(int pin1, int pin2, int pin3, int pin4, var_s *retval) {
     return invokeVoidInt4("open", pin1, pin2, pin3, pin4, retval);
   }
+
+  // int readWrite(bytes, byte[] write) {
+  int invokeSpiReadWrite(int argc, slib_par_t *arg, var_s *retval) {
+    int result = 0;
+    int writeLen = populateByteArray(argc, arg, 1);
+    if (writeLen > ARRAY_SIZE) {
+      error(retval, "write array", 1, ARRAY_SIZE);
+    } else if (_instance != nullptr) {
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, "readWrite", "(I[BI)J");
+      var_int_t value = 0;
+      if (method != nullptr) {
+        auto readBytes = get_param_int(argc, arg, 0, 2);
+        value = g_env->CallIntMethod(_instance, method, readBytes, _array, writeLen);
+      }
+      if (!checkException(retval)) {
+        v_setint(retval, value);
+        result = 1;
+      }
+      detachCurrentThread();
+    }
+    return result;
+  }
+
+  // int write(byte[] write) {
+  int invokeSpiWrite(int argc, slib_par_t *arg, var_s *retval) {
+    int result = 0;
+    int writeLen = populateByteArray(argc, arg, 0);
+    if (writeLen > ARRAY_SIZE) {
+      error(retval, "write array", 1, ARRAY_SIZE);
+    } else if (_instance != nullptr) {
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, "write", "([BI)V");
+      if (method != nullptr) {
+        g_env->CallVoidMethod(_instance, method, _array, writeLen);
+      }
+      if (!checkException(retval)) {
+        result = 1;
+      }
+      detachCurrentThread();
+    }
+    return result;
+  }
+  
+  // int readWrite(int address, byte[] write) {
+  int invokeTwiReadWrite(int argc, slib_par_t *arg, var_s *retval) {
+    int result = 0;
+    int writeLen = populateByteArray(argc, arg, 2);
+    if (writeLen > ARRAY_SIZE) {
+      error(retval, "write array", 1, ARRAY_SIZE);
+    } else if (_instance != nullptr) {
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, "readWrite", "(II[BI)J");
+      var_int_t value = 0;
+      if (method != nullptr) {
+        auto address = get_param_int(argc, arg, 0, 0);
+        auto readBytes = get_param_int(argc, arg, 1, 2);
+        value = g_env->CallIntMethod(_instance, method, address, readBytes, _array, writeLen);
+      }
+      if (!checkException(retval)) {
+        v_setint(retval, value);
+        result = 1;
+      }
+      detachCurrentThread();
+    }
+    return result;
+  }
+
+  // int write(int address, byte[] write) {
+  int invokeTwiWrite(int argc, slib_par_t *arg, var_s *retval) {
+    int result = 0;
+    int writeLen = populateByteArray(argc, arg, 1);
+    if (writeLen > ARRAY_SIZE) {
+      error(retval, "write array", 1, ARRAY_SIZE);
+    } else if (_instance != nullptr) {
+      attachCurrentThread();
+      jmethodID method = g_env->GetMethodID(_clazz, "write", "(I[BI)V");
+      if (method != nullptr) {
+        auto address = get_param_int(argc, arg, 0, 0);
+        g_env->CallVoidMethod(_instance, method, address, _array, writeLen);
+      }
+      if (!checkException(retval)) {
+        result = 1;
+      }
+      detachCurrentThread();
+    }
+    return result;
+  }
 };
 
 robin_hood::unordered_map<int, IOTask> g_ioTaskMap;
@@ -71,7 +159,7 @@ static int cmd_twimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
-      result = g_ioTaskMap.at(id).invokeReadWrite(argc, arg, retval);
+      result = g_ioTaskMap.at(id).invokeTwiReadWrite(argc, arg, retval);
     }
   }
   return result;
@@ -84,7 +172,23 @@ static int cmd_twimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *re
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
-      result = g_ioTaskMap.at(id).invokeWrite(argc, arg, retval);
+      result = g_ioTaskMap.at(id).invokeTwiWrite(argc, arg, retval);
+    }
+  }
+  return result;
+}
+
+static int cmd_spimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  auto readBytes = get_param_int(argc, arg, 0, 0);
+  if (argc < 2) {
+    error(retval, "SpiMaster.readWrite(read-bytes, [data]", 2, ARRAY_SIZE);
+  } else if (readBytes < 1 || readBytes > 8) {
+    error(retval, "read-bytes value out of range. Expected a number between 1 and 8");
+  } else {
+    int id = get_io_class_id(self, retval);
+    if (id != -1) {
+      result = g_ioTaskMap.at(id).invokeSpiReadWrite(argc, arg, retval);
     }
   }
   return result;
@@ -92,12 +196,12 @@ static int cmd_twimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *re
 
 static int cmd_spimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
-  if (argc != 2) {
-    error(retval, "SpiMaster.write", 2, ARRAY_SIZE);
+  if (argc < 1) {
+    error(retval, "SpiMaster.write", 1, ARRAY_SIZE);
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
-      result = g_ioTaskMap.at(id).invokeWrite(argc, arg, retval);
+      result = g_ioTaskMap.at(id).invokeSpiWrite(argc, arg, retval);
     }
   }
   return result;
@@ -110,6 +214,7 @@ static void create_twimaster(var_t *map) {
 
 static void create_spimaster(var_t *map) {
   v_create_callback(map, "write", cmd_spimaster_write);
+  v_create_callback(map, "readWrite", cmd_spimaster_readwrite);
 }
 
 #include "api.h"
@@ -149,7 +254,7 @@ SBLIB_API int sblib_func_count() {
 //
 int sblib_init(const char *sourceFile) {
 #if defined(DESKTOP_MODULE)
-  int result = createJVM("-Djava.class.path=./ioio-1.0-jar-with-dependencies.jar", "-Dioio.SerialPorts=IOIO0");
+  int result = createJVM("-Djava.class.path=./ioio-1.0-jar-with-dependencies.jar", "-Dioio.SerialPorts=IOIO0", true);
 #else
   int result = 1;
 #endif

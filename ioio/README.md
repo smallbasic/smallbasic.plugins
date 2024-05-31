@@ -100,23 +100,23 @@ A pin used for PWM (Pulse-Width Modulation) output. A PWM pin produces a logic-l
 
 ## TwiMaster
 
-An interface for controlling a TWI module, in TWI bus-master mode, enabling communication with multiple TWI-enabled slave modules.
+An interface for controlling a TWI (Two Wire Interface) module, in TWI bus-master mode, enabling communication with multiple TWI-enabled slave modules.
 
 `io = ioio.openTwiMaster(TWINumber, mode)`
 
-Opens a TWI module number TWINumber in master mode, using its dedicated SDA and SCL pins. The TWI module will run at 100KHz and will use I2C voltage levels if mode = false (pass true for SMBus levels).
-
 | Name    | Description   |
 |---------|---------------|
-|void write(Address, Register, DataByte) | Writes a byte of data to the given register of an I2C device with given address.|
-|int readwrite(Address, NumReceiveBytes, Register, DataByte) | Writes a byte of data to the given register of an I2C device with given address and reads NumReceiveBytes. NumReceiveBytes can be max 8 bytes long.|
+|void write(Address, Register, DataBytes)|Writes one or more bytes of data to the given register of an I2C device with given address.|
+|int readWrite(address, NumReceiveBytes, Register, DataBytes)|Writes one or more bytes of data to the given register of an I2C device with given address and reads NumReceiveBytes. NumReceiveBytes can be max 8 bytes long.|
 
 ## SpiMaster
 
-An interface for controlling an SPI module, in SPI bus-master mode, enabling communication with multiple SPI-enabled slave modules
+An interface for controlling an SPI (Serial Peripheral Interface) module, in SPI bus-master mode, enabling communication with multiple SPI-enabled slave modules
 
-`io = ioio.openSpiMaster(pin)`
+`io = ioio.openSpiMaster(misoPin, mosiPin, clkPin, csPin)`
 
 | Name    | Description   |
 |---------|---------------|
+|void write(DataBytes)|Writes one or more bytes of data.|
+|int readWrite(NumReceiveBytes, DataBytes)|Writes one or more bytes of data and reads NumReceiveBytes. NumReceiveBytes can be max 8 bytes long.|
 

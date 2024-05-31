@@ -54,17 +54,17 @@ sub generate_command(objName, method)
   print "  if (argc != " + param_count + ") {"
   print "    error(retval, \"" + err_name + "\", " + param_count + ");"
   print "  } else {"
- 
+
   local getter, indent
   if (objName == "IOIO") then
     getter = "g_ioioTask->"
     indent = "    "
-  else 
+  else
     getter = "g_ioTaskMap.at(id)."
     indent = "      "
     print "    int id = get_io_class_id(self, retval);"
     print "    if (id != -1) {"
-  endif    
+  endif
 
   local argument = ""
   if (method.arg == "boolean" || method.arg == "int") then
@@ -112,7 +112,7 @@ sub generate_open_function(byref obj)
     for pin = 2 to obj.pins
       openFunc += "pin" + pin + ", "
       print "  int pin" + pin + " = get_param_int(argc, params, " + (pin - 1) + ", -1);"
-    next 
+    next
   endif
   print "  int id = ++g_nextId;"
   print "  IOTask &instance = g_ioTaskMap[id];"
@@ -131,13 +131,15 @@ sub generate_open_function(byref obj)
 end
 
 for obj in api
-  for method in obj.methods
-    generate_command(obj.name, method)
-  next
+  if (obj.nogen == 0) then
+    for method in obj.methods
+      generate_command(obj.name, method)
+    next
+  endif
 next
 
 for obj in api
-  if (len(obj.methods) > 0 && obj.name != "IOIO") then
+  if (len(obj.methods) > 0 && obj.name != "IOIO" and obj.nogen == 0) then
     generate_constructor(obj)
   endif
 next
@@ -145,6 +147,6 @@ next
 for obj in api
   if (obj.name != "IOIO") then
     generate_open_function(obj)
-  endif    
+  endif
 next
 

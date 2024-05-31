@@ -18,7 +18,9 @@ func get_signature(method)
 
   result += " " + method.name + "("
 
-  if (method.arg == "void") then
+  if (method.signature != 0) then
+    result += method.signature
+  else if (method.arg == "void") then
     result += "void"
   else if (method.arg == "boolean" || method.arg == "int") then
     result += "int"
@@ -42,8 +44,10 @@ for obj in api
   print obj.comment
   if (obj.name != "IOIO") then
     print
-    print "`io = ioio.open" + obj.name + "(pin)`"
-  endif    
+    signature = "(pin)"
+    if (obj.signature) then signature = "(" + obj.signature + ")"
+    print "`io = ioio.open" + obj.name + signature + "`"
+  endif
   print ""
   print "| Name    | Description   |"
   print "|---------|---------------|"
