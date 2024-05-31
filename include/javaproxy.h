@@ -16,7 +16,7 @@ JNIEnv *g_env;
 JavaVM *g_jvm;
 jobject g_activity;
 
-#define ARRAY_SIZE 32
+#define ARRAY_SIZE 1024
 
 #if defined(ANDROID_MODULE)
   #define attachCurrentThread() g_jvm->AttachCurrentThread(&g_env, nullptr)
