@@ -254,7 +254,7 @@ SBLIB_API int sblib_func_count() {
 //
 int sblib_init(const char *sourceFile) {
 #if defined(DESKTOP_MODULE)
-  int result = createJVM("-Djava.class.path=./ioio-1.0-jar-with-dependencies.jar", "-Dioio.SerialPorts=IOIO0", true);
+  int result = createJVM("-Djava.class.path=./ioio-1.0-jar-with-dependencies.jar", "-Dioio.SerialPorts=IOIO0", false);
 #else
   int result = 1;
 #endif

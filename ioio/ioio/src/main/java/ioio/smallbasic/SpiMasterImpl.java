@@ -56,7 +56,7 @@ public class SpiMasterImpl extends IOTask {
   public void write(final byte[] write, int writeLen) {
     handleError();
     lock.invoke((i) -> {
-      spiMaster.writeRead(write, write.length, write.length, null, 0);
+      spiMaster.writeRead(write, writeLen, writeLen, null, 0);
     });
   }
 
@@ -90,7 +90,7 @@ public class SpiMasterImpl extends IOTask {
                mosi == clk ||
                mosi == slaveSelect ||
                clk == slaveSelect) {
-      IOUtil.setError("One or pins have duplicate values");
+      IOUtil.setError("One or more pins have duplicate values");
     }
   }
 }

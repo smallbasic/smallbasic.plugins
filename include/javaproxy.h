@@ -16,7 +16,8 @@ JNIEnv *g_env;
 JavaVM *g_jvm;
 jobject g_activity;
 
-#define ARRAY_SIZE 1024
+// TWI limit is 255, SPI limit is 64
+#define ARRAY_SIZE 255
 
 #if defined(ANDROID_MODULE)
   #define attachCurrentThread() g_jvm->AttachCurrentThread(&g_env, nullptr)
