@@ -25,6 +25,8 @@
 #define CLASS_SPIMASTER "ioio/smallbasic/SpiMasterImpl"
 #define CLASS_IOIO "ioio/smallbasic/IOIOImpl"
 #define CLASS_IOTASK_ID 1
+#define SPI_WRITE_MAX 63
+#define TWI_WRITE_MAX ARRAY_SIZE
 
 struct IOTask : JavaProxy {
   IOTask() : JavaProxy() {
@@ -46,8 +48,8 @@ struct IOTask : JavaProxy {
   int invokeSpiReadWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
     int writeLen = populateByteArray(argc, arg, 1);
-    if (writeLen > ARRAY_SIZE) {
-      error(retval, "write array", 1, ARRAY_SIZE);
+    if (writeLen > SPI_WRITE_MAX) {
+      error(retval, "write array", 1, SPI_WRITE_MAX);
     } else if (_instance != nullptr) {
       attachCurrentThread();
       jmethodID method = g_env->GetMethodID(_clazz, "readWrite", "(I[BI)J");
@@ -89,8 +91,8 @@ struct IOTask : JavaProxy {
   int invokeTwiReadWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
     int writeLen = populateByteArray(argc, arg, 2);
-    if (writeLen > ARRAY_SIZE) {
-      error(retval, "write array", 1, ARRAY_SIZE);
+    if (writeLen > TWI_WRITE_MAX) {
+      error(retval, "write array", 1, TWI_WRITE_MAX);
     } else if (_instance != nullptr) {
       attachCurrentThread();
       jmethodID method = g_env->GetMethodID(_clazz, "readWrite", "(II[BI)J");
@@ -113,8 +115,8 @@ struct IOTask : JavaProxy {
   int invokeTwiWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
     int writeLen = populateByteArray(argc, arg, 1);
-    if (writeLen > ARRAY_SIZE) {
-      error(retval, "write array", 1, ARRAY_SIZE);
+    if (writeLen > TWI_WRITE_MAX) {
+      error(retval, "write array", 1, TWI_WRITE_MAX);
     } else if (_instance != nullptr) {
       attachCurrentThread();
       jmethodID method = g_env->GetMethodID(_clazz, "write", "(I[BI)V");

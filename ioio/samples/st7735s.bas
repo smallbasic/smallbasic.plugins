@@ -16,6 +16,7 @@ rem
 import ioio
 
 const ST7735_SLPOUT 0x11
+const ST7735_DISPOFF 0x28
 const ST7735_DISPON 0x29
 const ST7735_CASET 0x2A
 const ST7735_RASET 0x2B
@@ -82,7 +83,7 @@ sub resetDisplay()
   rstOut.write(0)
   delay 50
   rstOut.write(1)
-  delay 50
+  delay 150
 end
 
 sub initST7735S()
@@ -133,16 +134,18 @@ end
 rem Fill display with a given RGB value
 sub fill_LCD(r, g, b)
   local i, _data
-  Set_LCD_for_write_at_X_Y(0, 0)
+  ' higher values didn't improve performance
+  local bufSize = 40
 
-  for i = 1 to 21
+  for i = 1 to bufSize
     _data << b
     _data << g
     _data << r
   next
 
+  Set_LCD_for_write_at_X_Y(0, 0)
   rsOut.write(1)
-  for i = 0 to (128 * 128) / 21
+  for i = 0 to (128 * 128) / bufSize
     spi.write(_data)
   next i
 end
@@ -154,4 +157,8 @@ sub put_Pixel(x, y, r, g, b)
 end
 
 initST7735S()
-fill_LCD(1, 212, 31)
+randomize
+t1 = timer
+fill_LCD(rnd*255, rnd*255, rnd*255)
+print format("Elap: ###", timer-t1)
+delay 5000

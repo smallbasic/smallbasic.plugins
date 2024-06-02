@@ -1,15 +1,16 @@
 package ioio.smallbasic;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import ioio.lib.api.IOIO;
 import ioio.lib.api.SpiMaster;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.spi.Log;
 
+import java.io.IOException;
+
 public class SpiMasterImpl extends IOTask {
   private static final String TAG = "SpiMasterImpl";
+  private static final int SPI_WRITE_MAX = 63;
+  private final byte[] BATCH = new byte[SPI_WRITE_MAX];
   private final IOLock<SpiMaster> lock = new IOLock<>();
   private SpiMaster spiMaster = null;
   private int miso;
@@ -56,7 +57,17 @@ public class SpiMasterImpl extends IOTask {
   public void write(final byte[] write, int writeLen) {
     handleError();
     lock.invoke((i) -> {
-      spiMaster.writeRead(write, writeLen, writeLen, null, 0);
+      if (writeLen < SPI_WRITE_MAX) {
+        spiMaster.writeRead(write, writeLen, writeLen, null, 0);
+      } else {
+        int srcPos = 0;
+        while (srcPos < writeLen) {
+          int batchLen = Math.min(writeLen - srcPos, SPI_WRITE_MAX);
+          System.arraycopy(write, srcPos, BATCH, 0, batchLen);
+          spiMaster.writeRead(BATCH, batchLen, batchLen, null, 0);
+          srcPos += SPI_WRITE_MAX;
+        }
+      }
     });
   }
 
