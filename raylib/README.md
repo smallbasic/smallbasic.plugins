@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (613)
+Implemented APIs (617)
 ----------------
 
 | Name    | Description   |
@@ -19,6 +19,7 @@ Implemented APIs (613)
 | func ChangeDirectory(dir) | Change working directory, return true on success |
 | func CheckCollisionBoxes(box1, box2) | Check collision between two bounding boxes |
 | func CheckCollisionBoxSphere(box, center, radius) | Check collision between box and sphere |
+| func CheckCollisionCircleLine(center, radius, p1, p2) | Check if circle collides with a line created betweeen two points [p1] and [p2] |
 | func CheckCollisionCircleRec(center, radius, rec) | Check collision between circle and rectangle |
 | func CheckCollisionCircles(center1, radius1, center2, radius2) | Check collision between two circles |
 | func CheckCollisionLines(startPos1, endPos1, startPos2, endPos2, collisionPoint) | Check the collision between two lines defined by two points each, returns collision point by reference |
@@ -381,6 +382,7 @@ Implemented APIs (613)
 | func IsCursorOnScreen() | Check if cursor is on the screen |
 | func IsFileDropped() | Check if a file has been dropped into window |
 | func IsFileExtension(fileName, ext) | Check file extension (including point: .png, .wav) |
+| func IsFileNameValid(fileName) | Check if fileName is valid for the platform/OS |
 | func IsFontReady(font) | Check if a font is ready |
 | func IsGamepadAvailable(gamepad) | Check if a gamepad is available |
 | func IsGamepadButtonDown(gamepad, button) | Check if a gamepad button is being pressed |
@@ -574,10 +576,12 @@ Implemented APIs (613)
 | func TextLength(text) | Get text length, checks for '\\0' ending |
 | func TextReplace(text, replace, by) | Replace text string (WARNING: memory must be freed!) |
 | func TextSubtext(text, position, length) | Get a piece of a text string |
+| func TextToCamel(text) | Get Camel case notation version of provided string |
 | func TextToFloat(text) | Get float value from text (negative values not supported) |
 | func TextToInteger(text) | Get integer value from text (negative values not supported) |
 | func TextToLower(text) | Get lower case version of provided string |
 | func TextToPascal(text) | Get Pascal case notation version of provided string |
+| func TextToSnake(text) | Get Snake case notation version of provided string |
 | func TextToUpper(text) | Get upper case version of provided string |
 | sub ToggleBorderlessWindowed() | Toggle window state: borderless windowed (only PLATFORM_DESKTOP) |
 | sub ToggleFullscreen() | Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP) |
@@ -619,7 +623,7 @@ Implemented APIs (613)
 | func waitevents() | n/a |
 | sub WaitTime(seconds) | Wait for some time (halt program execution) |
 | func WaveCopy(wave) | Copy a wave to a new wave |
-| sub WaveCrop(wave, initSample, finalSample) | Crop a wave to defined samples range |
+| sub WaveCrop(wave, initFrame, finalFrame) | Crop a wave to defined frames range |
 | sub WaveFormat(wave, sampleRate, sampleSize, channels) | Convert wave data to desired format |
 | func WindowShouldClose() | Check if application should close (KEY_ESCAPE pressed or windows close icon clicked) |
 

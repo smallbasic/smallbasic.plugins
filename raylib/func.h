@@ -32,6 +32,19 @@ static int cmd_checkcollisionboxsphere(int argc, slib_par_t *params, var_t *retv
 }
 
 //
+// Check if circle collides with a line created betweeen two points [p1] and [p2]
+//
+static int cmd_checkcollisioncircleline(int argc, slib_par_t *params, var_t *retval) {
+  auto center = get_param_vec2(argc, params, 0);
+  auto radius = get_param_num(argc, params, 1, 0);
+  auto p1 = get_param_vec2(argc, params, 2);
+  auto p2 = get_param_vec2(argc, params, 3);
+  auto fnResult = CheckCollisionCircleLine(center, radius, p1, p2);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
 // Check collision between circle and rectangle
 //
 static int cmd_checkcollisioncirclerec(int argc, slib_par_t *params, var_t *retval) {
@@ -1945,6 +1958,16 @@ static int cmd_isfileextension(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Check if fileName is valid for the platform/OS
+//
+static int cmd_isfilenamevalid(int argc, slib_par_t *params, var_t *retval) {
+  auto fileName = get_param_str(argc, params, 0, 0);
+  auto fnResult = IsFileNameValid(fileName);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
 // Check if a font is ready
 //
 static int cmd_isfontready(int argc, slib_par_t *params, var_t *retval) {
@@ -3011,6 +3034,16 @@ static int cmd_textsubtext(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Get Camel case notation version of provided string
+//
+static int cmd_texttocamel(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto fnResult = (const char *)TextToCamel(text);
+  v_setstr(retval, fnResult);
+  return 1;
+}
+
+//
 // Get float value from text (negative values not supported)
 //
 static int cmd_texttofloat(int argc, slib_par_t *params, var_t *retval) {
@@ -3046,6 +3079,16 @@ static int cmd_texttolower(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_texttopascal(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
   auto fnResult = (const char *)TextToPascal(text);
+  v_setstr(retval, fnResult);
+  return 1;
+}
+
+//
+// Get Snake case notation version of provided string
+//
+static int cmd_texttosnake(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto fnResult = (const char *)TextToSnake(text);
   v_setstr(retval, fnResult);
   return 1;
 }
