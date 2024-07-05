@@ -3426,13 +3426,13 @@ static int cmd_waittime(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Crop a wave to defined samples range
+// Crop a wave to defined frames range
 //
 static int cmd_wavecrop(int argc, slib_par_t *params, var_t *retval) {
   auto wave = (Wave *)get_param_int_t(argc, params, 0, 0);
-  auto initSample = get_param_int(argc, params, 1, 0);
-  auto finalSample = get_param_int(argc, params, 2, 0);
-  WaveCrop(wave, initSample, finalSample);
+  auto initFrame = get_param_int(argc, params, 1, 0);
+  auto finalFrame = get_param_int(argc, params, 2, 0);
+  WaveCrop(wave, initFrame, finalFrame);
   return 1;
 }
 

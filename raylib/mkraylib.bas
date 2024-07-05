@@ -62,6 +62,8 @@ func get_param_name(byref param)
   case "modelanimation *": result = "(ModelAnimation *)get_param_int_t"
   case "modelanimation*": result = "(ModelAnimation *)get_param_int_t"
   case "texture2d *": result = "(Texture2D *)get_param_int_t"
+  case "const vector2 *": result = "(Vector2 *)get_param_vec2_array"
+  case "const vector3 *": result = "(Vector3 *)get_param_vec3_array"
   case "vector2 *": result = "(Vector2 *)get_param_vec2_array"
   case "vector3 *": result = "(Vector3 *)get_param_vec3_array"
   case "wave *": result = "(Wave *)get_param_int_t"
