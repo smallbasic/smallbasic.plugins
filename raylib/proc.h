@@ -128,9 +128,9 @@ static int cmd_drawbillboard(int argc, slib_par_t *params, var_t *retval) {
   if (texture_id != -1) {
     auto camera = get_camera_3d(argc, params, 0);
     auto position = get_param_vec3(argc, params, 2);
-    auto size = get_param_num(argc, params, 3, 0);
+    auto scale = get_param_num(argc, params, 3, 0);
     auto tint = get_param_color(argc, params, 4);
-    DrawBillboard(camera, _textureMap.at(texture_id), position, size, tint);
+    DrawBillboard(camera, _textureMap.at(texture_id), position, scale, tint);
     result = 1;
   } else {
     result = 0;
@@ -251,9 +251,9 @@ static int cmd_drawcirclegradient(int argc, slib_par_t *params, var_t *retval) {
   auto centerX = get_param_int(argc, params, 0, 0);
   auto centerY = get_param_int(argc, params, 1, 0);
   auto radius = get_param_num(argc, params, 2, 0);
-  auto color1 = get_param_color(argc, params, 3);
-  auto color2 = get_param_color(argc, params, 4);
-  DrawCircleGradient(centerX, centerY, radius, color1, color2);
+  auto inner = get_param_color(argc, params, 3);
+  auto outer = get_param_color(argc, params, 4);
+  DrawCircleGradient(centerX, centerY, radius, inner, outer);
   return 1;
 }
 
@@ -578,6 +578,44 @@ static int cmd_drawmodelex(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Draw a model as points
+//
+static int cmd_drawmodelpoints(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int model_id = get_model_id(argc, params, 0, retval);
+  if (model_id != -1) {
+    auto position = get_param_vec3(argc, params, 1);
+    auto scale = get_param_num(argc, params, 2, 0);
+    auto tint = get_param_color(argc, params, 3);
+    DrawModelPoints(_modelMap.at(model_id), position, scale, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Draw a model as points with extended parameters
+//
+static int cmd_drawmodelpointsex(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int model_id = get_model_id(argc, params, 0, retval);
+  if (model_id != -1) {
+    auto position = get_param_vec3(argc, params, 1);
+    auto rotationAxis = get_param_vec3(argc, params, 2);
+    auto rotationAngle = get_param_num(argc, params, 3, 0);
+    auto scale = get_param_vec3(argc, params, 4);
+    auto tint = get_param_color(argc, params, 5);
+    DrawModelPointsEx(_modelMap.at(model_id), position, rotationAxis, rotationAngle, scale, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Draw a model wires (with texture if set)
 //
 static int cmd_drawmodelwires(int argc, slib_par_t *params, var_t *retval) {
@@ -725,11 +763,11 @@ static int cmd_drawrectangle(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_drawrectanglegradientex(int argc, slib_par_t *params, var_t *retval) {
   auto rec = get_param_rect(argc, params, 0);
-  auto col1 = get_param_color(argc, params, 1);
-  auto col2 = get_param_color(argc, params, 2);
-  auto col3 = get_param_color(argc, params, 3);
-  auto col4 = get_param_color(argc, params, 4);
-  DrawRectangleGradientEx(rec, col1, col2, col3, col4);
+  auto topLeft = get_param_color(argc, params, 1);
+  auto bottomLeft = get_param_color(argc, params, 2);
+  auto topRight = get_param_color(argc, params, 3);
+  auto bottomRight = get_param_color(argc, params, 4);
+  DrawRectangleGradientEx(rec, topLeft, bottomLeft, topRight, bottomRight);
   return 1;
 }
 
@@ -741,9 +779,9 @@ static int cmd_drawrectanglegradienth(int argc, slib_par_t *params, var_t *retva
   auto posY = get_param_int(argc, params, 1, 0);
   auto width = get_param_int(argc, params, 2, 0);
   auto height = get_param_int(argc, params, 3, 0);
-  auto color1 = get_param_color(argc, params, 4);
-  auto color2 = get_param_color(argc, params, 5);
-  DrawRectangleGradientH(posX, posY, width, height, color1, color2);
+  auto left = get_param_color(argc, params, 4);
+  auto right = get_param_color(argc, params, 5);
+  DrawRectangleGradientH(posX, posY, width, height, left, right);
   return 1;
 }
 
@@ -755,9 +793,9 @@ static int cmd_drawrectanglegradientv(int argc, slib_par_t *params, var_t *retva
   auto posY = get_param_int(argc, params, 1, 0);
   auto width = get_param_int(argc, params, 2, 0);
   auto height = get_param_int(argc, params, 3, 0);
-  auto color1 = get_param_color(argc, params, 4);
-  auto color2 = get_param_color(argc, params, 5);
-  DrawRectangleGradientV(posX, posY, width, height, color1, color2);
+  auto top = get_param_color(argc, params, 4);
+  auto bottom = get_param_color(argc, params, 5);
+  DrawRectangleGradientV(posX, posY, width, height, top, bottom);
   return 1;
 }
 
@@ -1771,6 +1809,25 @@ static int cmd_imagedrawline(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Draw a line defining thickness within an image
+//
+static int cmd_imagedrawlineex(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int dst_id = get_image_id(argc, params, 0, retval);
+  if (dst_id != -1) {
+    auto start = get_param_vec2(argc, params, 1);
+    auto end = get_param_vec2(argc, params, 2);
+    auto thick = get_param_int(argc, params, 3, 0);
+    auto color = get_param_color(argc, params, 4);
+    ImageDrawLineEx(&_imageMap.at(dst_id), start, end, thick, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Draw line within an image (Vector version)
 //
 static int cmd_imagedrawlinev(int argc, slib_par_t *params, var_t *retval) {
@@ -1930,6 +1987,101 @@ static int cmd_imagedrawtextex(int argc, slib_par_t *params, var_t *retval) {
     auto spacing = get_param_num(argc, params, 5, 0);
     auto tint = get_param_color(argc, params, 6);
     ImageDrawTextEx(&_imageMap.at(dst_id), _fontMap.at(font_id), text, position, fontSize, spacing, tint);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Draw triangle within an image
+//
+static int cmd_imagedrawtriangle(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int dst_id = get_image_id(argc, params, 0, retval);
+  if (dst_id != -1) {
+    auto v1 = get_param_vec2(argc, params, 1);
+    auto v2 = get_param_vec2(argc, params, 2);
+    auto v3 = get_param_vec2(argc, params, 3);
+    auto color = get_param_color(argc, params, 4);
+    ImageDrawTriangle(&_imageMap.at(dst_id), v1, v2, v3, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Draw triangle with interpolated colors within an image
+//
+static int cmd_imagedrawtriangleex(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int dst_id = get_image_id(argc, params, 0, retval);
+  if (dst_id != -1) {
+    auto v1 = get_param_vec2(argc, params, 1);
+    auto v2 = get_param_vec2(argc, params, 2);
+    auto v3 = get_param_vec2(argc, params, 3);
+    auto c1 = get_param_color(argc, params, 4);
+    auto c2 = get_param_color(argc, params, 5);
+    auto c3 = get_param_color(argc, params, 6);
+    ImageDrawTriangleEx(&_imageMap.at(dst_id), v1, v2, v3, c1, c2, c3);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Draw a triangle fan defined by points within an image (first vertex is the center)
+//
+static int cmd_imagedrawtrianglefan(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int dst_id = get_image_id(argc, params, 0, retval);
+  if (dst_id != -1) {
+    auto points = (Vector2 *)get_param_vec2_array(argc, params, 1);
+    auto pointCount = get_param_int(argc, params, 2, 0);
+    auto color = get_param_color(argc, params, 3);
+    ImageDrawTriangleFan(&_imageMap.at(dst_id), points, pointCount, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Draw triangle outline within an image
+//
+static int cmd_imagedrawtrianglelines(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int dst_id = get_image_id(argc, params, 0, retval);
+  if (dst_id != -1) {
+    auto v1 = get_param_vec2(argc, params, 1);
+    auto v2 = get_param_vec2(argc, params, 2);
+    auto v3 = get_param_vec2(argc, params, 3);
+    auto color = get_param_color(argc, params, 4);
+    ImageDrawTriangleLines(&_imageMap.at(dst_id), v1, v2, v3, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Draw a triangle strip defined by points within an image
+//
+static int cmd_imagedrawtrianglestrip(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int dst_id = get_image_id(argc, params, 0, retval);
+  if (dst_id != -1) {
+    auto points = (Vector2 *)get_param_vec2_array(argc, params, 1);
+    auto pointCount = get_param_int(argc, params, 2, 0);
+    auto color = get_param_color(argc, params, 3);
+    ImageDrawTriangleStrip(&_imageMap.at(dst_id), points, pointCount, color);
     result = 1;
   } else {
     result = 0;
@@ -2981,7 +3133,7 @@ static int cmd_textappend(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Toggle window state: borderless windowed (only PLATFORM_DESKTOP)
+// Toggle window state: borderless windowed [resizes window to match monitor resolution] (only PLATFORM_DESKTOP)
 //
 static int cmd_toggleborderlesswindowed(int argc, slib_par_t *params, var_t *retval) {
   ToggleBorderlessWindowed();
@@ -2989,7 +3141,7 @@ static int cmd_toggleborderlesswindowed(int argc, slib_par_t *params, var_t *ret
 }
 
 //
-// Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP)
+// Toggle window state: fullscreen/windowed [resizes monitor to match window resolution] (only PLATFORM_DESKTOP)
 //
 static int cmd_togglefullscreen(int argc, slib_par_t *params, var_t *retval) {
   ToggleFullscreen();

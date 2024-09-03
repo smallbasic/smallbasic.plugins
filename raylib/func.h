@@ -1814,6 +1814,23 @@ static int cmd_imagecopy(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Create an image from a selected channel of another image (GRAYSCALE)
+//
+static int cmd_imagefromchannel(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int image_id = get_image_id(argc, params, 0, retval);
+  if (image_id != -1) {
+    auto selectedChannel = get_param_int(argc, params, 1, 0);
+    auto fnResult = ImageFromChannel(_imageMap.at(image_id), selectedChannel);
+    v_setimage(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Create an image from another image piece
 //
 static int cmd_imagefromimage(int argc, slib_par_t *params, var_t *retval) {
@@ -2489,7 +2506,7 @@ static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character setFont
+// Load font from file with extended parameters
 //
 static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);

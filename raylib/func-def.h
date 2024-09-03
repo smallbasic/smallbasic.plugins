@@ -154,6 +154,7 @@
   {2, 2, "GETWORLDTOSCREEN2D", cmd_getworldtoscreen2d},
   {4, 4, "GETWORLDTOSCREENEX", cmd_getworldtoscreenex},
   {1, 1, "IMAGECOPY", cmd_imagecopy},
+  {2, 2, "IMAGEFROMCHANNEL", cmd_imagefromchannel},
   {2, 2, "IMAGEFROMIMAGE", cmd_imagefromimage},
   {3, 3, "IMAGETEXT", cmd_imagetext},
   {5, 5, "IMAGETEXTEX", cmd_imagetextex},

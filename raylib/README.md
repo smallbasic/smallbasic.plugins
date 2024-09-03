@@ -1,10 +1,10 @@
-*Raylib* _MAJOR 5 _MINOR 1 _PATCH 0 5.1-dev
+*Raylib* _MAJOR 5 _MINOR 5 _PATCH 0 5.5-dev
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (617)
+Implemented APIs (626)
 ----------------
 
 | Name    | Description   |
@@ -57,7 +57,7 @@ Implemented APIs (617)
 | func DirectoryExists(dirPath) | Check if a directory path exists |
 | sub DisableCursor() | Disables cursor (lock cursor) |
 | sub DisableEventWaiting() | Disable waiting for events on EndDrawing(), automatic events polling |
-| sub DrawBillboard(camera, texture, position, size, tint) | Draw a billboard texture |
+| sub DrawBillboard(camera, texture, position, scale, tint) | Draw a billboard texture |
 | sub DrawBillboardPro(camera, texture, source, position, up, size, origin, rotation, tint) | Draw a billboard texture defined by source and rotation |
 | sub DrawBillboardRec(camera, texture, source, position, size, tint) | Draw a billboard texture defined by source |
 | sub DrawBoundingBox(box, color) | Draw bounding box (wires) |
@@ -65,7 +65,7 @@ Implemented APIs (617)
 | sub DrawCapsuleWires(startPos, endPos, radius, slices, rings, color) | Draw capsule wireframe with the center of its sphere caps at startPos and endPos |
 | sub DrawCircle(centerX, centerY, radius, color) | Draw a color-filled circle |
 | sub DrawCircle3D(center, radius, rotationAxis, rotationAngle, color) | Draw a circle in 3D world space |
-| sub DrawCircleGradient(centerX, centerY, radius, color1, color2) | Draw a gradient-filled circle |
+| sub DrawCircleGradient(centerX, centerY, radius, inner, outer) | Draw a gradient-filled circle |
 | sub DrawCircleLines(centerX, centerY, radius, color) | Draw circle outline |
 | sub DrawCircleLinesV(center, radius, color) | Draw circle outline (Vector version) |
 | sub DrawCircleSector(center, radius, startAngle, endAngle, segments, color) | Draw a piece of a circle |
@@ -91,6 +91,8 @@ Implemented APIs (617)
 | sub DrawLineV(startPos, endPos, color) | Draw a line (using gl lines) |
 | sub DrawModel(model, position, scale, tint) | Draw a model (with texture if set) |
 | sub DrawModelEx(model, position, rotationAxis, rotationAngle, scale, tint) | Draw a model with extended parameters |
+| sub DrawModelPoints(model, position, scale, tint) | Draw a model as points |
+| sub DrawModelPointsEx(model, position, rotationAxis, rotationAngle, scale, tint) | Draw a model as points with extended parameters |
 | sub DrawModelWires(model, position, scale, tint) | Draw a model wires (with texture if set) |
 | sub DrawModelWiresEx(model, position, rotationAxis, rotationAngle, scale, tint) | Draw a model wires (with texture if set) with extended parameters |
 | sub DrawPixel(posX, posY, color) | Draw a pixel |
@@ -102,9 +104,9 @@ Implemented APIs (617)
 | sub DrawPolyLinesEx(center, sides, radius, rotation, lineThick, color) | Draw a polygon outline of n sides with extended parameters |
 | sub DrawRay(ray, color) | Draw a ray line |
 | sub DrawRectangle(posX, posY, width, height, color) | Draw a color-filled rectangle |
-| sub DrawRectangleGradientEx(rec, col1, col2, col3, col4) | Draw a gradient-filled rectangle with custom vertex colors |
-| sub DrawRectangleGradientH(posX, posY, width, height, color1, color2) | Draw a horizontal-gradient-filled rectangle |
-| sub DrawRectangleGradientV(posX, posY, width, height, color1, color2) | Draw a vertical-gradient-filled rectangle |
+| sub DrawRectangleGradientEx(rec, topLeft, bottomLeft, topRight, bottomRight) | Draw a gradient-filled rectangle with custom vertex colors |
+| sub DrawRectangleGradientH(posX, posY, width, height, left, right) | Draw a horizontal-gradient-filled rectangle |
+| sub DrawRectangleGradientV(posX, posY, width, height, top, bottom) | Draw a vertical-gradient-filled rectangle |
 | sub DrawRectangleLines(posX, posY, width, height, color) | Draw rectangle outline |
 | sub DrawRectangleLinesEx(rec, lineThick, color) | Draw rectangle outline with extended parameters |
 | sub DrawRectanglePro(rec, origin, rotation, color) | Draw a color-filled rectangle with pro parameters |
@@ -347,6 +349,7 @@ Implemented APIs (617)
 | sub ImageDrawCircleLinesV(dst, center, radius, color) | Draw circle outline within an image (Vector version) |
 | sub ImageDrawCircleV(dst, center, radius, color) | Draw a filled circle within an image (Vector version) |
 | sub ImageDrawLine(dst, startPosX, startPosY, endPosX, endPosY, color) | Draw line within an image |
+| sub ImageDrawLineEx(dst, start, end, thick, color) | Draw a line defining thickness within an image |
 | sub ImageDrawLineV(dst, start, end, color) | Draw line within an image (Vector version) |
 | sub ImageDrawPixel(dst, posX, posY, color) | Draw pixel within an image |
 | sub ImageDrawPixelV(dst, position, color) | Draw pixel within an image (Vector version) |
@@ -356,11 +359,17 @@ Implemented APIs (617)
 | sub ImageDrawRectangleV(dst, position, size, color) | Draw rectangle within an image (Vector version) |
 | sub ImageDrawText(dst, text, posX, posY, fontSize, color) | Draw text (using default font) within an image (destination) |
 | sub ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint) | Draw text (custom sprite font) within an image (destination) |
+| sub ImageDrawTriangle(dst, v1, v2, v3, color) | Draw triangle within an image |
+| sub ImageDrawTriangleEx(dst, v1, v2, v3, c1, c2, c3) | Draw triangle with interpolated colors within an image |
+| sub ImageDrawTriangleFan(dst, points, pointCount, color) | Draw a triangle fan defined by points within an image (first vertex is the center) |
+| sub ImageDrawTriangleLines(dst, v1, v2, v3, color) | Draw triangle outline within an image |
+| sub ImageDrawTriangleStrip(dst, points, pointCount, color) | Draw a triangle strip defined by points within an image |
 | sub ImageFlipHorizontal(image) | Flip image horizontally |
 | sub ImageFlipVertical(image) | Flip image vertically |
 | sub ImageFormat(image, newFormat) | Convert image data to desired format |
+| func ImageFromChannel(image, selectedChannel) | Create an image from a selected channel of another image (GRAYSCALE) |
 | func ImageFromImage(image, rec) | Create an image from another image piece |
-| sub ImageKernelConvolution(image, kernel, kernelSize) | Apply Custom Square image convolution kernel |
+| sub ImageKernelConvolution(image, kernel, kernelSize) | Apply custom square convolution kernel to image |
 | sub ImageMipmaps(image) | Compute all mipmap levels for a provided image |
 | sub ImageResize(image, newWidth, newHeight) | Resize image (Bicubic scaling algorithm) |
 | sub ImageResizeCanvas(image, newWidth, newHeight, offsetX, offsetY, fill) | Resize canvas and fill with color |
@@ -428,7 +437,7 @@ Implemented APIs (617)
 | func LoadFileData(fileName, dataSize) | Load file data as byte array (read) |
 | func LoadFileText(fileName) | Load text data from file (read), returns a '\\0' terminated string |
 | func LoadFont(fileName) | Load font from file into GPU memory (VRAM) |
-| func LoadFontEx(fileName, fontSize, codepoints, codepointCount) | Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character setFont |
+| func LoadFontEx(fileName, fontSize, codepoints, codepointCount) | Load font from file with extended parameters |
 | func LoadFontFromImage(image, key, firstChar) | Load font from Image (XNA style) |
 | func LoadFontFromMemory(fileType, fileData, dataSize, fontSize, codepoints, codepointCount) | Load font from memory buffer, fileType refers to extension: i.e. '.ttf' |
 | func LoadImage(fileName) | Load image from file into CPU memory (RAM) |
@@ -583,8 +592,8 @@ Implemented APIs (617)
 | func TextToPascal(text) | Get Pascal case notation version of provided string |
 | func TextToSnake(text) | Get Snake case notation version of provided string |
 | func TextToUpper(text) | Get upper case version of provided string |
-| sub ToggleBorderlessWindowed() | Toggle window state: borderless windowed (only PLATFORM_DESKTOP) |
-| sub ToggleFullscreen() | Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP) |
+| sub ToggleBorderlessWindowed() | Toggle window state: borderless windowed [resizes window to match monitor resolution] (only PLATFORM_DESKTOP) |
+| sub ToggleFullscreen() | Toggle window state: fullscreen/windowed [resizes monitor to match window resolution] (only PLATFORM_DESKTOP) |
 | sub UnloadAudioStream(stream) | Unload audio stream and free memory |
 | sub UnloadAutomationEventList(list) | Unload automation events list from file |
 | sub UnloadCodepoints(codepoints) | Unload codepoints data from memory |
