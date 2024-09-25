@@ -19,8 +19,8 @@ const screenHeight = 450
 
 rl.InitWindow(screenWidth, screenHeight, "SmallBASIC/raylib [textures] example - procedural images generation")
 
-verticalGradient = rl.GenImageGradientV(screenWidth, screenHeight, c.RED, c.BLUE)
-horizontalGradient = rl.GenImageGradientH(screenWidth, screenHeight, c.RED, c.BLUE)
+verticalGradient = rl.GenImageGradientLinear(screenWidth, screenHeight, 0, c.RED, c.BLUE)
+horizontalGradient = rl.GenImageGradientLinear(screenWidth, screenHeight, 90, c.RED, c.BLUE)
 radialGradient = rl.GenImageGradientRadial(screenWidth, screenHeight, 0.0, c.WHITE, c.BLACK)
 checked = rl.GenImageChecked(screenWidth, screenHeight, 32, 32, c.RED, c.BLUE)
 whiteNoise = rl.GenImageWhiteNoise(screenWidth, screenHeight, 0.5)

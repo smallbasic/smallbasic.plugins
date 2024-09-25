@@ -259,6 +259,18 @@ static int cmd_colorisequal(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Get color lerp interpolation between two colors, factor [0.0f..1.0f]
+//
+static int cmd_colorlerp(int argc, slib_par_t *params, var_t *retval) {
+  auto color1 = get_param_color(argc, params, 0);
+  auto color2 = get_param_color(argc, params, 1);
+  auto factor = get_param_num(argc, params, 2, 0);
+  auto fnResult = ColorLerp(color1, color2, factor);
+  v_setcolor(retval, fnResult);
+  return 1;
+}
+
+//
 // Get Color normalized as float [0..1]
 //
 static int cmd_colornormalize(int argc, slib_par_t *params, var_t *retval) {
@@ -2452,7 +2464,7 @@ static int cmd_loaddirectoryfiles(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Load directory filepaths with extension filtering and recursive directory scan
+// Load directory filepaths with extension filtering and recursive directory scan. Use 'DIR' in the filter string to include directories in the result
 //
 static int cmd_loaddirectoryfilesex(int argc, slib_par_t *params, var_t *retval) {
   auto basePath = get_param_str(argc, params, 0, 0);
@@ -2506,7 +2518,7 @@ static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Load font from file with extended parameters
+// Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character set, font size is provided in pixels height
 //
 static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
@@ -2885,6 +2897,16 @@ static int cmd_loadwavesamples(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
+}
+
+//
+// Create directories (including full path requested), returns 0 on success
+//
+static int cmd_makedirectory(int argc, slib_par_t *params, var_t *retval) {
+  auto dirPath = get_param_str(argc, params, 0, 0);
+  auto fnResult = MakeDirectory(dirPath);
+  v_setint(retval, fnResult);
+  return 1;
 }
 
 //

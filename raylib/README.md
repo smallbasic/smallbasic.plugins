@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (626)
+Implemented APIs (629)
 ----------------
 
 | Name    | Description   |
@@ -43,6 +43,7 @@ Implemented APIs (626)
 | func ColorFromHSV(hue, saturation, value) | Get a Color from HSV values, hue [0..360], saturation/value [0..1] |
 | func ColorFromNormalized(normalized) | Get Color from normalized values [0..1] |
 | func ColorIsEqual(col1, col2) | Check if two colors are equal |
+| func ColorLerp(color1, color2, factor) | Get color lerp interpolation between two colors, factor [0.0f..1.0f] |
 | func ColorNormalize(color) | Get Color normalized as float [0..1] |
 | func ColorTint(color, tint) | Get color multiplied with another color |
 | func ColorToHSV(color) | Get HSV values for a Color, hue [0..360], saturation/value [0..1] |
@@ -432,12 +433,12 @@ Implemented APIs (626)
 | func LoadAutomationEventList(fileName) | Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS |
 | func LoadCodepoints(text, count) | Load all codepoints from a UTF-8 text string, codepoints count returned by parameter |
 | func LoadDirectoryFiles(dirPath) | Load directory filepaths |
-| func LoadDirectoryFilesEx(basePath, filter, scanSubdirs) | Load directory filepaths with extension filtering and recursive directory scan |
+| func LoadDirectoryFilesEx(basePath, filter, scanSubdirs) | Load directory filepaths with extension filtering and recursive directory scan. Use 'DIR' in the filter string to include directories in the result |
 | func LoadDroppedFiles() | Load dropped filepaths |
 | func LoadFileData(fileName, dataSize) | Load file data as byte array (read) |
 | func LoadFileText(fileName) | Load text data from file (read), returns a '\\0' terminated string |
 | func LoadFont(fileName) | Load font from file into GPU memory (VRAM) |
-| func LoadFontEx(fileName, fontSize, codepoints, codepointCount) | Load font from file with extended parameters |
+| func LoadFontEx(fileName, fontSize, codepoints, codepointCount) | Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character set, font size is provided in pixels height |
 | func LoadFontFromImage(image, key, firstChar) | Load font from Image (XNA style) |
 | func LoadFontFromMemory(fileType, fileData, dataSize, fontSize, codepoints, codepointCount) | Load font from memory buffer, fileType refers to extension: i.e. '.ttf' |
 | func LoadImage(fileName) | Load image from file into CPU memory (RAM) |
@@ -469,6 +470,7 @@ Implemented APIs (626)
 | func LoadWave(fileName) | Load wave data from file |
 | func LoadWaveFromMemory(fileType, fileData, dataSize) | Load wave from memory buffer, fileType refers to extension: i.e. '.wav' |
 | func LoadWaveSamples(wave) | Load samples data from wave as a 32bit float data array |
+| func MakeDirectory(dirPath) | Create directories (including full path requested), returns 0 on success |
 | sub MaximizeWindow() | Set window state: maximized, if resizable (only PLATFORM_DESKTOP) |
 | func MeasureText(text, fontSize) | Measure string width for default font |
 | func MeasureTextEx(font, text, fontSize, spacing) | Measure string size for Font |
@@ -623,6 +625,7 @@ Implemented APIs (626)
 | sub UpdateCamera(camera, mode) | Update camera position for selected mode |
 | sub UpdateMeshBuffer(mesh, index, data, dataSize, offset) | Update mesh vertex data in GPU for a specific buffer index |
 | sub UpdateModelAnimation(model, anim, frame) | Update model animation pose |
+| sub UpdateModelAnimationBoneMatrices(model, anim, frame) | Update model animation mesh bone matrices |
 | sub UpdateMusicStream(music) | Updates buffers for music streaming |
 | func updatePhysics() | n/a |
 | sub UpdateSound(sound, data, sampleCount) | Update sound buffer with new data |
