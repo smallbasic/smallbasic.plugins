@@ -9,7 +9,7 @@ import java.io.IOException;
 
 public class SpiMasterImpl extends IOTask {
   private static final String TAG = "SpiMasterImpl";
-  private static final int SPI_WRITE_MAX = 63;
+  private static final int SPI_WRITE_MAX = 62;
   private final byte[] BATCH = new byte[SPI_WRITE_MAX];
   private final IOLock<SpiMaster> lock = new IOLock<>();
   private SpiMaster spiMaster = null;
@@ -57,16 +57,16 @@ public class SpiMasterImpl extends IOTask {
   public void write(final byte[] write, int writeLen) {
     handleError();
     lock.invoke((i) -> {
-      if (writeLen < SPI_WRITE_MAX) {
-        spiMaster.writeRead(write, writeLen, writeLen, null, 0);
-      } else {
+      if (writeLen > SPI_WRITE_MAX) {
         int srcPos = 0;
         while (srcPos < writeLen) {
-          int batchLen = Math.min(writeLen - srcPos, SPI_WRITE_MAX);
+          int batchLen = Math.min(writeLen - srcPos, 2);
           System.arraycopy(write, srcPos, BATCH, 0, batchLen);
-          spiMaster.writeRead(BATCH, batchLen, batchLen, null, 0);
-          srcPos += SPI_WRITE_MAX;
+          spiMaster.writeReadAsync(0, BATCH, batchLen, batchLen, null, 0);
+          srcPos += batchLen;
         }
+      } else {
+        spiMaster.writeRead(write, writeLen, writeLen, null, 0);
       }
     });
   }
@@ -79,7 +79,7 @@ public class SpiMasterImpl extends IOTask {
   @Override
   void setup(IOIO ioio) throws ConnectionLostException {
     Log.i(TAG, "setup entered: miso:" + miso + " mosi:" + mosi + " clk:" + clk + " cs:" + slaveSelect);
-    spiMaster = ioio.openSpiMaster(miso, mosi, clk, slaveSelect, SpiMaster.Rate.RATE_1M);
+    spiMaster = ioio.openSpiMaster(miso, mosi, clk, slaveSelect, SpiMaster.Rate.RATE_4M);
   }
 
   private void pinError(String name) {

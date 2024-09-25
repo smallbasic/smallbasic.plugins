@@ -86,7 +86,6 @@ public class IOService implements IOIOLooperProvider  {
 
   public class IOServiceLooper implements IOIOLooper {
     private IOIO ioio;
-    private long lastAccessMillis;
 
     @Override
     public void disconnected() {
@@ -106,7 +105,7 @@ public class IOService implements IOIOLooperProvider  {
 
     @Override
     public void loop() throws ConnectionLostException, InterruptedException {
-      lastAccessMillis = TimerUtil.tick(lastAccessMillis);
+      Thread.sleep(0, 5);
       for (IOTask next: ioTasks) {
         try {
           next.loop();
@@ -120,7 +119,6 @@ public class IOService implements IOIOLooperProvider  {
     @Override
     public void setup(IOIO ioio) {
       this.ioio = ioio;
-      this.lastAccessMillis = System.currentTimeMillis();
       for (IOTask next: ioTasks) {
         try {
           next.setup(ioio);

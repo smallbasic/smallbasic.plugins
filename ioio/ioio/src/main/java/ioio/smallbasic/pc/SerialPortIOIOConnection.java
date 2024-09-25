@@ -33,7 +33,7 @@ public class SerialPortIOIOConnection implements IOIOConnection {
   @Override
   synchronized public void disconnect() {
     abort = true;
-    if (serialPort != null) {
+    if (serialPort != null && inputStream != null) {
       try {
         inputStream.close();
       } catch (IOException e) {

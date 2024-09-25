@@ -25,8 +25,8 @@
 #define CLASS_SPIMASTER "ioio/smallbasic/SpiMasterImpl"
 #define CLASS_IOIO "ioio/smallbasic/IOIOImpl"
 #define CLASS_IOTASK_ID 1
-#define SPI_WRITE_MAX 63
-#define TWI_WRITE_MAX ARRAY_SIZE
+#define SPI_WRITE_MAX 62
+#define TWI_WRITE_MAX 255
 
 struct IOTask : JavaProxy {
   IOTask() : JavaProxy() {
@@ -47,7 +47,7 @@ struct IOTask : JavaProxy {
   // int readWrite(bytes, byte[] write) {
   int invokeSpiReadWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
-    int writeLen = populateByteArray(argc, arg, 1);
+    int writeLen = populateByteArray(argc, arg, 1, SPI_WRITE_MAX);
     if (writeLen > SPI_WRITE_MAX) {
       error(retval, "write array", 1, SPI_WRITE_MAX);
     } else if (_instance != nullptr) {
@@ -67,12 +67,17 @@ struct IOTask : JavaProxy {
     return result;
   }
 
-  // int write(byte[] write) {
+  // int write(byte[] write, int length) {
   int invokeSpiWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
-    int writeLen = populateByteArray(argc, arg, 0);
-    if (writeLen > ARRAY_SIZE) {
-      error(retval, "write array", 1, ARRAY_SIZE);
+    int maxSize = SPI_WRITE_MAX;
+    if (is_param_array(argc, arg, 0)) {
+      // allow an entire LCD to be updated within one IOIOLooper.loop() call
+      maxSize = v_asize(arg[0].var_p);
+    }
+    int writeLen = populateByteArray(argc, arg, 0, maxSize);
+    if (writeLen > maxSize) {
+      error(retval, "write array", 1, maxSize);
     } else if (_instance != nullptr) {
       attachCurrentThread();
       jmethodID method = g_env->GetMethodID(_clazz, "write", "([BI)V");
@@ -90,7 +95,7 @@ struct IOTask : JavaProxy {
   // int readWrite(int address, byte[] write) {
   int invokeTwiReadWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
-    int writeLen = populateByteArray(argc, arg, 2);
+    int writeLen = populateByteArray(argc, arg, 2, TWI_WRITE_MAX);
     if (writeLen > TWI_WRITE_MAX) {
       error(retval, "write array", 1, TWI_WRITE_MAX);
     } else if (_instance != nullptr) {
@@ -114,7 +119,7 @@ struct IOTask : JavaProxy {
   // int write(int address, byte[] write) {
   int invokeTwiWrite(int argc, slib_par_t *arg, var_s *retval) {
     int result = 0;
-    int writeLen = populateByteArray(argc, arg, 1);
+    int writeLen = populateByteArray(argc, arg, 1, TWI_WRITE_MAX);
     if (writeLen > TWI_WRITE_MAX) {
       error(retval, "write array", 1, TWI_WRITE_MAX);
     } else if (_instance != nullptr) {
@@ -155,7 +160,7 @@ static int cmd_twimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s
   int result = 0;
   auto readBytes = get_param_int(argc, arg, 1, 0);
   if (argc < 2) {
-    error(retval, "TwiMaster.readWrite(address, read-bytes, [data]", 2, ARRAY_SIZE);
+    error(retval, "TwiMaster.readWrite(address, read-bytes, [data]", 2, TWI_WRITE_MAX);
   } else if (readBytes < 1 || readBytes > 8) {
     error(retval, "read-bytes value out of range. Expected a number between 1 and 8");
   } else {
@@ -170,7 +175,7 @@ static int cmd_twimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s
 static int cmd_twimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
   if (argc < 2) {
-    error(retval, "TwiMaster.write", 2, ARRAY_SIZE);
+    error(retval, "TwiMaster.write", 2, TWI_WRITE_MAX);
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {
@@ -184,7 +189,7 @@ static int cmd_spimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s
   int result = 0;
   auto readBytes = get_param_int(argc, arg, 0, 0);
   if (argc < 2) {
-    error(retval, "SpiMaster.readWrite(read-bytes, [data]", 2, ARRAY_SIZE);
+    error(retval, "SpiMaster.readWrite(read-bytes, [data]", 2, SPI_WRITE_MAX);
   } else if (readBytes < 1 || readBytes > 8) {
     error(retval, "read-bytes value out of range. Expected a number between 1 and 8");
   } else {
@@ -199,7 +204,7 @@ static int cmd_spimaster_readwrite(var_s *self, int argc, slib_par_t *arg, var_s
 static int cmd_spimaster_write(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
   if (argc < 1) {
-    error(retval, "SpiMaster.write", 1, ARRAY_SIZE);
+    error(retval, "SpiMaster.write", 1, SPI_WRITE_MAX);
   } else {
     int id = get_io_class_id(self, retval);
     if (id != -1) {

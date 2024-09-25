@@ -16,8 +16,6 @@ JNIEnv *g_env;
 JavaVM *g_jvm;
 jobject g_activity;
 
-#define ARRAY_SIZE 254
-
 #if defined(ANDROID_MODULE)
   #define attachCurrentThread() g_jvm->AttachCurrentThread(&g_env, nullptr)
   #define detachCurrentThread() g_jvm->DetachCurrentThread()
@@ -73,7 +71,8 @@ struct JavaProxy {
   JavaProxy():
     _clazz(nullptr),
     _instance(nullptr),
-    _array(nullptr) {
+    _array(nullptr),
+    _arraySize(0) {
   }
 
   virtual ~JavaProxy() {
@@ -286,23 +285,28 @@ struct JavaProxy {
   }
 
   // populate the java byte array with the contents of the basic array
-  int populateByteArray(int argc, slib_par_t *params, int offset) {
+  int populateByteArray(int argc, slib_par_t *params, int offset, int arraySize) {
     int result;
+    if (_array && _arraySize < arraySize) {
+      g_env->DeleteLocalRef(_array);
+      _array = nullptr;
+    }
     if (!_array) {
-      _array = g_env->NewByteArray(ARRAY_SIZE);
+      _array = g_env->NewByteArray(arraySize);
+      _arraySize = arraySize;
     }
     jbyte *elements = g_env->GetByteArrayElements(_array, nullptr);
     if ((argc - offset) == 1 && is_param_array(argc, params, offset)) {
       // argument is an array (assume of ints)
       var_s *array = params[offset].var_p;
       int size = v_asize(array);
-      for (int i = 0; i < size && i < ARRAY_SIZE; i++) {
+      for (int i = 0; i < size && i < arraySize; i++) {
         var_s *elem = v_elem(array, i);
         elements[i] = v_is_type(elem, V_INT) ? elem->v.i : elem->v.n;
       }
       result = size;
     } else {
-      for (int i = offset, j = 0; i < argc && i < ARRAY_SIZE; i++, j++) {
+      for (int i = offset, j = 0; i < argc && i < arraySize; i++, j++) {
         elements[j] = get_param_int(argc, params, i, 0);
       }
       result = argc - offset;
@@ -316,6 +320,7 @@ struct JavaProxy {
   jclass _clazz;
   jobject _instance;
   jbyteArray _array;
+  int _arraySize;
 };
 
 #if defined(ANDROID_MODULE)
