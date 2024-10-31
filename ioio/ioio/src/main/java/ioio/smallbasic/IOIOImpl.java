@@ -59,7 +59,7 @@ public class IOIOImpl extends IOTask {
     lock.invoke(IOIO::sync);
   }
 
-  public void waitForConnect(int latency) {
+  public void waitForConnect() {
     IOUtil.setError(null);
     IOService.getInstance().start();
     handleError();

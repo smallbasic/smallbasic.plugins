@@ -62,8 +62,8 @@ public class SerialPortIOIOConnection implements IOIOConnection {
   @Override
   public void waitForConnect() throws ConnectionLostException {
     if (!abort && serialPort.openPort()) {
-      inputStream = serialPort.getInputStream();
-      outputStream = serialPort.getOutputStream();
+      inputStream = new LoggingInputStream(serialPort.getInputStream());
+      outputStream = new LoggingOutputStream(serialPort.getOutputStream());
       serialPort.setDTR();
     } else {
       throw new ConnectionLostException();

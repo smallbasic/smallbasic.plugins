@@ -244,7 +244,7 @@ FUNC_SIG lib_proc[] = {
   {0, 0, "HARDRESET", cmd_ioio_hardreset},
   {0, 0, "SOFTRESET", cmd_ioio_softreset},
   {0, 0, "SYNC", cmd_ioio_sync},
-  {1, 1, "WAITFORCONNECT", cmd_ioio_waitforconnect},
+  {0, 0, "WAITFORCONNECT", cmd_ioio_waitforconnect},
   {0, 0, "WAITFORDISCONNECT", cmd_ioio_waitfordisconnect},
 };
 
@@ -261,7 +261,7 @@ SBLIB_API int sblib_func_count() {
 //
 int sblib_init(const char *sourceFile) {
 #if defined(DESKTOP_MODULE)
-  int result = createJVM("-Djava.class.path=./ioio-1.0-jar-with-dependencies.jar", "-Dioio.SerialPorts=IOIO0", false);
+  int result = createJVM("-Djava.class.path=./ioio-1.0-jar-with-dependencies.jar", "-Dioio.SerialPorts=ttyACM0", false);
 #else
   int result = 1;
 #endif
