@@ -14,7 +14,7 @@ This interface provides control over all the IOIO board functions.
 |void hardReset(void)|Equivalent to disconnecting and reconnecting the board power supply.|
 |void softReset(void)|Resets the entire state (returning to initial state), without dropping the connection.|
 |void sync(void)|Sends a message to the IOIO and waits for an echo.|
-|void waitForConnect(int)|Establishes connection with the IOIO board.|
+|void waitForConnect(void)|Establishes connection with the IOIO board.|
 |void waitForDisconnect(void)|Blocks until IOIO has been disconnected and all connection-related resources have been freed, so that a new connection can be attempted.|
 
 ## AnalogInput

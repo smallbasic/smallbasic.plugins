@@ -36,7 +36,7 @@
       },{
         "name": "waitForConnect"
         "rtn": "void",
-        "arg": "int",
+        "arg": "void",
         "comment": "Establishes connection with the IOIO board."
       },{
         "name": "waitForDisconnect"

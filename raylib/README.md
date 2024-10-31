@@ -1,10 +1,10 @@
-*Raylib* _MAJOR 5 _MINOR 5 _PATCH 0 5.5-dev
+*Raylib* _MAJOR 5 _MINOR 5 _PATCH 0 5.5
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (629)
+Implemented APIs (631)
 ----------------
 
 | Name    | Description   |
@@ -49,6 +49,9 @@ Implemented APIs (629)
 | func ColorToHSV(color) | Get HSV values for a Color, hue [0..360], saturation/value [0..1] |
 | func ColorToInt(color) | Get hexadecimal value for a Color (0xRRGGBBAA) |
 | func CompressData(data, dataSize, compDataSize) | Compress data (DEFLATE algorithm), memory must be MemFree() |
+| func ComputeCRC32(data, dataSize) | Compute CRC32 hash code |
+| func ComputeMD5(data, dataSize) | Compute MD5 hash code, returns static int[4] (16 bytes) |
+| func ComputeSHA1(data, dataSize) | Compute SHA1 hash code, returns static int[5] (20 bytes) |
 | func createPhysicsbodycircle() | n/a |
 | func createPhysicsbodypolygon() | n/a |
 | func createPhysicsbodyrectangle() | n/a |
@@ -96,8 +99,8 @@ Implemented APIs (629)
 | sub DrawModelPointsEx(model, position, rotationAxis, rotationAngle, scale, tint) | Draw a model as points with extended parameters |
 | sub DrawModelWires(model, position, scale, tint) | Draw a model wires (with texture if set) |
 | sub DrawModelWiresEx(model, position, rotationAxis, rotationAngle, scale, tint) | Draw a model wires (with texture if set) with extended parameters |
-| sub DrawPixel(posX, posY, color) | Draw a pixel |
-| sub DrawPixelV(position, color) | Draw a pixel (Vector version) |
+| sub DrawPixel(posX, posY, color) | Draw a pixel using geometry [Can be slow, use with care] |
+| sub DrawPixelV(position, color) | Draw a pixel using geometry (Vector version) [Can be slow, use with care] |
 | sub DrawPlane(centerPos, size, color) | Draw a plane XZ |
 | sub DrawPoint3D(position, color) | Draw a point in 3D space, actually a small line |
 | sub DrawPoly(center, sides, radius, rotation, color) | Draw a regular polygon (Vector version) |
@@ -204,7 +207,7 @@ Implemented APIs (629)
 | func GetCodepointPrevious(text, codepointSize) | Get previous codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure |
 | func GetCollisionRec(rec1, rec2) | Get collision rectangle for two rectangles collision |
 | func GetColor(hexValue) | Get Color structure from hexadecimal value |
-| func GetCurrentMonitor() | Get current connected monitor |
+| func GetCurrentMonitor() | Get current monitor where window is placed |
 | func GetDirectoryPath(filePath) | Get full path for a given fileName with path (uses static string) |
 | func GetFileExtension(fileName) | Get pointer to extension for a filename string (includes dot: '.png') |
 | func GetFileLength(fileName) | Get file length in bytes (NOTE: GetFileSize() conflicts with windows.h) |
@@ -221,7 +224,7 @@ Implemented APIs (629)
 | func GetGestureDetected() | Get latest detected gesture |
 | func GetGestureDragAngle() | Get gesture drag angle |
 | func GetGestureDragVector() | Get gesture drag vector |
-| func GetGestureHoldDuration() | Get gesture hold time in milliseconds |
+| func GetGestureHoldDuration() | Get gesture hold time in seconds |
 | func GetGesturePinchAngle() | Get gesture pinch angle |
 | func GetGesturePinchVector() | Get gesture pinch delta |
 | func GetGlyphAtlasRec(font, codepoint) | Get glyph rectangle in font atlas for a codepoint (unicode character), fallback to '?' if not found |
@@ -387,45 +390,45 @@ Implemented APIs (629)
 | func IsAudioDeviceReady() | Check if audio device has been initialized successfully |
 | func IsAudioStreamPlaying(stream) | Check if audio stream is playing |
 | func IsAudioStreamProcessed(stream) | Check if any audio stream buffers requires refill |
-| func IsAudioStreamReady(stream) | Checks if an audio stream is ready |
+| func IsAudioStreamValid(stream) | Checks if an audio stream is valid (buffers initialized) |
 | func IsCursorHidden() | Check if cursor is not visible |
 | func IsCursorOnScreen() | Check if cursor is on the screen |
 | func IsFileDropped() | Check if a file has been dropped into window |
 | func IsFileExtension(fileName, ext) | Check file extension (including point: .png, .wav) |
 | func IsFileNameValid(fileName) | Check if fileName is valid for the platform/OS |
-| func IsFontReady(font) | Check if a font is ready |
+| func IsFontValid(font) | Check if a font is valid (font data loaded, WARNING: GPU texture not checked) |
 | func IsGamepadAvailable(gamepad) | Check if a gamepad is available |
 | func IsGamepadButtonDown(gamepad, button) | Check if a gamepad button is being pressed |
 | func IsGamepadButtonPressed(gamepad, button) | Check if a gamepad button has been pressed once |
 | func IsGamepadButtonReleased(gamepad, button) | Check if a gamepad button has been released once |
 | func IsGamepadButtonUp(gamepad, button) | Check if a gamepad button is NOT being pressed |
 | func IsGestureDetected(gesture) | Check if a gesture have been detected |
-| func IsImageReady(image) | Check if an image is ready |
+| func IsImageValid(image) | Check if an image is valid (data and parameters) |
 | func IsKeyDown(key) | Check if a key is being pressed |
 | func IsKeyPressed(key) | Check if a key has been pressed once |
-| func IsKeyPressedRepeat(key) | Check if a key has been pressed again (Only PLATFORM_DESKTOP) |
+| func IsKeyPressedRepeat(key) | Check if a key has been pressed again |
 | func IsKeyReleased(key) | Check if a key has been released once |
 | func IsKeyUp(key) | Check if a key is NOT being pressed |
 | func IsModelAnimationValid(model, anim) | Check model animation skeleton match |
-| func IsModelReady(model) | Check if a model is ready |
+| func IsModelValid(model) | Check if a model is valid (loaded in GPU, VAO/VBOs) |
 | func IsMouseButtonDown(button) | Check if a mouse button is being pressed |
 | func IsMouseButtonPressed(button) | Check if a mouse button has been pressed once |
 | func IsMouseButtonReleased(button) | Check if a mouse button has been released once |
 | func IsMouseButtonUp(button) | Check if a mouse button is NOT being pressed |
-| func IsMusicReady(music) | Checks if a music stream is ready |
 | func IsMusicStreamPlaying(music) | Check if music is playing |
+| func IsMusicValid(music) | Checks if a music stream is valid (context and buffers initialized) |
 | func IsPathFile(path) | Check if a given path is a file or a directory |
-| func IsRenderTextureReady(target) | Check if a render texture is ready |
-| func IsShaderReady(shader) | Check if a shader is ready |
+| func IsRenderTextureValid(target) | Check if a render texture is valid (loaded in GPU) |
+| func IsShaderValid(shader) | Check if a shader is valid (loaded on GPU) |
 | func IsSoundPlaying(sound) | Check if a sound is currently playing |
-| func IsSoundReady(sound) | Checks if a sound is ready |
-| func IsTextureReady(texture) | Check if a texture is ready |
-| func IsWaveReady(wave) | Checks if wave data is ready |
-| func IsWindowFocused() | Check if window is currently focused (only PLATFORM_DESKTOP) |
+| func IsSoundValid(sound) | Checks if a sound is valid (data loaded and buffers initialized) |
+| func IsTextureValid(texture) | Check if a texture is valid (loaded in GPU) |
+| func IsWaveValid(wave) | Checks if wave data is valid (data loaded and parameters) |
+| func IsWindowFocused() | Check if window is currently focused |
 | func IsWindowFullscreen() | Check if window is currently fullscreen |
-| func IsWindowHidden() | Check if window is currently hidden (only PLATFORM_DESKTOP) |
-| func IsWindowMaximized() | Check if window is currently maximized (only PLATFORM_DESKTOP) |
-| func IsWindowMinimized() | Check if window is currently minimized (only PLATFORM_DESKTOP) |
+| func IsWindowHidden() | Check if window is currently hidden |
+| func IsWindowMaximized() | Check if window is currently maximized |
+| func IsWindowMinimized() | Check if window is currently minimized |
 | func IsWindowReady() | Check if window has been initialized successfully |
 | func IsWindowResized() | Check if window has been resized last frame |
 | func IsWindowState(flag) | Check if one specific window flag is enabled |
@@ -450,7 +453,6 @@ Implemented APIs (629)
 | func LoadImageFromTexture(texture) | Load image from GPU texture data |
 | func LoadImagePalette(image, maxPaletteSize, colorCount) | Load colors palette from image as a Color array (RGBA - 32bit) |
 | func LoadImageRaw(fileName, width, height, format, headerSize) | Load image from RAW file data |
-| func LoadImageSvg(fileNameOrString, width, height) | Load image from SVG file data or string with specified size |
 | func LoadModel(fileName) | Load model from files (meshes and materials) |
 | func LoadModelAnimations(fileName, animCount) | Load model animations from file |
 | func LoadModelFromMesh(mesh) | Load model from generated mesh (default material) |
@@ -471,14 +473,14 @@ Implemented APIs (629)
 | func LoadWaveFromMemory(fileType, fileData, dataSize) | Load wave from memory buffer, fileType refers to extension: i.e. '.wav' |
 | func LoadWaveSamples(wave) | Load samples data from wave as a 32bit float data array |
 | func MakeDirectory(dirPath) | Create directories (including full path requested), returns 0 on success |
-| sub MaximizeWindow() | Set window state: maximized, if resizable (only PLATFORM_DESKTOP) |
+| sub MaximizeWindow() | Set window state: maximized, if resizable |
 | func MeasureText(text, fontSize) | Measure string width for default font |
 | func MeasureTextEx(font, text, fontSize, spacing) | Measure string size for Font |
 | func MemAlloc(size) | Internal memory allocator |
 | sub MemFree(ptr) | Internal memory free |
 | func MemRealloc(ptr, size) | Internal memory reallocator |
 | func meshboundingbox() | n/a |
-| sub MinimizeWindow() | Set window state: minimized, if resizable (only PLATFORM_DESKTOP) |
+| sub MinimizeWindow() | Set window state: minimized, if resizable |
 | sub OpenURL(url) | Open URL with default system browser (if available) |
 | sub PauseAudioStream(stream) | Pause audio stream |
 | sub PauseMusicStream(music) | Pause music playing |
@@ -494,7 +496,7 @@ Implemented APIs (629)
 | func pollevents() | n/a |
 | sub PollInputEvents() | Register all input events |
 | func resetPhysics() | n/a |
-| sub RestoreWindow() | Set window state: not minimized/maximized (only PLATFORM_DESKTOP) |
+| sub RestoreWindow() | Set window state: not minimized/maximized |
 | sub ResumeAudioStream(stream) | Resume audio stream |
 | sub ResumeMusicStream(music) | Resume playing paused music |
 | sub ResumeSound(sound) | Resume a paused sound |
@@ -511,7 +513,7 @@ Implemented APIs (629)
 | sub SetConfigFlags(flags) | Setup init configuration flags (view FLAGS) |
 | sub SetExitKey(key) | Set a custom key to exit program (default is ESC) |
 | func SetGamepadMappings(mappings) | Set internal gamepad mappings (SDL_GameControllerDB) |
-| sub SetGamepadVibration(gamepad, leftMotor, rightMotor) | Set gamepad vibration for both motors |
+| sub SetGamepadVibration(gamepad, leftMotor, rightMotor, duration) | Set gamepad vibration for both motors (duration in seconds) |
 | sub SetGesturesEnabled(flags) | Enable a set of gestures using flags |
 | sub SetMasterVolume(volume) | Set master volume (listener) |
 | func setmodeldiffusetexture() | n/a |
@@ -559,17 +561,17 @@ Implemented APIs (629)
 | sub SetTextureFilter(texture, filter) | Set texture scaling filter mode |
 | sub SetTextureWrap(texture, wrap) | Set texture wrapping mode |
 | sub SetTraceLogLevel(logLevel) | Set the current threshold (minimum) log level |
-| sub SetWindowFocused() | Set window focused (only PLATFORM_DESKTOP) |
-| sub SetWindowIcon(image) | Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP) |
-| sub SetWindowIcons(images, count) | Set icon for window (multiple images, RGBA 32bit, only PLATFORM_DESKTOP) |
+| sub SetWindowFocused() | Set window focused |
+| sub SetWindowIcon(image) | Set icon for window (single image, RGBA 32bit) |
+| sub SetWindowIcons(images, count) | Set icon for window (multiple images, RGBA 32bit) |
 | sub SetWindowMaxSize(width, height) | Set window maximum dimensions (for FLAG_WINDOW_RESIZABLE) |
 | sub SetWindowMinSize(width, height) | Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE) |
 | sub SetWindowMonitor(monitor) | Set monitor for the current window |
-| sub SetWindowOpacity(opacity) | Set window opacity [0.0f..1.0f] (only PLATFORM_DESKTOP) |
-| sub SetWindowPosition(x, y) | Set window position on screen (only PLATFORM_DESKTOP) |
+| sub SetWindowOpacity(opacity) | Set window opacity [0.0f..1.0f] |
+| sub SetWindowPosition(x, y) | Set window position on screen |
 | sub SetWindowSize(width, height) | Set window dimensions |
-| sub SetWindowState(flags) | Set window configuration state using flags (only PLATFORM_DESKTOP) |
-| sub SetWindowTitle(title) | Set title for window (only PLATFORM_DESKTOP and PLATFORM_WEB) |
+| sub SetWindowState(flags) | Set window configuration state using flags |
+| sub SetWindowTitle(title) | Set title for window |
 | sub ShowCursor() | Shows cursor |
 | sub StartAutomationEventRecording() | Start recording automation events (AutomationEventList must be set) |
 | sub StopAudioStream(stream) | Stop audio stream |
@@ -594,8 +596,8 @@ Implemented APIs (629)
 | func TextToPascal(text) | Get Pascal case notation version of provided string |
 | func TextToSnake(text) | Get Snake case notation version of provided string |
 | func TextToUpper(text) | Get upper case version of provided string |
-| sub ToggleBorderlessWindowed() | Toggle window state: borderless windowed [resizes window to match monitor resolution] (only PLATFORM_DESKTOP) |
-| sub ToggleFullscreen() | Toggle window state: fullscreen/windowed [resizes monitor to match window resolution] (only PLATFORM_DESKTOP) |
+| sub ToggleBorderlessWindowed() | Toggle window state: borderless windowed, resizes window to match monitor resolution |
+| sub ToggleFullscreen() | Toggle window state: fullscreen/windowed, resizes monitor to match window resolution |
 | sub UnloadAudioStream(stream) | Unload audio stream and free memory |
 | sub UnloadAutomationEventList(list) | Unload automation events list from file |
 | sub UnloadCodepoints(codepoints) | Unload codepoints data from memory |
@@ -624,8 +626,8 @@ Implemented APIs (629)
 | func updateautomationeventlist() | n/a |
 | sub UpdateCamera(camera, mode) | Update camera position for selected mode |
 | sub UpdateMeshBuffer(mesh, index, data, dataSize, offset) | Update mesh vertex data in GPU for a specific buffer index |
-| sub UpdateModelAnimation(model, anim, frame) | Update model animation pose |
-| sub UpdateModelAnimationBoneMatrices(model, anim, frame) | Update model animation mesh bone matrices |
+| sub UpdateModelAnimation(model, anim, frame) | Update model animation pose (CPU) |
+| sub UpdateModelAnimationBoneMatrices(model, anim, frame) | Update model animation mesh bone matrices (GPU skinning) |
 | sub UpdateMusicStream(music) | Updates buffers for music streaming |
 | func updatePhysics() | n/a |
 | sub UpdateSound(sound, data, sampleCount) | Update sound buffer with new data |
@@ -653,7 +655,7 @@ Unimplemented APIs
 | DrawMeshInstanced | Draw multiple mesh instances with material and different transforms |
 | GenImageFontAtlas | Generate image font atlas using chars info |
 | GetGlyphInfo | Get glyph font info data for a codepoint (unicode character), fallback to '?' if not found |
-| IsMaterialReady | Check if a material is ready |
+| IsMaterialValid | Check if a material is valid (shader assigned, map textures loaded in GPU) |
 | LoadFontData | Load font data for further use |
 | LoadMaterialDefault | Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps) |
 | LoadMaterials | Load materials from model file |

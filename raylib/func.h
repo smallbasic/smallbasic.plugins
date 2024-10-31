@@ -325,6 +325,39 @@ static int cmd_compressdata(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Compute CRC32 hash code
+//
+static int cmd_computecrc32(int argc, slib_par_t *params, var_t *retval) {
+  auto data = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto dataSize = get_param_int(argc, params, 1, 0);
+  auto fnResult = ComputeCRC32(data, dataSize);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Compute MD5 hash code, returns static int[4] (16 bytes)
+//
+static int cmd_computemd5(int argc, slib_par_t *params, var_t *retval) {
+  auto data = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto dataSize = get_param_int(argc, params, 1, 0);
+  auto fnResult = (var_int_t)ComputeMD5(data, dataSize);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Compute SHA1 hash code, returns static int[5] (20 bytes)
+//
+static int cmd_computesha1(int argc, slib_par_t *params, var_t *retval) {
+  auto data = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto dataSize = get_param_int(argc, params, 1, 0);
+  auto fnResult = (var_int_t)ComputeSHA1(data, dataSize);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
 // Decode Base64 string data, memory must be MemFree()
 //
 static int cmd_decodedatabase64(int argc, slib_par_t *params, var_t *retval) {
@@ -935,7 +968,7 @@ static int cmd_getcolor(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get current connected monitor
+// Get current monitor where window is placed
 //
 static int cmd_getcurrentmonitor(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetCurrentMonitor();
@@ -1098,7 +1131,7 @@ static int cmd_getgesturedragvector(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
-// Get gesture hold time in milliseconds
+// Get gesture hold time in seconds
 //
 static int cmd_getgestureholdduration(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetGestureHoldDuration();
@@ -1933,13 +1966,13 @@ static int cmd_isaudiostreamprocessed(int argc, slib_par_t *params, var_t *retva
 }
 
 //
-// Checks if an audio stream is ready
+// Checks if an audio stream is valid (buffers initialized)
 //
-static int cmd_isaudiostreamready(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isaudiostreamvalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int stream_id = get_audiostream_id(argc, params, 0, retval);
   if (stream_id != -1) {
-    auto fnResult = IsAudioStreamReady(_audioStream.at(stream_id));
+    auto fnResult = IsAudioStreamValid(_audioStream.at(stream_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -1997,13 +2030,13 @@ static int cmd_isfilenamevalid(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if a font is ready
+// Check if a font is valid (font data loaded, WARNING: GPU texture not checked)
 //
-static int cmd_isfontready(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isfontvalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int font_id = get_font_id(argc, params, 0, retval);
   if (font_id != -1) {
-    auto fnResult = IsFontReady(_fontMap.at(font_id));
+    auto fnResult = IsFontValid(_fontMap.at(font_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -2077,13 +2110,13 @@ static int cmd_isgesturedetected(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if an image is ready
+// Check if an image is valid (data and parameters)
 //
-static int cmd_isimageready(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isimagevalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int image_id = get_image_id(argc, params, 0, retval);
   if (image_id != -1) {
-    auto fnResult = IsImageReady(_imageMap.at(image_id));
+    auto fnResult = IsImageValid(_imageMap.at(image_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -2113,7 +2146,7 @@ static int cmd_iskeypressed(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if a key has been pressed again (Only PLATFORM_DESKTOP)
+// Check if a key has been pressed again
 //
 static int cmd_iskeypressedrepeat(int argc, slib_par_t *params, var_t *retval) {
   auto key = get_param_int(argc, params, 0, 0);
@@ -2160,13 +2193,13 @@ static int cmd_ismodelanimationvalid(int argc, slib_par_t *params, var_t *retval
 }
 
 //
-// Check if a model is ready
+// Check if a model is valid (loaded in GPU, VAO/VBOs)
 //
-static int cmd_ismodelready(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ismodelvalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int model_id = get_model_id(argc, params, 0, retval);
   if (model_id != -1) {
-    auto fnResult = IsModelReady(_modelMap.at(model_id));
+    auto fnResult = IsModelValid(_modelMap.at(model_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -2216,13 +2249,13 @@ static int cmd_ismousebuttonup(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Checks if a music stream is ready
+// Check if music is playing
 //
-static int cmd_ismusicready(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ismusicstreamplaying(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int music_id = get_music_id(argc, params, 0, retval);
   if (music_id != -1) {
-    auto fnResult = IsMusicReady(_musicMap.at(music_id));
+    auto fnResult = IsMusicStreamPlaying(_musicMap.at(music_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -2232,13 +2265,13 @@ static int cmd_ismusicready(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if music is playing
+// Checks if a music stream is valid (context and buffers initialized)
 //
-static int cmd_ismusicstreamplaying(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_ismusicvalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int music_id = get_music_id(argc, params, 0, retval);
   if (music_id != -1) {
-    auto fnResult = IsMusicStreamPlaying(_musicMap.at(music_id));
+    auto fnResult = IsMusicValid(_musicMap.at(music_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -2258,13 +2291,13 @@ static int cmd_ispathfile(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if a render texture is ready
+// Check if a render texture is valid (loaded in GPU)
 //
-static int cmd_isrendertextureready(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isrendertexturevalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int target_id = get_render_texture_id(argc, params, 0, retval);
   if (target_id != -1) {
-    auto fnResult = IsRenderTextureReady(_renderMap.at(target_id));
+    auto fnResult = IsRenderTextureValid(_renderMap.at(target_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -2274,11 +2307,11 @@ static int cmd_isrendertextureready(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
-// Check if a shader is ready
+// Check if a shader is valid (loaded on GPU)
 //
-static int cmd_isshaderready(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_isshadervalid(int argc, slib_par_t *params, var_t *retval) {
   auto shader = get_param_shader(argc, params, 0);
-  auto fnResult = IsShaderReady(shader);
+  auto fnResult = IsShaderValid(shader);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -2300,13 +2333,13 @@ static int cmd_issoundplaying(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Checks if a sound is ready
+// Checks if a sound is valid (data loaded and buffers initialized)
 //
-static int cmd_issoundready(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_issoundvalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int sound_id = get_sound_id(argc, params, 0, retval);
   if (sound_id != -1) {
-    auto fnResult = IsSoundReady(_soundMap.at(sound_id));
+    auto fnResult = IsSoundValid(_soundMap.at(sound_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -2316,13 +2349,13 @@ static int cmd_issoundready(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if a texture is ready
+// Check if a texture is valid (loaded in GPU)
 //
-static int cmd_istextureready(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_istexturevalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int texture_id = get_texture_id(argc, params, 0, retval);
   if (texture_id != -1) {
-    auto fnResult = IsTextureReady(_textureMap.at(texture_id));
+    auto fnResult = IsTextureValid(_textureMap.at(texture_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -2332,13 +2365,13 @@ static int cmd_istextureready(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Checks if wave data is ready
+// Checks if wave data is valid (data loaded and parameters)
 //
-static int cmd_iswaveready(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_iswavevalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int wave_id = get_wave_id(argc, params, 0, retval);
   if (wave_id != -1) {
-    auto fnResult = IsWaveReady(_waveMap.at(wave_id));
+    auto fnResult = IsWaveValid(_waveMap.at(wave_id));
     v_setint(retval, fnResult);
     result = 1;
   } else {
@@ -2348,7 +2381,7 @@ static int cmd_iswaveready(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if window is currently focused (only PLATFORM_DESKTOP)
+// Check if window is currently focused
 //
 static int cmd_iswindowfocused(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = IsWindowFocused();
@@ -2366,7 +2399,7 @@ static int cmd_iswindowfullscreen(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if window is currently hidden (only PLATFORM_DESKTOP)
+// Check if window is currently hidden
 //
 static int cmd_iswindowhidden(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = IsWindowHidden();
@@ -2375,7 +2408,7 @@ static int cmd_iswindowhidden(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if window is currently maximized (only PLATFORM_DESKTOP)
+// Check if window is currently maximized
 //
 static int cmd_iswindowmaximized(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = IsWindowMaximized();
@@ -2384,7 +2417,7 @@ static int cmd_iswindowmaximized(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if window is currently minimized (only PLATFORM_DESKTOP)
+// Check if window is currently minimized
 //
 static int cmd_iswindowminimized(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = IsWindowMinimized();
@@ -2678,18 +2711,6 @@ static int cmd_loadimageraw(int argc, slib_par_t *params, var_t *retval) {
   auto format = get_param_int(argc, params, 3, 0);
   auto headerSize = get_param_int(argc, params, 4, 0);
   auto fnResult = LoadImageRaw(fileName, width, height, format, headerSize);
-  v_setimage(retval, fnResult);
-  return 1;
-}
-
-//
-// Load image from SVG file data or string with specified size
-//
-static int cmd_loadimagesvg(int argc, slib_par_t *params, var_t *retval) {
-  auto fileNameOrString = get_param_str(argc, params, 0, 0);
-  auto width = get_param_int(argc, params, 1, 0);
-  auto height = get_param_int(argc, params, 2, 0);
-  auto fnResult = LoadImageSvg(fileNameOrString, width, height);
   v_setimage(retval, fnResult);
   return 1;
 }

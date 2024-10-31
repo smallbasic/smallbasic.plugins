@@ -654,7 +654,7 @@ static int cmd_drawmodelwiresex(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw a pixel
+// Draw a pixel using geometry [Can be slow, use with care]
 //
 static int cmd_drawpixel(int argc, slib_par_t *params, var_t *retval) {
   auto posX = get_param_int(argc, params, 0, 0);
@@ -665,7 +665,7 @@ static int cmd_drawpixel(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw a pixel (Vector version)
+// Draw a pixel using geometry (Vector version) [Can be slow, use with care]
 //
 static int cmd_drawpixelv(int argc, slib_par_t *params, var_t *retval) {
   auto position = get_param_vec2(argc, params, 0);
@@ -2286,7 +2286,7 @@ static int cmd_initwindow(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set window state: maximized, if resizable (only PLATFORM_DESKTOP)
+// Set window state: maximized, if resizable
 //
 static int cmd_maximizewindow(int argc, slib_par_t *params, var_t *retval) {
   MaximizeWindow();
@@ -2303,7 +2303,7 @@ static int cmd_memfree(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set window state: minimized, if resizable (only PLATFORM_DESKTOP)
+// Set window state: minimized, if resizable
 //
 static int cmd_minimizewindow(int argc, slib_par_t *params, var_t *retval) {
   MinimizeWindow();
@@ -2427,7 +2427,7 @@ static int cmd_pollinputevents(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set window state: not minimized/maximized (only PLATFORM_DESKTOP)
+// Set window state: not minimized/maximized
 //
 static int cmd_restorewindow(int argc, slib_par_t *params, var_t *retval) {
   RestoreWindow();
@@ -2604,13 +2604,14 @@ static int cmd_setexitkey(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set gamepad vibration for both motors
+// Set gamepad vibration for both motors (duration in seconds)
 //
 static int cmd_setgamepadvibration(int argc, slib_par_t *params, var_t *retval) {
   auto gamepad = get_param_int(argc, params, 0, 0);
   auto leftMotor = get_param_num(argc, params, 1, 0);
   auto rightMotor = get_param_num(argc, params, 2, 0);
-  SetGamepadVibration(gamepad, leftMotor, rightMotor);
+  auto duration = get_param_num(argc, params, 3, 0);
+  SetGamepadVibration(gamepad, leftMotor, rightMotor, duration);
   return 1;
 }
 
@@ -2921,7 +2922,7 @@ static int cmd_settraceloglevel(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set window focused (only PLATFORM_DESKTOP)
+// Set window focused
 //
 static int cmd_setwindowfocused(int argc, slib_par_t *params, var_t *retval) {
   SetWindowFocused();
@@ -2929,7 +2930,7 @@ static int cmd_setwindowfocused(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP)
+// Set icon for window (single image, RGBA 32bit)
 //
 static int cmd_setwindowicon(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -2944,7 +2945,7 @@ static int cmd_setwindowicon(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set icon for window (multiple images, RGBA 32bit, only PLATFORM_DESKTOP)
+// Set icon for window (multiple images, RGBA 32bit)
 //
 static int cmd_setwindowicons(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -2989,7 +2990,7 @@ static int cmd_setwindowmonitor(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set window opacity [0.0f..1.0f] (only PLATFORM_DESKTOP)
+// Set window opacity [0.0f..1.0f]
 //
 static int cmd_setwindowopacity(int argc, slib_par_t *params, var_t *retval) {
   auto opacity = get_param_num(argc, params, 0, 0);
@@ -2998,7 +2999,7 @@ static int cmd_setwindowopacity(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set window position on screen (only PLATFORM_DESKTOP)
+// Set window position on screen
 //
 static int cmd_setwindowposition(int argc, slib_par_t *params, var_t *retval) {
   auto x = get_param_int(argc, params, 0, 0);
@@ -3018,7 +3019,7 @@ static int cmd_setwindowsize(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set window configuration state using flags (only PLATFORM_DESKTOP)
+// Set window configuration state using flags
 //
 static int cmd_setwindowstate(int argc, slib_par_t *params, var_t *retval) {
   auto flags = get_param_int(argc, params, 0, 0);
@@ -3027,7 +3028,7 @@ static int cmd_setwindowstate(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set title for window (only PLATFORM_DESKTOP and PLATFORM_WEB)
+// Set title for window
 //
 static int cmd_setwindowtitle(int argc, slib_par_t *params, var_t *retval) {
   auto title = get_param_str(argc, params, 0, 0);
@@ -3133,7 +3134,7 @@ static int cmd_textappend(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Toggle window state: borderless windowed [resizes window to match monitor resolution] (only PLATFORM_DESKTOP)
+// Toggle window state: borderless windowed, resizes window to match monitor resolution
 //
 static int cmd_toggleborderlesswindowed(int argc, slib_par_t *params, var_t *retval) {
   ToggleBorderlessWindowed();
@@ -3141,7 +3142,7 @@ static int cmd_toggleborderlesswindowed(int argc, slib_par_t *params, var_t *ret
 }
 
 //
-// Toggle window state: fullscreen/windowed [resizes monitor to match window resolution] (only PLATFORM_DESKTOP)
+// Toggle window state: fullscreen/windowed, resizes monitor to match window resolution
 //
 static int cmd_togglefullscreen(int argc, slib_par_t *params, var_t *retval) {
   ToggleFullscreen();
@@ -3493,7 +3494,7 @@ static int cmd_updatemeshbuffer(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Update model animation pose
+// Update model animation pose (CPU)
 //
 static int cmd_updatemodelanimation(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -3510,7 +3511,7 @@ static int cmd_updatemodelanimation(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
-// Update model animation mesh bone matrices
+// Update model animation mesh bone matrices (GPU skinning)
 //
 static int cmd_updatemodelanimationbonematrices(int argc, slib_par_t *params, var_t *retval) {
   int result;

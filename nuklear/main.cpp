@@ -224,7 +224,7 @@ static void get_rgba_str(struct nk_color c, char *str) {
 }
 
 static int get_value(const char *str, int range) {
-  const char *end;
+  char *end;
   int result = nk_strtoi(str, &end);
   if (*end == '%') {
     result = result * range / 100;
