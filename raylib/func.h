@@ -895,6 +895,15 @@ static int cmd_getcharpressed(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Get clipboard image content
+//
+static int cmd_getclipboardimage(int argc, slib_par_t *params, var_t *retval) {
+  auto fnResult = GetClipboardImage();
+  v_setimage(retval, fnResult);
+  return 1;
+}
+
+//
 // Get clipboard text content
 //
 static int cmd_getclipboardtext(int argc, slib_par_t *params, var_t *retval) {
@@ -1224,6 +1233,16 @@ static int cmd_getimagecolor(int argc, slib_par_t *params, var_t *retval) {
     result = 0;
   }
   return result;
+}
+
+//
+// Get name of a QWERTY key on the current keyboard layout (eg returns string 'q' for KEY_A on an AZERTY keyboard)
+//
+static int cmd_getkeyname(int argc, slib_par_t *params, var_t *retval) {
+  auto key = get_param_int(argc, params, 0, 0);
+  auto fnResult = (const char *)GetKeyName(key);
+  v_setstr(retval, fnResult);
+  return 1;
 }
 
 //
@@ -3104,7 +3123,7 @@ static int cmd_texttocamel(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get float value from text (negative values not supported)
+// Get float value from text
 //
 static int cmd_texttofloat(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
@@ -3114,7 +3133,7 @@ static int cmd_texttofloat(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get integer value from text (negative values not supported)
+// Get integer value from text
 //
 static int cmd_texttointeger(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);

@@ -262,7 +262,7 @@
   {3, 3, "UPDATEAUDIOSTREAM", cmd_updateaudiostream},
   {5, 5, "UPDATEMESHBUFFER", cmd_updatemeshbuffer},
   {3, 3, "UPDATEMODELANIMATION", cmd_updatemodelanimation},
-  {3, 3, "UPDATEMODELANIMATIONBONEMATRICES", cmd_updatemodelanimationbonematrices},
+  {3, 3, "UPDATEMODELANIMATIONBONES", cmd_updatemodelanimationbones},
   {1, 1, "UPDATEMUSICSTREAM", cmd_updatemusicstream},
   {3, 3, "UPDATESOUND", cmd_updatesound},
   {3, 3, "UPDATETEXTUREREC", cmd_updatetexturerec},

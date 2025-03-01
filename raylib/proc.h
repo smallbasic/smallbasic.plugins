@@ -2769,7 +2769,7 @@ static int cmd_setshadervaluematrix(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
-// Set shader uniform value for texture (sampler2d)
+// Set shader uniform value and bind the texture (sampler2d)
 //
 static int cmd_setshadervaluetexture(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -3513,13 +3513,13 @@ static int cmd_updatemodelanimation(int argc, slib_par_t *params, var_t *retval)
 //
 // Update model animation mesh bone matrices (GPU skinning)
 //
-static int cmd_updatemodelanimationbonematrices(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_updatemodelanimationbones(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int model_id = get_model_id(argc, params, 0, retval);
   int anim_id = get_model_animation_id(argc, params, 1, retval);
   if (model_id != -1 && anim_id != -1) {
     auto frame = get_param_int(argc, params, 2, 0);
-    UpdateModelAnimationBoneMatrices(_modelMap.at(model_id), _modelAnimationMap.at(anim_id), frame);
+    UpdateModelAnimationBones(_modelMap.at(model_id), _modelAnimationMap.at(anim_id), frame);
     result = 1;
   } else {
     result = 0;

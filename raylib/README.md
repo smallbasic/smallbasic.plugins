@@ -1,10 +1,10 @@
-*Raylib* _MAJOR 5 _MINOR 5 _PATCH 0 5.5
+*Raylib* _MAJOR 5 _MINOR 6 _PATCH 0 5.6-dev
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (631)
+Implemented APIs (633)
 ----------------
 
 | Name    | Description   |
@@ -200,6 +200,7 @@ Implemented APIs (631)
 | func GetCameraMatrix(camera) | Get camera transform matrix (view matrix) |
 | func GetCameraMatrix2D(camera) | Get camera 2d transform matrix |
 | func GetCharPressed() | Get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty |
+| func GetClipboardImage() | Get clipboard image content |
 | func GetClipboardText() | Get clipboard text content |
 | func GetCodepoint(text, codepointSize) | Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure |
 | func GetCodepointCount(text) | Get total number of codepoints in a UTF-8 encoded string |
@@ -231,6 +232,7 @@ Implemented APIs (631)
 | func GetGlyphIndex(font, codepoint) | Get glyph index position in font for a codepoint (unicode character), fallback to '?' if not found |
 | func GetImageAlphaBorder(image, threshold) | Get image alpha border rectangle |
 | func GetImageColor(image, x, y) | Get image pixel color at (x, y) position |
+| func GetKeyName(key) | Get name of a QWERTY key on the current keyboard layout (eg returns string 'q' for KEY_A on an AZERTY keyboard) |
 | func GetKeyPressed() | Get key pressed (keycode), call it multiple times for keys queued, returns 0 when the queue is empty |
 | func GetMasterVolume() | Get master volume (listener) |
 | func GetModelBoundingBox(model) | Compute model bounding box limits (considers all meshes) |
@@ -550,7 +552,7 @@ Implemented APIs (631)
 | sub SetRandomSeed(seed) | Set the seed for the random number generator |
 | sub SetShaderValue(shader, locIndex, value, uniformType) | Set shader uniform value |
 | sub SetShaderValueMatrix(shader, locIndex, mat) | Set shader uniform value (matrix 4x4) |
-| sub SetShaderValueTexture(shader, locIndex, texture) | Set shader uniform value for texture (sampler2d) |
+| sub SetShaderValueTexture(shader, locIndex, texture) | Set shader uniform value and bind the texture (sampler2d) |
 | sub SetShaderValueV(shader, locIndex, value, uniformType, count) | Set shader uniform value vector |
 | sub SetShapesTexture(texture, source) | Set texture and rectangle to be used on shapes drawing |
 | sub SetSoundPan(sound, pan) | Set pan for a sound (0.5 is center) |
@@ -590,8 +592,8 @@ Implemented APIs (631)
 | func TextReplace(text, replace, by) | Replace text string (WARNING: memory must be freed!) |
 | func TextSubtext(text, position, length) | Get a piece of a text string |
 | func TextToCamel(text) | Get Camel case notation version of provided string |
-| func TextToFloat(text) | Get float value from text (negative values not supported) |
-| func TextToInteger(text) | Get integer value from text (negative values not supported) |
+| func TextToFloat(text) | Get float value from text |
+| func TextToInteger(text) | Get integer value from text |
 | func TextToLower(text) | Get lower case version of provided string |
 | func TextToPascal(text) | Get Pascal case notation version of provided string |
 | func TextToSnake(text) | Get Snake case notation version of provided string |
@@ -627,7 +629,7 @@ Implemented APIs (631)
 | sub UpdateCamera(camera, mode) | Update camera position for selected mode |
 | sub UpdateMeshBuffer(mesh, index, data, dataSize, offset) | Update mesh vertex data in GPU for a specific buffer index |
 | sub UpdateModelAnimation(model, anim, frame) | Update model animation pose (CPU) |
-| sub UpdateModelAnimationBoneMatrices(model, anim, frame) | Update model animation mesh bone matrices (GPU skinning) |
+| sub UpdateModelAnimationBones(model, anim, frame) | Update model animation mesh bone matrices (GPU skinning) |
 | sub UpdateMusicStream(music) | Updates buffers for music streaming |
 | func updatePhysics() | n/a |
 | sub UpdateSound(sound, data, sampleCount) | Update sound buffer with new data |
@@ -646,8 +648,8 @@ Unimplemented APIs
 
 | Name    | Description   |
 |---------|---------------|
-| AttachAudioMixedProcessor | Attach audio stream processor to the entire audio pipeline, receives the samples as 'float' |
-| AttachAudioStreamProcessor | Attach audio stream processor to stream, receives the samples as 'float' |
+| AttachAudioMixedProcessor | Attach audio stream processor to the entire audio pipeline, receives frames x 2 samples as 'float' (stereo) |
+| AttachAudioStreamProcessor | Attach audio stream processor to stream, receives frames x 2 samples as 'float' (stereo) |
 | BeginVrStereoMode | Begin stereo rendering (requires VR simulator) |
 | DetachAudioMixedProcessor | Detach audio stream processor from the entire audio pipeline |
 | DetachAudioStreamProcessor | Detach audio stream processor from stream |
