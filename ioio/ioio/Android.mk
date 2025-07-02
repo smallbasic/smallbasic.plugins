@@ -16,5 +16,7 @@ LOCAL_SRC_FILES  := ../../include/param.cpp \
                     ../../include/apiexec.cpp \
                     ../main.cpp
 LOCAL_LDLIBS     := -llog -landroid
+LOCAL_LDFLAGS += "-Wl,-z,max-page-size=16384"
+LOCAL_LDFLAGS += "-Wl,-z,common-page-size=16384"
 include $(BUILD_SHARED_LIBRARY)
 
