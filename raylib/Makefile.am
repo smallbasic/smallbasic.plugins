@@ -8,8 +8,6 @@
 generated = func-def.h proc-def.h proc.h func.h
 sbasic=sbasic
 
-CLEANFILES = $(generated)
-
 raylib/tools/rlparser/output/raylib_api.json: raylib/src/raylib.h raylib/tools/rlparser/rlparser.c
 	(cd raylib/tools/rlparser && make && ./rlparser --format JSON --input ../../src/raylib.h --output raylib_api.json)
 
@@ -23,9 +21,7 @@ $(generated): raylib/parser/raylib_api.json mkraylib.bas
 	$(sbasic) mkraylib.bas $@ > $@
 	@touch main.cpp
 
-gen: $(generated)
-
-all-am: $(generated) README.md
+gen: $(generated) README.md
 
 AM_CXXFLAGS=-fno-rtti -std=c++14 -fpermissive
 AM_CPPFLAGS = -Iraylib/src -Iraylib/src/external/glfw/include -Iraylib/src/external/glfw/deps/mingw \
