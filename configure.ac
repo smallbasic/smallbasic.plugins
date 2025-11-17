@@ -17,10 +17,6 @@ AC_LANG([C++])
 AM_INIT_AUTOMAKE([subdir-objects])
 LT_INIT([win32-dll])
 
-dnl sbasic is required for raylib code generation
-AC_CHECK_PROG(SBASIC_CHECK,sbasic, yes)
-AS_IF([test x"$SBASIC_CHECK" != x"yes"], [AC_MSG_ERROR([Please install sbasic before configuring.])])
-
 function checkDebugMode() {
   AC_MSG_CHECKING([if debug mode is enabled])
   AC_ARG_WITH(debug,
