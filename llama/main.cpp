@@ -117,6 +117,7 @@ static int cmd_llama_generate(var_s *self, int argc, slib_par_t *arg, var_s *ret
       // run generation WITHOUT clearing cache
       string response = llama.generate(prompt, max_tokens, temperature, false, true);
       v_setstr(retval, response.c_str());
+      result = 1;
     }
   }
   return result;
@@ -129,7 +130,7 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   int disable_log = get_param_int(argc, params, 0, 1);
   int id = ++g_nextId;
   Llama &llama = g_map[id];
-  if (llama.create(model, n_ctx, disable_log)) {
+  if (llama.construct(model, n_ctx, disable_log)) {
     map_init_id(retval, id, CLASS_ID);
     v_create_callback(retval, "chat", cmd_llama_chat);
     v_create_callback(retval, "generate", cmd_llama_generate);

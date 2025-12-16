@@ -5,11 +5,7 @@
 //
 // Copyright(C) 2026 Chris Warren-Smith
 
-#include <cstdio>
-#include <cstring>
-#include <string>
 #include <vector>
-
 #include "llama.h"
 #include "llama-sb.h"
 
@@ -46,11 +42,11 @@ const string Llama::build_chat_prompt(const string &user_msg) {
   return _chat_prompt;
 }
 
-bool Llama::create(string model_path, int n_ctx, bool disable_log) {
+bool Llama::construct(string model_path, int n_ctx, bool disable_log) {
   if (disable_log) {
     // only print errors
     llama_log_set([](enum ggml_log_level level, const char * text, void * /* user_data */) {
-      if (level >= GGML_LOG_LEVEL_ERROR) {
+      if (level >= GGML_LOG_LEVEL_ERROR && text[0] != '.' && text[0] != '\n') {
         fprintf(stderr, "%s", text);
       }
     }, nullptr);
@@ -59,7 +55,7 @@ bool Llama::create(string model_path, int n_ctx, bool disable_log) {
   ggml_backend_load_all();
 
   llama_model_params mparams = llama_model_default_params();
-  mparams.n_gpu_layers = 0;
+  mparams.n_gpu_layers = 99;
 
   _model = llama_model_load_from_file(model_path.c_str(), mparams);
   if (!_model) {
@@ -68,13 +64,13 @@ bool Llama::create(string model_path, int n_ctx, bool disable_log) {
     llama_context_params cparams = llama_context_default_params();
     cparams.n_ctx   = n_ctx;
     cparams.n_batch = n_ctx;
+    cparams.no_perf = true;
 
     _ctx = llama_init_from_model(_model, cparams);
     if (!_ctx) {
       _last_error = "failed to create context";
     } else {
       _vocab = llama_model_get_vocab(_model);
-      configure_sampler(0);
     }
   }
   return _last_error.empty();
@@ -82,10 +78,11 @@ bool Llama::create(string model_path, int n_ctx, bool disable_log) {
 
 void Llama::configure_sampler(float temperature) {
   if (temperature != _temperature || _sampler == nullptr) {
-    if (_sampler) {
+    if (_sampler != nullptr) {
       llama_sampler_free(_sampler);
     }
     auto sparams = llama_sampler_chain_default_params();
+    sparams.no_perf = false;
     _sampler = llama_sampler_chain_init(sparams);
     _temperature = temperature;
 
@@ -93,16 +90,11 @@ void Llama::configure_sampler(float temperature) {
     if (temperature <= 0.0f) {
       llama_sampler_chain_add(_sampler, llama_sampler_init_greedy());
     } else {
+      llama_sampler_chain_add(_sampler, llama_sampler_init_min_p(0.05f, 1));
       llama_sampler_chain_add(_sampler, llama_sampler_init_temp(temperature));
+      llama_sampler_chain_add(_sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
     }
   }
-}
-
-static std::vector<llama_token> tokenize(const llama_vocab *vocab, const string &text) {
-  int n = -llama_tokenize(vocab, text.c_str(), text.size(), nullptr, 0, true, true);
-  std::vector<llama_token> tokens(n);
-  llama_tokenize(vocab, text.c_str(), text.size(), tokens.data(), tokens.size(), true, true);
-  return tokens;
 }
 
 string Llama::generate(const string &prompt, int max_tokens, float temperature, bool echo, bool clear_cache) {
@@ -112,37 +104,67 @@ string Llama::generate(const string &prompt, int max_tokens, float temperature, 
     // llama_kv_cache_clear(_ctx);
   }
 
-  auto prompt_tokens = tokenize(_vocab, prompt);
+  // find the number of tokens in the prompt
+  int n_prompt = -llama_tokenize(_vocab, prompt.c_str(), prompt.size(), nullptr, 0, true, true);
+
+  // allocate space for the tokens and tokenize the prompt
+  std::vector<llama_token> prompt_tokens(n_prompt);
+  if (llama_tokenize(_vocab, prompt.c_str(), prompt.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
+    _last_error = "failed tokenize the prompt";
+    return out;
+  }
+
+  // initialize the sampler
   configure_sampler(temperature);
 
+  // prepare a batch for the prompt
   llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
+  if (llama_model_has_encoder(_model)) {
+    if (llama_encode(_ctx, batch)) {
+      _last_error = "failed to eval";
+      return out;
+    }
 
-  if (llama_decode(_ctx, batch)) {
-    _last_error = "decode failed";
-    return out;
+    llama_token decoder_start_token_id = llama_model_decoder_start_token(_model);
+    if (decoder_start_token_id == LLAMA_TOKEN_NULL) {
+      decoder_start_token_id = llama_vocab_bos(_vocab);
+    }
+
+    batch = llama_batch_get_one(&decoder_start_token_id, 1);
   }
 
   if (echo) {
     out += prompt;
   }
 
-  for (int i = 0; i < max_tokens; ++i) {
-    llama_token tok = llama_sampler_sample(_sampler, _ctx, -1);
+  for (int n_pos = 0; n_pos + batch.n_tokens < n_prompt + max_tokens;) {
+    // evaluate the current batch with the transformer model
+    if (llama_decode(_ctx, batch)) {
+      _last_error = "failed to eval";
+      break;
+    }
 
-    if (llama_vocab_is_eog(_vocab, tok)) {
+    n_pos += batch.n_tokens;
+
+    // sample the next token
+    llama_token new_token_id = llama_sampler_sample(_sampler, _ctx, -1);
+
+    // is it an end of generation?
+    if (llama_vocab_is_eog(_vocab, new_token_id)) {
       break;
     }
 
     char buf[128];
-    int n = llama_token_to_piece(_vocab, tok, buf, sizeof(buf), 0, true);
-
-    if (n > 0) {
+    int n = llama_token_to_piece(_vocab, new_token_id, buf, sizeof(buf), 0, true);
+    if (n < 0) {
+      _last_error = "failed to convert token to piece";
+      break;
+    } else if (n > 0) {
       out.append(buf, n);
     }
-    batch = llama_batch_get_one(&tok, 1);
-    if (llama_decode(_ctx, batch)) {
-      break;
-    }
+
+    // prepare the next batch with the sampled token
+    batch = llama_batch_get_one(&new_token_id, 1);
   }
 
   return out;

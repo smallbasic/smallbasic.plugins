@@ -18,7 +18,7 @@ struct Llama {
 
   void append_response(const string &response);
   const string build_chat_prompt(const string &user_msg);
-  bool create(string model_path, int n_ctx, bool disable_log);
+  bool construct(string model_path, int n_ctx, bool disable_log);
   string generate(const string &prompt,
                   int max_tokens = 128,
                   float temperature = 0.8f,
