@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(llm_plugin C CXX)
+project(llm C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
@@ -49,42 +49,40 @@ add_subdirectory(${LLAMA_DIR}/ggml)
 add_subdirectory(${LLAMA_DIR})
 
 # -----------------------------
-# Plugin sources
+# Build plugin as a shared library (.so)
 # -----------------------------
 set(PLUGIN_SOURCES
   main.cpp
+  llama-sb.cpp
   ../include/param.cpp
   ../include/hashmap.cpp
   ../include/apiexec.cpp
 )
 
-# -----------------------------
-# Build plugin as a shared library (.so)
-# -----------------------------
-add_library(llm_plugin SHARED ${PLUGIN_SOURCES})
+add_library(llm SHARED ${PLUGIN_SOURCES})
 
-target_include_directories(llm_plugin PRIVATE
+target_include_directories(llm PRIVATE
   ${LLAMA_DIR}/include
   ${LLAMA_DIR}/ggml/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../include
   ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(llm_plugin PRIVATE
+target_link_libraries(llm PRIVATE
   llama
   ggml
 )
 
 # Include all static code into plugin
-target_link_options(llm_plugin PRIVATE
+target_link_options(llm PRIVATE
   -Wl,--whole-archive
-    $<TARGET_FILE:llama>
-    $<TARGET_FILE:ggml>
+  $<TARGET_FILE:llama>
+  $<TARGET_FILE:ggml>
   -Wl,--no-whole-archive
 )
 
 # Ensure position-independent code for .so
-set_target_properties(llm_plugin PROPERTIES
+set_target_properties(llm PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 )
@@ -103,7 +101,7 @@ target_include_directories(llm_test PRIVATE
 )
 
 target_link_libraries(llm_test PRIVATE
-  llm_plugin
+  llm
   llama
   ggml
 )
@@ -111,3 +109,33 @@ target_link_libraries(llm_test PRIVATE
 set_target_properties(llm_test PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
+
+# ------------------------------------------------------------------
+# Android native library
+# ------------------------------------------------------------------
+if (ANDROID)
+  # CMake sets ANDROID when using the Android toolchain
+  # Re‑use the same source files for the Android .so
+  add_library(llm_android SHARED
+    main.cpp
+    llama-sb.cpp
+    ../include/param.cpp
+    ../include/hashmap.cpp
+    ../include/apiexec.cpp
+  )
+   
+  # Optional: set the SONAME / versioning if you need it
+  set_target_properties(llm_android PROPERTIES
+    OUTPUT_NAME "libllm"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${ANDROID_ABI}")
+
+  target_link_libraries(llm_test PRIVATE
+    log
+    llm
+    llama
+    ggml
+  )
+
+  # Export the location so Gradle can copy it later
+  set(MY_NATIVE_LIB_PATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${ANDROID_ABI}/libllm.so")
+endif()
