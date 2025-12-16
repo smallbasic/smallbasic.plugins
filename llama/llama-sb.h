@@ -16,6 +16,8 @@ struct Llama {
   explicit Llama();
   ~Llama();
 
+  void append_response(const string &response);
+  const string build_chat_prompt(const string &user_msg);
   bool create(string model_path, int n_ctx, bool disable_log);
   string generate(const string &prompt,
                   int max_tokens = 128,
@@ -23,9 +25,9 @@ struct Llama {
                   bool echo = true,
                   bool clear_cache = true);
   const char *last_error() { return _last_error.c_str(); }
+  void reset();
 
   private:
-  string build_chat_prompt(const string &user_msg);
   void configure_sampler(float temperature);
 
   llama_model *_model;

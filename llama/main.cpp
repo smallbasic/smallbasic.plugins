@@ -20,7 +20,7 @@
 int g_nextId = 1;
 robin_hood::unordered_map<int, Llama> g_map;
 
-static int get_id(var_s *map, var_s *retval) {
+static int get_class_id(var_s *map, var_s *retval) {
   int result = -1;
   if (is_map(map)) {
     int id = map->v.m.id;
@@ -34,119 +34,7 @@ static int get_id(var_s *map, var_s *retval) {
   return result;
 }
 
-const char *llm_llama_chat(int id,
-                           const char * user_message,
-                           int max_tokens,
-                           float temperature) {
-  static thread_local string result;
-
-  // auto it = g_llamas.find(h);
-  // if (it == g_llamas.end()) {
-  //   result = "[invalid llama handle]";
-  //   return result.c_str();
-  // }
-
-  // Llama * llm = it->second.get();
-
-  // // build accumulated prompt
-  // string prompt = build_chat_prompt(llm, user_message);
-
-  // // run generation WITHOUT clearing cache
-  // result = llm->generate(prompt,
-  //                        max_tokens,
-  //                        temperature,
-  //                        false);   // echo = false
-
-  // // append assistant reply to history
-  // llm->chat_prompt += result;
-  // llm->chat_prompt += "\n";
-
-  return result.c_str();
-}
-
-//
-// make the model forget everything
-//
-void llm_llama_reset() {
-  // std::lock_guard<std::mutex> lock(g_mutex);
-
-  // auto it = g_llamas.find(h);
-  // if (it == g_llamas.end()) return;
-
-  // llama_kv_cache_clear(it->second->ctx);
-  // it->second->chat_prompt.clear();
-}
-
-//
-// string generate(prompt, max_tokens, temperature)
-//
-const char *llm_llama_generate(const char * prompt,
-                               int max_tokens,
-                               float temperature) {
-  // static thread_local string result;
-
-  // std::lock_guard<std::mutex> lock(g_mutex);
-
-  // auto it = g_llamas.find(h);
-  // if (it == g_llamas.end()) {
-  //   result = "[invalid llama handle]";
-  //   return result.c_str();
-  // }
-
-  // try {
-  //   result = it->second->generate(prompt,
-  //                                 max_tokens,
-  //                                 temperature);
-  // } catch (const std::exception & e) {
-  //   result = e.what();
-  // }
-
-  // return result.c_str();
-  return nullptr;
-}
-
-
-static int llm_llama_create(const char *model_path, int n_ctx) {
-  // std::lock_guard<std::mutex> lock(g_mutex);
-
-  // llama_handle id = g_next_id++;
-
-  // try {
-  //   g_llamas[id] = std::make_unique<Llama>(model_path, n_ctx);
-  // } catch (...) {
-  //   return 0;
-  // }
-
-  return 0;
-}
-
-void llm_llama_destroy() {
-  // std::lock_guard<std::mutex> lock(g_mutex);
-  // g_llamas.erase(h);
-}
-
-// const char *llm_llama_generate(llama_handle h,
-//                                 const char *prompt,
-//                                 int max_tokens,
-//                                 float temperature) {
-//   static thread_local string result;
-
-//   auto it = g_llamas.find(h);
-//   if (it == g_llamas.end()) {
-//     result = "[invalid llama handle]";
-//     return result.c_str();
-//   }
-
-//   try {
-//     result = it->second->generate(prompt, max_tokens, temperature);
-//   } catch (const std::exception &e) {
-//     result = e.what();
-//   }
-
-//   return result.c_str();
-// }
-
-string expand_path(const char *path) {
+static string expand_path(const char *path) {
   string result;
   if (path && path[0] == '~') {
     const char *home = getenv("HOME");
@@ -162,6 +50,78 @@ string expand_path(const char *path) {
   return result;
 }
 
+//
+// print llama.chat("Hello")
+//
+static int cmd_llama_chat(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc < 1) {
+    error(retval, "llama.chat", 1, 3);
+  } else {
+    int id = get_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_map.at(id);
+      auto prompt = get_param_str(argc, arg, 0, "");
+      int max_tokens = get_param_int(argc, arg, 0, 512);
+      var_num_t temperature = get_param_num(argc, arg, 0, 0);
+
+      // build accumulated prompt
+      string updated_prompt = llama.build_chat_prompt(prompt);
+
+      // run generation WITHOUT clearing cache
+      string response = llama.generate(updated_prompt, max_tokens, temperature, false, false);
+
+      // append assistant reply to history
+      llama.append_response(response);
+
+      v_setstr(retval, response.c_str());
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// llama.reset() - make the model forget everything
+//
+static int cmd_llama_reset(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 0) {
+    error(retval, "llama.reset", 0, 0);
+  } else {
+    int id = get_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_map.at(id);
+      llama.reset();
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// print llama.generate("please generate as simple program in BASIC to draw a cat", 1024, 0.8)
+//
+static int cmd_llama_generate(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc < 1) {
+    error(retval, "llama.generate", 1, 3);
+  } else {
+    int id = get_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_map.at(id);
+      auto prompt = get_param_str(argc, arg, 0, "");
+      int max_tokens = get_param_int(argc, arg, 0, 512);
+      var_num_t temperature = get_param_num(argc, arg, 0, 0);
+
+      // run generation WITHOUT clearing cache
+      string response = llama.generate(prompt, max_tokens, temperature, false, true);
+      v_setstr(retval, response.c_str());
+    }
+  }
+  return result;
+}
+
 static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   int result;
   auto model = expand_path(get_param_str(argc, params, 0, ""));
@@ -171,18 +131,9 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   Llama &llama = g_map[id];
   if (llama.create(model, n_ctx, disable_log)) {
     map_init_id(retval, id, CLASS_ID);
-
-    // v_create_callback(map, "getVoltage", cmd_analoginput_getvoltage);
-    // v_create_callback(map, "getVoltageSync", cmd_analoginput_getvoltagesync);
-    // v_create_callback(map, "getReference", cmd_analoginput_getreference);
-    // v_create_callback(map, "read", cmd_analoginput_read);
-    // v_create_callback(map, "readSync", cmd_analoginput_readsync);
-    // v_create_callback(map, "getOverflowCount", cmd_analoginput_getoverflowcount);
-    // v_create_callback(map, "available", cmd_analoginput_available);
-    // v_create_callback(map, "readBuffered", cmd_analoginput_readbuffered);
-    // v_create_callback(map, "getVoltageBuffered", cmd_analoginput_getvoltagebuffered);
-    // v_create_callback(map, "getSampleRate", cmd_analoginput_getsamplerate);
-
+    v_create_callback(retval, "chat", cmd_llama_chat);
+    v_create_callback(retval, "generate", cmd_llama_generate);
+    v_create_callback(retval, "reset", cmd_llama_reset);
     result = 1;
   } else {
     error(retval, llama.last_error());

@@ -22,6 +22,30 @@ Llama::Llama() :
   _n_ctx(0) {
 }
 
+Llama::~Llama() {
+  if (_sampler) {
+    llama_sampler_free(_sampler);
+  }
+  if (_ctx) {
+    llama_free(_ctx);
+  }
+  if (_model) {
+    llama_model_free(_model);
+  }
+}
+
+void Llama::append_response(const string &response) {
+  _chat_prompt += response;
+  _chat_prompt += "\n";
+}
+
+const string Llama::build_chat_prompt(const string &user_msg) {
+  _chat_prompt += "User: ";
+  _chat_prompt += user_msg;
+  _chat_prompt += "\nAssistant: ";
+  return _chat_prompt;
+}
+
 bool Llama::create(string model_path, int n_ctx, bool disable_log) {
   if (disable_log) {
     // only print errors
@@ -54,25 +78,6 @@ bool Llama::create(string model_path, int n_ctx, bool disable_log) {
     }
   }
   return _last_error.empty();
-}
-
-Llama::~Llama() {
-  if (_sampler) {
-    llama_sampler_free(_sampler);
-  }
-  if (_ctx) {
-    llama_free(_ctx);
-  }
-  if (_model) {
-    llama_model_free(_model);
-  }
-}
-
-string Llama::build_chat_prompt(const string &user_msg) {
-  _chat_prompt += "User: ";
-  _chat_prompt += user_msg;
-  _chat_prompt += "\nAssistant: ";
-  return _chat_prompt;
 }
 
 void Llama::configure_sampler(float temperature) {
@@ -143,3 +148,7 @@ string Llama::generate(const string &prompt, int max_tokens, float temperature, 
   return out;
 }
 
+void Llama::reset() {
+  // llama_kv_cache_clear(it->second->ctx);
+  _chat_prompt.clear();
+}
