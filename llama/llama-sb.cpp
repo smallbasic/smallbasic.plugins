@@ -97,12 +97,8 @@ void Llama::configure_sampler(float temperature) {
   }
 }
 
-string Llama::generate(const string &prompt, int max_tokens, float temperature, bool echo, bool clear_cache) {
+string Llama::generate(const string &prompt, int max_tokens, float temperature) {
   string out;
-
-  if (clear_cache) {
-    // llama_kv_cache_clear(_ctx);
-  }
 
   // find the number of tokens in the prompt
   int n_prompt = -llama_tokenize(_vocab, prompt.c_str(), prompt.size(), nullptr, 0, true, true);
@@ -131,10 +127,6 @@ string Llama::generate(const string &prompt, int max_tokens, float temperature, 
     }
 
     batch = llama_batch_get_one(&decoder_start_token_id, 1);
-  }
-
-  if (echo) {
-    out += prompt;
   }
 
   for (int n_pos = 0; n_pos + batch.n_tokens < n_prompt + max_tokens;) {

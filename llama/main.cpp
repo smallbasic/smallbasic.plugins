@@ -62,14 +62,14 @@ static int cmd_llama_chat(var_s *self, int argc, slib_par_t *arg, var_s *retval)
     if (id != -1) {
       Llama &llama = g_map.at(id);
       auto prompt = get_param_str(argc, arg, 0, "");
-      int max_tokens = get_param_int(argc, arg, 0, 512);
-      var_num_t temperature = get_param_num(argc, arg, 0, 0);
+      int max_tokens = get_param_int(argc, arg, 1, 32);
+      var_num_t temperature = get_param_num(argc, arg, 2, 0.8f);
 
       // build accumulated prompt
       string updated_prompt = llama.build_chat_prompt(prompt);
 
       // run generation WITHOUT clearing cache
-      string response = llama.generate(updated_prompt, max_tokens, temperature, false, false);
+      string response = llama.generate(updated_prompt, max_tokens, temperature);
 
       // append assistant reply to history
       llama.append_response(response);
@@ -111,11 +111,9 @@ static int cmd_llama_generate(var_s *self, int argc, slib_par_t *arg, var_s *ret
     if (id != -1) {
       Llama &llama = g_map.at(id);
       auto prompt = get_param_str(argc, arg, 0, "");
-      int max_tokens = get_param_int(argc, arg, 0, 512);
-      var_num_t temperature = get_param_num(argc, arg, 0, 0);
-
-      // run generation WITHOUT clearing cache
-      string response = llama.generate(prompt, max_tokens, temperature, false, true);
+      int max_tokens = get_param_int(argc, arg, 1, 32);
+      var_num_t temperature = get_param_num(argc, arg, 2, 0.8f);
+      string response = llama.generate(prompt, max_tokens, temperature);
       v_setstr(retval, response.c_str());
       result = 1;
     }
@@ -127,7 +125,7 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   int result;
   auto model = expand_path(get_param_str(argc, params, 0, ""));
   int n_ctx = get_param_int(argc, params, 0, 2048);
-  int disable_log = get_param_int(argc, params, 0, 1);
+  int disable_log = get_param_int(argc, params, 1, 1);
   int id = ++g_nextId;
   Llama &llama = g_map[id];
   if (llama.construct(model, n_ctx, disable_log)) {

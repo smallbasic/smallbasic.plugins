@@ -1,5 +1,4 @@
 #include "llama-sb.h"
-
 #include <cstdio>
 #include <cstring>
 
@@ -18,49 +17,47 @@ int main(int argc, char ** argv) {
   int n_predict = 32;
 
   // parse command line arguments
-  {
-    int i = 1;
-    for (; i < argc; i++) {
-      if (strcmp(argv[i], "-m") == 0) {
-        if (i + 1 < argc) {
-          model_path = argv[++i];
-        } else {
-          print_usage(argc, argv);
-          return 1;
-        }
-      } else if (strcmp(argv[i], "-n") == 0) {
-        if (i + 1 < argc) {
-          try {
-            n_predict = std::stoi(argv[++i]);
-          } catch (...) {
-            print_usage(argc, argv);
-            return 1;
-          }
-        } else {
+  int i = 1;
+  for (; i < argc; i++) {
+    if (strcmp(argv[i], "-m") == 0) {
+      if (i + 1 < argc) {
+        model_path = argv[++i];
+      } else {
+        print_usage(argc, argv);
+        return 1;
+      }
+    } else if (strcmp(argv[i], "-n") == 0) {
+      if (i + 1 < argc) {
+        try {
+          n_predict = std::stoi(argv[++i]);
+        } catch (...) {
           print_usage(argc, argv);
           return 1;
         }
       } else {
-        // prompt starts here
-        break;
+        print_usage(argc, argv);
+        return 1;
       }
+    } else {
+      // prompt starts here
+      break;
     }
-    if (model_path.empty()) {
-      print_usage(argc, argv);
-      return 1;
-    }
-    if (i < argc) {
-      prompt = argv[i++];
-      for (; i < argc; i++) {
-        prompt += " ";
-        prompt += argv[i];
-      }
+  }
+  if (model_path.empty()) {
+    print_usage(argc, argv);
+    return 1;
+  }
+  if (i < argc) {
+    prompt = argv[i++];
+    for (; i < argc; i++) {
+      prompt += " ";
+      prompt += argv[i];
     }
   }
 
   Llama llama;
   if (llama.construct(model_path, 1024, true)) {
-    string out = llama. generate(prompt, n_predict, 0.8f, true, true);
+    string out = llama. generate(prompt, n_predict, 0.8f);
     printf("\033[33m");
     printf(out.c_str());
     printf("\n\033[0m");
