@@ -33,6 +33,7 @@ set(GGML_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GGML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 # CPU-only flags
+set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
 set(GGML_CUDA OFF CACHE BOOL "" FORCE)
 set(GGML_METAL OFF CACHE BOOL "" FORCE)
 set(GGML_OPENCL OFF CACHE BOOL "" FORCE)
@@ -114,6 +115,9 @@ set_target_properties(llm_test PROPERTIES
 # Android native library
 # ------------------------------------------------------------------
 if (ANDROID)
+  set(GGML_LLAMAFILE OFF CACHE BOOL "" FORCE)
+  set(GGML_BLAS OFF CACHE BOOL "" FORCE)
+
   # CMake sets ANDROID when using the Android toolchain
   # Re‑use the same source files for the Android .so
   add_library(llm_android SHARED

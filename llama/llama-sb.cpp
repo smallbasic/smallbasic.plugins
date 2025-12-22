@@ -15,7 +15,17 @@ Llama::Llama() :
   _sampler(nullptr),
   _vocab(nullptr),
   _temperature(0),
-  _n_ctx(0) {
+  _top_k(0),
+  _top_p(1.0f),
+  _min_p(0.0f),
+  _max_tokens(150),
+  _log_level(GGML_LOG_LEVEL_NONE) {
+  llama_log_set([](enum ggml_log_level level, const char * text, void *user_data) {
+    Llama *llama = (Llama *)user_data;
+    if (level > llama->_log_level) {
+      fprintf(stderr, "LLAMA: %s", text);
+    }
+  }, this);
 }
 
 Llama::~Llama() {
@@ -42,20 +52,11 @@ const string Llama::build_chat_prompt(const string &user_msg) {
   return _chat_prompt;
 }
 
-bool Llama::construct(string model_path, int n_ctx, bool disable_log) {
-  if (disable_log) {
-    // only print errors
-    llama_log_set([](enum ggml_log_level level, const char * text, void * /* user_data */) {
-      if (level >= GGML_LOG_LEVEL_ERROR && text[0] != '.' && text[0] != '\n') {
-        fprintf(stderr, "%s", text);
-      }
-    }, nullptr);
-  }
-
+bool Llama::construct(string model_path, int n_ctx, int n_batch) {
   ggml_backend_load_all();
 
   llama_model_params mparams = llama_model_default_params();
-  mparams.n_gpu_layers = 99;
+  mparams.n_gpu_layers = 0;
 
   _model = llama_model_load_from_file(model_path.c_str(), mparams);
   if (!_model) {
@@ -63,41 +64,42 @@ bool Llama::construct(string model_path, int n_ctx, bool disable_log) {
   } else {
     llama_context_params cparams = llama_context_default_params();
     cparams.n_ctx   = n_ctx;
-    cparams.n_batch = n_ctx;
+    cparams.n_batch = n_batch;
     cparams.no_perf = true;
-
     _ctx = llama_init_from_model(_model, cparams);
     if (!_ctx) {
       _last_error = "failed to create context";
     } else {
       _vocab = llama_model_get_vocab(_model);
+
+      auto sparams = llama_sampler_chain_default_params();
+      sparams.no_perf = false;
+      _sampler = llama_sampler_chain_init(sparams);
     }
   }
   return _last_error.empty();
 }
 
-void Llama::configure_sampler(float temperature) {
-  if (temperature != _temperature || _sampler == nullptr) {
-    if (_sampler != nullptr) {
-      llama_sampler_free(_sampler);
+void Llama::configure_sampler() {
+  llama_sampler_reset(_sampler);
+  if (_temperature <= 0.0f) {
+    llama_sampler_chain_add(_sampler, llama_sampler_init_greedy());
+  } else {
+    llama_sampler_chain_add(_sampler, llama_sampler_init_temp(_temperature));
+    if (_top_k > 0) {
+      llama_sampler_chain_add(_sampler, llama_sampler_init_top_k(_top_k));
     }
-    auto sparams = llama_sampler_chain_default_params();
-    sparams.no_perf = false;
-    _sampler = llama_sampler_chain_init(sparams);
-    _temperature = temperature;
-
-    //  llama_sampler_chain_reset(sampler);
-    if (temperature <= 0.0f) {
-      llama_sampler_chain_add(_sampler, llama_sampler_init_greedy());
-    } else {
-      llama_sampler_chain_add(_sampler, llama_sampler_init_min_p(0.05f, 1));
-      llama_sampler_chain_add(_sampler, llama_sampler_init_temp(temperature));
-      llama_sampler_chain_add(_sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
+    if (_top_p < 1.0f) {
+      llama_sampler_chain_add(_sampler, llama_sampler_init_top_p(_top_p, 1));
     }
+    if (_min_p > 0.0f) {
+      llama_sampler_chain_add(_sampler, llama_sampler_init_min_p(_min_p, 1));
+    }
+    llama_sampler_chain_add(_sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
   }
 }
 
-string Llama::generate(const string &prompt, int max_tokens, float temperature) {
+string Llama::generate(const string &prompt) {
   string out;
 
   // find the number of tokens in the prompt
@@ -111,7 +113,7 @@ string Llama::generate(const string &prompt, int max_tokens, float temperature) 
   }
 
   // initialize the sampler
-  configure_sampler(temperature);
+  configure_sampler();
 
   // prepare a batch for the prompt
   llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
@@ -129,7 +131,7 @@ string Llama::generate(const string &prompt, int max_tokens, float temperature) 
     batch = llama_batch_get_one(&decoder_start_token_id, 1);
   }
 
-  for (int n_pos = 0; n_pos + batch.n_tokens < n_prompt + max_tokens;) {
+  for (int n_pos = 0; n_pos + batch.n_tokens < n_prompt + _max_tokens;) {
     // evaluate the current batch with the transformer model
     if (llama_decode(_ctx, batch)) {
       _last_error = "failed to eval";

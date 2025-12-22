@@ -51,25 +51,110 @@ static string expand_path(const char *path) {
 }
 
 //
+// llama.set_max_tokens(50)
+//
+static int cmd_llama_set_max_tokens(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_max_tokens", 1, 1);
+  } else {
+    int id = get_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_map.at(id);
+      llama.set_max_tokens(get_param_int(argc, arg, 0, 0));
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// llama.set_min_p(0.5)
+//
+static int cmd_llama_set_min_p(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_min_p", 1, 1);
+  } else {
+    int id = get_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_map.at(id);
+      llama.set_min_p(get_param_num(argc, arg, 0, 0));
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// llama.set_temperature(0.8)
+//
+static int cmd_llama_set_temperature(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_temperature", 1, 1);
+  } else {
+    int id = get_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_map.at(id);
+      llama.set_temperature(get_param_num(argc, arg, 0, 0));
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// llama.set_set_top_k(10.0)
+//
+static int cmd_llama_set_top_k(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_top_k", 1, 1);
+  } else {
+    int id = get_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_map.at(id);
+      llama.set_top_k(get_param_int(argc, arg, 0, 0));
+      result = 1;
+    }
+  }
+  return result;
+}
+
+static int cmd_llama_set_top_p(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_top_p", 1, 1);
+  } else {
+    int id = get_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_map.at(id);
+      llama.set_top_p(get_param_num(argc, arg, 0, 0));
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
 // print llama.chat("Hello")
 //
 static int cmd_llama_chat(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
-  if (argc < 1) {
-    error(retval, "llama.chat", 1, 3);
+  if (argc != 1) {
+    error(retval, "llama.chat", 1, 1);
   } else {
     int id = get_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_map.at(id);
       auto prompt = get_param_str(argc, arg, 0, "");
-      int max_tokens = get_param_int(argc, arg, 1, 32);
-      var_num_t temperature = get_param_num(argc, arg, 2, 0.8f);
 
       // build accumulated prompt
       string updated_prompt = llama.build_chat_prompt(prompt);
 
       // run generation WITHOUT clearing cache
-      string response = llama.generate(updated_prompt, max_tokens, temperature);
+      string response = llama.generate(updated_prompt);
 
       // append assistant reply to history
       llama.append_response(response);
@@ -100,20 +185,18 @@ static int cmd_llama_reset(var_s *self, int argc, slib_par_t *arg, var_s *retval
 }
 
 //
-// print llama.generate("please generate as simple program in BASIC to draw a cat", 1024, 0.8)
+// print llama.generate("please generate as simple program in BASIC to draw a cat")
 //
 static int cmd_llama_generate(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
-  if (argc < 1) {
-    error(retval, "llama.generate", 1, 3);
+  if (argc != 1) {
+    error(retval, "llama.generate", 1, 1);
   } else {
     int id = get_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_map.at(id);
       auto prompt = get_param_str(argc, arg, 0, "");
-      int max_tokens = get_param_int(argc, arg, 1, 32);
-      var_num_t temperature = get_param_num(argc, arg, 2, 0.8f);
-      string response = llama.generate(prompt, max_tokens, temperature);
+      string response = llama.generate(prompt);
       v_setstr(retval, response.c_str());
       result = 1;
     }
@@ -124,12 +207,19 @@ static int cmd_llama_generate(var_s *self, int argc, slib_par_t *arg, var_s *ret
 static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   int result;
   auto model = expand_path(get_param_str(argc, params, 0, ""));
-  int n_ctx = get_param_int(argc, params, 0, 2048);
-  int disable_log = get_param_int(argc, params, 1, 1);
+  auto n_ctx = get_param_int(argc, params, 0, 2048);
+  auto n_batch = get_param_int(argc, params, 1, 1024);
+  auto temperature = get_param_num(argc, params, 2, 0.25);
   int id = ++g_nextId;
   Llama &llama = g_map[id];
-  if (llama.construct(model, n_ctx, disable_log)) {
+  if (llama.construct(model, n_ctx, n_batch)) {
+    llama.set_temperature(temperature);
     map_init_id(retval, id, CLASS_ID);
+    v_create_callback(retval, "set_max_tokens", cmd_llama_set_max_tokens);
+    v_create_callback(retval, "set_min_p", cmd_llama_set_min_p);
+    v_create_callback(retval, "set_temperature", cmd_llama_set_temperature);
+    v_create_callback(retval, "set_top_k", cmd_llama_set_top_k);
+    v_create_callback(retval, "set_top_p", cmd_llama_set_top_p);
     v_create_callback(retval, "chat", cmd_llama_chat);
     v_create_callback(retval, "generate", cmd_llama_generate);
     v_create_callback(retval, "reset", cmd_llama_reset);

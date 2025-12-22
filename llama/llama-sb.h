@@ -16,15 +16,32 @@ struct Llama {
   explicit Llama();
   ~Llama();
 
+  // init
+  bool construct(string model_path, int n_ctx, int n_batch);
+
+  // generation
+  string generate(const string &prompt);
+
+  // generation parameters
+  void set_max_tokens(int max_tokens) { _max_tokens = max_tokens; }
+  void set_min_p(float min_p) { _min_p = min_p; }
+  void set_temperature(float temperature) { _temperature = temperature; }
+  void set_top_k(int top_k) { _top_k = top_k; }
+  void set_top_p(float top_p) { _top_p = top_p; }
+
+  // messages
   void append_response(const string &response);
+  void append_user_message(const string &user_msg);
+  const string& get_chat_history() const;
   const string build_chat_prompt(const string &user_msg);
-  bool construct(string model_path, int n_ctx, bool disable_log);
-  string generate(const string &prompt, int max_tokens, float temperature);
+
+  // error handling
   const char *last_error() { return _last_error.c_str(); }
+  void set_log_level(int level) { _log_level = level; }
   void reset();
 
   private:
-  void configure_sampler(float temperature);
+  void configure_sampler();
 
   llama_model *_model;
   llama_context *_ctx;
@@ -33,5 +50,9 @@ struct Llama {
   string _chat_prompt;
   string _last_error;
   float _temperature;
-  int _n_ctx;
+  float _top_p;
+  float _min_p;
+  int _top_k;
+  int _max_tokens;
+  int _log_level;
 };

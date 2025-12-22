@@ -56,8 +56,8 @@ int main(int argc, char ** argv) {
   }
 
   Llama llama;
-  if (llama.construct(model_path, 1024, true)) {
-    string out = llama. generate(prompt, n_predict, 0.8f);
+  if (llama.construct(model_path, 1024, 1024)) {
+    string out = llama.generate(prompt);
     printf("\033[33m");
     printf(out.c_str());
     printf("\n\033[0m");
