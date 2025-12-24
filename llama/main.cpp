@@ -50,6 +50,44 @@ static string expand_path(const char *path) {
   return result;
 }
 
+
+//
+// llama.set_penalty_repeat(0.8)
+//
+static int cmd_llama_set_penalty_repeat(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_penalty_repeat", 1, 1);
+  } else {
+    int id = get_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_map.at(id);
+      llama.set_penalty_repeat(get_param_num(argc, arg, 0, 0));
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// llama.set_penalty_last_n(0.8)
+//
+static int cmd_llama_set_penalty_last_n(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_penalty_last_n", 1, 1);
+  } else {
+    int id = get_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_map.at(id);
+      llama.set_penalty_last_n(get_param_num(argc, arg, 0, 0));
+      result = 1;
+    }
+  }
+  return result;
+}
+
+
 //
 // llama.set_max_tokens(50)
 //
@@ -105,7 +143,7 @@ static int cmd_llama_set_temperature(var_s *self, int argc, slib_par_t *arg, var
 }
 
 //
-// llama.set_set_top_k(10.0)
+// llama.set_top_k(10.0)
 //
 static int cmd_llama_set_top_k(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
@@ -122,6 +160,9 @@ static int cmd_llama_set_top_k(var_s *self, int argc, slib_par_t *arg, var_s *re
   return result;
 }
 
+//
+// llama.set_top_p(0)
+//
 static int cmd_llama_set_top_p(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
   if (argc != 1) {
@@ -207,14 +248,16 @@ static int cmd_llama_generate(var_s *self, int argc, slib_par_t *arg, var_s *ret
 static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   int result;
   auto model = expand_path(get_param_str(argc, params, 0, ""));
-  auto n_ctx = get_param_int(argc, params, 0, 2048);
-  auto n_batch = get_param_int(argc, params, 1, 1024);
-  auto temperature = get_param_num(argc, params, 2, 0.25);
+  auto n_ctx = get_param_int(argc, params, 1, 2048);
+  auto n_batch = get_param_int(argc, params, 2, 1024);
+  auto temperature = get_param_num(argc, params, 3, 0.25);
   int id = ++g_nextId;
   Llama &llama = g_map[id];
   if (llama.construct(model, n_ctx, n_batch)) {
     llama.set_temperature(temperature);
     map_init_id(retval, id, CLASS_ID);
+    v_create_callback(retval, "set_penalty_repeat", cmd_llama_set_penalty_repeat);
+    v_create_callback(retval, "set_penalty_last_n", cmd_llama_set_penalty_last_n);
     v_create_callback(retval, "set_max_tokens", cmd_llama_set_max_tokens);
     v_create_callback(retval, "set_min_p", cmd_llama_set_min_p);
     v_create_callback(retval, "set_temperature", cmd_llama_set_temperature);

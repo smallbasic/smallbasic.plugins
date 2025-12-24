@@ -23,6 +23,9 @@ struct Llama {
   string generate(const string &prompt);
 
   // generation parameters
+
+  void set_penalty_last_n(int32_t penalty_last_n) { _penalty_last_n = penalty_last_n; }
+  void set_penalty_repeat(float penalty_repeat) { _penalty_repeat = penalty_repeat; }
   void set_max_tokens(int max_tokens) { _max_tokens = max_tokens; }
   void set_min_p(float min_p) { _min_p = min_p; }
   void set_temperature(float temperature) { _temperature = temperature; }
@@ -49,6 +52,8 @@ struct Llama {
   const llama_vocab *_vocab;
   string _chat_prompt;
   string _last_error;
+  int32_t _penalty_last_n;
+  float _penalty_repeat;
   float _temperature;
   float _top_p;
   float _min_p;

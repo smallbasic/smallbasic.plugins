@@ -5,6 +5,7 @@
 //
 // Copyright(C) 2026 Chris Warren-Smith
 
+#include <chrono>
 #include <vector>
 #include "llama.h"
 #include "llama-sb.h"
@@ -14,12 +15,14 @@ Llama::Llama() :
   _ctx(nullptr),
   _sampler(nullptr),
   _vocab(nullptr),
+  _penalty_last_n(64),
+  _penalty_repeat(1.1f),
   _temperature(0),
   _top_k(0),
   _top_p(1.0f),
   _min_p(0.0f),
   _max_tokens(150),
-  _log_level(GGML_LOG_LEVEL_NONE) {
+  _log_level(GGML_LOG_LEVEL_CONT) {
   llama_log_set([](enum ggml_log_level level, const char * text, void *user_data) {
     Llama *llama = (Llama *)user_data;
     if (level > llama->_log_level) {
@@ -82,6 +85,10 @@ bool Llama::construct(string model_path, int n_ctx, int n_batch) {
 
 void Llama::configure_sampler() {
   llama_sampler_reset(_sampler);
+  if (_penalty_last_n != 0 && _penalty_repeat != 1.0f) {
+    auto penalties = llama_sampler_init_penalties(_penalty_last_n, _penalty_repeat, 0.0f, 0.0f);
+    llama_sampler_chain_add(_sampler, penalties);
+  }
   if (_temperature <= 0.0f) {
     llama_sampler_chain_add(_sampler, llama_sampler_init_greedy());
   } else {
@@ -99,72 +106,104 @@ void Llama::configure_sampler() {
   }
 }
 
-string Llama::generate(const string &prompt) {
-  string out;
-
-  // find the number of tokens in the prompt
-  int n_prompt = -llama_tokenize(_vocab, prompt.c_str(), prompt.size(), nullptr, 0, true, true);
-
-  // allocate space for the tokens and tokenize the prompt
-  std::vector<llama_token> prompt_tokens(n_prompt);
-  if (llama_tokenize(_vocab, prompt.c_str(), prompt.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
-    _last_error = "failed tokenize the prompt";
-    return out;
-  }
-
-  // initialize the sampler
-  configure_sampler();
-
-  // prepare a batch for the prompt
-  llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
-  if (llama_model_has_encoder(_model)) {
-    if (llama_encode(_ctx, batch)) {
-      _last_error = "failed to eval";
-      return out;
-    }
-
-    llama_token decoder_start_token_id = llama_model_decoder_start_token(_model);
-    if (decoder_start_token_id == LLAMA_TOKEN_NULL) {
-      decoder_start_token_id = llama_vocab_bos(_vocab);
-    }
-
-    batch = llama_batch_get_one(&decoder_start_token_id, 1);
-  }
-
-  for (int n_pos = 0; n_pos + batch.n_tokens < n_prompt + _max_tokens;) {
-    // evaluate the current batch with the transformer model
-    if (llama_decode(_ctx, batch)) {
-      _last_error = "failed to eval";
-      break;
-    }
-
-    n_pos += batch.n_tokens;
-
-    // sample the next token
-    llama_token new_token_id = llama_sampler_sample(_sampler, _ctx, -1);
-
-    // is it an end of generation?
-    if (llama_vocab_is_eog(_vocab, new_token_id)) {
-      break;
-    }
-
-    char buf[128];
-    int n = llama_token_to_piece(_vocab, new_token_id, buf, sizeof(buf), 0, true);
-    if (n < 0) {
-      _last_error = "failed to convert token to piece";
-      break;
-    } else if (n > 0) {
-      out.append(buf, n);
-    }
-
-    // prepare the next batch with the sampled token
-    batch = llama_batch_get_one(&new_token_id, 1);
-  }
-
-  return out;
-}
-
 void Llama::reset() {
   // llama_kv_cache_clear(it->second->ctx);
   _chat_prompt.clear();
 }
+
+string Llama::generate(const string &prompt) {
+  string out = prompt;
+
+  // ---- tokenize prompt ----
+  int n_prompt = -llama_tokenize(_vocab, prompt.c_str(), prompt.size(),
+                                 nullptr, 0, true, true);
+
+  if (n_prompt <= 0) {
+    _last_error = "failed to tokenize prompt";
+    return out;
+  }
+
+  std::vector<llama_token> prompt_tokens(n_prompt);
+  if (llama_tokenize(_vocab, prompt.c_str(), prompt.size(),
+                     prompt_tokens.data(), n_prompt, true, true) < 0) {
+    _last_error = "failed to tokenize prompt";
+    return out;
+  }
+
+  // ---- sampler ----
+  configure_sampler();
+
+  // ---- decode prompt ----
+  llama_batch batch = llama_batch_get_one(prompt_tokens.data(), n_prompt);
+  if (llama_decode(_ctx, batch)) {
+    _last_error = "failed to eval prompt";
+    return out;
+  }
+
+  // ---- handle encoder models ----
+  if (llama_model_has_encoder(_model)) {
+    llama_token decoder_start_token_id = llama_model_decoder_start_token(_model);
+    if (decoder_start_token_id == LLAMA_TOKEN_NULL) {
+      decoder_start_token_id = llama_vocab_bos(_vocab);
+    }
+    batch = llama_batch_get_one(&decoder_start_token_id, 1);
+    if (llama_decode(_ctx, batch)) {
+      _last_error = "failed to eval decoder start token";
+      return out;
+    }
+  }
+
+  // ---- generation loop ----
+  std::vector<llama_token> decoded;
+  decoded.reserve(_max_tokens);
+
+  int generated = 0;
+  auto t_start = std::chrono::high_resolution_clock::now();
+
+  while (generated < _max_tokens) {
+    // sample one token from the current logits
+    llama_token tok = llama_sampler_sample(_sampler, _ctx, -1);
+
+    // end-of-generation check
+    if (llama_vocab_is_eog(_vocab, tok)) {
+      break;
+    }
+
+    // append token to decoded list
+    decoded.push_back(tok);
+    ++generated;
+
+    // ---- decode the token immediately ----
+    llama_batch batch = llama_batch_get_one(&tok, 1);
+    if (llama_decode(_ctx, batch)) {
+      _last_error = "failed to eval token during generation";
+      break;
+    }
+  }
+
+  // ---- detokenize sequentially ----
+  if (!decoded.empty()) {
+    char buf[512];
+    for (llama_token tok : decoded) {
+      if (llama_vocab_is_control(_vocab, tok)) {
+        continue;
+      }
+      int n = llama_token_to_piece(_vocab, tok, buf, sizeof(buf), 0, false);
+      if (n > 0) {
+        out.append(buf, n);
+      }
+    }
+  }
+
+  // ---- timing ----
+  auto t_end = std::chrono::high_resolution_clock::now();
+  double secs = std::chrono::duration<double>(t_end - t_start).count();
+  double tokps = secs > 0 ? generated / secs : 0;
+
+  fprintf(stderr,
+          "[tok/s=%.2f] generated=%d time=%.3fs\n",
+          tokps, generated, secs);
+
+  return out;
+}
+
