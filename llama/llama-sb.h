@@ -12,6 +12,18 @@
 
 using namespace std;
 
+struct Llama;
+
+struct LlamaIter {
+  explicit LlamaIter();
+  ~LlamaIter() {}
+
+  Llama *_llama;
+  llama_batch _batch;
+  float _tokens_sec;
+  bool _has_next;
+};
+
 struct Llama {
   explicit Llama();
   ~Llama();
@@ -20,10 +32,10 @@ struct Llama {
   bool construct(string model_path, int n_ctx, int n_batch);
 
   // generation
-  string generate(const string &prompt);
+  bool generate(LlamaIter &iter, const string &prompt);
+  string next(LlamaIter &iter);
 
   // generation parameters
-
   void set_penalty_last_n(int32_t penalty_last_n) { _penalty_last_n = penalty_last_n; }
   void set_penalty_repeat(float penalty_repeat) { _penalty_repeat = penalty_repeat; }
   void set_max_tokens(int max_tokens) { _max_tokens = max_tokens; }
@@ -31,12 +43,6 @@ struct Llama {
   void set_temperature(float temperature) { _temperature = temperature; }
   void set_top_k(int top_k) { _top_k = top_k; }
   void set_top_p(float top_p) { _top_p = top_p; }
-
-  // messages
-  void append_response(const string &response);
-  void append_user_message(const string &user_msg);
-  const string& get_chat_history() const;
-  const string build_chat_prompt(const string &user_msg);
 
   // error handling
   const char *last_error() { return _last_error.c_str(); }

@@ -15,21 +15,37 @@
 
 #include "llama-sb.h"
 
-#define CLASS_ID 1
+#define CLASS_ID_LLAMA 1
+#define CLASS_ID_LLAMA_ITER 2
 
 int g_nextId = 1;
-robin_hood::unordered_map<int, Llama> g_map;
+robin_hood::unordered_map<int, Llama> g_llama;
+robin_hood::unordered_map<int, LlamaIter> g_llama_iter;
 
-static int get_class_id(var_s *map, var_s *retval) {
+static int get_llama_class_id(var_s *map, var_s *retval) {
   int result = -1;
   if (is_map(map)) {
     int id = map->v.m.id;
-    if (id != -1 && g_map.find(id) != g_map.end()) {
+    if (id != -1 && g_llama.find(id) != g_llama.end()) {
       result = id;
     }
   }
   if (result == -1) {
     error(retval, "Llama not found");
+  }
+  return result;
+}
+
+static int get_llama_iter_class_id(var_s *map, var_s *retval) {
+  int result = -1;
+  if (is_map(map)) {
+    int id = map->v.m.id;
+    if (id != -1 && g_llama_iter.find(id) != g_llama_iter.end()) {
+      result = id;
+    }
+  }
+  if (result == -1) {
+    error(retval, "Llama iter not found");
   }
   return result;
 }
@@ -59,9 +75,9 @@ static int cmd_llama_set_penalty_repeat(var_s *self, int argc, slib_par_t *arg, 
   if (argc != 1) {
     error(retval, "llama.set_penalty_repeat", 1, 1);
   } else {
-    int id = get_class_id(self, retval);
+    int id = get_llama_class_id(self, retval);
     if (id != -1) {
-      Llama &llama = g_map.at(id);
+      Llama &llama = g_llama.at(id);
       llama.set_penalty_repeat(get_param_num(argc, arg, 0, 0));
       result = 1;
     }
@@ -77,9 +93,9 @@ static int cmd_llama_set_penalty_last_n(var_s *self, int argc, slib_par_t *arg, 
   if (argc != 1) {
     error(retval, "llama.set_penalty_last_n", 1, 1);
   } else {
-    int id = get_class_id(self, retval);
+    int id = get_llama_class_id(self, retval);
     if (id != -1) {
-      Llama &llama = g_map.at(id);
+      Llama &llama = g_llama.at(id);
       llama.set_penalty_last_n(get_param_num(argc, arg, 0, 0));
       result = 1;
     }
@@ -96,9 +112,9 @@ static int cmd_llama_set_max_tokens(var_s *self, int argc, slib_par_t *arg, var_
   if (argc != 1) {
     error(retval, "llama.set_max_tokens", 1, 1);
   } else {
-    int id = get_class_id(self, retval);
+    int id = get_llama_class_id(self, retval);
     if (id != -1) {
-      Llama &llama = g_map.at(id);
+      Llama &llama = g_llama.at(id);
       llama.set_max_tokens(get_param_int(argc, arg, 0, 0));
       result = 1;
     }
@@ -114,9 +130,9 @@ static int cmd_llama_set_min_p(var_s *self, int argc, slib_par_t *arg, var_s *re
   if (argc != 1) {
     error(retval, "llama.set_min_p", 1, 1);
   } else {
-    int id = get_class_id(self, retval);
+    int id = get_llama_class_id(self, retval);
     if (id != -1) {
-      Llama &llama = g_map.at(id);
+      Llama &llama = g_llama.at(id);
       llama.set_min_p(get_param_num(argc, arg, 0, 0));
       result = 1;
     }
@@ -132,9 +148,9 @@ static int cmd_llama_set_temperature(var_s *self, int argc, slib_par_t *arg, var
   if (argc != 1) {
     error(retval, "llama.set_temperature", 1, 1);
   } else {
-    int id = get_class_id(self, retval);
+    int id = get_llama_class_id(self, retval);
     if (id != -1) {
-      Llama &llama = g_map.at(id);
+      Llama &llama = g_llama.at(id);
       llama.set_temperature(get_param_num(argc, arg, 0, 0));
       result = 1;
     }
@@ -150,9 +166,9 @@ static int cmd_llama_set_top_k(var_s *self, int argc, slib_par_t *arg, var_s *re
   if (argc != 1) {
     error(retval, "llama.set_top_k", 1, 1);
   } else {
-    int id = get_class_id(self, retval);
+    int id = get_llama_class_id(self, retval);
     if (id != -1) {
-      Llama &llama = g_map.at(id);
+      Llama &llama = g_llama.at(id);
       llama.set_top_k(get_param_int(argc, arg, 0, 0));
       result = 1;
     }
@@ -168,39 +184,10 @@ static int cmd_llama_set_top_p(var_s *self, int argc, slib_par_t *arg, var_s *re
   if (argc != 1) {
     error(retval, "llama.set_top_p", 1, 1);
   } else {
-    int id = get_class_id(self, retval);
+    int id = get_llama_class_id(self, retval);
     if (id != -1) {
-      Llama &llama = g_map.at(id);
+      Llama &llama = g_llama.at(id);
       llama.set_top_p(get_param_num(argc, arg, 0, 0));
-      result = 1;
-    }
-  }
-  return result;
-}
-
-//
-// print llama.chat("Hello")
-//
-static int cmd_llama_chat(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
-  int result = 0;
-  if (argc != 1) {
-    error(retval, "llama.chat", 1, 1);
-  } else {
-    int id = get_class_id(self, retval);
-    if (id != -1) {
-      Llama &llama = g_map.at(id);
-      auto prompt = get_param_str(argc, arg, 0, "");
-
-      // build accumulated prompt
-      string updated_prompt = llama.build_chat_prompt(prompt);
-
-      // run generation WITHOUT clearing cache
-      string response = llama.generate(updated_prompt);
-
-      // append assistant reply to history
-      llama.append_response(response);
-
-      v_setstr(retval, response.c_str());
       result = 1;
     }
   }
@@ -215,10 +202,65 @@ static int cmd_llama_reset(var_s *self, int argc, slib_par_t *arg, var_s *retval
   if (argc != 0) {
     error(retval, "llama.reset", 0, 0);
   } else {
-    int id = get_class_id(self, retval);
+    int id = get_llama_class_id(self, retval);
     if (id != -1) {
-      Llama &llama = g_map.at(id);
+      Llama &llama = g_llama.at(id);
       llama.reset();
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// iter.has_next()
+//
+static int cmd_llama_has_next(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 0) {
+    error(retval, "iter.has_next", 0, 0);
+  } else {
+    int id = get_llama_iter_class_id(self, retval);
+    if (id != -1) {
+      LlamaIter &llamaIter = g_llama_iter.at(id);
+      v_setint(retval, llamaIter._has_next);
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// iter.next()
+//
+static int cmd_llama_next(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 0) {
+    error(retval, "iter.next", 0, 0);
+  } else {
+    int id = get_llama_iter_class_id(self, retval);
+    if (id != -1) {
+      LlamaIter &iter = g_llama_iter.at(id);
+      auto out = iter._llama->next(iter);
+      v_setstr(retval, out.c_str());
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// iter.tokens_sec
+//
+static int cmd_llama_tokens_sec(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 0) {
+    error(retval, "iter.tokens_sec", 0, 0);
+  } else {
+    int id = get_llama_iter_class_id(self, retval);
+    if (id != -1) {
+      LlamaIter &llamaIter = g_llama_iter.at(id);
+      v_setreal(retval, llamaIter._tokens_sec);
       result = 1;
     }
   }
@@ -233,13 +275,21 @@ static int cmd_llama_generate(var_s *self, int argc, slib_par_t *arg, var_s *ret
   if (argc != 1) {
     error(retval, "llama.generate", 1, 1);
   } else {
-    int id = get_class_id(self, retval);
+    int id = get_llama_class_id(self, retval);
     if (id != -1) {
-      Llama &llama = g_map.at(id);
+      int iter_id = ++g_nextId;
+      LlamaIter &iter = g_llama_iter[iter_id];
+      Llama &llama = g_llama.at(id);
       auto prompt = get_param_str(argc, arg, 0, "");
-      string response = llama.generate(prompt);
-      v_setstr(retval, response.c_str());
-      result = 1;
+      if (llama.generate(iter, prompt)) {
+        map_init_id(retval, iter_id, CLASS_ID_LLAMA_ITER);
+        v_create_callback(retval, "has_next", cmd_llama_has_next);
+        v_create_callback(retval, "next", cmd_llama_next);
+        v_create_callback(retval, "tokens_sec", cmd_llama_tokens_sec);
+        result = 1;
+      } else {
+        error(retval, llama.last_error());
+      }
     }
   }
   return result;
@@ -250,12 +300,10 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   auto model = expand_path(get_param_str(argc, params, 0, ""));
   auto n_ctx = get_param_int(argc, params, 1, 2048);
   auto n_batch = get_param_int(argc, params, 2, 1024);
-  auto temperature = get_param_num(argc, params, 3, 0.25);
   int id = ++g_nextId;
-  Llama &llama = g_map[id];
+  Llama &llama = g_llama[id];
   if (llama.construct(model, n_ctx, n_batch)) {
-    llama.set_temperature(temperature);
-    map_init_id(retval, id, CLASS_ID);
+    map_init_id(retval, id, CLASS_ID_LLAMA);
     v_create_callback(retval, "set_penalty_repeat", cmd_llama_set_penalty_repeat);
     v_create_callback(retval, "set_penalty_last_n", cmd_llama_set_penalty_last_n);
     v_create_callback(retval, "set_max_tokens", cmd_llama_set_max_tokens);
@@ -263,13 +311,12 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
     v_create_callback(retval, "set_temperature", cmd_llama_set_temperature);
     v_create_callback(retval, "set_top_k", cmd_llama_set_top_k);
     v_create_callback(retval, "set_top_p", cmd_llama_set_top_p);
-    v_create_callback(retval, "chat", cmd_llama_chat);
     v_create_callback(retval, "generate", cmd_llama_generate);
     v_create_callback(retval, "reset", cmd_llama_reset);
     result = 1;
   } else {
     error(retval, llama.last_error());
-    g_map.erase(id);
+    g_llama.erase(id);
     result = 0;
   }
   return result;
@@ -302,9 +349,14 @@ int sblib_init(const char *sourceFile) {
 SBLIB_API void sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
-    case CLASS_ID:
-      if (g_map.find(id) != g_map.end()) {
-        g_map.erase(id);
+    case CLASS_ID_LLAMA:
+      if (g_llama.find(id) != g_llama.end()) {
+        g_llama.erase(id);
+      }
+      break;
+    case CLASS_ID_LLAMA_ITER:
+      if (g_llama_iter.find(id) != g_llama_iter.end()) {
+        g_llama_iter.erase(id);
       }
       break;
     }
@@ -315,9 +367,13 @@ SBLIB_API void sblib_free(int cls_id, int id) {
 // Program termination
 //
 void sblib_close(void) {
-  if (!g_map.empty()) {
+  if (!g_llama.empty()) {
     fprintf(stderr, "LLM leak detected\n");
-    g_map.clear();
+    g_llama.clear();
+  }
+  if (!g_llama_iter.empty()) {
+    fprintf(stderr, "LLM iter leak detected\n");
+    g_llama_iter.clear();
   }
 }
 

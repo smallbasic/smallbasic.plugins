@@ -3,12 +3,11 @@ import llm
 const model = "models/Qwen_Qwen2.5-1.5B-Instruct-GGUF-Q4/qwen2.5-1.5b-instruct-q4_k_m.gguf"
 const llama = llm.llama(model, 4096, 512)
 
-llama.set_max_tokens(150)
-llama.set_min_p(0.5)
-llama.set_temperature(.8)
-llama.set_top_k(1)
-llama.set_top_p(0)
-
+' llama.set_max_tokens(150)
+' llama.set_min_p(0.5)
+' llama.set_temperature(.8)
+' llama.set_top_k(1)
+' llama.set_top_p(0)
 
 rem factual answers, tools, summaries
 ' llama.set_max_tokens(150)
@@ -46,7 +45,7 @@ rem technical, conservative
 ' llama.set_min_p(0.02)
 
 rem speed optimised on CPU
-llama.set_max_tokens(150)
+llama.set_max_tokens(10)
 llama.set_temperature(0.7)
 llama.set_top_k(20)
 llama.set_top_p(0.0)
@@ -68,20 +67,18 @@ llama.set_min_p(0.05)
 ' _penalty_last_n = 0;
 ' _penalty_repeat = 1.0f;
 
-llama.set_penalty_repeat(1.15)
-llama.set_penalty_last_n(64)
+' llama.set_penalty_repeat(1.15)
+' llama.set_penalty_last_n(64)
 
-
-
-llm_prompt = """\
+prompt = """\
 you are a helpful assistant\
  \nQuestion: when is dinner?\
 """
-
-print llm_prompt
-print llama.generate(llm_prompt)
-
-' iter = llama.generate(llm_prompt)
-' while iter != 0
-'   print iter.next()
-' wend
+print prompt
+print "============"
+iter = llama.generate(prompt)
+while iter.has_next()
+  print iter.next()
+wend
+print "============"
+print iter.tokens_sec()

@@ -57,10 +57,14 @@ int main(int argc, char ** argv) {
 
   Llama llama;
   if (llama.construct(model_path, 1024, 1024)) {
-    string out = llama.generate(prompt);
-    printf("\033[33m");
-    printf(out.c_str());
-    printf("\n\033[0m");
+    LlamaIter iter;
+    llama.generate(iter, prompt);
+    while (iter._has_next) {
+      auto out = llama.next(iter);
+      printf("\033[33m");
+      printf(out.c_str());
+      printf("\n\033[0m");
+    }
   } else {
     fprintf(stderr, "ERR: %s\n", llama.last_error());
   }
