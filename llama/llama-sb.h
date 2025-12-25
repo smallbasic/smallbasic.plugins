@@ -8,6 +8,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include "llama.h"
 
 using namespace std;
@@ -19,8 +20,9 @@ struct LlamaIter {
   ~LlamaIter() {}
 
   Llama *_llama;
-  llama_batch _batch;
   float _tokens_sec;
+  string _last_word;
+  int _repetition_count;
   bool _has_next;
 };
 
@@ -36,6 +38,8 @@ struct Llama {
   string next(LlamaIter &iter);
 
   // generation parameters
+  void add_stop(const char *stop) { _stop_sequences.push_back(stop); }
+  void clear_stops() { _stop_sequences.clear(); }
   void set_penalty_last_n(int32_t penalty_last_n) { _penalty_last_n = penalty_last_n; }
   void set_penalty_repeat(float penalty_repeat) { _penalty_repeat = penalty_repeat; }
   void set_max_tokens(int max_tokens) { _max_tokens = max_tokens; }
@@ -51,12 +55,13 @@ struct Llama {
 
   private:
   void configure_sampler();
+  vector<llama_token> tokenize(const string &prompt);
 
   llama_model *_model;
   llama_context *_ctx;
   llama_sampler *_sampler;
   const llama_vocab *_vocab;
-  string _chat_prompt;
+  vector<string> _stop_sequences;
   string _last_error;
   int32_t _penalty_last_n;
   float _penalty_repeat;

@@ -66,6 +66,23 @@ static string expand_path(const char *path) {
   return result;
 }
 
+//
+// llama.add_stop('xyz')
+//
+static int cmd_llama_add_stop(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.add_stop", 1, 1);
+  } else {
+    int id = get_llama_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_llama.at(id);
+      llama.add_stop(get_param_str(argc, arg, 0, "stop"));
+      result = 1;
+    }
+  }
+  return result;
+}
 
 //
 // llama.set_penalty_repeat(0.8)
@@ -304,6 +321,9 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   Llama &llama = g_llama[id];
   if (llama.construct(model, n_ctx, n_batch)) {
     map_init_id(retval, id, CLASS_ID_LLAMA);
+    v_create_callback(retval, "add_stop", cmd_llama_add_stop);
+    v_create_callback(retval, "generate", cmd_llama_generate);
+    v_create_callback(retval, "reset", cmd_llama_reset);
     v_create_callback(retval, "set_penalty_repeat", cmd_llama_set_penalty_repeat);
     v_create_callback(retval, "set_penalty_last_n", cmd_llama_set_penalty_last_n);
     v_create_callback(retval, "set_max_tokens", cmd_llama_set_max_tokens);
@@ -311,8 +331,6 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
     v_create_callback(retval, "set_temperature", cmd_llama_set_temperature);
     v_create_callback(retval, "set_top_k", cmd_llama_set_top_k);
     v_create_callback(retval, "set_top_p", cmd_llama_set_top_p);
-    v_create_callback(retval, "generate", cmd_llama_generate);
-    v_create_callback(retval, "reset", cmd_llama_reset);
     result = 1;
   } else {
     error(retval, llama.last_error());

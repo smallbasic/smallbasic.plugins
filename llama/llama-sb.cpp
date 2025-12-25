@@ -6,13 +6,15 @@
 // Copyright(C) 2026 Chris Warren-Smith
 
 #include <chrono>
-#include <vector>
 #include "llama.h"
 #include "llama-sb.h"
+
+constexpr int MAX_REPEAT = 5;
 
 LlamaIter::LlamaIter() :
   _llama(nullptr),
   _tokens_sec(0),
+  _repetition_count(0),
   _has_next(false) {
 }
 
@@ -21,13 +23,13 @@ Llama::Llama() :
   _ctx(nullptr),
   _sampler(nullptr),
   _vocab(nullptr),
-  _penalty_last_n(64),
-  _penalty_repeat(1.1f),
+  _penalty_last_n(0),
+  _penalty_repeat(0),
   _temperature(0),
   _top_k(0),
-  _top_p(1.0f),
-  _min_p(0.0f),
-  _max_tokens(150),
+  _top_p(0),
+  _min_p(0),
+  _max_tokens(0),
   _log_level(GGML_LOG_LEVEL_CONT) {
   llama_log_set([](enum ggml_log_level level, const char * text, void *user_data) {
     Llama *llama = (Llama *)user_data;
@@ -35,6 +37,7 @@ Llama::Llama() :
       fprintf(stderr, "LLAMA: %s", text);
     }
   }, this);
+  reset();
 }
 
 Llama::~Llama() {
@@ -47,6 +50,18 @@ Llama::~Llama() {
   if (_model) {
     llama_model_free(_model);
   }
+}
+
+void Llama::reset() {
+  _stop_sequences.clear();
+  _last_error = "";
+  _penalty_last_n = 64;
+  _penalty_repeat = 1.1f;
+  _temperature = 0;
+  _top_k = 0;
+  _top_p = 1.0f;
+  _min_p = 0.0f;
+  _max_tokens = 150;
 }
 
 bool Llama::construct(string model_path, int n_ctx, int n_batch) {
@@ -100,31 +115,31 @@ void Llama::configure_sampler() {
   }
 }
 
-void Llama::reset() {
-  llama_sampler_reset(_sampler);
-  _chat_prompt.clear();
+vector<llama_token> Llama::tokenize(const string &prompt) {
+  vector<llama_token> result;
+
+  int n_prompt = -llama_tokenize(_vocab, prompt.c_str(), prompt.size(), nullptr, 0, true, true);
+  if (n_prompt <= 0) {
+    _last_error = "failed to tokenize prompt";
+  } else {
+    result.reserve(n_prompt);
+    result.resize(n_prompt);
+    if (llama_tokenize(_vocab, prompt.c_str(), prompt.size(),
+                       result.data(), n_prompt, true, true) < 0) {
+      _last_error = "failed to tokenize prompt";
+    }
+  }
+  return result;
 }
 
 bool Llama::generate(LlamaIter &iter, const string &prompt) {
-  int n_prompt = -llama_tokenize(_vocab, prompt.c_str(), prompt.size(),
-                                 nullptr, 0, true, true);
-
-  if (n_prompt <= 0) {
-    _last_error = "failed to tokenize prompt";
+  vector<llama_token> prompt_tokens = tokenize(prompt);
+  if (prompt_tokens.size() == 0) {
     return false;
   }
-
-  std::vector<llama_token> prompt_tokens(n_prompt);
-  if (llama_tokenize(_vocab, prompt.c_str(), prompt.size(),
-                     prompt_tokens.data(), n_prompt, true, true) < 0) {
-    _last_error = "failed to tokenize prompt";
-    return false;
-  }
-
-  configure_sampler();
 
   // decode prompt
-  llama_batch batch = llama_batch_get_one(prompt_tokens.data(), n_prompt);
+  llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
   if (llama_decode(_ctx, batch)) {
     _last_error = "failed to eval prompt";
     return false;
@@ -143,8 +158,9 @@ bool Llama::generate(LlamaIter &iter, const string &prompt) {
     }
   }
 
+  configure_sampler();
+
   iter._llama = this;
-  iter._batch = batch;
   iter._has_next = true;
   iter._tokens_sec = 0;
   return true;
@@ -153,7 +169,7 @@ bool Llama::generate(LlamaIter &iter, const string &prompt) {
 string Llama::next(LlamaIter &iter) {
   string out;
 
-  std::vector<llama_token> decoded;
+  vector<llama_token> decoded;
   decoded.reserve(_max_tokens);
 
   int generated = 0;
@@ -183,14 +199,32 @@ string Llama::next(LlamaIter &iter) {
 
   // detokenize sequentially
   if (!decoded.empty()) {
-    char buf[512];
     for (llama_token tok : decoded) {
-      if (llama_vocab_is_control(_vocab, tok)) {
-        continue;
-      }
-      int n = llama_token_to_piece(_vocab, tok, buf, sizeof(buf), 0, false);
-      if (n > 0) {
-        out.append(buf, n);
+      if (!llama_vocab_is_control(_vocab, tok)) {
+        char buf[512];
+        int n = llama_token_to_piece(_vocab, tok, buf, sizeof(buf), 0, false);
+        if (n > 0) {
+          if (iter._last_word == buf) {
+            if (++iter._repetition_count == MAX_REPEAT) {
+              iter._has_next = false;
+              break;
+            }
+          } else {
+            iter._repetition_count = 0;
+            iter._last_word = buf;
+          }
+          out.append(buf, n);
+
+          for (const auto &stop : _stop_sequences) {
+            size_t pos = out.find(stop);
+            if (pos != std::string::npos) {
+              // found stop sequence - truncate and signal end
+              out = out.substr(0, pos);
+              iter._has_next = false;
+              break;
+            }
+          }
+        }
       }
     }
   }
