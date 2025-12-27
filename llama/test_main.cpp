@@ -62,7 +62,7 @@ int main(int argc, char ** argv) {
     while (iter._has_next) {
       auto out = llama.next(iter);
       printf("\033[33m");
-      printf(out.c_str());
+      printf("%s\n", out.c_str());
       printf("\n\033[0m");
     }
   } else {

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <string>
 #include <vector>
 #include "llama.h"
@@ -20,9 +21,10 @@ struct LlamaIter {
   ~LlamaIter() {}
 
   Llama *_llama;
-  float _tokens_sec;
   string _last_word;
+  chrono::high_resolution_clock::time_point _t_start;
   int _repetition_count;
+  int _tokens_generated;
   bool _has_next;
 };
 
@@ -54,7 +56,9 @@ struct Llama {
   void reset();
 
   private:
+  bool ends_with_sentence_boundary(const string &out);
   void configure_sampler();
+  bool make_space_for_tokens(int n_tokens, int keep_min);
   vector<llama_token> tokenize(const string &prompt);
 
   llama_model *_model;

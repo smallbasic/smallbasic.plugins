@@ -276,8 +276,11 @@ static int cmd_llama_tokens_sec(var_s *self, int argc, slib_par_t *arg, var_s *r
   } else {
     int id = get_llama_iter_class_id(self, retval);
     if (id != -1) {
-      LlamaIter &llamaIter = g_llama_iter.at(id);
-      v_setreal(retval, llamaIter._tokens_sec);
+      LlamaIter &iter = g_llama_iter.at(id);
+      auto t_end = std::chrono::high_resolution_clock::now();
+      double secs = std::chrono::duration<double>(t_end - iter._t_start).count();
+      double tokens_sec = secs > 0 ? iter._tokens_generated / secs : 0;
+      v_setreal(retval, tokens_sec);
       result = 1;
     }
   }
