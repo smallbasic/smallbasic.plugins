@@ -33,7 +33,7 @@ struct Llama {
   ~Llama();
 
   // init
-  bool construct(string model_path, int n_ctx, int n_batch);
+  bool construct(string model_path, int n_ctx, int n_batch, int n_gpu_layers);
 
   // generation
   bool generate(LlamaIter &iter, const string &prompt);

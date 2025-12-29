@@ -65,11 +65,13 @@ void Llama::reset() {
   _max_tokens = 150;
 }
 
-bool Llama::construct(string model_path, int n_ctx, int n_batch) {
+bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layers) {
   ggml_backend_load_all();
 
   llama_model_params mparams = llama_model_default_params();
-  mparams.n_gpu_layers = 0;
+  if (n_gpu_layers >= 0) {
+     mparams.n_gpu_layers = n_gpu_layers;
+  }
 
   _model = llama_model_load_from_file(model_path.c_str(), mparams);
   if (!_model) {
@@ -196,6 +198,8 @@ bool Llama::make_space_for_tokens(int n_tokens, int keep_min) {
 }
 
 bool Llama::generate(LlamaIter &iter, const string &prompt) {
+  configure_sampler();
+
   vector<llama_token> prompt_tokens = tokenize(prompt);
   if (prompt_tokens.size() == 0) {
     return false;
@@ -232,8 +236,6 @@ bool Llama::generate(LlamaIter &iter, const string &prompt) {
       return false;
     }
   }
-
-  configure_sampler();
 
   iter._t_start = std::chrono::high_resolution_clock::now();
   iter._llama = this;
@@ -299,44 +301,50 @@ string Llama::next(LlamaIter &iter) {
     return "";
   }
 
-  // decode the token
-  llama_batch batch = llama_batch_get_one(&tok, 1);
-  if (llama_decode(_ctx, batch)) {
-    _last_error = "Failed to evaluate token during generation";
-    return "";
-  }
+  string result;
 
-  string out;
-
-  if (!llama_vocab_is_control(_vocab, tok)) {
-    char buf[512];
-    int n = llama_token_to_piece(_vocab, tok, buf, sizeof(buf), 0, false);
-    if (n > 0) {
-      if (iter._last_word == buf) {
-        if (++iter._repetition_count == MAX_REPEAT) {
-          iter._has_next = false;
-        }
-      } else {
-        iter._repetition_count = 0;
-        iter._last_word = buf;
-      }
-      out.append(buf, n);
-
-      if (++iter._tokens_generated > _max_tokens && ends_with_sentence_boundary(out)) {
+  //if (!llama_vocab_is_control(_vocab, tok)) {
+  char buf[512];
+  int n = llama_token_to_piece(_vocab, tok, buf, sizeof(buf), 0, false);
+  if (n > 0) {
+    // detect repetition
+    if (iter._last_word == buf) {
+      if (++iter._repetition_count == MAX_REPEAT) {
         iter._has_next = false;
       }
+    } else {
+      iter._repetition_count = 0;
+      iter._last_word = buf;
+    }
 
+    result.append(buf, n);
+
+    // detect end of max-tokens
+    if (++iter._tokens_generated > _max_tokens && ends_with_sentence_boundary(result)) {
+      iter._has_next = false;
+    }
+
+    // detect stop words
+    if (iter._has_next) {
       for (const auto &stop : _stop_sequences) {
-        size_t pos = out.find(stop);
+        size_t pos = result.find(stop);
         if (pos != std::string::npos) {
           // found stop sequence - truncate and signal end
-          out = out.substr(0, pos);
+          result = result.substr(0, pos);
           iter._has_next = false;
           break;
         }
       }
     }
   }
-  return out;
+
+  // prepare the next batch with the sampled token
+  llama_batch batch = llama_batch_get_one(&tok, 1);
+  if (llama_decode(_ctx, batch)) {
+    _last_error = "Failed to evaluate token during generation";
+    return "";
+  }
+
+  return result;
 }
 

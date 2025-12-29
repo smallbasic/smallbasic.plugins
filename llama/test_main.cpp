@@ -56,7 +56,7 @@ int main(int argc, char ** argv) {
   }
 
   Llama llama;
-  if (llama.construct(model_path, 1024, 1024)) {
+  if (llama.construct(model_path, 1024, 1024, -1)) {
     LlamaIter iter;
     llama.generate(iter, prompt);
     while (iter._has_next) {

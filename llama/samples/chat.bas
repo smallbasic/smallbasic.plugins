@@ -1,84 +1,52 @@
 import llm
 
-const model = "models/Qwen_Qwen2.5-1.5B-Instruct-GGUF-Q4/qwen2.5-1.5b-instruct-q4_k_m.gguf"
-const llama = llm.llama(model, 4096, 512)
-
-' llama.set_max_tokens(150)
-' llama.set_min_p(0.5)
-' llama.set_temperature(.8)
-' llama.set_top_k(1)
-' llama.set_top_p(0)
-
-rem factual answers, tools, summaries
-' llama.set_max_tokens(150)
-' llama.set_temperature(0.0)
-' llama.set_top_k(1)
-' llama.set_top_p(0.0)
-' llama.set_min_p(0.0)
-
-rem assistant, Q+A, explanations, chat
-' llama.set_max_tokens(150)
-' llama.set_temperature(0.8)
-' llama.set_top_k(40)
-' llama.set_top_p(0.0)
-' llama.set_min_p(0.05)
+const n_ctx = 4000
+const n_batch = 8000
+const model_1 = "models/Qwen_Qwen2.5-3B-Instruct-GGUF-Q4/qwen2.5-3b-instruct-q4_k_m.gguf"
+const llama = llm.llama(model_1, n_ctx, n_batch)
 
 rem creative, storytelling
-' llama.set_max_tokens(200)
-' llama.set_temperature(1.0)
-' llama.set_top_k(80)
-' llama.set_top_p(0.0)
-' llama.set_min_p(0.1)
+llama.set_max_tokens(5500)
+llama.set_temperature(.9)
+llama.set_top_k(50)
+llama.set_top_p(0.1)
+llama.set_min_p(0.01)
+llama.set_penalty_repeat(1.1)
+llama.set_penalty_last_n(64)
 
-rem surprises/loko
-' llama.set_max_tokens(200)
-' llama.set_temperature(1.2)
-' llama.set_top_k(120)
-' llama.set_top_p(0.0)
-' llama.set_min_p(0.15)
+prompt = "You are an expert programmer in GPL SmallBASIC. Create a turn based game including fun ascii art\n"
+prompt += "Here is an example of a type of class contruct in SmallBASIC which you may use\n"
+prompt += "func Set\n"
+prompt += "  sub add(byref item)\n"
+prompt += "    local el \n"
+prompt += "    el.key = item.parent_key\n"
+prompt += "    el.map = item.map\n"
+prompt += "    self.items[item.key] = el\n"
+prompt += "  end\n"
+prompt += "  func contains(byref item)\n"
+prompt += "    return self.items[item.key].key != 0\n"
+prompt += "  end\n"
+prompt += "  func get(byref key)\n"
+prompt += "    return self.items[key]\n"
+prompt += "  end\n"
+prompt += "  local result = {}\n"
+prompt += "  result.items = {}\n"
+prompt += "  result.add = @add\n"
+prompt += "  result.contains= @contains\n"
+prompt += "  result.get = @get\n"
+prompt += "  return result\n"
+prompt += "end\n"
+prompt += "IMPORTANT: this dialect does not support the class keyword. Do not use it !!!\n"
+prompt += "Always end a FUNC with the RETURN statement. For routines the do not return a value, use SUB\n"
+prompt += "Use the LOCAL keyword inside a SUB or FUNC to declare local variables\n"
+prompt += "Never declare FUNCTION, use FUNC instead\n"
 
-rem technical, conservative
-' llama.set_max_tokens(150)
-' llama.set_temperature(0.6)
-' llama.set_top_k(30)
-' llama.set_top_p(0.0)
-' llama.set_min_p(0.02)
-
-rem speed optimised on CPU
-llama.set_max_tokens(10)
-llama.set_temperature(0.7)
-llama.set_top_k(20)
-llama.set_top_p(0.0)
-llama.set_min_p(0.05)
-
-' // Conservative - minimal repetition control
-' _penalty_last_n = 64;
-' _penalty_repeat = 1.05f;
-
-' // Balanced - good default
-' _penalty_last_n = 64;
-' _penalty_repeat = 1.1f;
-
-' // Aggressive - strong anti-repetition
-' _penalty_last_n = 128;
-' _penalty_repeat = 1.2f;
-
-' // Disabled
-' _penalty_last_n = 0;
-' _penalty_repeat = 1.0f;
-
-' llama.set_penalty_repeat(1.15)
-' llama.set_penalty_last_n(64)
-
-prompt = """\
-you are a helpful assistant\
- \nQuestion: when is dinner?\
-"""
-print prompt
-print "============"
+print prompt;
 iter = llama.generate(prompt)
 while iter.has_next()
-  print iter.next()
+  print iter.next();
 wend
-print "============"
-print iter.tokens_sec()
+
+print
+print "==========="
+print "tokens/sec "; iter.tokens_sec()

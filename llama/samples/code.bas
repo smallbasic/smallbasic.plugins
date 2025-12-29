@@ -1,0 +1,117 @@
+import llm
+
+const n_ctx = 2048
+const n_batch = 2048
+const model = "models/Qwen_Qwen2.5-3B-Instruct-GGUF-Q4/qwen2.5-3b-instruct-q4_k_m.gguf"
+const llama = llm.llama(model, n_ctx, n_batch)
+
+rem creative, storytelling
+llama.set_max_tokens(5000)
+llama.set_temperature(0.8)
+llama.set_top_k(60)
+llama.set_top_p(0.0)
+llama.set_min_p(0.02)
+llama.set_penalty_repeat(1.1)
+llama.set_penalty_last_n(64)
+
+code = ""
+code += "func hsv_to_rgb(hsv)"
+code += "  [h,s,v] = hsv"
+code += ""
+code += "  c = v * s"
+code += "  x = c * (1 - abs((h / 60) % 2 - 1))"
+code += "  m = v - c"
+code += ""
+code += "  if 0 <= h < 60 then"
+code += "    [r1, g1, b1] = [c, x, 0]"
+code += "  else if h >= 60 && h < 120 then"
+code += "    [r1, g1, b1] = [x, c, 0]"
+code += "  else if h >= 120 && h < 180 then"
+code += "    [r1, g1, b1] = [0, c, x]"
+code += "  else if h >= 180 && h < 240 then"
+code += "    [r1, g1, b1] = [0, x, c]"
+code += "  else if h >= 240 && h < 300 then"
+code += "    [r1, g1, b1] = [x, 0, c]"
+code += "  else"
+code += "    [r1, g1, b1] = [c, 0, x]"
+code += "  endif  "
+code += ""
+code += "  # Add m to match value"
+code += "  r = (r1 + m) * 255"
+code += "  g = (g1 + m) * 255"
+code += "  b = (b1 + m) * 255"
+code += "  return \"#\" + hex(round(r)) + hex(round(g)) + hex(round(b))"
+code += "end    "
+code += ""
+code += "func rgb_to_hsv(_rgb)"
+code += "  [r,g,b] = _rgb"
+code += ""
+code += "  r = r / 255.0"
+code += "  g = g / 255.0"
+code += "  b = b / 255.0"
+code += "  local max_val = max(r, g, b)"
+code += "  local min_val = min(r, g, b)"
+code += "  local delta = max_val - min_val"
+code += "  "
+code += "  # Hue calculation"
+code += "  if delta == 0 then "
+code += "    h = 0"
+code += "  else if max_val == r then"
+code += "    h = 60 * (((g - b) / delta) % 6)"
+code += "  else if max_val == g then"
+code += "    h = 60 * (((b - r) / delta) + 2)"
+code += "  else"
+code += "    # max_val == b"
+code += "    h = 60 * (((r - g) / delta) + 4)"
+code += "  endif"
+code += "  # Saturation calculation"
+code += "  if max_val == 0 then"
+code += "     s = 0"
+code += "  else"
+code += "    s = delta / max_val"
+code += "    # Value calculation"
+code += "    v = max_val"
+code += "  endif    "
+code += "  return [h, s, v]"
+code += "end"
+code += ""
+code += "func generate_distinct_colors(initial_rgb, n)"
+code += "  # Convert the initial RGB color to HSV"
+code += "  # Extract hue, saturation, value"
+code += "  [hue, saturation, value] = rgb_to_hsv(initial_rgb)"
+code += ""
+code += "  # Create an empty list to store colors"
+code += "  dim color_list"
+code += "  color_list << initial_rgb"
+code += ""
+code += "  # Compute hue increment to spread colors evenly around the color wheel"
+code += "  local hue_increment = 360 / n"
+code += ""
+code += "  for i  = 1 to n-1"
+code += "     # Generate next hue"
+code += "     new_hue = (hue + i * hue_increment) % 360"
+code += "        "
+code += "     # Keep saturation and value the same for brightness/contrast consistency"
+code += "     new_hsv = [new_hue, saturation, value]"
+code += "        "
+code += "     # Convert back to RGB"
+code += "     new_rgb = hsv_to_rgb(new_hsv)"
+code += "        "
+code += "    # Add new RGB color to list"
+code += "    color_list << new_rgb"
+code += "  next    "
+code += "  return color_list"
+code += "end  "
+code += ""
+code += "colors = generate_distinct_colors([06, 40, 54], 10)"
+code += "print colors"
+
+prompt =  "You are a helpful coding assistant.\nUpdate this BASIC (SmallBASIC) program to use the golden-ratio to create individual colors.\n"
+prompt += "\nIndent with two spaces and don't give long lines\n"
+prompt += "\nThe golden-ratio 1.6180339887\n"
+prompt +=  code
+
+iter = llama.generate(prompt)
+while iter.has_next()
+  print iter.next();
+wend

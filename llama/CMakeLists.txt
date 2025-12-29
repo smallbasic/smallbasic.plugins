@@ -11,8 +11,11 @@ set(CMAKE_C_STANDARD 11)
 # -----------------------------
 set(LLAMA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp)
 
+set(LLAMA_BACKEND "AUTO" CACHE STRING "llama.cpp backend: AUTO, CPU, GPU, CUDA")
+set_property(CACHE LLAMA_BACKEND PROPERTY STRINGS AUTO CPU GPU CUDA)
+
 # -----------------------------
-# FORCE CPU-only static builds
+# FORCE static builds
 # -----------------------------
 # Disable all shared libraries globally
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
@@ -34,7 +37,21 @@ set(GGML_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 set(GGML_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GGML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-# CPU-only flags
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# -------------------------------
+# Define backend options
+# -------------------------------
+set(LLAMA_BACKEND "AUTO" CACHE STRING "Select llama.cpp backend: AUTO, CPU, GPU, CUDA")
+set_property(CACHE LLAMA_BACKEND PROPERTY STRINGS AUTO CPU GPU CUDA)
+
+#
+# sudo apt install nvidia-open cuda-toolkit
+#
+
+# -------------------------------
+# Disable all accelerators by default
+# -------------------------------
 set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
 set(GGML_CUDA OFF CACHE BOOL "" FORCE)
 set(GGML_METAL OFF CACHE BOOL "" FORCE)
@@ -42,8 +59,50 @@ set(GGML_OPENCL OFF CACHE BOOL "" FORCE)
 set(GGML_KOMPUTE OFF CACHE BOOL "" FORCE)
 set(GGML_SYCL OFF CACHE BOOL "" FORCE)
 set(GGML_ACCELERATE OFF CACHE BOOL "" FORCE)
-set(GGML_NATIVE ON CACHE BOOL "" FORCE)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(GGML_NATIVE OFF CACHE BOOL "" FORCE)  # default off
+
+# -------------------------------
+# Configure backends based on LLAMA_BACKEND
+# -------------------------------
+include(CheckLanguage)
+
+if(LLAMA_BACKEND STREQUAL "CPU")
+  message(STATUS "llama.cpp backend: CPU-only")
+  set(GGML_NATIVE ON CACHE BOOL "" FORCE)  # enable CPU SIMD optimizations
+
+elseif(LLAMA_BACKEND STREQUAL "GPU")
+  message(STATUS "llama.cpp backend: GPU (non-CUDA)")
+  set(GGML_OPENMP ON CACHE BOOL "" FORCE)  # parallel CPU fallback
+  # GPU non-CUDA options can be added here in the future
+
+elseif(LLAMA_BACKEND STREQUAL "CUDA")
+  message(STATUS "llama.cpp backend: CUDA")
+
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    set(GGML_CUDA ON CACHE BOOL "" FORCE)
+  else()
+    message(FATAL_ERROR "CUDA backend requested but nvcc not found")
+  endif()
+
+elseif(LLAMA_BACKEND STREQUAL "AUTO")
+  message(STATUS "llama.cpp backend: AUTO")
+
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    set(GGML_CUDA ON CACHE BOOL "" FORCE)
+    message(STATUS "CUDA detected – enabling GGML_CUDA")
+  else()
+    set(GGML_OPENMP ON CACHE BOOL "" FORCE)
+    set(GGML_NATIVE ON CACHE BOOL "" FORCE)
+    message(STATUS "CUDA not found – using CPU/OpenMP")
+  endif()
+
+else()
+  message(FATAL_ERROR "Invalid LLAMA_BACKEND value: ${LLAMA_BACKEND}")
+endif()
 
 # -----------------------------
 # Add llama.cpp subdirectories
@@ -129,7 +188,7 @@ if (ANDROID)
     ../include/hashmap.cpp
     ../include/apiexec.cpp
   )
-   
+
   # Optional: set the SONAME / versioning if you need it
   set_target_properties(llm_android PROPERTIES
     OUTPUT_NAME "libllm"
