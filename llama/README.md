@@ -1,3 +1,15 @@
+## huggingface-cli
+
+```
+pyenv virtualenv 3.10.13 hf-tools
+pyenv activate hf-tools
+pip install -U pip
+pip install huggingface_hub
+
+```
+
+---
+
 1️⃣ Ensure nvidia-open driver is installed and working
 
 Check:

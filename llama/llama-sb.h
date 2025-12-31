@@ -38,6 +38,7 @@ struct Llama {
   // generation
   bool generate(LlamaIter &iter, const string &prompt);
   string next(LlamaIter &iter);
+  string all(LlamaIter &iter);
 
   // generation parameters
   void add_stop(const char *stop) { _stop_sequences.push_back(stop); }
@@ -60,6 +61,7 @@ struct Llama {
   void configure_sampler();
   bool make_space_for_tokens(int n_tokens, int keep_min);
   vector<llama_token> tokenize(const string &prompt);
+  string token_to_string(LlamaIter &iter, llama_token tok);
 
   llama_model *_model;
   llama_context *_ctx;

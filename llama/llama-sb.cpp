@@ -286,24 +286,8 @@ bool Llama::ends_with_sentence_boundary(const string &text) {
   return false;
 }
 
-string Llama::next(LlamaIter &iter) {
-  if (!iter._has_next) {
-    _last_error = "Iteration beyond end of stream";
-    return "";
-  }
-
-  // sample one token from the current logits
-  llama_token tok = llama_sampler_sample(_sampler, _ctx, -1);
-
-  // end-of-generation check
-  if (llama_vocab_is_eog(_vocab, tok)) {
-    iter._has_next = false;
-    return "";
-  }
-
+string Llama::token_to_string(LlamaIter &iter, llama_token tok) {
   string result;
-
-  //if (!llama_vocab_is_control(_vocab, tok)) {
   char buf[512];
   int n = llama_token_to_piece(_vocab, tok, buf, sizeof(buf), 0, false);
   if (n > 0) {
@@ -337,6 +321,25 @@ string Llama::next(LlamaIter &iter) {
       }
     }
   }
+  return result;
+}
+
+string Llama::next(LlamaIter &iter) {
+  if (!iter._has_next) {
+    _last_error = "Iteration beyond end of stream";
+    return "";
+  }
+
+  // sample the next token from the current logits
+  llama_token tok = llama_sampler_sample(_sampler, _ctx, -1);
+
+  // end-of-generation check
+  if (llama_vocab_is_eog(_vocab, tok)) {
+    iter._has_next = false;
+    return "";
+  }
+
+  string result = token_to_string(iter, tok);
 
   // prepare the next batch with the sampled token
   llama_batch batch = llama_batch_get_one(&tok, 1);
@@ -348,3 +351,42 @@ string Llama::next(LlamaIter &iter) {
   return result;
 }
 
+string Llama::all(LlamaIter &iter) {
+  string out;
+
+  vector<llama_token> decoded;
+  decoded.reserve(_max_tokens);
+
+  int generated = 0;
+
+  while (generated < _max_tokens) {
+    // sample the next token from the current logits
+    llama_token tok = llama_sampler_sample(_sampler, _ctx, -1);
+
+    // end-of-generation check
+    if (llama_vocab_is_eog(_vocab, tok)) {
+      iter._has_next = false;
+      break;
+    }
+
+    // append token to decoded list
+    decoded.push_back(tok);
+    ++generated;
+
+    // decode the token
+    llama_batch batch = llama_batch_get_one(&tok, 1);
+    if (llama_decode(_ctx, batch)) {
+      _last_error = "Failed to evaluate token during generation";
+      break;
+    }
+  }
+
+  // detokenize sequentially
+  if (!decoded.empty()) {
+    for (llama_token tok : decoded) {
+      out.append(token_to_string(iter, tok));
+    }
+  }
+
+  return out;
+}

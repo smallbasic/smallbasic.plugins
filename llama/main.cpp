@@ -230,6 +230,25 @@ static int cmd_llama_reset(var_s *self, int argc, slib_par_t *arg, var_s *retval
 }
 
 //
+// iter.all()
+//
+static int cmd_llama_all(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 0) {
+    error(retval, "iter.all", 0, 0);
+  } else {
+    int id = get_llama_iter_class_id(self, retval);
+    if (id != -1) {
+      LlamaIter &iter = g_llama_iter.at(id);
+      auto out = iter._llama->all(iter);
+      v_setstr(retval, out.c_str());
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
 // iter.has_next()
 //
 static int cmd_llama_has_next(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
@@ -303,6 +322,7 @@ static int cmd_llama_generate(var_s *self, int argc, slib_par_t *arg, var_s *ret
       auto prompt = get_param_str(argc, arg, 0, "");
       if (llama.generate(iter, prompt)) {
         map_init_id(retval, iter_id, CLASS_ID_LLAMA_ITER);
+        v_create_callback(retval, "all", cmd_llama_all);
         v_create_callback(retval, "has_next", cmd_llama_has_next);
         v_create_callback(retval, "next", cmd_llama_next);
         v_create_callback(retval, "tokens_sec", cmd_llama_tokens_sec);
