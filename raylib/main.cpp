@@ -24,10 +24,10 @@
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
 #include <physac/src/physac.h>
-#include <GLFW/glfw3.h>
 #include <cstring>
 
 #include "robin-hood-hashing/src/include/robin_hood.h"
+#include "SDL_events.h"
 #include "include/var.h"
 #include "include/module.h"
 #include "include/param.h"
@@ -1377,18 +1377,15 @@ static int cmd_guiunlock(int argc, slib_par_t *params, var_t *retval) {
   return 1;
 }
 
-static int cmd_poll_events(int argc, slib_par_t *params, var_t *retval) {
-  glfwPollEvents();
-  return 1;
-}
-
 static int cmd_wait_events(int argc, slib_par_t *params, var_t *retval) {
-  float waitMillis = get_param_int(argc, params, 0, -1);
-  if (waitMillis > 0) {
-    glfwWaitEventsTimeout(waitMillis / 1000);
+  auto timeoutMS = get_param_int(argc, params, 0, -1);
+  SDL_Event event;
+  if (timeoutMS > 0) {
+    SDL_WaitEventTimeout(&event, timeoutMS);
   } else {
-    glfwWaitEvents();
+    SDL_WaitEvent(&event);
   }
+  SDL_PushEvent(&event);
   return 1;
 }
 
@@ -1835,7 +1832,6 @@ static FUNC_SIG lib_proc[] = {
   {3, 3, "GUISETSTYLE", cmd_guisetstyle},
   {2, 2, "GUISTATUSBAR", cmd_guistatusbar},
   {0, 0, "GUIUNLOCK", cmd_guiunlock},
-  {0, 0, "POLLEVENTS", cmd_poll_events},
   {0, 1, "WAITEVENTS", cmd_wait_events},
   {0, 0, "CLOSEPHYSICS", cmd_closephysics},
   {1, 1, "DESTROYPHYSICSBODY", cmd_destroyphysicsbody},

@@ -24,16 +24,14 @@ $(generated): raylib/parser/raylib_api.json mkraylib.bas
 gen: $(generated) README.md
 
 AM_CXXFLAGS=-fno-rtti -std=c++14 -fpermissive
-AM_CPPFLAGS = -Iraylib/src -Iraylib/src/external/glfw/include -Iraylib/src/external/glfw/deps/mingw \
-  -Iraylib/src/external/glfw/src \
-  -DPLATFORM_DESKTOP=1 -DSUPPORT_BUSY_WAIT_LOOP=1 -DSUPPORT_SCREEN_CAPTURE=1 \
-  -DSUPPORT_GIF_RECORDING=1 -DSUPPORT_COMPRESSION_API=1 -D_GLFW_WAYLAND=1 \
+AM_CPPFLAGS = -Iraylib/src @RAYLIB_CPPFLAGS@ \
+  -DPLATFORM_DESKTOP_SDL=1 -DPLATFORM_DESKTOP_SDL3=1 -DSUPPORT_BUSY_WAIT_LOOP=1 -DSUPPORT_SCREEN_CAPTURE=1 \
+  -DSUPPORT_GIF_RECORDING=1 -DSUPPORT_COMPRESSION_API=1 \
   -Wall -Wextra -Wshadow -Wdouble-promotion -Wno-unused-parameter -fPIC
 
 lib_LTLIBRARIES = libraylib.la
 
 libraylib_la_SOURCES = \
-   raylib/src/rglfw.c \
    raylib/src/rmodels.c \
    raylib/src/raudio.c \
    raylib/src/rcore.c \
