@@ -63,6 +63,9 @@ void Llama::reset() {
   _top_p = 1.0f;
   _min_p = 0.0f;
   _max_tokens = 150;
+  if (_ctx) {
+    llama_memory_clear(llama_get_memory(_ctx), true);
+  }
 }
 
 bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layers) {

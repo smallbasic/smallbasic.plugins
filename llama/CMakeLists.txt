@@ -11,9 +11,6 @@ set(CMAKE_C_STANDARD 11)
 # -----------------------------
 set(LLAMA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp)
 
-set(LLAMA_BACKEND "AUTO" CACHE STRING "llama.cpp backend: AUTO, CPU, GPU, CUDA")
-set_property(CACHE LLAMA_BACKEND PROPERTY STRINGS AUTO CPU GPU CUDA)
-
 # -----------------------------
 # FORCE static builds
 # -----------------------------
@@ -54,12 +51,12 @@ set_property(CACHE LLAMA_BACKEND PROPERTY STRINGS AUTO CPU GPU CUDA)
 # -------------------------------
 set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
 set(GGML_CUDA OFF CACHE BOOL "" FORCE)
-set(GGML_METAL OFF CACHE BOOL "" FORCE)
-set(GGML_OPENCL OFF CACHE BOOL "" FORCE)
-set(GGML_KOMPUTE OFF CACHE BOOL "" FORCE)
-set(GGML_SYCL OFF CACHE BOOL "" FORCE)
-set(GGML_ACCELERATE OFF CACHE BOOL "" FORCE)
-set(GGML_NATIVE OFF CACHE BOOL "" FORCE)  # default off
+set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
+set(GGML_METAL OFF CACHE BOOL "" FORCE) # Apple GPU API
+set(GGML_OPENCL OFF CACHE BOOL "" FORCE) # Cross platform GPU API (AMD/Intel)
+set(GGML_KOMPUTE OFF CACHE BOOL "" FORCE)  # Vulcan/more modern than OpenCL
+set(GGML_SYCL OFF CACHE BOOL "" FORCE) # Intel
+set(GGML_ACCELERATE OFF CACHE BOOL "" FORCE) # Apple
 
 # -------------------------------
 # Configure backends based on LLAMA_BACKEND
