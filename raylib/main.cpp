@@ -25,6 +25,7 @@
 #pragma GCC diagnostic pop
 #include <physac/src/physac.h>
 #include <cstring>
+#include <cstdint>
 
 #include "robin-hood-hashing/src/include/robin_hood.h"
 #include "SDL_events.h"
