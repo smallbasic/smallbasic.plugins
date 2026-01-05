@@ -1938,7 +1938,7 @@ SBLIB_API int sblib_func_exec(int index, int argc, slib_par_t *params, var_t *re
   return result;
 }
 
-SBLIB_API void sblib_free(int cls_id, int id) {
+SBLIB_API int sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
     case CLS_AUDIOSTREAM:
@@ -2031,6 +2031,7 @@ SBLIB_API void sblib_free(int cls_id, int id) {
       break;
     }
   }
+  return 0;
 }
 
 SBLIB_API void sblib_close(void) {
@@ -2094,4 +2095,9 @@ SBLIB_API void sblib_close(void) {
     TraceLog(LOG_ERROR, "AutomationEventList leak detected");
     _waveMap.clear();
   }
+}
+
+SBLIB_API void sblib_is_ide_compatible(void) {
+  // when using the SQL build, programs must be run via a separate thread
+  return false;
 }
