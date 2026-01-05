@@ -2097,7 +2097,7 @@ SBLIB_API void sblib_close(void) {
   }
 }
 
-SBLIB_API void sblib_is_ide_compatible(void) {
+SBLIB_API int sblib_is_ide_compatible(void) {
   // when using the SQL build, programs must be run via a separate thread
-  return false;
+  return 0;
 }
