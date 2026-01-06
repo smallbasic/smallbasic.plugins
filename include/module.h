@@ -32,7 +32,7 @@ int sblib_init(const char *sourceFile);
  *
  * @return non-zero on success
  */
-int sblib_is_ide_compatible(void);
+int sblib_has_window_ui(void);
 
 /**
  * @ingroup modstd
