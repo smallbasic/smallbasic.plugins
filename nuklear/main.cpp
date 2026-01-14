@@ -1181,3 +1181,7 @@ SBLIB_API void sblib_ellipse(int xc, int yc, int xr, int yr, int fill) {
   drawEnd();
 }
 
+SBLIB_API int sblib_has_window_ui(void) {
+  // module creates a UI in a new window
+  return 1;
+}

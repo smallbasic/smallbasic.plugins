@@ -2098,6 +2098,6 @@ SBLIB_API void sblib_close(void) {
 }
 
 SBLIB_API int sblib_has_window_ui(void) {
-  // raylib module creates a UI in a new window
+  // module creates a UI in a new window
   return 1;
 }
