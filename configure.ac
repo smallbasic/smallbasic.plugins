@@ -33,6 +33,27 @@ function checkDebugMode() {
   AC_SUBST(CFLAGS)
 }
 
+function generate_wayland_protocols() {
+  RAYLIB_SRC_PATH="${srcdir}/raylib/raylib/src"
+  WL_PROTOCOLS_DIR="${RAYLIB_SRC_PATH}/external/glfw/deps/wayland"
+  AC_MSG_NOTICE([Generating Wayland protocol headers])
+  wl_generate() {
+    protocol="$1"
+    basename="$2"
+    "$WAYLAND_SCANNER" client-header "$protocol" "$RAYLIB_SRC_PATH/$basename.h" || exit 1
+    "$WAYLAND_SCANNER" private-code "$protocol" "$RAYLIB_SRC_PATH/$basename-code.h" || exit 1
+  }
+  wl_generate "$WL_PROTOCOLS_DIR/wayland.xml" wayland-client-protocol
+  wl_generate "$WL_PROTOCOLS_DIR/xdg-shell.xml" xdg-shell-client-protocol
+  wl_generate "$WL_PROTOCOLS_DIR/xdg-decoration-unstable-v1.xml" xdg-decoration-unstable-v1-client-protocol
+  wl_generate "$WL_PROTOCOLS_DIR/viewporter.xml" viewporter-client-protocol
+  wl_generate "$WL_PROTOCOLS_DIR/relative-pointer-unstable-v1.xml" relative-pointer-unstable-v1-client-protocol
+  wl_generate "$WL_PROTOCOLS_DIR/pointer-constraints-unstable-v1.xml" pointer-constraints-unstable-v1-client-protocol
+  wl_generate "$WL_PROTOCOLS_DIR/fractional-scale-v1.xml" fractional-scale-v1-client-protocol
+  wl_generate "$WL_PROTOCOLS_DIR/xdg-activation-v1.xml" xdg-activation-v1-client-protocol
+  wl_generate "$WL_PROTOCOLS_DIR/idle-inhibit-unstable-v1.xml" idle-inhibit-unstable-v1-client-protocol
+}
+
 AC_ARG_WITH(mlpack,
   [AS_HELP_STRING([--with-mlpack], [Build the mlpack module])],
   [MLPACK="yes"],
@@ -66,14 +87,22 @@ case "${host_os}" in
   *)
     PLATFORM_LDFLAGS="-Wl,--no-undefined -avoid-version"
     CLIPBOARD_LDFLAGS="`pkg-config xcb --libs` -lpthread"
-    NUKLEAR_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
     WEBSOCKET_LDFLAGS=""
     GTK_SERVER_LDFLAGS="`pkg-config --libs gtk+-3.0` -lXm -lXt"
     GTK_SERVER_CPPFLAGS="`pkg-config --cflags gtk+-3.0` -DGTK_SERVER_FFI -DGTK_SERVER_LIBRARY -DGTK_SERVER_UNIX -DGTK_SERVER_GTK3x"
-    RAYLIB_LDFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11 -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon"
+    RAYLIB_LDFLAGS="`pkg-config wayland-client wayland-cursor wayland-egl xkbcommon --libs`"
     JVM_CPPFLAGS="-I/usr/lib/jvm/java-1.8.0-openjdk-amd64/include -I/usr/lib/jvm/java-1.8.0-openjdk-amd64/include/linux"
     JVM_LDFLAGS="-L/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server -ljvm"
-    NUKLEAR_CPPFLAGS="-D_GLFW_X11=1"
+    NUKLEAR_CPPFLAGS="-D_GLFW_WAYLAND=1"
+    NUKLEAR_LDFLAGS="`pkg-config wayland-client wayland-cursor wayland-egl xkbcommon --libs`"
+
+    AC_ARG_VAR([WAYLAND_SCANNER], [Path to wayland-scanner])
+    AC_PATH_PROG([WAYLAND_SCANNER], [wayland-scanner])
+    AS_IF([test -n "$WAYLAND_SCANNER"], [
+      generate_wayland_protocols
+    ], [
+      AC_MSG_WARN([wayland-scanner not found; Wayland support disabled])
+    ])
 esac
 
 AC_SUBST(DEBUG_LDFLAGS)

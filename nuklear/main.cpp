@@ -95,7 +95,7 @@ static void window_size_callback(GLFWwindow* window, int width, int height) {
 nk_context *nkp_create_window(const char *title, int width, int height) {
   if (!glfwInit()) {
     fprintf(stdout, "[GFLW] failed to init!\n");
-    exit(1);
+    return nullptr;
   }
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
@@ -873,16 +873,22 @@ static int cmd_widgetishovered(int argc, slib_par_t *params, var_t *retval) {
 }
 
 static int cmd_windowbegin(int argc, slib_par_t *params, var_t *retval) {
-  nkp_process_events();
-  nkbd_begin(_ctx);
-  const char *title = get_param_str(argc, params, 0, "Untitled");
-  struct nk_rect rc = get_param_rect(argc, params, 1);
-  nk_flags flags = get_param_window_flags(argc, params, 5);
-  v_setint(retval, nk_begin(_ctx, title, rc, flags));
-  if ((flags & NK_WINDOW_TITLE) == 0) {
-    nkp_set_window_title(title);
+  int result;
+  if (_ctx != nullptr) {
+    nkp_process_events();
+    nkbd_begin(_ctx);
+    const char *title = get_param_str(argc, params, 0, "Untitled");
+    struct nk_rect rc = get_param_rect(argc, params, 1);
+    nk_flags flags = get_param_window_flags(argc, params, 5);
+    v_setint(retval, nk_begin(_ctx, title, rc, flags));
+    if ((flags & NK_WINDOW_TITLE) == 0) {
+      nkp_set_window_title(title);
+    }
+    result = 1;
+  } else {
+    result = 0;
   }
-  return 1;
+  return result;
 }
 
 static int cmd_windowend(int argc, slib_par_t *params, var_t *retval) {
