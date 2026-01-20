@@ -106,6 +106,8 @@ nk_context *nkp_create_window(const char *title, int width, int height) {
                              title, nullptr, nullptr);
 
   glfwMakeContextCurrent(_window);
+  glfwSwapBuffers(_window);
+
   gladLoadGL((GLADloadfunc) glfwGetProcAddress);
   glfwSetErrorCallback(error_callback);
   glfwSetWindowSizeCallback(_window, window_size_callback);
