@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # This file is part of SmallBASIC
 #
 # Copyright(C) 2001-2020 Chris Warren-Smith.
