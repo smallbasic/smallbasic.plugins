@@ -2,8 +2,8 @@
 // Change working directory, return true on success
 //
 static int cmd_changedirectory(int argc, slib_par_t *params, var_t *retval) {
-  auto dir = get_param_str(argc, params, 0, 0);
-  auto fnResult = ChangeDirectory(dir);
+  auto dirPath = get_param_str(argc, params, 0, 0);
+  auto fnResult = ChangeDirectory(dirPath);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -358,12 +358,23 @@ static int cmd_computesha1(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Decode Base64 string data, memory must be MemFree()
+// Compute SHA256 hash code, returns static int[8] (32 bytes)
+//
+static int cmd_computesha256(int argc, slib_par_t *params, var_t *retval) {
+  auto data = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto dataSize = get_param_int(argc, params, 1, 0);
+  auto fnResult = (var_int_t)ComputeSHA256(data, dataSize);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Decode Base64 string (expected NULL terminated), memory must be MemFree()
 //
 static int cmd_decodedatabase64(int argc, slib_par_t *params, var_t *retval) {
-  auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
+  auto text = get_param_str(argc, params, 0, 0);
   auto outputSize = 0;
-  auto fnResult = (const char *)DecodeDataBase64(data, &outputSize);
+  auto fnResult = (const char *)DecodeDataBase64(text, &outputSize);
   v_setstrn(retval, fnResult, outputSize);
   MemFree((void *)fnResult);
   return 1;
@@ -393,7 +404,7 @@ static int cmd_directoryexists(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Encode data to Base64 string, memory must be MemFree()
+// Encode data to Base64 string (includes NULL terminator), memory must be MemFree()
 //
 static int cmd_encodedatabase64(int argc, slib_par_t *params, var_t *retval) {
   auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
@@ -584,11 +595,77 @@ static int cmd_fade(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Copy file from one path to another, dstPath created if it doesn't exist
+//
+static int cmd_filecopy(int argc, slib_par_t *params, var_t *retval) {
+  auto srcPath = get_param_str(argc, params, 0, 0);
+  auto dstPath = get_param_str(argc, params, 1, 0);
+  auto fnResult = FileCopy(srcPath, dstPath);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
 // Check if file exists
 //
 static int cmd_fileexists(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
   auto fnResult = FileExists(fileName);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Move file from one directory to another, dstPath created if it doesn't exist
+//
+static int cmd_filemove(int argc, slib_par_t *params, var_t *retval) {
+  auto srcPath = get_param_str(argc, params, 0, 0);
+  auto dstPath = get_param_str(argc, params, 1, 0);
+  auto fnResult = FileMove(srcPath, dstPath);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Remove file (if exists)
+//
+static int cmd_fileremove(int argc, slib_par_t *params, var_t *retval) {
+  auto fileName = get_param_str(argc, params, 0, 0);
+  auto fnResult = FileRemove(fileName);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Rename file (if exists)
+//
+static int cmd_filerename(int argc, slib_par_t *params, var_t *retval) {
+  auto fileName = get_param_str(argc, params, 0, 0);
+  auto fileRename = get_param_str(argc, params, 1, 0);
+  auto fnResult = FileRename(fileName, fileRename);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Find text in existing file
+//
+static int cmd_filetextfindindex(int argc, slib_par_t *params, var_t *retval) {
+  auto fileName = get_param_str(argc, params, 0, 0);
+  auto search = get_param_str(argc, params, 1, 0);
+  auto fnResult = FileTextFindIndex(fileName, search);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Replace text in an existing file
+//
+static int cmd_filetextreplace(int argc, slib_par_t *params, var_t *retval) {
+  auto fileName = get_param_str(argc, params, 0, 0);
+  auto search = get_param_str(argc, params, 1, 0);
+  auto replacement = get_param_str(argc, params, 2, 0);
+  auto fnResult = FileTextReplace(fileName, search, replacement);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -1073,7 +1150,7 @@ static int cmd_getframetime(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get gamepad axis count for a gamepad
+// Get axis count for a gamepad
 //
 static int cmd_getgamepadaxiscount(int argc, slib_par_t *params, var_t *retval) {
   auto gamepad = get_param_int(argc, params, 0, 0);
@@ -1083,7 +1160,7 @@ static int cmd_getgamepadaxiscount(int argc, slib_par_t *params, var_t *retval) 
 }
 
 //
-// Get axis movement value for a gamepad axis
+// Get movement value for a gamepad axis
 //
 static int cmd_getgamepadaxismovement(int argc, slib_par_t *params, var_t *retval) {
   auto gamepad = get_param_int(argc, params, 0, 0);
@@ -1735,6 +1812,18 @@ static int cmd_getsplinepointlinear(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
+// Get text between two strings
+//
+static int cmd_gettextbetween(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto begin = get_param_str(argc, params, 1, 0);
+  auto end = get_param_str(argc, params, 2, 0);
+  auto fnResult = (const char *)GetTextBetween(text, begin, end);
+  v_setstr(retval, fnResult);
+  return 1;
+}
+
+//
 // Get elapsed time in seconds since InitWindow()
 //
 static int cmd_gettime(int argc, slib_par_t *params, var_t *retval) {
@@ -2028,7 +2117,7 @@ static int cmd_isfiledropped(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check file extension (including point: .png, .wav)
+// Check file extension (recommended include point: .png, .wav)
 //
 static int cmd_isfileextension(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
@@ -2575,8 +2664,8 @@ static int cmd_loadfont(int argc, slib_par_t *params, var_t *retval) {
 static int cmd_loadfontex(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
   auto fontSize = get_param_int(argc, params, 1, 0);
-  auto codepoints = (int *)0;
-  auto codepointCount = get_param_int(argc, params, 2, 0);
+  auto codepoints = (const int *)get_param_int_t(argc, params, 2, 0);
+  auto codepointCount = get_param_int(argc, params, 3, 0);
   auto fnResult = LoadFontEx(fileName, fontSize, codepoints, codepointCount);
   v_setfont(retval, fnResult);
   return 1;
@@ -2608,8 +2697,8 @@ static int cmd_loadfontfrommemory(int argc, slib_par_t *params, var_t *retval) {
   auto fileData = (const unsigned char *)get_param_str(argc, params, 1, 0);
   auto dataSize = get_param_int(argc, params, 2, 0);
   auto fontSize = get_param_int(argc, params, 3, 0);
-  auto codepoints = (int *)0;
-  auto codepointCount = get_param_int(argc, params, 4, 0);
+  auto codepoints = (const int *)get_param_int_t(argc, params, 4, 0);
+  auto codepointCount = get_param_int(argc, params, 5, 0);
   auto fnResult = LoadFontFromMemory(fileType, fileData, dataSize, fontSize, codepoints, codepointCount);
   v_setfont(retval, fnResult);
   return 1;
@@ -3017,7 +3106,7 @@ static int cmd_savefiledata(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_savefiletext(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
-  auto text = (char *)get_param_str(argc, params, 1, 0);
+  auto text = get_param_str(argc, params, 1, 0);
   auto fnResult = SaveFileText(fileName, text);
   v_setint(retval, fnResult);
   return 1;
@@ -3045,12 +3134,12 @@ static int cmd_textcopy(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Find first text occurrence within a string
+// Find first text occurrence within a string, -1 if not found
 //
 static int cmd_textfindindex(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
-  auto find = get_param_str(argc, params, 1, 0);
-  auto fnResult = TextFindIndex(text, find);
+  auto search = get_param_str(argc, params, 1, 0);
+  auto fnResult = TextFindIndex(text, search);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -3089,13 +3178,36 @@ static int cmd_textlength(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Remove text spaces, concat words
+//
+static int cmd_textremovespaces(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto fnResult = (const char *)TextRemoveSpaces(text);
+  v_setstr(retval, fnResult);
+  return 1;
+}
+
+//
 // Replace text string (WARNING: memory must be freed!)
 //
 static int cmd_textreplace(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
-  auto replace = get_param_str(argc, params, 1, 0);
-  auto by = get_param_str(argc, params, 2, 0);
-  auto fnResult = (const char *)TextReplace(text, replace, by);
+  auto search = get_param_str(argc, params, 1, 0);
+  auto replacement = get_param_str(argc, params, 2, 0);
+  auto fnResult = (const char *)TextReplace(text, search, replacement);
+  v_setstr(retval, fnResult);
+  return 1;
+}
+
+//
+// Replace text between two specific strings (WARNING: memory must be freed!)
+//
+static int cmd_textreplacebetween(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto begin = get_param_str(argc, params, 1, 0);
+  auto end = get_param_str(argc, params, 2, 0);
+  auto replacement = get_param_str(argc, params, 3, 0);
+  auto fnResult = (const char *)TextReplaceBetween(text, begin, end, replacement);
   v_setstr(retval, fnResult);
   return 1;
 }

@@ -20,7 +20,7 @@ load("main.cpp")
 load("proc-def.h")
 load("func-def.h")
 
-tload "raylib/parser/raylib_api.json", s, 1
+tload "raylib/tools/rlparser/output/raylib_api.json", s, 1
 api = array(s)
 functions = {}
 for fun in api("functions")

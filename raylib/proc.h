@@ -450,6 +450,30 @@ static int cmd_drawellipselines(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Draw ellipse outline (Vector version)
+//
+static int cmd_drawellipselinesv(int argc, slib_par_t *params, var_t *retval) {
+  auto center = get_param_vec2(argc, params, 0);
+  auto radiusH = get_param_num(argc, params, 1, 0);
+  auto radiusV = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawEllipseLinesV(center, radiusH, radiusV, color);
+  return 1;
+}
+
+//
+// Draw ellipse (Vector version)
+//
+static int cmd_drawellipsev(int argc, slib_par_t *params, var_t *retval) {
+  auto center = get_param_vec2(argc, params, 0);
+  auto radiusH = get_param_num(argc, params, 1, 0);
+  auto radiusV = get_param_num(argc, params, 2, 0);
+  auto color = get_param_color(argc, params, 3);
+  DrawEllipseV(center, radiusH, radiusV, color);
+  return 1;
+}
+
+//
 // Draw current FPS
 //
 static int cmd_drawfps(int argc, slib_par_t *params, var_t *retval) {
@@ -502,6 +526,19 @@ static int cmd_drawlinebezier(int argc, slib_par_t *params, var_t *retval) {
   auto thick = get_param_num(argc, params, 2, 0);
   auto color = get_param_color(argc, params, 3);
   DrawLineBezier(startPos, endPos, thick, color);
+  return 1;
+}
+
+//
+// Draw a dashed line
+//
+static int cmd_drawlinedashed(int argc, slib_par_t *params, var_t *retval) {
+  auto startPos = get_param_vec2(argc, params, 0);
+  auto endPos = get_param_vec2(argc, params, 1);
+  auto dashSize = get_param_int(argc, params, 2, 0);
+  auto spaceSize = get_param_int(argc, params, 3, 0);
+  auto color = get_param_color(argc, params, 4);
+  DrawLineDashed(startPos, endPos, dashSize, spaceSize, color);
   return 1;
 }
 
@@ -765,9 +802,9 @@ static int cmd_drawrectanglegradientex(int argc, slib_par_t *params, var_t *retv
   auto rec = get_param_rect(argc, params, 0);
   auto topLeft = get_param_color(argc, params, 1);
   auto bottomLeft = get_param_color(argc, params, 2);
-  auto topRight = get_param_color(argc, params, 3);
-  auto bottomRight = get_param_color(argc, params, 4);
-  DrawRectangleGradientEx(rec, topLeft, bottomLeft, topRight, bottomRight);
+  auto bottomRight = get_param_color(argc, params, 3);
+  auto topRight = get_param_color(argc, params, 4);
+  DrawRectangleGradientEx(rec, topLeft, bottomLeft, bottomRight, topRight);
   return 1;
 }
 
@@ -2427,7 +2464,7 @@ static int cmd_pollinputevents(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set window state: not minimized/maximized
+// Restore window from being minimized/maximized
 //
 static int cmd_restorewindow(int argc, slib_par_t *params, var_t *retval) {
   RestoreWindow();
@@ -2684,7 +2721,7 @@ static int cmd_setmousescale(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set pan for a music (0.5 is center)
+// Set pan for a music (-1.0 left, 0.0 center, 1.0 right)
 //
 static int cmd_setmusicpan(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -2815,7 +2852,7 @@ static int cmd_setshapestexture(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set pan for a sound (0.5 is center)
+// Set pan for a sound (-1.0 left, 0.0 center, 1.0 right)
 //
 static int cmd_setsoundpan(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -3123,7 +3160,7 @@ static int cmd_takescreenshot(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Append text at specific position and move cursor!
+// Append text at specific position and move cursor
 //
 static int cmd_textappend(int argc, slib_par_t *params, var_t *retval) {
   auto text = (char *)get_param_str(argc, params, 0, 0);
@@ -3543,7 +3580,7 @@ static int cmd_updatemusicstream(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Update sound buffer with new data
+// Update sound buffer with new data (default data format: 32 bit float, stereo)
 //
 static int cmd_updatesound(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -3560,7 +3597,7 @@ static int cmd_updatesound(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Update GPU texture rectangle with new data
+// Update GPU texture rectangle with new data (pixels and rec should fit in texture)
 //
 static int cmd_updatetexturerec(int argc, slib_par_t *params, var_t *retval) {
   int result;

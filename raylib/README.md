@@ -4,7 +4,7 @@ raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (633)
+Implemented APIs (646)
 ----------------
 
 | Name    | Description   |
@@ -16,7 +16,7 @@ Implemented APIs (633)
 | sub BeginScissorMode(x, y, width, height) | Begin scissor mode (define screen area for following drawing) |
 | sub BeginShaderMode(shader) | Begin custom shader drawing |
 | sub BeginTextureMode(target) | Begin drawing to render texture |
-| func ChangeDirectory(dir) | Change working directory, return true on success |
+| func ChangeDirectory(dirPath) | Change working directory, return true on success |
 | func CheckCollisionBoxes(box1, box2) | Check collision between two bounding boxes |
 | func CheckCollisionBoxSphere(box, center, radius) | Check collision between box and sphere |
 | func CheckCollisionCircleLine(center, radius, p1, p2) | Check if circle collides with a line created betweeen two points [p1] and [p2] |
@@ -52,10 +52,11 @@ Implemented APIs (633)
 | func ComputeCRC32(data, dataSize) | Compute CRC32 hash code |
 | func ComputeMD5(data, dataSize) | Compute MD5 hash code, returns static int[4] (16 bytes) |
 | func ComputeSHA1(data, dataSize) | Compute SHA1 hash code, returns static int[5] (20 bytes) |
+| func ComputeSHA256(data, dataSize) | Compute SHA256 hash code, returns static int[8] (32 bytes) |
 | func createPhysicsbodycircle() | n/a |
 | func createPhysicsbodypolygon() | n/a |
 | func createPhysicsbodyrectangle() | n/a |
-| func DecodeDataBase64(data, outputSize) | Decode Base64 string data, memory must be MemFree() |
+| func DecodeDataBase64(text, outputSize) | Decode Base64 string (expected NULL terminated), memory must be MemFree() |
 | func DecompressData(compData, compDataSize, dataSize) | Decompress data (DEFLATE algorithm), memory must be MemFree() |
 | func destroyPhysicsbody() | n/a |
 | func DirectoryExists(dirPath) | Check if a directory path exists |
@@ -85,11 +86,14 @@ Implemented APIs (633)
 | sub DrawCylinderWiresEx(startPos, endPos, startRadius, endRadius, sides, color) | Draw a cylinder wires with base at startPos and top at endPos |
 | sub DrawEllipse(centerX, centerY, radiusH, radiusV, color) | Draw ellipse |
 | sub DrawEllipseLines(centerX, centerY, radiusH, radiusV, color) | Draw ellipse outline |
+| sub DrawEllipseLinesV(center, radiusH, radiusV, color) | Draw ellipse outline (Vector version) |
+| sub DrawEllipseV(center, radiusH, radiusV, color) | Draw ellipse (Vector version) |
 | sub DrawFPS(posX, posY) | Draw current FPS |
 | sub DrawGrid(slices, spacing) | Draw a grid (centered at (0, 0, 0)) |
 | sub DrawLine(startPosX, startPosY, endPosX, endPosY, color) | Draw a line |
 | sub DrawLine3D(startPos, endPos, color) | Draw a line in 3D world space |
 | sub DrawLineBezier(startPos, endPos, thick, color) | Draw line segment cubic-bezier in-out interpolation |
+| sub DrawLineDashed(startPos, endPos, dashSize, spaceSize, color) | Draw a dashed line |
 | sub DrawLineEx(startPos, endPos, thick, color) | Draw a line (using triangles/quads) |
 | sub DrawLineStrip(points, pointCount, color) | Draw lines sequence (using gl lines) |
 | sub DrawLineV(startPos, endPos, color) | Draw a line (using gl lines) |
@@ -108,7 +112,7 @@ Implemented APIs (633)
 | sub DrawPolyLinesEx(center, sides, radius, rotation, lineThick, color) | Draw a polygon outline of n sides with extended parameters |
 | sub DrawRay(ray, color) | Draw a ray line |
 | sub DrawRectangle(posX, posY, width, height, color) | Draw a color-filled rectangle |
-| sub DrawRectangleGradientEx(rec, topLeft, bottomLeft, topRight, bottomRight) | Draw a gradient-filled rectangle with custom vertex colors |
+| sub DrawRectangleGradientEx(rec, topLeft, bottomLeft, bottomRight, topRight) | Draw a gradient-filled rectangle with custom vertex colors |
 | sub DrawRectangleGradientH(posX, posY, width, height, left, right) | Draw a horizontal-gradient-filled rectangle |
 | sub DrawRectangleGradientV(posX, posY, width, height, top, bottom) | Draw a vertical-gradient-filled rectangle |
 | sub DrawRectangleLines(posX, posY, width, height, color) | Draw rectangle outline |
@@ -153,7 +157,7 @@ Implemented APIs (633)
 | sub DrawTriangleStrip3D(points, pointCount, color) | Draw a triangle strip defined by points |
 | sub EnableCursor() | Enables cursor (unlock cursor) |
 | sub EnableEventWaiting() | Enable waiting for events on EndDrawing(), no automatic event polling |
-| func EncodeDataBase64(data, dataSize, outputSize) | Encode data to Base64 string, memory must be MemFree() |
+| func EncodeDataBase64(data, dataSize, outputSize) | Encode data to Base64 string (includes NULL terminator), memory must be MemFree() |
 | sub EndBlendMode() | End blending mode (reset to default: alpha blending) |
 | sub EndDrawing() | End canvas drawing and swap buffers (double buffering) |
 | sub EndMode2D() | Ends 2D mode with custom camera |
@@ -173,7 +177,13 @@ Implemented APIs (633)
 | func ExportWave(wave, fileName) | Export wave data to file, returns true on success |
 | func ExportWaveAsCode(wave, fileName) | Export wave sample data to code (.h), returns true on success |
 | func Fade(color, alpha) | Get color with alpha applied, alpha goes from 0.0f to 1.0f |
+| func FileCopy(srcPath, dstPath) | Copy file from one path to another, dstPath created if it doesn't exist |
 | func FileExists(fileName) | Check if file exists |
+| func FileMove(srcPath, dstPath) | Move file from one directory to another, dstPath created if it doesn't exist |
+| func FileRemove(fileName) | Remove file (if exists) |
+| func FileRename(fileName, fileRename) | Rename file (if exists) |
+| func FileTextFindIndex(fileName, search) | Find text in existing file |
+| func FileTextReplace(fileName, search, replacement) | Replace text in an existing file |
 | func GenImageCellular(width, height, tileSize) | Generate image: cellular algorithm, bigger tileSize means bigger cells |
 | func GenImageChecked(width, height, checksX, checksY, col1, col2) | Generate image: checked |
 | func GenImageColor(width, height, color) | Generate image: plain color |
@@ -218,8 +228,8 @@ Implemented APIs (633)
 | func GetFontDefault() | Get the default Font |
 | func GetFPS() | Get current FPS |
 | func GetFrameTime() | Get time in seconds for last frame drawn (delta time) |
-| func GetGamepadAxisCount(gamepad) | Get gamepad axis count for a gamepad |
-| func GetGamepadAxisMovement(gamepad, axis) | Get axis movement value for a gamepad axis |
+| func GetGamepadAxisCount(gamepad) | Get axis count for a gamepad |
+| func GetGamepadAxisMovement(gamepad, axis) | Get movement value for a gamepad axis |
 | func GetGamepadButtonPressed() | Get the last gamepad button pressed |
 | func GetGamepadName(gamepad) | Get gamepad internal name id |
 | func GetGestureDetected() | Get latest detected gesture |
@@ -282,6 +292,7 @@ Implemented APIs (633)
 | func GetSplinePointBezierQuad(p1, c2, p3, t) | Get (evaluate) spline point: Quadratic Bezier |
 | func GetSplinePointCatmullRom(p1, p2, p3, p4, t) | Get (evaluate) spline point: Catmull-Rom |
 | func GetSplinePointLinear(startPos, endPos, t) | Get (evaluate) spline point: Linear |
+| func GetTextBetween(text, begin, end) | Get text between two strings |
 | func GetTime() | Get elapsed time in seconds since InitWindow() |
 | func GetTouchPointCount() | Get number of touch points |
 | func GetTouchPointId(index) | Get touch point identifier for given index |
@@ -396,7 +407,7 @@ Implemented APIs (633)
 | func IsCursorHidden() | Check if cursor is not visible |
 | func IsCursorOnScreen() | Check if cursor is on the screen |
 | func IsFileDropped() | Check if a file has been dropped into window |
-| func IsFileExtension(fileName, ext) | Check file extension (including point: .png, .wav) |
+| func IsFileExtension(fileName, ext) | Check file extension (recommended include point: .png, .wav) |
 | func IsFileNameValid(fileName) | Check if fileName is valid for the platform/OS |
 | func IsFontValid(font) | Check if a font is valid (font data loaded, WARNING: GPU texture not checked) |
 | func IsGamepadAvailable(gamepad) | Check if a gamepad is available |
@@ -498,7 +509,7 @@ Implemented APIs (633)
 | func pollevents() | n/a |
 | sub PollInputEvents() | Register all input events |
 | func resetPhysics() | n/a |
-| sub RestoreWindow() | Set window state: not minimized/maximized |
+| sub RestoreWindow() | Restore window from being minimized/maximized |
 | sub ResumeAudioStream(stream) | Resume audio stream |
 | sub ResumeMusicStream(music) | Resume playing paused music |
 | sub ResumeSound(sound) | Resume a paused sound |
@@ -525,7 +536,7 @@ Implemented APIs (633)
 | sub SetMouseOffset(offsetX, offsetY) | Set mouse offset |
 | sub SetMousePosition(x, y) | Set mouse position XY |
 | sub SetMouseScale(scaleX, scaleY) | Set mouse scaling |
-| sub SetMusicPan(music, pan) | Set pan for a music (0.5 is center) |
+| sub SetMusicPan(music, pan) | Set pan for a music (-1.0 left, 0.0 center, 1.0 right) |
 | sub SetMusicPitch(music, pitch) | Set pitch for a music (1.0 is base level) |
 | sub SetMusicVolume(music, volume) | Set volume for music (1.0 is max level) |
 | func setPhysicsbodyangularvelocity() | n/a |
@@ -555,7 +566,7 @@ Implemented APIs (633)
 | sub SetShaderValueTexture(shader, locIndex, texture) | Set shader uniform value and bind the texture (sampler2d) |
 | sub SetShaderValueV(shader, locIndex, value, uniformType, count) | Set shader uniform value vector |
 | sub SetShapesTexture(texture, source) | Set texture and rectangle to be used on shapes drawing |
-| sub SetSoundPan(sound, pan) | Set pan for a sound (0.5 is center) |
+| sub SetSoundPan(sound, pan) | Set pan for a sound (-1.0 left, 0.0 center, 1.0 right) |
 | sub SetSoundPitch(sound, pitch) | Set pitch for a sound (1.0 is base level) |
 | sub SetSoundVolume(sound, volume) | Set volume for a sound (1.0 is max level) |
 | sub SetTargetFPS(fps) | Set target FPS (maximum) |
@@ -582,14 +593,16 @@ Implemented APIs (633)
 | sub StopSound(sound) | Stop playing a sound |
 | sub SwapScreenBuffer() | Swap back buffer with front buffer (screen drawing) |
 | sub TakeScreenshot(fileName) | Takes a screenshot of current screen (filename extension defines format) |
-| sub TextAppend(text, append, position) | Append text at specific position and move cursor! |
+| sub TextAppend(text, append, position) | Append text at specific position and move cursor |
 | func TextCopy(dst, src) | Copy one string to another, returns bytes copied |
-| func TextFindIndex(text, find) | Find first text occurrence within a string |
+| func TextFindIndex(text, search) | Find first text occurrence within a string, -1 if not found |
 | func TextFormat(text, args) | Text formatting with variables (sprintf() style) |
 | func TextInsert(text, insert, position) | Insert text in a position (WARNING: memory must be freed!) |
 | func TextIsEqual(text1, text2) | Check if two text string are equal |
 | func TextLength(text) | Get text length, checks for '\\0' ending |
-| func TextReplace(text, replace, by) | Replace text string (WARNING: memory must be freed!) |
+| func TextRemoveSpaces(text) | Remove text spaces, concat words |
+| func TextReplace(text, search, replacement) | Replace text string (WARNING: memory must be freed!) |
+| func TextReplaceBetween(text, begin, end, replacement) | Replace text between two specific strings (WARNING: memory must be freed!) |
 | func TextSubtext(text, position, length) | Get a piece of a text string |
 | func TextToCamel(text) | Get Camel case notation version of provided string |
 | func TextToFloat(text) | Get float value from text |
@@ -632,9 +645,9 @@ Implemented APIs (633)
 | sub UpdateModelAnimationBones(model, anim, frame) | Update model animation mesh bone matrices (GPU skinning) |
 | sub UpdateMusicStream(music) | Updates buffers for music streaming |
 | func updatePhysics() | n/a |
-| sub UpdateSound(sound, data, sampleCount) | Update sound buffer with new data |
-| sub UpdateTexture(texture, pixels) | Update GPU texture with new data |
-| sub UpdateTextureRec(texture, rec, pixels) | Update GPU texture rectangle with new data |
+| sub UpdateSound(sound, data, sampleCount) | Update sound buffer with new data (default data format: 32 bit float, stereo) |
+| sub UpdateTexture(texture, pixels) | Update GPU texture with new data (pixels should be able to fill texture) |
+| sub UpdateTextureRec(texture, rec, pixels) | Update GPU texture rectangle with new data (pixels and rec should fit in texture) |
 | sub UploadMesh(mesh, dynamic) | Upload mesh vertex data in GPU and provide VAO/VBO ids |
 | func waitevents() | n/a |
 | sub WaitTime(seconds) | Wait for some time (halt program execution) |
@@ -661,6 +674,7 @@ Unimplemented APIs
 | LoadFontData | Load font data for further use |
 | LoadMaterialDefault | Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps) |
 | LoadMaterials | Load materials from model file |
+| LoadTextLines | Load text as separate lines ('\\n') |
 | LoadVrStereoConfig | Load VR stereo config for VR simulator device parameters |
 | SetAudioStreamCallback | Audio thread callback to request new data |
 | SetLoadFileDataCallback | Set custom file binary data loader |
@@ -670,8 +684,9 @@ Unimplemented APIs
 | SetSaveFileTextCallback | Set custom file text data saver |
 | SetTraceLogCallback | Set custom trace log |
 | TextJoin | Join text strings with delimiter |
-| TextSplit | Split text into multiple strings |
+| TextSplit | Split text into multiple strings, using MAX_TEXTSPLIT_COUNT static strings |
 | UnloadFontData | Unload font chars info data (RAM) |
 | UnloadMaterial | Unload material from GPU memory (VRAM) |
+| UnloadTextLines | Unload text lines |
 | UnloadVrStereoConfig | Unload VR stereo config |
 

@@ -2,7 +2,7 @@ rem
 rem generate a skelton main.cpp from json input
 rem
 
-tload "raylib/parser/raylib_api.json", s, 1
+tload "raylib/tools/rlparser/output/raylib_api.json", s, 1
 api = array(s)
 
 func comparator(l, r)
