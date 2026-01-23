@@ -5,12 +5,13 @@
 # Download the GNU Public License (GPL) from www.gnu.org
 #
 
-generated = func-def.h proc-def.h proc.h func.h
 sbasic=sbasic
+generated = func-def.h proc-def.h proc.h func.h
+raylib_api_json=raylib/tools/rlparser/output/raylib_api.json
 
 CLEANFILES = $(generated)
 
-raylib/tools/rlparser/output/raylib_api.json: raylib/src/raylib.h raylib/tools/rlparser/rlparser.c
+$(raylib_api_json): raylib/src/raylib.h raylib/tools/rlparser/rlparser.c
 	(cd raylib/tools/rlparser && make && ./rlparser --format JSON --input ../../src/raylib.h --output output/raylib_api.json)
 
 UNSUPPORTED.md: $(generated)
@@ -19,7 +20,7 @@ UNSUPPORTED.md: $(generated)
 README.md: $(generated) mkreadme.bas UNSUPPORTED.md
 	$(sbasic)	mkreadme.bas `grep RAYLIB_VERSION raylib/src/raylib.h | sed 's/#define RAYLIB_VERSION//g' | sed 's/\"//g'` > README.md
 
-$(generated): raylib/parser/raylib_api.json mkraylib.bas
+$(generated): $(raylib_api_json) mkraylib.bas
 	$(sbasic) mkraylib.bas $@ > $@
 	@touch main.cpp
 
