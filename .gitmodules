@@ -31,3 +31,6 @@
 [submodule "gtk-server/uthash"]
 	path = gtk-server/uthash
 	url = https://github.com/troydhanson/uthash.git
+[submodule "llama/llama.cpp"]
+	path = llama/llama.cpp
+	url = https://github.com/ggerganov/llama.cpp
