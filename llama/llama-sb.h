@@ -50,6 +50,8 @@ struct Llama {
   void set_temperature(float temperature) { _temperature = temperature; }
   void set_top_k(int top_k) { _top_k = top_k; }
   void set_top_p(float top_p) { _top_p = top_p; }
+  void set_grammar(const string &src, const string &root);
+  void set_seed(unsigned int seed) { _seed = seed; }
 
   // error handling
   const char *last_error() { return _last_error.c_str(); }
@@ -58,7 +60,7 @@ struct Llama {
 
   private:
   bool ends_with_sentence_boundary(const string &out);
-  void configure_sampler();
+  bool configure_sampler();
   bool make_space_for_tokens(int n_tokens, int keep_min);
   vector<llama_token> tokenize(const string &prompt);
   string token_to_string(LlamaIter &iter, llama_token tok);
@@ -68,6 +70,8 @@ struct Llama {
   llama_sampler *_sampler;
   const llama_vocab *_vocab;
   vector<string> _stop_sequences;
+  string _grammar_src;
+  string _grammar_root;
   string _last_error;
   int32_t _penalty_last_n;
   float _penalty_repeat;
@@ -77,4 +81,5 @@ struct Llama {
   int _top_k;
   int _max_tokens;
   int _log_level;
+  unsigned int _seed;
 };

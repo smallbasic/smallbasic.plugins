@@ -212,6 +212,42 @@ static int cmd_llama_set_top_p(var_s *self, int argc, slib_par_t *arg, var_s *re
 }
 
 //
+// llama.set_grammar("text")
+//
+static int cmd_llama_set_grammar(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_grammar", 1, 1);
+  } else {
+    int id = get_llama_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_llama.at(id);
+      llama.set_grammar(get_param_str(argc, arg, 0, 0), "root");
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// llama.set_seed(123)
+//
+static int cmd_llama_set_seed(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_seed", 1, 1);
+  } else {
+    int id = get_llama_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_llama.at(id);
+      llama.set_seed(get_param_num(argc, arg, 0, 0));
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
 // llama.reset() - make the model forget everything
 //
 static int cmd_llama_reset(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
@@ -355,6 +391,8 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
     v_create_callback(retval, "set_temperature", cmd_llama_set_temperature);
     v_create_callback(retval, "set_top_k", cmd_llama_set_top_k);
     v_create_callback(retval, "set_top_p", cmd_llama_set_top_p);
+    v_create_callback(retval, "set_grammar", cmd_llama_set_grammar);
+    v_create_callback(retval, "set_seed", cmd_llama_set_seed);
     result = 1;
   } else {
     error(retval, llama.last_error());
@@ -388,7 +426,7 @@ int sblib_init(const char *sourceFile) {
 //
 // Release variables falling out of scope
 //
-SBLIB_API void sblib_free(int cls_id, int id) {
+SBLIB_API int sblib_free(int cls_id, int id) {
   if (id != -1) {
     switch (cls_id) {
     case CLASS_ID_LLAMA:
@@ -403,6 +441,7 @@ SBLIB_API void sblib_free(int cls_id, int id) {
       break;
     }
   }
+  return 0;
 }
 
 //

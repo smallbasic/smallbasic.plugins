@@ -31,7 +31,8 @@ Llama::Llama() :
   _min_p(0),
   _top_k(0),
   _max_tokens(0),
-  _log_level(GGML_LOG_LEVEL_CONT) {
+  _log_level(GGML_LOG_LEVEL_CONT),
+  _seed(LLAMA_DEFAULT_SEED) {
   llama_log_set([](enum ggml_log_level level, const char * text, void *user_data) {
     Llama *llama = (Llama *)user_data;
     if (level > llama->_log_level) {
@@ -63,6 +64,9 @@ void Llama::reset() {
   _top_p = 1.0f;
   _min_p = 0.0f;
   _max_tokens = 150;
+  _grammar_src.clear();
+  _grammar_root.clear();
+  _seed = LLAMA_DEFAULT_SEED;
   if (_ctx) {
     llama_memory_clear(llama_get_memory(_ctx), true);
   }
@@ -93,36 +97,53 @@ bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layer
       _last_error = "Failed to create context";
     } else {
       _vocab = llama_model_get_vocab(_model);
-
-      auto sparams = llama_sampler_chain_default_params();
-      sparams.no_perf = false;
-      _sampler = llama_sampler_chain_init(sparams);
     }
   }
   return _last_error.empty();
 }
 
-void Llama::configure_sampler() {
-  llama_sampler_reset(_sampler);
+void Llama::set_grammar(const string &src, const string &root) {
+  _grammar_src = src;
+  _grammar_root = root;
+}
+
+bool Llama::configure_sampler() {
+  auto sparams = llama_sampler_chain_default_params();
+  sparams.no_perf = false;
+  llama_sampler *chain = llama_sampler_chain_init(sparams);
+
+  if (!_grammar_src.empty()) {
+    llama_sampler *grammar = llama_sampler_init_grammar(_vocab, _grammar_src.c_str(), _grammar_root.c_str());
+    if (!grammar) {
+      _last_error = "failed to initialize grammar sampler";
+      return false;
+    }
+    llama_sampler_chain_add(chain, grammar);
+  }
   if (_penalty_last_n != 0 && _penalty_repeat != 1.0f) {
     auto penalties = llama_sampler_init_penalties(_penalty_last_n, _penalty_repeat, 0.0f, 0.0f);
-    llama_sampler_chain_add(_sampler, penalties);
+    llama_sampler_chain_add(chain, penalties);
   }
   if (_temperature <= 0.0f) {
-    llama_sampler_chain_add(_sampler, llama_sampler_init_greedy());
+    llama_sampler_chain_add(chain, llama_sampler_init_greedy());
   } else {
-    llama_sampler_chain_add(_sampler, llama_sampler_init_temp(_temperature));
     if (_top_k > 0) {
-      llama_sampler_chain_add(_sampler, llama_sampler_init_top_k(_top_k));
+      llama_sampler_chain_add(chain, llama_sampler_init_top_k(_top_k));
     }
-    if (_top_p < 1.0f) {
-      llama_sampler_chain_add(_sampler, llama_sampler_init_top_p(_top_p, 1));
+    if (_top_p < 1.0f || _min_p > 0.0f) {
+      llama_sampler_chain_add(chain, llama_sampler_init_top_p(_top_p, 1));
     }
     if (_min_p > 0.0f) {
-      llama_sampler_chain_add(_sampler, llama_sampler_init_min_p(_min_p, 1));
+      llama_sampler_chain_add(chain, llama_sampler_init_min_p(_min_p, 1));
     }
-    llama_sampler_chain_add(_sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
+    llama_sampler_chain_add(chain, llama_sampler_init_temp(_temperature));
+    llama_sampler_chain_add(chain, llama_sampler_init_dist(_seed));
   }
+  if (_sampler) {
+    llama_sampler_free(_sampler);
+  }
+  _sampler = chain;
+  return true;
 }
 
 vector<llama_token> Llama::tokenize(const string &prompt) {
@@ -201,7 +222,9 @@ bool Llama::make_space_for_tokens(int n_tokens, int keep_min) {
 }
 
 bool Llama::generate(LlamaIter &iter, const string &prompt) {
-  configure_sampler();
+  if (!configure_sampler()) {
+    return false;
+  }
 
   vector<llama_token> prompt_tokens = tokenize(prompt);
   if (prompt_tokens.size() == 0) {
