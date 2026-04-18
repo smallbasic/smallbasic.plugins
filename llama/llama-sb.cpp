@@ -40,6 +40,7 @@ Llama::Llama() :
     }
   }, this);
   reset();
+  llama_backend_init();
 }
 
 Llama::~Llama() {
@@ -52,6 +53,7 @@ Llama::~Llama() {
   if (_model) {
     llama_model_free(_model);
   }
+  llama_backend_free();
 }
 
 void Llama::reset() {
@@ -72,14 +74,15 @@ void Llama::reset() {
   }
 }
 
-bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layers) {
+bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layers, int log_level) {
   ggml_backend_load_all();
 
   llama_model_params mparams = llama_model_default_params();
   if (n_gpu_layers >= 0) {
-     mparams.n_gpu_layers = n_gpu_layers;
+    mparams.n_gpu_layers = n_gpu_layers;
   }
 
+  _log_level = log_level;
   _model = llama_model_load_from_file(model_path.c_str(), mparams);
   if (!_model) {
     _last_error = "Failed to load model";

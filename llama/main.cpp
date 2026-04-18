@@ -377,9 +377,10 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   auto n_ctx = get_param_int(argc, params, 1, 2048);
   auto n_batch = get_param_int(argc, params, 2, 1024);
   auto n_gpu_layers = get_param_int(argc, params, 3, -1);
+  auto n_log_level = get_param_int(argc, params, 4, GGML_LOG_LEVEL_CONT);
   int id = ++g_nextId;
   Llama &llama = g_llama[id];
-  if (llama.construct(model, n_ctx, n_batch, n_gpu_layers)) {
+  if (llama.construct(model, n_ctx, n_batch, n_gpu_layers, n_log_level)) {
     map_init_id(retval, id, CLASS_ID_LLAMA);
     v_create_callback(retval, "add_stop", cmd_llama_add_stop);
     v_create_callback(retval, "generate", cmd_llama_generate);
@@ -403,7 +404,7 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
 }
 
 FUNC_SIG lib_func[] = {
-  {1, 4, "LLAMA", cmd_create_llama},
+  {1, 5, "LLAMA", cmd_create_llama},
 };
 
 SBLIB_API int sblib_func_count() {

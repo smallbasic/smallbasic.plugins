@@ -56,7 +56,7 @@ int main(int argc, char ** argv) {
   }
 
   Llama llama;
-  if (llama.construct(model_path, 1024, 1024, -1)) {
+  if (llama.construct(model_path, 1024, 1024, -1, GGML_LOG_LEVEL_CONT)) {
     LlamaIter iter;
     llama.set_max_tokens(n_predict);
     llama.generate(iter, prompt);
