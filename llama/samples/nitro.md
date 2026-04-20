@@ -50,7 +50,7 @@ Use <|think|> to reason BEFORE:
 
 Available commands:
 
-- TOOL:LIST  `[directory_path]`
+- TOOL:LIST  `[directory_path. items enclosed in square brackets (`[...]`) represent directories within the file listing output]`
 - TOOL:READ  `[file_path]`
 - TOOL:WRITE `[file_path]`
 - TOOL:DATE  `[Returns the current date as string with format “DD/MM/YYYY”]`

@@ -7,7 +7,7 @@ import llm
 
 ' --- Configuration ---
 const model = "models/google_gemma-4-E4B-it-Q4_K_L.gguf"
-const knowledge_files = ["skills.md"]
+const knowledge_files = ["nitro.md"]
 
 ' ANSI Color Codes
 const RESET = chr(27) + "[0m"
@@ -17,21 +17,20 @@ const BLUE = chr(27) + "[34m"
 const CYAN = chr(27) + "[36m"
 const RED = chr(27) + "[31m"
 const BOLD_CYAN = chr(27) + "[1;36m"
-const CHANNEL_MARKER = "<channel|>"
+const CHANNEL_END = "<channel|>"
 
-' Initialize the LLAMA interface
+' llama configuration
 const n_ctx = 16000
 const n_batch = 512
-const llama = llm.llama(model, n_ctx, n_batch, 50)
+const n_max_tokens = 4096
+const n_temperature = 0.2
+const n_top_k = 40
+const n_top_p = 0.9
+const n_min_p = 0.05
+const n_penalty_repeat = 1.1
+const n_penalty_last_n = 256
 
-llama.add_stop("<|turn|>")
-llama.set_max_tokens(4096)
-llama.set_temperature(0.2)
-llama.set_top_k(40)
-llama.set_top_p(0.9)
-llama.set_min_p(0.05)           ' filter weak tokens
-llama.set_penalty_repeat(1.1)   ' avoid loops
-llama.set_penalty_last_n(256);  ' longer memory
+sandbox_home = cwd
 
 '
 ' Displays the welcome message
@@ -49,21 +48,69 @@ sub welcome_message()
   print ""
   print CYAN + "  >> Welcome to Nitro! Your AI Agent Companion. << " + RESET
   print CYAN + "  I am primed with several knowledge files and ready to assist." + RESET
-  print CYAN + "  Try asking me about the contents of 'skills.md' or listing files in './data'." + RESET
+  print CYAN + "  Try asking me about the contents of 'nitro.md' or listing files in './data'." + RESET
   print CYAN + "  Type 'exit' to quit." + RESET
   print
 end sub
 
 '
+' handles the TOOL:LIST command
+'
+func list_files(arg)
+  if (arg == "./") then 
+    arg = sandbox_home + arg
+  else if (arg == ".") then
+    arg = sandbox_home
+  endif
+  
+  local result = []
+  
+  func walker(node)
+    if (node.depth == 0) then
+      if (node.dir && left(node.name, 1) != ".") then
+        result << "[" + node.name + "]"
+      else
+        result << node.name
+      endif
+    endif
+    return node.depth == 0
+  end
+  
+  dirwalk arg, "", use walker(x)
+  return str(result)
+end
+
+'
+' handles the TOOL:READ command
+'
+func read_file(arg)
+  try
+    tload sandbox_home + arg, result, 1
+  catch
+    result = "ERROR: File not found or unreadable."
+  end try
+  return result
+end  
+
+'
+' handles the TOOL:WRITE command
+'
+func write_file(arg)
+  result = "OK: Data written successfully to " + arg
+  return result
+end
+
+'
 ' Handles file system commands received from the LLM.
 '
 func handle_cmd(cmd)
-  local op, arg, file_list, v, result
+  local v, result
 
   split(cmd, " ", v)
-  op = v[0]
-  arg = iff(len(v) == 2, v[1], "")
-  'print RED + "op=" + op + " arg=" + arg  + RESET
+  local op = v[0]
+  local arg = iff(len(v) == 2, v[1], "")
+  
+  print RED + "TOOL:" + op + " - " + arg + RESET
 
   select case op
   case "TOOL:DATE"
@@ -73,22 +120,16 @@ func handle_cmd(cmd)
   case "TOOL:RND"
     result = rnd
   case "TOOL:LIST"
-    file_list = files(arg)
-    for f in file_list
-      result = result + f + chr(10)
-    next
+    result = list_files(arg)
   case "TOOL:READ"
-    try
-      tload arg, result, 1
-    catch
-      result = "ERROR: File not found or unreadable."
-    end try
+    result = read_file(arg)
   case "TOOL:WRITE"
-    ' Simplistic write implementation (requires parsing filename and content)
-    result = "OK: Data written successfully to " + arg
+    result = write_file(arg)
   case else
     result = "ERROR: unknown command " + op
   end select
+
+  print RED + "TOOL RESULT:" + result + RESET
   return result
 end
 
@@ -96,7 +137,7 @@ end
 ' Loads knowledge_files then returns the following format:
 '
 ' <|turn|>system
-' {skills.md...}
+' {nitro.md...}
 ' <|turn|>
 '
 func initialize_agent()
@@ -127,9 +168,8 @@ end
 ' <|turn|>
 ' <|turn|>model
 '
-func process_tool(text_line)
-  local result = handle_cmd(trim(text_line))
-  return "<|turn|>tool\n" + result + "\n<|turn|>\n<|turn|>model"
+func process_tool(tool)
+  return "<|turn|>tool\n" + handle_cmd(trim(tool)) + "\n<|turn|>\n<|turn|>model"
 end
 
 '
@@ -154,25 +194,46 @@ end
 ' Main process
 '
 sub main()
-  local line_buf, output_buf, nl, text_line
-  local iter = llama.generate(initialize_agent())
-  local text_colour = BLUE
+  local llama = llm.llama(model, n_ctx, n_batch, 50)
 
-  welcome_message()
+  llama.add_stop("<|turn|>")
+  llama.set_max_tokens(n_max_tokens)
+  llama.set_temperature(n_temperature)
+  llama.set_top_k(n_top_k)
+  llama.set_top_p(n_top_p)
+  llama.set_min_p(n_min_p)
+  llama.set_penalty_repeat(n_penalty_repeat)
+  llama.set_penalty_last_n(n_penalty_last_n)
+
+  local iter = llama.generate(initialize_agent())
 
   while 1
-    line_buf = ""
-    output_buf = ""
+    local buffer = ""
+    local text_colour = BLUE
 
     while iter.has_next()
-      token = iter.next()
-      line_buf = line_buf + token
+      buffer += iter.next()
+      local chan_end = instr(buffer, CHANNEL_END)
+
+      if chan_end != 0 then
+        ' print buffer up to channel_end
+        buffer = left(buffer, chan_end - 1)
+        print text_colour + buffer + RESET
+        print
+
+        ' print buffer following channel_end
+        text_colour = CYAN        
+        print text_colour + mid(buffer, chan_end + len(CHANNEL_END)) + RESET;
+        
+        ' reset buffer
+        buffer = ""
+      endif
 
       ' Only print non-command tokens
-      nl = instr(line_buf, chr(10))
+      local nl = instr(buffer, chr(10))
       if nl then
-        text_line = left(line_buf, nl - 1)
-        line_buf = mid(line_buf, nl + 1)
+        local text_line = left(buffer, nl - 1)
+        buffer = mid(buffer, nl + 1)
         if text_line == "</|think|>" then
           text_colour = CYAN
         else
@@ -182,19 +243,21 @@ sub main()
     wend
 
     ' Flush remaining line buffer
-    if left(trim(line_buf), 5) == "TOOL:" then
+    if len(buffer) > 0 and left(trim(buffer), 5) == "TOOL:" then
       ' TOOL:xxx should always appear on the final line
-      text_colour = BLUE
-      iter = llama.generate(process_tool(line_buf))
+      iter = llama.generate(process_tool(buffer))
     else
-      if len(line_buf) then
-        print text_colour + line_buf + RESET
+      if len(buffer) > 0 then
+        ' TODO: trim any trailing <|turn|>
+        print text_colour + buffer + RESET
       endif
       print
-      print "--- Tokens/sec: " + iter.tokens_sec() + " ---\n"
+      print "--- Tokens/sec: " + round(iter.tokens_sec(), 2) + " ---\n"
       iter = llama.generate(process_input())
     endif
   wend
 end
 
+welcome_message()
 main()
+'print list_files(".")
