@@ -197,6 +197,9 @@ func process_input()
   return "<|turn|>user\n" + user_input + "\n<|turn|>\n<|turn|>model"
 end
 
+'
+' creates the llama instance
+'
 func create_llama()
   local llama = llm.llama(model, n_ctx, n_batch, 50)
   llama.add_stop("<|turn|>")
@@ -214,18 +217,8 @@ end
 ' Main process
 '
 sub main()
-  ' note: this construct requires sbasic fixes
-  '  local llama = create_llama()  
-  local llama = llm.llama(model, n_ctx, n_batch, 50)
-  llama.add_stop("<|turn|>")
-  llama.set_max_tokens(n_max_tokens)
-  llama.set_temperature(n_temperature)
-  llama.set_top_k(n_top_k)
-  llama.set_top_p(n_top_p)
-  llama.set_min_p(n_min_p)
-  llama.set_penalty_repeat(n_penalty_repeat)
-  llama.set_penalty_last_n(n_penalty_last_n)
-  
+  ' note: this construct requires recent sbasic fixes
+  local llama = create_llama()
   local iter = llama.generate(initialize_agent())
 
   while 1

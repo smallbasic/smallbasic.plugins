@@ -21,6 +21,15 @@ LlamaIter::LlamaIter() :
   _has_next(false) {
 }
 
+LlamaIter::LlamaIter(LlamaIter &&other) noexcept
+  : _llama(std::exchange(other._llama, nullptr))
+  , _last_word(std::move(other._last_word))
+  , _t_start(std::move(other._t_start))
+  , _repetition_count(other._repetition_count)
+  , _tokens_generated(other._tokens_generated)
+  , _has_next(other._has_next) {
+}
+
 Llama::Llama() :
   _model(nullptr),
   _ctx(nullptr),

@@ -20,6 +20,13 @@ struct LlamaIter {
   explicit LlamaIter();
   ~LlamaIter() {}
 
+  // move constructor
+  LlamaIter(LlamaIter &&other) noexcept;
+
+  // delete the copy
+  LlamaIter(const LlamaIter &) = delete;
+  LlamaIter &operator=(const LlamaIter &) = delete;
+
   Llama *_llama;
   string _last_word;
   chrono::high_resolution_clock::time_point _t_start;
@@ -32,7 +39,7 @@ struct Llama {
   explicit Llama();
 
   // move constructor
-  Llama(Llama &&otherLlama) noexcept;
+  Llama(Llama &&other) noexcept;
 
   // delete the copy
   Llama(const Llama &) = delete;
