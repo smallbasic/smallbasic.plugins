@@ -20,7 +20,7 @@ const BOLD_CYAN = chr(27) + "[1;36m"
 const CHANNEL_END = "<channel|>"
 
 ' llama configuration
-const n_ctx = 16000
+const n_ctx = 8000
 const n_batch = 512
 const n_max_tokens = 4096
 const n_temperature = 0.2
@@ -38,15 +38,15 @@ sandbox_home = cwd
 sub welcome_message()
   print
   print BOLD_CYAN;
-  print "      •   •    •   •••••   ••••     •••  "
-  print "      ••  •    •     •    •   •    •   • "
-  print "      •  ••    •     •    ••••    •     •"
-  print "      •   •    •     •    •   •    •   • "
-  print "      •   •    •     •    •   •     •••  "
+  print "          .  ·    ✦        .    ·      "
+  print "     ·         .        ·              "
+  print "        ✦   P · I · C · A · R · D   ✦  "
+  print "              .    ·         .         "
+  print "     .    ·        ✦    .        ·     "
   print
-  print BOLD_CYAN + "  N I T R O   A G E N T   S Y S T E M   v1.0" + RESET
-  print ""
-  print CYAN + "  >> Welcome to Nitro! Your AI Agent Companion. << " + RESET
+  print BOLD_CYAN + "  P I C A R D   A G E N T   S Y S T E M   v1.0" + RESET
+  print
+  print CYAN + "  >> Welcome to Picard! Your AI Agent Companion. << " + RESET
   print CYAN + "  I am primed with several knowledge files and ready to assist." + RESET
   print CYAN + "  Try asking me about the contents of 'nitro.md' or listing files in './data'." + RESET
   print CYAN + "  Type 'exit' to quit." + RESET
@@ -59,7 +59,7 @@ end sub
 func list_files(arg)
   if (arg == "./") then 
     arg = sandbox_home + arg
-  else if (arg == ".") then
+  else if (len(arg) == 0 or arg == ".") then
     arg = sandbox_home
   endif
   
@@ -75,7 +75,7 @@ func list_files(arg)
     endif
     return node.depth == 0
   end
-  
+
   dirwalk arg, "", use walker(x)
   return str(result)
 end
@@ -148,15 +148,22 @@ func initialize_agent()
     try
       tload file, content, 1
       prompt = prompt + chr(10) + content + chr(10)
-      print GREEN + "✅ Loaded knowledge file: " + file + RESET
+      print GREEN + "  ✅ Loaded knowledge file: " + file + RESET
     catch
-      print RED + "❌ ERROR: Could not load " + file + ". Check path." + RESET
+      print RED + "  ❌ ERROR: Could not load " + file + ". Check path." + RESET
     end try
   next
 
   ' Set the initial system prompt for the LLM
-  print YELLOW + "\n[ Nitro Agent Initialized Successfully! ]" + RESET
+  print YELLOW;
+  print "  ╔═══════════════════════════════════════╗"
+  print "  ║  > PICARD_                            ║"
+  print "  ║  > STATUS: ENGAGED                    ║"
+  print "  ║  > STARDATE: 42026.421                ║"
+  print "  ║  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 100% READY      ║"
+  print "  ╚═══════════════════════════════════════╝"
   print
+  print RESET
   return "<|turn|>system\n" + prompt + "\n<|turn|>"
 end
 
@@ -190,12 +197,8 @@ func process_input()
   return "<|turn|>user\n" + user_input + "\n<|turn|>\n<|turn|>model"
 end
 
-'
-' Main process
-'
-sub main()
+func create_llama()
   local llama = llm.llama(model, n_ctx, n_batch, 50)
-
   llama.add_stop("<|turn|>")
   llama.set_max_tokens(n_max_tokens)
   llama.set_temperature(n_temperature)
@@ -204,7 +207,25 @@ sub main()
   llama.set_min_p(n_min_p)
   llama.set_penalty_repeat(n_penalty_repeat)
   llama.set_penalty_last_n(n_penalty_last_n)
+  return llama
+end
 
+'
+' Main process
+'
+sub main()
+  ' note: this construct requires sbasic fixes
+  '  local llama = create_llama()  
+  local llama = llm.llama(model, n_ctx, n_batch, 50)
+  llama.add_stop("<|turn|>")
+  llama.set_max_tokens(n_max_tokens)
+  llama.set_temperature(n_temperature)
+  llama.set_top_k(n_top_k)
+  llama.set_top_p(n_top_p)
+  llama.set_min_p(n_min_p)
+  llama.set_penalty_repeat(n_penalty_repeat)
+  llama.set_penalty_last_n(n_penalty_last_n)
+  
   local iter = llama.generate(initialize_agent())
 
   while 1

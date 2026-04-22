@@ -30,6 +30,14 @@ struct LlamaIter {
 
 struct Llama {
   explicit Llama();
+
+  // move constructor
+  Llama(Llama &&otherLlama) noexcept;
+
+  // delete the copy
+  Llama(const Llama &) = delete;
+  Llama &operator=(const Llama &) = delete;
+
   ~Llama();
 
   // init

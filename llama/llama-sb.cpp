@@ -7,6 +7,8 @@
 
 #include <format>
 #include <span>
+#include <utility>
+
 #include "llama.h"
 #include "llama-sb.h"
 
@@ -41,6 +43,26 @@ Llama::Llama() :
   }, this);
   reset();
   llama_backend_init();
+}
+
+Llama::Llama(Llama &&other) noexcept
+  : _model(std::exchange(other._model, nullptr))
+  , _ctx(std::exchange(other._ctx, nullptr))
+  , _sampler(std::exchange(other._sampler, nullptr))
+  , _vocab(std::exchange(other._vocab, nullptr))
+  , _stop_sequences(std::move(other._stop_sequences))
+  , _grammar_src(std::move(other._grammar_src))
+  , _grammar_root(std::move(other._grammar_root))
+  , _last_error(std::move(other._last_error))
+  , _penalty_last_n(other._penalty_last_n)
+  , _penalty_repeat(other._penalty_repeat)
+  , _temperature(other._temperature)
+  , _top_p(other._top_p)
+  , _min_p(other._min_p)
+  , _top_k(other._top_k)
+  , _max_tokens(other._max_tokens)
+  , _log_level(other._log_level)
+  , _seed(other._seed) {
 }
 
 Llama::~Llama() {

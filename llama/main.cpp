@@ -95,7 +95,9 @@ static int cmd_llama_set_penalty_repeat(var_s *self, int argc, slib_par_t *arg, 
     int id = get_llama_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_llama.at(id);
-      llama.set_penalty_repeat(get_param_num(argc, arg, 0, 0));
+      auto value = get_param_num(argc, arg, 0, 0);
+      llama.set_penalty_repeat(value);
+      v_setreal(map_add_var(self, "penalty_repeat", 0), value);
       result = 1;
     }
   }
@@ -113,7 +115,9 @@ static int cmd_llama_set_penalty_last_n(var_s *self, int argc, slib_par_t *arg, 
     int id = get_llama_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_llama.at(id);
-      llama.set_penalty_last_n(get_param_num(argc, arg, 0, 0));
+      auto value = get_param_num(argc, arg, 0, 0);
+      llama.set_penalty_last_n(value);
+      v_setreal(map_add_var(self, "penalty_last_n", 0), value);
       result = 1;
     }
   }
@@ -132,7 +136,9 @@ static int cmd_llama_set_max_tokens(var_s *self, int argc, slib_par_t *arg, var_
     int id = get_llama_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_llama.at(id);
-      llama.set_max_tokens(get_param_int(argc, arg, 0, 0));
+      auto value = get_param_int(argc, arg, 0, 0);
+      llama.set_max_tokens(value);
+      v_setreal(map_add_var(self, "max_tokens", 0), value);
       result = 1;
     }
   }
@@ -150,7 +156,9 @@ static int cmd_llama_set_min_p(var_s *self, int argc, slib_par_t *arg, var_s *re
     int id = get_llama_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_llama.at(id);
-      llama.set_min_p(get_param_num(argc, arg, 0, 0));
+      auto value = get_param_num(argc, arg, 0, 0);
+      llama.set_min_p(value);
+      v_setreal(map_add_var(self, "min_p", 0), value);
       result = 1;
     }
   }
@@ -168,7 +176,9 @@ static int cmd_llama_set_temperature(var_s *self, int argc, slib_par_t *arg, var
     int id = get_llama_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_llama.at(id);
-      llama.set_temperature(get_param_num(argc, arg, 0, 0));
+      auto value = get_param_num(argc, arg, 0, 0);
+      llama.set_temperature(value);
+      v_setreal(map_add_var(self, "temperature", 0), value);
       result = 1;
     }
   }
@@ -186,7 +196,9 @@ static int cmd_llama_set_top_k(var_s *self, int argc, slib_par_t *arg, var_s *re
     int id = get_llama_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_llama.at(id);
-      llama.set_top_k(get_param_int(argc, arg, 0, 0));
+      auto value = get_param_int(argc, arg, 0, 0);
+      llama.set_top_k(value);
+      v_setreal(map_add_var(self, "top_k", 0), value);
       result = 1;
     }
   }
@@ -204,7 +216,9 @@ static int cmd_llama_set_top_p(var_s *self, int argc, slib_par_t *arg, var_s *re
     int id = get_llama_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_llama.at(id);
-      llama.set_top_p(get_param_num(argc, arg, 0, 0));
+      auto value = get_param_num(argc, arg, 0, 0);
+      llama.set_top_p(value);
+      v_setreal(map_add_var(self, "top_p", 0), value);
       result = 1;
     }
   }
@@ -222,7 +236,9 @@ static int cmd_llama_set_grammar(var_s *self, int argc, slib_par_t *arg, var_s *
     int id = get_llama_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_llama.at(id);
-      llama.set_grammar(get_param_str(argc, arg, 0, 0), "root");
+      auto value = get_param_str(argc, arg, 0, 0);
+      llama.set_grammar(value, "root");
+      v_setstr(map_add_var(self, "grammar", 0), value);
       result = 1;
     }
   }
@@ -240,7 +256,9 @@ static int cmd_llama_set_seed(var_s *self, int argc, slib_par_t *arg, var_s *ret
     int id = get_llama_class_id(self, retval);
     if (id != -1) {
       Llama &llama = g_llama.at(id);
-      llama.set_seed(get_param_num(argc, arg, 0, 0));
+      auto value = get_param_num(argc, arg, 0, 0);
+      llama.set_seed(value);
+      v_setreal(map_add_var(self, "seed", 0), value);
       result = 1;
     }
   }
@@ -443,6 +461,36 @@ SBLIB_API int sblib_free(int cls_id, int id) {
     }
   }
   return 0;
+}
+
+//
+// Move the mapped instance to a new position and returns the position
+//
+SBLIB_API int sblib_refresh_id(int cls_id, int id) {
+  int result = id;
+  if (id != -1) {
+    switch (cls_id) {
+    case CLASS_ID_LLAMA:
+      if (g_llama.find(id) != g_llama.end()) {
+        result = ++g_nextId;
+        auto it = g_llama.find(id);
+        auto value = std::move(it->second);
+        g_llama.erase(it);
+        g_llama.emplace(result, std::move(value));
+      }
+      break;
+    case CLASS_ID_LLAMA_ITER:
+      if (g_llama_iter.find(id) != g_llama_iter.end()) {
+        result = ++g_nextId;
+        auto it = g_llama_iter.find(id);
+        auto value = std::move(it->second);
+        g_llama_iter.erase(it);
+        g_llama_iter.emplace(result, std::move(value));
+      }
+      break;
+    }
+  }
+  return result;
 }
 
 //
