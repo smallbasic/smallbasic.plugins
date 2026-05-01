@@ -105,6 +105,46 @@ static int cmd_llama_set_penalty_repeat(var_s *self, int argc, slib_par_t *arg, 
 }
 
 //
+// llama.set_penalty_freq(0.8)
+//
+static int cmd_llama_set_penalty_freq(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_penalty_freq", 1, 1);
+  } else {
+    int id = get_llama_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_llama.at(id);
+      auto value = get_param_num(argc, arg, 0, 0);
+      llama.set_penalty_freq(value);
+      v_setreal(map_add_var(self, "penalty_freq", 0), value);
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
+// llama.set_penalty_present(0.8)
+//
+static int cmd_llama_set_penalty_present(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 1) {
+    error(retval, "llama.set_penalty_present", 1, 1);
+  } else {
+    int id = get_llama_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_llama.at(id);
+      auto value = get_param_num(argc, arg, 0, 0);
+      llama.set_penalty_present(value);
+      v_setreal(map_add_var(self, "penalty_present", 0), value);
+      result = 1;
+    }
+  }
+  return result;
+}
+
+//
 // llama.set_penalty_last_n(0.8)
 //
 static int cmd_llama_set_penalty_last_n(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
@@ -404,6 +444,8 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
     v_create_callback(retval, "generate", cmd_llama_generate);
     v_create_callback(retval, "reset", cmd_llama_reset);
     v_create_callback(retval, "set_penalty_repeat", cmd_llama_set_penalty_repeat);
+    v_create_callback(retval, "set_penalty_freq", cmd_llama_set_penalty_freq);
+    v_create_callback(retval, "set_penalty_present", cmd_llama_set_penalty_present);
     v_create_callback(retval, "set_penalty_last_n", cmd_llama_set_penalty_last_n);
     v_create_callback(retval, "set_max_tokens", cmd_llama_set_max_tokens);
     v_create_callback(retval, "set_min_p", cmd_llama_set_min_p);

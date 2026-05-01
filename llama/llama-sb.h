@@ -60,6 +60,8 @@ struct Llama {
   void clear_stops() { _stop_sequences.clear(); }
   void set_penalty_last_n(int32_t penalty_last_n) { _penalty_last_n = penalty_last_n; }
   void set_penalty_repeat(float penalty_repeat) { _penalty_repeat = penalty_repeat; }
+  void set_penalty_freq(float penalty_freq) { _penalty_freq = penalty_freq; }
+  void set_penalty_present(float penalty_present) { _penalty_present = penalty_present; }
   void set_max_tokens(int max_tokens) { _max_tokens = max_tokens; }
   void set_min_p(float min_p) { _min_p = min_p; }
   void set_temperature(float temperature) { _temperature = temperature; }
@@ -90,6 +92,8 @@ struct Llama {
   string _last_error;
   int32_t _penalty_last_n;
   float _penalty_repeat;
+  float _penalty_freq;
+  float _penalty_present;
   float _temperature;
   float _top_p;
   float _min_p;

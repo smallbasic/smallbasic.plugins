@@ -130,6 +130,8 @@ target_include_directories(llm PRIVATE
 target_link_libraries(llm PRIVATE
   llama
   ggml
+  # force dynamic libm
+  -Wl,-Bdynamic,-lm
 )
 
 # Include all static code into plugin

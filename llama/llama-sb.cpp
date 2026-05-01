@@ -37,6 +37,8 @@ Llama::Llama() :
   _vocab(nullptr),
   _penalty_last_n(0),
   _penalty_repeat(0),
+  _penalty_freq(0.0f),
+  _penalty_present(0.0f),
   _temperature(0),
   _top_p(0),
   _min_p(0),
@@ -65,6 +67,8 @@ Llama::Llama(Llama &&other) noexcept
   , _last_error(std::move(other._last_error))
   , _penalty_last_n(other._penalty_last_n)
   , _penalty_repeat(other._penalty_repeat)
+  , _penalty_freq(other._penalty_freq)
+  , _penalty_present(other._penalty_present)
   , _temperature(other._temperature)
   , _top_p(other._top_p)
   , _min_p(other._min_p)
@@ -92,6 +96,8 @@ void Llama::reset() {
   _last_error = "";
   _penalty_last_n = 64;
   _penalty_repeat = 1.1f;
+  _penalty_freq = 0.0f;
+  _penalty_present = 0.0f;
   _temperature = 0;
   _top_k = 0;
   _top_p = 1.0f;
@@ -155,7 +161,7 @@ bool Llama::configure_sampler() {
     llama_sampler_chain_add(chain, grammar);
   }
   if (_penalty_last_n != 0 && _penalty_repeat != 1.0f) {
-    auto penalties = llama_sampler_init_penalties(_penalty_last_n, _penalty_repeat, 0.0f, 0.0f);
+    auto penalties = llama_sampler_init_penalties(_penalty_last_n, _penalty_repeat, _penalty_freq, _penalty_present);
     llama_sampler_chain_add(chain, penalties);
   }
   if (_temperature <= 0.0f) {
