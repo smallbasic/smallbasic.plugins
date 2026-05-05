@@ -59,7 +59,7 @@ int main(int argc, char ** argv) {
   if (llama.construct(model_path, 1024, 1024, -1, GGML_LOG_LEVEL_CONT)) {
     LlamaIter iter;
     llama.set_max_tokens(n_predict);
-    llama.generate(iter, prompt);
+    llama.add_message(iter, "user", prompt);
     while (iter._has_next) {
       auto out = llama.next(iter);
       printf("\033[33m");

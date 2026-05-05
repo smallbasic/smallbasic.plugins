@@ -45,6 +45,7 @@ Llama::Llama() :
   _top_k(0),
   _max_tokens(0),
   _log_level(GGML_LOG_LEVEL_CONT),
+  _n_past(0),
   _seed(LLAMA_DEFAULT_SEED) {
   llama_log_set([](enum ggml_log_level level, const char * text, void *user_data) {
     Llama *llama = (Llama *)user_data;
@@ -75,6 +76,7 @@ Llama::Llama(Llama &&other) noexcept
   , _top_k(other._top_k)
   , _max_tokens(other._max_tokens)
   , _log_level(other._log_level)
+  , _n_past(other._n_past)
   , _seed(other._seed) {
 }
 
@@ -103,6 +105,7 @@ void Llama::reset() {
   _top_p = 1.0f;
   _min_p = 0.0f;
   _max_tokens = 150;
+  _n_past = 0;
   _grammar_src.clear();
   _grammar_root.clear();
   _seed = LLAMA_DEFAULT_SEED;
@@ -138,7 +141,10 @@ bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layer
     } else {
       _vocab = llama_model_get_vocab(_model);
     }
+    _template = llama_model_chat_template(_model, nullptr);
   }
+
+
   return _last_error.empty();
 }
 
@@ -261,7 +267,20 @@ bool Llama::make_space_for_tokens(int n_tokens, int keep_min) {
   return true;
 }
 
-bool Llama::generate(LlamaIter &iter, const string &prompt) {
+bool Llama::add_message(LlamaIter &iter, const string &role, const string &content) {
+  llama_chat_message msg = {role.c_str(), content.c_str()};
+
+  int buf_size = 2 * (int)(role.size() + content.size() + 64);
+  vector<char> buf(buf_size);
+  bool add_ass = (role == "user");
+
+  int32_t n = llama_chat_apply_template(_template, &msg, 1, add_ass, buf.data(), buf.size());
+  if (n > (int32_t)buf.size()) {
+    buf.resize(n);
+    llama_chat_apply_template(_template, &msg, 1, add_ass, buf.data(), buf.size());
+  }
+  string prompt(buf.data(), n);
+
   if (!configure_sampler()) {
     return false;
   }
@@ -271,7 +290,7 @@ bool Llama::generate(LlamaIter &iter, const string &prompt) {
     return false;
   }
 
-  if (!make_space_for_tokens(prompt_tokens.size(), 0)) {
+  if (!make_space_for_tokens(prompt_tokens.size(), _n_past)) {
     return false;
   }
 
@@ -303,6 +322,7 @@ bool Llama::generate(LlamaIter &iter, const string &prompt) {
     }
   }
 
+  _n_past += prompt_tokens.size();
   iter._t_start = std::chrono::high_resolution_clock::now();
   iter._llama = this;
   iter._has_next = true;

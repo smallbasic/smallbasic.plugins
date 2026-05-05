@@ -51,7 +51,7 @@ struct Llama {
   bool construct(string model_path, int n_ctx, int n_batch, int n_gpu_layers, int log_level);
 
   // generation
-  bool generate(LlamaIter &iter, const string &prompt);
+  bool add_message(LlamaIter &iter, const string &role, const string &content);
   string next(LlamaIter &iter);
   string all(LlamaIter &iter);
 
@@ -81,6 +81,7 @@ struct Llama {
   bool make_space_for_tokens(int n_tokens, int keep_min);
   vector<llama_token> tokenize(const string &prompt);
   string token_to_string(LlamaIter &iter, llama_token tok);
+  bool encode(const string &role, const string &content, bool add_assistant_prompt) ;
 
   llama_model *_model;
   llama_context *_ctx;
@@ -90,6 +91,7 @@ struct Llama {
   string _grammar_src;
   string _grammar_root;
   string _last_error;
+  const char *_template;
   int32_t _penalty_last_n;
   float _penalty_repeat;
   float _penalty_freq;
@@ -100,5 +102,6 @@ struct Llama {
   int _top_k;
   int _max_tokens;
   int _log_level;
+  int _n_past;
   unsigned int _seed;
 };

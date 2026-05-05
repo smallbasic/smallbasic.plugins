@@ -134,11 +134,7 @@ func handle_cmd(cmd)
 end
 
 '
-' Loads knowledge_files then returns the following format:
-'
-' <|turn|>system
-' {nitro.md...}
-' <|turn|>
+' Loads knowledge_files
 '
 func initialize_agent()
   local prompt = ""
@@ -164,28 +160,18 @@ func initialize_agent()
   print "  ╚═══════════════════════════════════════╝"
   print
   print RESET
-  return "<|turn|>system\n" + prompt + "\n<|turn|>"
+  return prompt
 end
 
 '
-' Execute the given tool, then returns the following format:
-'
-' <|turn|>tool
-' {tool_output}
-' <|turn|>
-' <|turn|>model
+' Execute the given tool
 '
 func process_tool(tool)
-  return "<|turn|>tool\n" + handle_cmd(trim(tool)) + "\n<|turn|>\n<|turn|>model"
+  return handle_cmd(trim(tool))
 end
 
 '
-' Process user input, then returns the following format
-'
-' <|turn|>user
-' {user_input}
-' <|turn|>
-' <|turn|>model
+' Returns the user user input
 '
 func process_input()
   local user_input
@@ -194,7 +180,7 @@ func process_input()
   if user_input == "exit" OR user_input = "quit" then
     stop
   endif
-  return "<|turn|>user\n" + user_input + "\n<|turn|>\n<|turn|>model"
+  return user_input
 end
 
 '
@@ -219,7 +205,7 @@ end
 sub main()
   ' note: this construct requires recent sbasic fixes
   local llama = create_llama()
-  local iter = llama.generate(initialize_agent())
+  local iter = llama.add_message("system", initialize_agent())
 
   while 1
     local buffer = ""
@@ -259,7 +245,7 @@ sub main()
     ' Flush remaining line buffer
     if len(buffer) > 0 and left(trim(buffer), 5) == "TOOL:" then
       ' TOOL:xxx should always appear on the final line
-      iter = llama.generate(process_tool(buffer))
+      iter = llama.add_message("tool", process_tool(buffer))
     else
       if len(buffer) > 0 then
         ' TODO: trim any trailing <|turn|>
@@ -267,7 +253,7 @@ sub main()
       endif
       print
       print "--- Tokens/sec: " + round(iter.tokens_sec(), 2) + " ---\n"
-      iter = llama.generate(process_input())
+      iter = llama.add_message("user", process_input())
     endif
   wend
 end

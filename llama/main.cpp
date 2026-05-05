@@ -401,20 +401,21 @@ static int cmd_llama_tokens_sec(var_s *self, int argc, slib_par_t *arg, var_s *r
 }
 
 //
-// print llama.generate("please generate as simple program in BASIC to draw a cat")
+// print llama.add_message("please generate as simple program in BASIC to draw a cat")
 //
-static int cmd_llama_generate(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+static int cmd_llama_add_message(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
   int result = 0;
-  if (argc != 1) {
-    error(retval, "llama.generate", 1, 1);
+  if (argc != 2) {
+    error(retval, "llama.add_message", 2, 2);
   } else {
     int id = get_llama_class_id(self, retval);
     if (id != -1) {
       int iter_id = ++g_nextId;
       LlamaIter &iter = g_llama_iter[iter_id];
       Llama &llama = g_llama.at(id);
-      auto prompt = get_param_str(argc, arg, 0, "");
-      if (llama.generate(iter, prompt)) {
+      auto role = get_param_str(argc, arg, 0, "");
+      auto content = get_param_str(argc, arg, 1, "");
+      if (llama.add_message(iter, role, content)) {
         map_init_id(retval, iter_id, CLASS_ID_LLAMA_ITER);
         v_create_callback(retval, "all", cmd_llama_all);
         v_create_callback(retval, "has_next", cmd_llama_has_next);
@@ -441,7 +442,7 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   if (llama.construct(model, n_ctx, n_batch, n_gpu_layers, n_log_level)) {
     map_init_id(retval, id, CLASS_ID_LLAMA);
     v_create_callback(retval, "add_stop", cmd_llama_add_stop);
-    v_create_callback(retval, "generate", cmd_llama_generate);
+    v_create_callback(retval, "add_message", cmd_llama_add_message);
     v_create_callback(retval, "reset", cmd_llama_reset);
     v_create_callback(retval, "set_penalty_repeat", cmd_llama_set_penalty_repeat);
     v_create_callback(retval, "set_penalty_freq", cmd_llama_set_penalty_freq);
