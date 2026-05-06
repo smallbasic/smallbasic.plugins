@@ -91,7 +91,7 @@ struct Llama {
   string _grammar_src;
   string _grammar_root;
   string _last_error;
-  const char *_template;
+  string _template;
   int32_t _penalty_last_n;
   float _penalty_repeat;
   float _penalty_freq;
@@ -103,5 +103,6 @@ struct Llama {
   int _max_tokens;
   int _log_level;
   int _n_past;
+  bool _is_gemma4;
   unsigned int _seed;
 };

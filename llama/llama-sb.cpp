@@ -46,6 +46,7 @@ Llama::Llama() :
   _max_tokens(0),
   _log_level(GGML_LOG_LEVEL_CONT),
   _n_past(0),
+  _is_gemma4(false),
   _seed(LLAMA_DEFAULT_SEED) {
   llama_log_set([](enum ggml_log_level level, const char * text, void *user_data) {
     Llama *llama = (Llama *)user_data;
@@ -66,6 +67,7 @@ Llama::Llama(Llama &&other) noexcept
   , _grammar_src(std::move(other._grammar_src))
   , _grammar_root(std::move(other._grammar_root))
   , _last_error(std::move(other._last_error))
+  , _template(std::move(other._template))
   , _penalty_last_n(other._penalty_last_n)
   , _penalty_repeat(other._penalty_repeat)
   , _penalty_freq(other._penalty_freq)
@@ -77,6 +79,7 @@ Llama::Llama(Llama &&other) noexcept
   , _max_tokens(other._max_tokens)
   , _log_level(other._log_level)
   , _n_past(other._n_past)
+  , _is_gemma4(other._is_gemma4)
   , _seed(other._seed) {
 }
 
@@ -95,7 +98,7 @@ Llama::~Llama() {
 
 void Llama::reset() {
   _stop_sequences.clear();
-  _last_error = "";
+  _last_error.clear();
   _penalty_last_n = 64;
   _penalty_repeat = 1.1f;
   _penalty_freq = 0.0f;
@@ -106,8 +109,10 @@ void Llama::reset() {
   _min_p = 0.0f;
   _max_tokens = 150;
   _n_past = 0;
+  _is_gemma4 = false;
   _grammar_src.clear();
   _grammar_root.clear();
+  _template.clear();
   _seed = LLAMA_DEFAULT_SEED;
   if (_ctx) {
     llama_memory_clear(llama_get_memory(_ctx), true);
@@ -142,8 +147,8 @@ bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layer
       _vocab = llama_model_get_vocab(_model);
     }
     _template = llama_model_chat_template(_model, nullptr);
+    _is_gemma4 = (_template.find("<|turn>model") != string::npos);
   }
-
 
   return _last_error.empty();
 }
@@ -268,16 +273,34 @@ bool Llama::make_space_for_tokens(int n_tokens, int keep_min) {
 }
 
 bool Llama::add_message(LlamaIter &iter, const string &role, const string &content) {
-  llama_chat_message msg = {role.c_str(), content.c_str()};
-
+  llama_chat_message message = {role.c_str(), content.c_str()};
   int buf_size = 2 * (int)(role.size() + content.size() + 64);
   vector<char> buf(buf_size);
-  bool add_ass = (role == "user");
+  bool add_ass = (role == "user" || role == "tool");
+  int32_t n = 0;
 
-  int32_t n = llama_chat_apply_template(_template, &msg, 1, add_ass, buf.data(), buf.size());
-  if (n > (int32_t)buf.size()) {
-    buf.resize(n);
-    llama_chat_apply_template(_template, &msg, 1, add_ass, buf.data(), buf.size());
+  if (_template.empty()) {
+    _last_error = "No chat template available";
+    return false;
+  }
+
+  if (_is_gemma4) {
+    string str = "<|turn>" + role + "\n" + content + "<turn|>\n";
+    if (add_ass) {
+      str += "<|turn>model\n";
+    }
+    n = str.size();
+    buf.assign(str.begin(), str.end());
+    buf.push_back('\0');
+  } else {
+    n = llama_chat_apply_template(_template.c_str(), &message, 1, add_ass, buf.data(), buf_size);
+    if (n < 0) {
+      _last_error = "No chat template no supported";
+      return false;
+    } else if (n > (int32_t)buf.size()) {
+      buf.resize(n);
+      llama_chat_apply_template(_template.c_str(), &message, 1, add_ass, buf.data(), buf.size());
+    }
   }
   string prompt(buf.data(), n);
 

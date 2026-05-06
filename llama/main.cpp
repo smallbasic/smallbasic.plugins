@@ -413,7 +413,7 @@ static int cmd_llama_add_message(var_s *self, int argc, slib_par_t *arg, var_s *
       int iter_id = ++g_nextId;
       LlamaIter &iter = g_llama_iter[iter_id];
       Llama &llama = g_llama.at(id);
-      auto role = get_param_str(argc, arg, 0, "");
+      auto role = get_param_str(argc, arg, 0, "user");
       auto content = get_param_str(argc, arg, 1, "");
       if (llama.add_message(iter, role, content)) {
         map_init_id(retval, iter_id, CLASS_ID_LLAMA_ITER);
@@ -423,6 +423,7 @@ static int cmd_llama_add_message(var_s *self, int argc, slib_par_t *arg, var_s *
         v_create_callback(retval, "tokens_sec", cmd_llama_tokens_sec);
         result = 1;
       } else {
+        g_llama_iter.erase(iter_id);
         error(retval, llama.last_error());
       }
     }
