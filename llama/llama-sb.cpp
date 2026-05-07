@@ -138,7 +138,14 @@ bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layer
     cparams.n_ubatch = n_batch;
     cparams.no_perf = true;
     cparams.attention_type = LLAMA_ATTENTION_TYPE_UNSPECIFIED;
-    cparams.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_AUTO;
+    cparams.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_ENABLED;
+
+    // or Q4_0 for more aggressive saving
+    cparams.type_k = GGML_TYPE_Q8_0;
+    cparams.type_v = GGML_TYPE_Q8_0;
+
+    // keep KV cache on GPU
+    cparams.offload_kqv = true;
 
     _ctx = llama_init_from_model(_model, cparams);
     if (!_ctx) {

@@ -104,6 +104,7 @@ Requirements:
 - Write complete and valid content
 - Do not overwrite without clear intent
 - Preserve formatting
+- The complete format is TOOL:WRITE filename file-content-string
 
 ---
 

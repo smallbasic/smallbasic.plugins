@@ -6,7 +6,8 @@
 import llm
 
 ' --- Configuration ---
-const model = "models/google_gemma-4-E4B-it-Q4_K_L.gguf"
+#const model = "models/google_gemma-4-E4B-it-Q4_K_L.gguf"
+const model = "models/qwen2.5-coder-3b-instruct-q8_0.gguf"
 const knowledge_files = ["nitro.md"]
 
 ' ANSI Color Codes
@@ -20,7 +21,7 @@ const BOLD_CYAN = chr(27) + "[1;36m"
 const CHANNEL_END = "<channel|>"
 
 ' llama configuration
-const n_ctx = 8000
+const n_ctx = 32768
 const n_batch = 512
 const n_max_tokens = 4096
 const n_temperature = 0.2
@@ -37,13 +38,6 @@ sandbox_home = cwd
 '
 sub welcome_message()
   print
-  print BOLD_CYAN;
-  print "          .  ·    ✦        .    ·      "
-  print "     ·         .        ·              "
-  print "        ✦   P · I · C · A · R · D   ✦  "
-  print "              .    ·         .         "
-  print "     .    ·        ✦    .        ·     "
-  print
   print BOLD_CYAN + "  P I C A R D   A G E N T   S Y S T E M   v1.0" + RESET
   print
   print CYAN + "  >> Welcome to Picard! Your AI Agent Companion. << " + RESET
@@ -57,14 +51,14 @@ end sub
 ' handles the TOOL:LIST command
 '
 func list_files(arg)
-  if (arg == "./") then 
+  if (arg == "./") then
     arg = sandbox_home + arg
   else if (len(arg) == 0 or arg == ".") then
     arg = sandbox_home
   endif
-  
+
   local result = []
-  
+
   func walker(node)
     if (node.depth == 0) then
       if (node.dir && left(node.name, 1) != ".") then
@@ -90,27 +84,63 @@ func read_file(arg)
     result = "ERROR: File not found or unreadable."
   end try
   return result
-end  
+end
+
+'
+' removes markdown backticks from code blocks
+'
+func strip_code_fences(s)
+  local result = s
+  local pos = instr(s, "```")
+  if (pos) then
+    local nl = instr(pos + 3, s, chr(10))
+    if (nl) then
+      result = mid(s, nl + 1)
+      pos = instr(result, "```")
+      if (pos) then
+        result = left(result, pos - 1)
+      endif
+    endif
+  endif
+  return result
+end
 
 '
 ' handles the TOOL:WRITE command
 '
-func write_file(arg)
-  result = "OK: Data written successfully to " + arg
+func write_file(arg, s)
+  try
+    tsave sandbox_home + arg, s
+    result = "OK: Data written successfully to " + arg
+  catch e
+    result = "ERROR: " + e
+  end try
   return result
 end
 
 '
 ' Handles file system commands received from the LLM.
 '
-func handle_cmd(cmd)
-  local v, result
+func process_tool(cmd)
+  local result, op, arg1, arg2
 
-  split(cmd, " ", v)
-  local op = v[0]
-  local arg = iff(len(v) == 2, v[1], "")
-  
-  print RED + "TOOL:" + op + " - " + arg + RESET
+  local pos1 = instr(cmd, " ")
+  if (pos1 > 0) then
+    op = left(cmd, pos1 - 1)
+    local pos2 = instr(pos1 + 1, cmd, " ")
+    if (pos2 > 0) then
+      arg1 = mid(cmd, pos1 + 1, pos2 - pos1 - 1)
+      arg2 = mid(cmd, pos2 + 1)
+    else
+      arg1 = mid(cmd, pos1 + 1)
+    endif
+  endif
+
+  ' print RED
+  ' print "["+op+"]"
+  ' print "["+arg1+"]"
+  ' print "["+arg2+"]"
+  ' print RESET
 
   select case op
   case "TOOL:DATE"
@@ -120,11 +150,11 @@ func handle_cmd(cmd)
   case "TOOL:RND"
     result = rnd
   case "TOOL:LIST"
-    result = list_files(arg)
+    result = list_files(arg1)
   case "TOOL:READ"
-    result = read_file(arg)
+    result = read_file(arg1)
   case "TOOL:WRITE"
-    result = write_file(arg)
+    result = write_file(arg1, strip_code_fences(arg2))
   case else
     result = "ERROR: unknown command " + op
   end select
@@ -150,24 +180,7 @@ func initialize_agent()
     end try
   next
 
-  ' Set the initial system prompt for the LLM
-  print YELLOW;
-  print "  ╔═══════════════════════════════════════╗"
-  print "  ║  > PICARD_                            ║"
-  print "  ║  > STATUS: ENGAGED                    ║"
-  print "  ║  > STARDATE: 42026.421                ║"
-  print "  ║  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 100% READY      ║"
-  print "  ╚═══════════════════════════════════════╝"
-  print
-  print RESET
   return prompt
-end
-
-'
-' Execute the given tool
-'
-func process_tool(tool)
-  return handle_cmd(trim(tool))
 end
 
 '
@@ -213,42 +226,28 @@ sub main()
 
     while iter.has_next()
       buffer += iter.next()
-      local chan_end = instr(buffer, CHANNEL_END)
-
-      if chan_end != 0 then
-        ' print buffer up to channel_end
-        buffer = left(buffer, chan_end - 1)
-        print text_colour + buffer + RESET
-        print
-
-        ' print buffer following channel_end
-        text_colour = CYAN        
-        print text_colour + mid(buffer, chan_end + len(CHANNEL_END)) + RESET;
-        
-        ' reset buffer
-        buffer = ""
-      endif
-
-      ' Only print non-command tokens
       local nl = instr(buffer, chr(10))
       if nl then
         local text_line = left(buffer, nl - 1)
         buffer = mid(buffer, nl + 1)
-        if text_line == "</|think|>" then
-          text_colour = CYAN
+        if left(trim(text_line), 5) == "TOOL:" then
+          text_line += buffer + " " + iter.all()
+          iter = llama.add_message("tool", process_tool(text_line))
+          buffer = ""
         else
           print text_colour + text_line + RESET
+        endif
+        if text_line == "</|think|>" then
+          text_colour = CYAN
         end if
       end if
     wend
 
     ' Flush remaining line buffer
     if len(buffer) > 0 and left(trim(buffer), 5) == "TOOL:" then
-      ' TOOL:xxx should always appear on the final line
       iter = llama.add_message("tool", process_tool(buffer))
     else
       if len(buffer) > 0 then
-        ' TODO: trim any trailing <|turn|>
         print text_colour + buffer + RESET
       endif
       print
@@ -260,4 +259,3 @@ end
 
 welcome_message()
 main()
-'print list_files(".")
