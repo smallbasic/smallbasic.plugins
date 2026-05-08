@@ -1,4 +1,4 @@
---- # SmallBASIC Llama Module
+# SmallBASIC Llama Module
 
 A comprehensive SmallBASIC library module that bridges the scripting capabilities of SmallBASIC with the power of Llama.cpp Large Language Models. This project allows developers to create, configure, and interact with LLM instances directly within a SmallBASIC environment.
 
@@ -115,6 +115,12 @@ Once the model file is in your `models` directory (or wherever specified), you c
 ```basic
 llama = LLAMA("models/llama3-8b/llama-3-8b-instruct.Q4_K_M.gguf", 2048, 1024, -1, 0)
 ```
+
+### Method 3: Direct download 
+
+1. Navigate to https://huggingface.co/
+2. Click Models at the top and then select Libraries/GGUF
+3. Use the parameters slider to limit the selection for your hardware.
 
 ---
 
@@ -309,5 +315,7 @@ llama.set_penalty_repeat(1.0)
 ---
 
 ## Conclusion
+
 This module empowers SmallBASIC users to build sophisticated AI applications, from chatbots to creative writing tools, leveraging the efficiency of Llama.cpp within a familiar scripting paradigm. Proper configuration of CUDA and generation parameters ensures optimal performance and output quality. Models can be easily acquired via the Hugging Face Hub using standard CLI tools or Python scripts.
+
 ---
