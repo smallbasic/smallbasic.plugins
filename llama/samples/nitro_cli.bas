@@ -6,29 +6,28 @@
 import llm
 
 ' --- Configuration ---
-#const model = "models/google_gemma-4-E4B-it-Q4_K_L.gguf"
-const model = "models/qwen2.5-coder-3b-instruct-q8_0.gguf"
+const model = "models/Qwen3.5-9B-Q4_K_M.gguf"
 const knowledge_files = ["nitro.md"]
+const code_files = [".py", ".cpp", ".h", ".bas", ".java", ".html", ".js", "jsp", ".tag"]
 
 ' ANSI Color Codes
 const RESET = chr(27) + "[0m"
 const GREEN = chr(27) + "[32m"
-const YELLOW = chr(27) + "[33m"
 const BLUE = chr(27) + "[34m"
 const CYAN = chr(27) + "[36m"
 const RED = chr(27) + "[31m"
+const WHITE = chr(27) + "[37m"
 const BOLD_CYAN = chr(27) + "[1;36m"
-const CHANNEL_END = "<channel|>"
 
-' llama configuration
+' llama configuration (quen settings)
 const n_ctx = 32768
 const n_batch = 512
 const n_max_tokens = 4096
-const n_temperature = 0.2
-const n_top_k = 40
-const n_top_p = 0.9
-const n_min_p = 0.05
-const n_penalty_repeat = 1.1
+const n_temperature = 0.6
+const n_top_k = 20
+const n_top_p = 0.95
+const n_min_p = 0
+const n_penalty_repeat = 1.0
 const n_penalty_last_n = 256
 
 sandbox_home = cwd
@@ -38,9 +37,9 @@ sandbox_home = cwd
 '
 sub welcome_message()
   print
-  print BOLD_CYAN + "  P I C A R D   A G E N T   S Y S T E M   v1.0" + RESET
+  print BOLD_CYAN + "  N I T R O   A G E N T   S Y S T E M   v1.0" + RESET
   print
-  print CYAN + "  >> Welcome to Picard! Your AI Agent Companion. << " + RESET
+  print CYAN + "  >> Welcome to Nitro! Your AI Agent Companion. << " + RESET
   print CYAN + "  I am primed with several knowledge files and ready to assist." + RESET
   print CYAN + "  Try asking me about the contents of 'nitro.md' or listing files in './data'." + RESET
   print CYAN + "  Type 'exit' to quit." + RESET
@@ -50,7 +49,7 @@ end sub
 '
 ' handles the TOOL:LIST command
 '
-func list_files(arg)
+func tool_list_files(arg)
   if (arg == "./") then
     arg = sandbox_home + arg
   else if (len(arg) == 0 or arg == ".") then
@@ -77,7 +76,7 @@ end
 '
 ' handles the TOOL:READ command
 '
-func read_file(arg)
+func tool_read_file(arg)
   try
     tload sandbox_home + arg, result, 1
   catch
@@ -89,8 +88,15 @@ end
 '
 ' removes markdown backticks from code blocks
 '
-func strip_code_fences(s)
+func strip_code_fences(filename, s)
   local result = s
+  local dot = instr(filename, ".")
+  local extn = mid(filename, dot)
+
+  if (extn in code_files == 0) then
+    return result
+  endif
+
   local pos = instr(s, "```")
   if (pos) then
     local nl = instr(pos + 3, s, chr(10))
@@ -108,7 +114,7 @@ end
 '
 ' handles the TOOL:WRITE command
 '
-func write_file(arg, s)
+func tool_write_file(arg, s)
   try
     tsave sandbox_home + arg, s
     result = "OK: Data written successfully to " + arg
@@ -116,6 +122,15 @@ func write_file(arg, s)
     result = "ERROR: " + e
   end try
   return result
+end
+
+'
+' handles the TOOL:PERMISSION command
+'
+func tool_permission()
+  local k
+  input "Agree?"; k
+  return iff(trim(k) == "YES", "YES", "NO")
 end
 
 '
@@ -150,16 +165,20 @@ func process_tool(cmd)
   case "TOOL:RND"
     result = rnd
   case "TOOL:LIST"
-    result = list_files(arg1)
+    result = tool_list_files(arg1)
   case "TOOL:READ"
-    result = read_file(arg1)
+    result = tool_read_file(arg1)
   case "TOOL:WRITE"
-    result = write_file(arg1, strip_code_fences(arg2))
+    result = tool_write_file(arg1, strip_code_fences(arg1, arg2))
+  case "TOOL:EXISTS"
+    result = iff(exist(arg1), "YES", "NO")
+  case "TOOL:PERMISSION"
+    result = tool_permission()
   case else
     result = "ERROR: unknown command " + op
   end select
 
-  print RED + "TOOL RESULT:" + result + RESET
+  'print RED + "TOOL RESULT:" + result + RESET
   return result
 end
 
@@ -220,9 +239,16 @@ sub main()
   local llama = create_llama()
   local iter = llama.add_message("system", initialize_agent())
 
+  sub handle_think(s)
+    if s == "<|think|>" then
+      print BLUE;
+    else if s == "</|think|>" then
+      print WHITE;
+    end if
+  end
+
   while 1
     local buffer = ""
-    local text_colour = BLUE
 
     while iter.has_next()
       buffer += iter.next()
@@ -235,11 +261,9 @@ sub main()
           iter = llama.add_message("tool", process_tool(text_line))
           buffer = ""
         else
-          print text_colour + text_line + RESET
+          print text_line
         endif
-        if text_line == "</|think|>" then
-          text_colour = CYAN
-        end if
+        handle_think(text_line)
       end if
     wend
 
@@ -248,11 +272,15 @@ sub main()
       iter = llama.add_message("tool", process_tool(buffer))
     else
       if len(buffer) > 0 then
-        print text_colour + buffer + RESET
+        'print text_colour + buffer + RESET
+        print buffer
+        handle_think(buffer)
       endif
       print
+      print WHITE;
       print "--- Tokens/sec: " + round(iter.tokens_sec(), 2) + " ---\n"
       iter = llama.add_message("user", process_input())
+      print BLUE;
     endif
   wend
 end
