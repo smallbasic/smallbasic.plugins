@@ -6,6 +6,7 @@
 // Copyright(C) 2020 Chris Warren-Smith
 
 #include "config.h"
+#include <stdio.h>
 #include <string.h>
 
 #include "libclipboard/include/libclipboard.h"
@@ -31,7 +32,7 @@ int sblib_proc_count() {
 int sblib_proc_getname(int index, char *proc_name) {
   int result;
   if (index < sblib_proc_count()) {
-    strcpy(proc_name, "COPY");
+    snprintf(proc_name, 64, "COPY");
     result = 1;
   } else {
     result = 0;
@@ -58,7 +59,7 @@ int sblib_func_count() {
 int sblib_func_getname(int index, char *proc_name) {
   int result;
   if (index < sblib_func_count()) {
-    strcpy(proc_name, "PASTE");
+    snprintf(proc_name, 64, "PASTE");
     result = 1;
   } else {
     result = 0;
