@@ -8,7 +8,7 @@ static int cmd_beginblendmode(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Setup canvas (framebuffer) to start drawing
+// Begin canvas (framebuffer) drawing
 //
 static int cmd_begindrawing(int argc, slib_par_t *params, var_t *retval) {
   BeginDrawing();
@@ -70,7 +70,7 @@ static int cmd_begintexturemode(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set background color (framebuffer clear color)
+// Clear background (framebuffer) to color
 //
 static int cmd_clearbackground(int argc, slib_par_t *params, var_t *retval) {
   auto color = get_param_color(argc, params, 0);
@@ -104,7 +104,7 @@ static int cmd_closewindow(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Disables cursor (lock cursor)
+// Disable cursor (lock cursor)
 //
 static int cmd_disablecursor(int argc, slib_par_t *params, var_t *retval) {
   DisableCursor();
@@ -198,10 +198,10 @@ static int cmd_drawcapsule(int argc, slib_par_t *params, var_t *retval) {
   auto startPos = get_param_vec3(argc, params, 0);
   auto endPos = get_param_vec3(argc, params, 1);
   auto radius = get_param_num(argc, params, 2, 0);
-  auto slices = get_param_int(argc, params, 3, 0);
-  auto rings = get_param_int(argc, params, 4, 0);
+  auto rings = get_param_int(argc, params, 3, 0);
+  auto slices = get_param_int(argc, params, 4, 0);
   auto color = get_param_color(argc, params, 5);
-  DrawCapsule(startPos, endPos, radius, slices, rings, color);
+  DrawCapsule(startPos, endPos, radius, rings, slices, color);
   return 1;
 }
 
@@ -212,10 +212,10 @@ static int cmd_drawcapsulewires(int argc, slib_par_t *params, var_t *retval) {
   auto startPos = get_param_vec3(argc, params, 0);
   auto endPos = get_param_vec3(argc, params, 1);
   auto radius = get_param_num(argc, params, 2, 0);
-  auto slices = get_param_int(argc, params, 3, 0);
-  auto rings = get_param_int(argc, params, 4, 0);
+  auto rings = get_param_int(argc, params, 3, 0);
+  auto slices = get_param_int(argc, params, 4, 0);
   auto color = get_param_color(argc, params, 5);
-  DrawCapsuleWires(startPos, endPos, radius, slices, rings, color);
+  DrawCapsuleWires(startPos, endPos, radius, rings, slices, color);
   return 1;
 }
 
@@ -248,12 +248,11 @@ static int cmd_drawcircle3d(int argc, slib_par_t *params, var_t *retval) {
 // Draw a gradient-filled circle
 //
 static int cmd_drawcirclegradient(int argc, slib_par_t *params, var_t *retval) {
-  auto centerX = get_param_int(argc, params, 0, 0);
-  auto centerY = get_param_int(argc, params, 1, 0);
-  auto radius = get_param_num(argc, params, 2, 0);
-  auto inner = get_param_color(argc, params, 3);
-  auto outer = get_param_color(argc, params, 4);
-  DrawCircleGradient(centerX, centerY, radius, inner, outer);
+  auto center = get_param_vec2(argc, params, 0);
+  auto radius = get_param_num(argc, params, 1, 0);
+  auto inner = get_param_color(argc, params, 2);
+  auto outer = get_param_color(argc, params, 3);
+  DrawCircleGradient(center, radius, inner, outer);
   return 1;
 }
 
@@ -417,9 +416,9 @@ static int cmd_drawcylinderwiresex(int argc, slib_par_t *params, var_t *retval) 
   auto endPos = get_param_vec3(argc, params, 1);
   auto startRadius = get_param_num(argc, params, 2, 0);
   auto endRadius = get_param_num(argc, params, 3, 0);
-  auto sides = get_param_int(argc, params, 4, 0);
+  auto slices = get_param_int(argc, params, 4, 0);
   auto color = get_param_color(argc, params, 5);
-  DrawCylinderWiresEx(startPos, endPos, startRadius, endRadius, sides, color);
+  DrawCylinderWiresEx(startPos, endPos, startRadius, endRadius, slices, color);
   return 1;
 }
 
@@ -615,44 +614,6 @@ static int cmd_drawmodelex(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw a model as points
-//
-static int cmd_drawmodelpoints(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int model_id = get_model_id(argc, params, 0, retval);
-  if (model_id != -1) {
-    auto position = get_param_vec3(argc, params, 1);
-    auto scale = get_param_num(argc, params, 2, 0);
-    auto tint = get_param_color(argc, params, 3);
-    DrawModelPoints(_modelMap.at(model_id), position, scale, tint);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
-// Draw a model as points with extended parameters
-//
-static int cmd_drawmodelpointsex(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int model_id = get_model_id(argc, params, 0, retval);
-  if (model_id != -1) {
-    auto position = get_param_vec3(argc, params, 1);
-    auto rotationAxis = get_param_vec3(argc, params, 2);
-    auto rotationAngle = get_param_num(argc, params, 3, 0);
-    auto scale = get_param_vec3(argc, params, 4);
-    auto tint = get_param_color(argc, params, 5);
-    DrawModelPointsEx(_modelMap.at(model_id), position, rotationAxis, rotationAngle, scale, tint);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
 // Draw a model wires (with texture if set)
 //
 static int cmd_drawmodelwires(int argc, slib_par_t *params, var_t *retval) {
@@ -733,7 +694,7 @@ static int cmd_drawpoint3d(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw a regular polygon (Vector version)
+// Draw a polygon of n sides
 //
 static int cmd_drawpoly(int argc, slib_par_t *params, var_t *retval) {
   auto center = get_param_vec2(argc, params, 0);
@@ -907,7 +868,7 @@ static int cmd_drawrectangleroundedlines(int argc, slib_par_t *params, var_t *re
 }
 
 //
-// Draw rectangle with rounded edges outline
+// Draw rectangle lines with rounded edges outline
 //
 static int cmd_drawrectangleroundedlinesex(int argc, slib_par_t *params, var_t *retval) {
   auto rec = get_param_rect(argc, params, 0);
@@ -1157,7 +1118,7 @@ static int cmd_drawtextcodepoint(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw multiple character (codepoint)
+// Draw multiple characters (codepoint)
 //
 static int cmd_drawtextcodepoints(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -1257,7 +1218,7 @@ static int cmd_drawtextureex(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draws a texture (or part of it) that stretches or shrinks nicely
+// Draw a texture (or part of it) that stretches or shrinks nicely
 //
 static int cmd_drawtexturenpatch(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -1367,6 +1328,20 @@ static int cmd_drawtrianglefan(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Draw triangle with interpolated colors (vertex in counter-clockwise order!)
+//
+static int cmd_drawtrianglegradient(int argc, slib_par_t *params, var_t *retval) {
+  auto v1 = get_param_vec2(argc, params, 0);
+  auto v2 = get_param_vec2(argc, params, 1);
+  auto v3 = get_param_vec2(argc, params, 2);
+  auto c1 = get_param_color(argc, params, 3);
+  auto c2 = get_param_color(argc, params, 4);
+  auto c3 = get_param_color(argc, params, 5);
+  DrawTriangleGradient(v1, v2, v3, c1, c2, c3);
+  return 1;
+}
+
+//
 // Draw triangle outline (vertex in counter-clockwise order!)
 //
 static int cmd_drawtrianglelines(int argc, slib_par_t *params, var_t *retval) {
@@ -1401,7 +1376,7 @@ static int cmd_drawtrianglestrip3d(int argc, slib_par_t *params, var_t *retval) 
 }
 
 //
-// Enables cursor (unlock cursor)
+// Enable cursor (unlock cursor)
 //
 static int cmd_enablecursor(int argc, slib_par_t *params, var_t *retval) {
   EnableCursor();
@@ -1425,7 +1400,7 @@ static int cmd_endblendmode(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// End canvas drawing and swap buffers (double buffering)
+// End canvas (framebuffer) drawing and swap buffers (double buffering)
 //
 static int cmd_enddrawing(int argc, slib_par_t *params, var_t *retval) {
   EndDrawing();
@@ -1433,7 +1408,7 @@ static int cmd_enddrawing(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Ends 2D mode with custom camera
+// End 2D mode with custom camera
 //
 static int cmd_endmode2d(int argc, slib_par_t *params, var_t *retval) {
   EndMode2D();
@@ -1441,7 +1416,7 @@ static int cmd_endmode2d(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Ends 3D mode and returns to default 2D orthographic mode
+// End 3D mode and returns to default 2D orthographic mode
 //
 static int cmd_endmode3d(int argc, slib_par_t *params, var_t *retval) {
   EndMode3D();
@@ -1465,7 +1440,7 @@ static int cmd_endshadermode(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Ends drawing to render texture
+// End drawing to render texture
 //
 static int cmd_endtexturemode(int argc, slib_par_t *params, var_t *retval) {
   EndTextureMode();
@@ -1499,7 +1474,7 @@ static int cmd_gentexturemipmaps(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Hides cursor
+// Hide cursor
 //
 static int cmd_hidecursor(int argc, slib_par_t *params, var_t *retval) {
   HideCursor();
@@ -1625,7 +1600,7 @@ static int cmd_imagecolorcontrast(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int image_id = get_image_id(argc, params, 0, retval);
   if (image_id != -1) {
-    auto contrast = get_param_num(argc, params, 1, 0);
+    auto contrast = get_param_int(argc, params, 1, 0);
     ImageColorContrast(&_imageMap.at(image_id), contrast);
     result = 1;
   } else {
@@ -1944,10 +1919,30 @@ static int cmd_imagedrawrectanglelines(int argc, slib_par_t *params, var_t *retv
   int result;
   int dst_id = get_image_id(argc, params, 0, retval);
   if (dst_id != -1) {
+    auto posX = get_param_int(argc, params, 1, 0);
+    auto posY = get_param_int(argc, params, 2, 0);
+    auto width = get_param_int(argc, params, 3, 0);
+    auto height = get_param_int(argc, params, 4, 0);
+    auto color = get_param_color(argc, params, 5);
+    ImageDrawRectangleLines(&_imageMap.at(dst_id), posX, posY, width, height, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Draw rectangle lines within an image with extended parameters
+//
+static int cmd_imagedrawrectanglelinesex(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int dst_id = get_image_id(argc, params, 0, retval);
+  if (dst_id != -1) {
     auto rec = get_param_rect(argc, params, 1);
     auto thick = get_param_int(argc, params, 2, 0);
     auto color = get_param_color(argc, params, 3);
-    ImageDrawRectangleLines(&_imageMap.at(dst_id), rec, thick, color);
+    ImageDrawRectangleLinesEx(&_imageMap.at(dst_id), rec, thick, color);
     result = 1;
   } else {
     result = 0;
@@ -2051,27 +2046,6 @@ static int cmd_imagedrawtriangle(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Draw triangle with interpolated colors within an image
-//
-static int cmd_imagedrawtriangleex(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int dst_id = get_image_id(argc, params, 0, retval);
-  if (dst_id != -1) {
-    auto v1 = get_param_vec2(argc, params, 1);
-    auto v2 = get_param_vec2(argc, params, 2);
-    auto v3 = get_param_vec2(argc, params, 3);
-    auto c1 = get_param_color(argc, params, 4);
-    auto c2 = get_param_color(argc, params, 5);
-    auto c3 = get_param_color(argc, params, 6);
-    ImageDrawTriangleEx(&_imageMap.at(dst_id), v1, v2, v3, c1, c2, c3);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
 // Draw a triangle fan defined by points within an image (first vertex is the center)
 //
 static int cmd_imagedrawtrianglefan(int argc, slib_par_t *params, var_t *retval) {
@@ -2082,6 +2056,27 @@ static int cmd_imagedrawtrianglefan(int argc, slib_par_t *params, var_t *retval)
     auto pointCount = get_param_int(argc, params, 2, 0);
     auto color = get_param_color(argc, params, 3);
     ImageDrawTriangleFan(&_imageMap.at(dst_id), points, pointCount, color);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
+// Draw triangle with interpolated colors within an image
+//
+static int cmd_imagedrawtrianglegradient(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int dst_id = get_image_id(argc, params, 0, retval);
+  if (dst_id != -1) {
+    auto v1 = get_param_vec2(argc, params, 1);
+    auto v2 = get_param_vec2(argc, params, 2);
+    auto v3 = get_param_vec2(argc, params, 3);
+    auto c1 = get_param_color(argc, params, 4);
+    auto c2 = get_param_color(argc, params, 5);
+    auto c3 = get_param_color(argc, params, 6);
+    ImageDrawTriangleGradient(&_imageMap.at(dst_id), v1, v2, v3, c1, c2, c3);
     result = 1;
   } else {
     result = 0;
@@ -2542,7 +2537,7 @@ static int cmd_setaudiostreambuffersizedefault(int argc, slib_par_t *params, var
 }
 
 //
-// Set pan for audio stream (0.5 is centered)
+// Set pan for audio stream (-1.0 left, 0.0 center, 1.0 right)
 //
 static int cmd_setaudiostreampan(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -2623,7 +2618,7 @@ static int cmd_setclipboardtext(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Setup init configuration flags (view FLAGS)
+// Set up init configuration flags (view FLAGS)
 //
 static int cmd_setconfigflags(int argc, slib_par_t *params, var_t *retval) {
   auto flags = get_param_int(argc, params, 0, 0);
@@ -2721,7 +2716,7 @@ static int cmd_setmousescale(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set pan for a music (-1.0 left, 0.0 center, 1.0 right)
+// Set pan for music (-1.0 left, 0.0 center, 1.0 right)
 //
 static int cmd_setmusicpan(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -2737,7 +2732,7 @@ static int cmd_setmusicpan(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Set pitch for a music (1.0 is base level)
+// Set pitch for music (1.0 is base level)
 //
 static int cmd_setmusicpitch(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -3074,7 +3069,7 @@ static int cmd_setwindowtitle(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Shows cursor
+// Show cursor
 //
 static int cmd_showcursor(int argc, slib_par_t *params, var_t *retval) {
   ShowCursor();
@@ -3337,22 +3332,6 @@ static int cmd_unloadmodel(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Unload animation data
-//
-static int cmd_unloadmodelanimation(int argc, slib_par_t *params, var_t *retval) {
-  int result;
-  int anim_id = get_model_animation_id(argc, params, 0, retval);
-  if (anim_id != -1) {
-    UnloadModelAnimation(_modelAnimationMap.at(anim_id));
-    _modelAnimationMap.erase(anim_id);
-    result = 1;
-  } else {
-    result = 0;
-  }
-  return result;
-}
-
-//
 // Unload animation array data
 //
 static int cmd_unloadmodelanimations(int argc, slib_par_t *params, var_t *retval) {
@@ -3429,7 +3408,7 @@ static int cmd_unloadsound(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Unload a sound alias (does not deallocate sample data)
+// Unload sound alias (does not deallocate sample data)
 //
 static int cmd_unloadsoundalias(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -3531,14 +3510,14 @@ static int cmd_updatemeshbuffer(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Update model animation pose (CPU)
+// Update model animation pose (vertex buffers and bone matrices)
 //
 static int cmd_updatemodelanimation(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int model_id = get_model_id(argc, params, 0, retval);
   int anim_id = get_model_animation_id(argc, params, 1, retval);
   if (model_id != -1 && anim_id != -1) {
-    auto frame = get_param_int(argc, params, 2, 0);
+    auto frame = get_param_num(argc, params, 2, 0);
     UpdateModelAnimation(_modelMap.at(model_id), _modelAnimationMap.at(anim_id), frame);
     result = 1;
   } else {
@@ -3548,15 +3527,18 @@ static int cmd_updatemodelanimation(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
-// Update model animation mesh bone matrices (GPU skinning)
+// Update model animation pose, blending two animations
 //
-static int cmd_updatemodelanimationbones(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_updatemodelanimationex(int argc, slib_par_t *params, var_t *retval) {
   int result;
   int model_id = get_model_id(argc, params, 0, retval);
-  int anim_id = get_model_animation_id(argc, params, 1, retval);
-  if (model_id != -1 && anim_id != -1) {
-    auto frame = get_param_int(argc, params, 2, 0);
-    UpdateModelAnimationBones(_modelMap.at(model_id), _modelAnimationMap.at(anim_id), frame);
+  int anima_id = get_model_animation_id(argc, params, 1, retval);
+  int animb_id = get_model_animation_id(argc, params, 3, retval);
+  if (model_id != -1 && anima_id != -1 && animb_id != -1) {
+    auto frameA = get_param_num(argc, params, 2, 0);
+    auto frameB = get_param_num(argc, params, 4, 0);
+    auto blend = get_param_num(argc, params, 5, 0);
+    UpdateModelAnimationEx(_modelMap.at(model_id), _modelAnimationMap.at(anima_id), frameA, _modelAnimationMap.at(animb_id), frameB, blend);
     result = 1;
   } else {
     result = 0;
@@ -3565,7 +3547,7 @@ static int cmd_updatemodelanimationbones(int argc, slib_par_t *params, var_t *re
 }
 
 //
-// Updates buffers for music streaming
+// Update buffers for music streaming
 //
 static int cmd_updatemusicstream(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -3587,8 +3569,8 @@ static int cmd_updatesound(int argc, slib_par_t *params, var_t *retval) {
   int sound_id = get_sound_id(argc, params, 0, retval);
   if (sound_id != -1) {
     auto data = (const void *)get_param_int_t(argc, params, 1, 0);
-    auto sampleCount = get_param_int(argc, params, 2, 0);
-    UpdateSound(_soundMap.at(sound_id), data, sampleCount);
+    auto frameCount = get_param_int(argc, params, 2, 0);
+    UpdateSound(_soundMap.at(sound_id), data, frameCount);
     result = 1;
   } else {
     result = 0;

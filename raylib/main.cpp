@@ -360,8 +360,7 @@ static FilePathList get_param_filepathlist(int argc, slib_par_t *params, int n) 
   if (is_param_array(argc, params, n)) {
     var_p_t array = params[n].var_p;
     result.count = v_asize(array);
-    result.capacity = result.count;
-    result.paths = (char **)malloc(result.capacity * sizeof(char *));
+    result.paths = (char **)malloc(result.count * sizeof(char *));
     for (unsigned index = 0; index < result.count; index++) {
       result.paths[index] = (char *)malloc(MAX_FILEPATH_LENGTH * sizeof(char));
       var_p_t elem = v_elem(array, index);
@@ -750,7 +749,7 @@ static void v_setmodel(var_t *var, Model &model) {
   map_init_id(var, id, CLS_MODELMAP);
   v_setint(map_add_var(var, "meshCount", 0), model.meshCount);
   v_setint(map_add_var(var, "materialCount", 0), model.materialCount);
-  v_setint(map_add_var(var, "boneCount", 0), model.boneCount);
+  v_setint(map_add_var(var, "boneCount", 0), model.skeleton.boneCount);
 }
 
 static void v_setmusic(var_t *var, Music &music) {
@@ -770,19 +769,19 @@ static void v_setmodel_animation(var_t *var, ModelAnimation *anims, int animsCou
     _modelAnimationMap[id] = anims[i];
     map_init_id(v_anim, id, CLS_MODELANIMATIONMAP);
 
-    int frameCount = anims[i].frameCount;
+    int keyframeCount = anims[i].keyframeCount;
     int boneCount = anims[i].boneCount;
-    map_add_var(v_anim, "frameCount", frameCount);
+    map_add_var(v_anim, "keyframeCount", keyframeCount);
     map_add_var(v_anim, "boneCount", boneCount);
 
     var_t *v_framePoses = map_add_var(v_anim, "framePoses", 0);
-    v_tomatrix(v_framePoses, frameCount, boneCount);
-    for (int frame = 0; frame < frameCount; frame++) {
+    v_tomatrix(v_framePoses, keyframeCount, boneCount);
+    for (int frame = 0; frame < keyframeCount; frame++) {
       for (int bone = 0; bone < boneCount; bone++) {
         var_t *v_transform = v_elem(v_framePoses, ((boneCount * frame) + bone));
         map_init(v_transform);
-        v_setvec3(map_add_var(v_transform, "translation", 0), anims[0].framePoses[frame][bone].translation);
-        v_setvec3(map_add_var(v_transform, "scale", 0), anims[0].framePoses[frame][bone].scale);
+        v_setvec3(map_add_var(v_transform, "translation", 0), anims[0].keyframePoses[frame][bone].translation);
+        v_setvec3(map_add_var(v_transform, "scale", 0), anims[0].keyframePoses[frame][bone].scale);
       }
     }
   }
@@ -1979,7 +1978,7 @@ SBLIB_API int sblib_free(int cls_id, int id) {
       break;
     case CLS_MODELANIMATIONMAP:
       if (_modelAnimationMap.find(id) != _modelAnimationMap.end()) {
-        UnloadModelAnimation(_modelAnimationMap.at(id));
+        UnloadModelAnimations(&_modelAnimationMap.at(id), 1);
         _modelAnimationMap.erase(id);
       }
       break;

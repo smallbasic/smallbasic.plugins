@@ -32,7 +32,7 @@ static int cmd_checkcollisionboxsphere(int argc, slib_par_t *params, var_t *retv
 }
 
 //
-// Check if circle collides with a line created betweeen two points [p1] and [p2]
+// Check if circle collides with a line created between two points [p1] and [p2]
 //
 static int cmd_checkcollisioncircleline(int argc, slib_par_t *params, var_t *retval) {
   auto center = get_param_vec2(argc, params, 0);
@@ -328,7 +328,7 @@ static int cmd_compressdata(int argc, slib_par_t *params, var_t *retval) {
 // Compute CRC32 hash code
 //
 static int cmd_computecrc32(int argc, slib_par_t *params, var_t *retval) {
-  auto data = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
   auto dataSize = get_param_int(argc, params, 1, 0);
   auto fnResult = ComputeCRC32(data, dataSize);
   v_setint(retval, fnResult);
@@ -339,7 +339,7 @@ static int cmd_computecrc32(int argc, slib_par_t *params, var_t *retval) {
 // Compute MD5 hash code, returns static int[4] (16 bytes)
 //
 static int cmd_computemd5(int argc, slib_par_t *params, var_t *retval) {
-  auto data = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
   auto dataSize = get_param_int(argc, params, 1, 0);
   auto fnResult = (var_int_t)ComputeMD5(data, dataSize);
   v_setint(retval, fnResult);
@@ -350,7 +350,7 @@ static int cmd_computemd5(int argc, slib_par_t *params, var_t *retval) {
 // Compute SHA1 hash code, returns static int[5] (20 bytes)
 //
 static int cmd_computesha1(int argc, slib_par_t *params, var_t *retval) {
-  auto data = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
   auto dataSize = get_param_int(argc, params, 1, 0);
   auto fnResult = (var_int_t)ComputeSHA1(data, dataSize);
   v_setint(retval, fnResult);
@@ -361,7 +361,7 @@ static int cmd_computesha1(int argc, slib_par_t *params, var_t *retval) {
 // Compute SHA256 hash code, returns static int[8] (32 bytes)
 //
 static int cmd_computesha256(int argc, slib_par_t *params, var_t *retval) {
-  auto data = (unsigned char *)get_param_str(argc, params, 0, 0);
+  auto data = (const unsigned char *)get_param_str(argc, params, 0, 0);
   auto dataSize = get_param_int(argc, params, 1, 0);
   auto fnResult = (var_int_t)ComputeSHA256(data, dataSize);
   v_setint(retval, fnResult);
@@ -497,7 +497,7 @@ static int cmd_exportimageascode(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Export image to memory buffer
+// Export image to memory buffer, memory must be MemFree()
 //
 static int cmd_exportimagetomemory(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -1058,6 +1058,28 @@ static int cmd_getcolor(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_getcurrentmonitor(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = GetCurrentMonitor();
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Get the file count in a directory
+//
+static int cmd_getdirectoryfilecount(int argc, slib_par_t *params, var_t *retval) {
+  auto dirPath = get_param_str(argc, params, 0, 0);
+  auto fnResult = GetDirectoryFileCount(dirPath);
+  v_setint(retval, fnResult);
+  return 1;
+}
+
+//
+// Get the file count in a directory with extension filtering and recursive directory scan. Use 'DIR' in the filter string to include directories in the result
+//
+static int cmd_getdirectoryfilecountex(int argc, slib_par_t *params, var_t *retval) {
+  auto basePath = get_param_str(argc, params, 0, 0);
+  auto filter = get_param_str(argc, params, 1, 0);
+  auto scanSubdirs = get_param_int(argc, params, 2, 0);
+  auto fnResult = GetDirectoryFileCountEx(basePath, filter, scanSubdirs);
   v_setint(retval, fnResult);
   return 1;
 }
@@ -1661,7 +1683,7 @@ static int cmd_getscreenheight(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get the world space position for a 2d camera screen space position
+// Get world space position for a 2d camera screen space position
 //
 static int cmd_getscreentoworld2d(int argc, slib_par_t *params, var_t *retval) {
   auto position = get_param_vec2(argc, params, 0);
@@ -1775,12 +1797,12 @@ static int cmd_getsplinepointbeziercubic(int argc, slib_par_t *params, var_t *re
 //
 // Get (evaluate) spline point: Quadratic Bezier
 //
-static int cmd_getsplinepointbezierquad(int argc, slib_par_t *params, var_t *retval) {
+static int cmd_getsplinepointbezierquadratic(int argc, slib_par_t *params, var_t *retval) {
   auto p1 = get_param_vec2(argc, params, 0);
   auto c2 = get_param_vec2(argc, params, 1);
   auto p3 = get_param_vec2(argc, params, 2);
   auto t = get_param_num(argc, params, 3, 0);
-  auto fnResult = GetSplinePointBezierQuad(p1, c2, p3, t);
+  auto fnResult = GetSplinePointBezierQuadratic(p1, c2, p3, t);
   v_setvec2(retval, fnResult);
   return 1;
 }
@@ -1916,7 +1938,7 @@ static int cmd_getworkingdirectory(int argc, slib_par_t *params, var_t *retval) 
 }
 
 //
-// Get the screen space position for a 3d world space position
+// Get screen space position for a 3d world space position
 //
 static int cmd_getworldtoscreen(int argc, slib_par_t *params, var_t *retval) {
   auto position = get_param_vec3(argc, params, 0);
@@ -1927,7 +1949,7 @@ static int cmd_getworldtoscreen(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get the screen space position for a 2d camera world space position
+// Get screen space position for a 2d camera world space position
 //
 static int cmd_getworldtoscreen2d(int argc, slib_par_t *params, var_t *retval) {
   auto position = get_param_vec2(argc, params, 0);
@@ -1938,7 +1960,7 @@ static int cmd_getworldtoscreen2d(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Get size position for a 3d world space position
+// Get sized screen space position for a 3d world space position
 //
 static int cmd_getworldtoscreenex(int argc, slib_par_t *params, var_t *retval) {
   auto position = get_param_vec3(argc, params, 0);
@@ -2074,7 +2096,7 @@ static int cmd_isaudiostreamprocessed(int argc, slib_par_t *params, var_t *retva
 }
 
 //
-// Checks if an audio stream is valid (buffers initialized)
+// Check if an audio stream is valid (buffers initialized)
 //
 static int cmd_isaudiostreamvalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -2208,7 +2230,7 @@ static int cmd_isgamepadbuttonup(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if a gesture have been detected
+// Check if a gesture has been detected
 //
 static int cmd_isgesturedetected(int argc, slib_par_t *params, var_t *retval) {
   auto gesture = get_param_int(argc, params, 0, 0);
@@ -2373,7 +2395,7 @@ static int cmd_ismusicstreamplaying(int argc, slib_par_t *params, var_t *retval)
 }
 
 //
-// Checks if a music stream is valid (context and buffers initialized)
+// Check if a music stream is valid (context and buffers initialized)
 //
 static int cmd_ismusicvalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -2441,7 +2463,7 @@ static int cmd_issoundplaying(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Checks if a sound is valid (data loaded and buffers initialized)
+// Check if a sound is valid (data loaded and buffers initialized)
 //
 static int cmd_issoundvalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -2473,7 +2495,7 @@ static int cmd_istexturevalid(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Checks if wave data is valid (data loaded and parameters)
+// Check if wave data is valid (data loaded and parameters)
 //
 static int cmd_iswavevalid(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -2595,7 +2617,7 @@ static int cmd_loadcodepoints(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Load directory filepaths
+// Load directory filepaths, files and directories, no subdirs scan
 //
 static int cmd_loaddirectoryfiles(int argc, slib_par_t *params, var_t *retval) {
   auto dirPath = get_param_str(argc, params, 0, 0);
@@ -2605,7 +2627,7 @@ static int cmd_loaddirectoryfiles(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Load directory filepaths with extension filtering and recursive directory scan. Use 'DIR' in the filter string to include directories in the result
+// Load directory filepaths with extension filtering and subdir scan; some filters available: `*.*`,`FILES*`,`DIRS*`
 //
 static int cmd_loaddirectoryfilesex(int argc, slib_par_t *params, var_t *retval) {
   auto basePath = get_param_str(argc, params, 0, 0);
@@ -2767,7 +2789,7 @@ static int cmd_loadimagefrommemory(int argc, slib_par_t *params, var_t *retval) 
 }
 
 //
-// Load image from screen buffer and (screenshot)
+// Load image from screen buffer (screenshot)
 //
 static int cmd_loadimagefromscreen(int argc, slib_par_t *params, var_t *retval) {
   auto fnResult = LoadImageFromScreen();
@@ -2905,7 +2927,7 @@ static int cmd_loadsound(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Create a new sound that shares the same sample data as the source sound, does not own the sound data
+// Load sound alias, new sound that shares the same sample data as the source sound, does not own the sound data
 //
 static int cmd_loadsoundalias(int argc, slib_par_t *params, var_t *retval) {
   int result;
@@ -3050,6 +3072,26 @@ static int cmd_measuretext(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
+// Measure string size for an existing array of codepoints for Font
+//
+static int cmd_measuretextcodepoints(int argc, slib_par_t *params, var_t *retval) {
+  int result;
+  int font_id = get_font_id(argc, params, 0, retval);
+  if (font_id != -1) {
+    auto codepoints = (const int *)get_param_int_t(argc, params, 1, 0);
+    auto length = get_param_int(argc, params, 2, 0);
+    auto fontSize = get_param_num(argc, params, 3, 0);
+    auto spacing = get_param_num(argc, params, 4, 0);
+    auto fnResult = MeasureTextCodepoints(_fontMap.at(font_id), codepoints, length, fontSize, spacing);
+    v_setvec2(retval, fnResult);
+    result = 1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+//
 // Measure string size for Font
 //
 static int cmd_measuretextex(int argc, slib_par_t *params, var_t *retval) {
@@ -3094,7 +3136,7 @@ static int cmd_memrealloc(int argc, slib_par_t *params, var_t *retval) {
 //
 static int cmd_savefiledata(int argc, slib_par_t *params, var_t *retval) {
   auto fileName = get_param_str(argc, params, 0, 0);
-  auto data = (void *)get_param_int_t(argc, params, 1, 0);
+  auto data = (const void *)get_param_int_t(argc, params, 1, 0);
   auto dataSize = get_param_int(argc, params, 2, 0);
   auto fnResult = SaveFileData(fileName, data, dataSize);
   v_setint(retval, fnResult);
@@ -3145,7 +3187,7 @@ static int cmd_textfindindex(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Insert text in a position (WARNING: memory must be freed!)
+// Insert text in a defined byte position
 //
 static int cmd_textinsert(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
@@ -3157,7 +3199,19 @@ static int cmd_textinsert(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Check if two text string are equal
+// Insert text in a defined byte position, memory must be MemFree()
+//
+static int cmd_textinsertalloc(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto insert = get_param_str(argc, params, 1, 0);
+  auto position = get_param_int(argc, params, 2, 0);
+  auto fnResult = (const char *)TextInsertAlloc(text, insert, position);
+  v_setstr(retval, fnResult);
+  return 1;
+}
+
+//
+// Check if two text strings are equal
 //
 static int cmd_textisequal(int argc, slib_par_t *params, var_t *retval) {
   auto text1 = get_param_str(argc, params, 0, 0);
@@ -3188,7 +3242,7 @@ static int cmd_textremovespaces(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Replace text string (WARNING: memory must be freed!)
+// Replace text string with new string
 //
 static int cmd_textreplace(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
@@ -3200,7 +3254,19 @@ static int cmd_textreplace(int argc, slib_par_t *params, var_t *retval) {
 }
 
 //
-// Replace text between two specific strings (WARNING: memory must be freed!)
+// Replace text string with new string, memory must be MemFree()
+//
+static int cmd_textreplacealloc(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto search = get_param_str(argc, params, 1, 0);
+  auto replacement = get_param_str(argc, params, 2, 0);
+  auto fnResult = (const char *)TextReplaceAlloc(text, search, replacement);
+  v_setstr(retval, fnResult);
+  return 1;
+}
+
+//
+// Replace text between two specific strings
 //
 static int cmd_textreplacebetween(int argc, slib_par_t *params, var_t *retval) {
   auto text = get_param_str(argc, params, 0, 0);
@@ -3208,6 +3274,19 @@ static int cmd_textreplacebetween(int argc, slib_par_t *params, var_t *retval) {
   auto end = get_param_str(argc, params, 2, 0);
   auto replacement = get_param_str(argc, params, 3, 0);
   auto fnResult = (const char *)TextReplaceBetween(text, begin, end, replacement);
+  v_setstr(retval, fnResult);
+  return 1;
+}
+
+//
+// Replace text between two specific strings, memory must be MemFree()
+//
+static int cmd_textreplacebetweenalloc(int argc, slib_par_t *params, var_t *retval) {
+  auto text = get_param_str(argc, params, 0, 0);
+  auto begin = get_param_str(argc, params, 1, 0);
+  auto end = get_param_str(argc, params, 2, 0);
+  auto replacement = get_param_str(argc, params, 3, 0);
+  auto fnResult = (const char *)TextReplaceBetweenAlloc(text, begin, end, replacement);
   v_setstr(retval, fnResult);
   return 1;
 }

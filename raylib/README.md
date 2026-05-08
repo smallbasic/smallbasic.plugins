@@ -1,16 +1,16 @@
-*Raylib* _MAJOR 5 _MINOR 6 _PATCH 0 5.6-dev
+*Raylib* _MAJOR 6 _MINOR 1 _PATCH 0 6.1-dev
 =======
 raylib is a simple and easy-to-use library to enjoy videogames programming.
 
 https://www.raylib.com/
 
-Implemented APIs (646)
+Implemented APIs (651)
 ----------------
 
 | Name    | Description   |
 |---------|---------------|
 | sub BeginBlendMode(mode) | Begin blending mode (alpha, additive, multiplied, subtract, custom) |
-| sub BeginDrawing() | Setup canvas (framebuffer) to start drawing |
+| sub BeginDrawing() | Begin canvas (framebuffer) drawing |
 | sub BeginMode2D(camera) | Begin 2D mode with custom camera (2D) |
 | sub BeginMode3D(camera) | Begin 3D mode with custom camera (3D) |
 | sub BeginScissorMode(x, y, width, height) | Begin scissor mode (define screen area for following drawing) |
@@ -19,7 +19,7 @@ Implemented APIs (646)
 | func ChangeDirectory(dirPath) | Change working directory, return true on success |
 | func CheckCollisionBoxes(box1, box2) | Check collision between two bounding boxes |
 | func CheckCollisionBoxSphere(box, center, radius) | Check collision between box and sphere |
-| func CheckCollisionCircleLine(center, radius, p1, p2) | Check if circle collides with a line created betweeen two points [p1] and [p2] |
+| func CheckCollisionCircleLine(center, radius, p1, p2) | Check if circle collides with a line created between two points [p1] and [p2] |
 | func CheckCollisionCircleRec(center, radius, rec) | Check collision between circle and rectangle |
 | func CheckCollisionCircles(center1, radius1, center2, radius2) | Check collision between two circles |
 | func CheckCollisionLines(startPos1, endPos1, startPos2, endPos2, collisionPoint) | Check the collision between two lines defined by two points each, returns collision point by reference |
@@ -30,7 +30,7 @@ Implemented APIs (646)
 | func CheckCollisionPointTriangle(point, p1, p2, p3) | Check if point is inside a triangle |
 | func CheckCollisionRecs(rec1, rec2) | Check collision between two rectangles |
 | func CheckCollisionSpheres(center1, radius1, center2, radius2) | Check collision between two spheres |
-| sub ClearBackground(color) | Set background color (framebuffer clear color) |
+| sub ClearBackground(color) | Clear background (framebuffer) to color |
 | sub ClearWindowState(flags) | Clear window configuration state flags |
 | sub CloseAudioDevice() | Close the audio device and context |
 | func closePhysics() | n/a |
@@ -60,17 +60,17 @@ Implemented APIs (646)
 | func DecompressData(compData, compDataSize, dataSize) | Decompress data (DEFLATE algorithm), memory must be MemFree() |
 | func destroyPhysicsbody() | n/a |
 | func DirectoryExists(dirPath) | Check if a directory path exists |
-| sub DisableCursor() | Disables cursor (lock cursor) |
+| sub DisableCursor() | Disable cursor (lock cursor) |
 | sub DisableEventWaiting() | Disable waiting for events on EndDrawing(), automatic events polling |
 | sub DrawBillboard(camera, texture, position, scale, tint) | Draw a billboard texture |
 | sub DrawBillboardPro(camera, texture, source, position, up, size, origin, rotation, tint) | Draw a billboard texture defined by source and rotation |
 | sub DrawBillboardRec(camera, texture, source, position, size, tint) | Draw a billboard texture defined by source |
 | sub DrawBoundingBox(box, color) | Draw bounding box (wires) |
-| sub DrawCapsule(startPos, endPos, radius, slices, rings, color) | Draw a capsule with the center of its sphere caps at startPos and endPos |
-| sub DrawCapsuleWires(startPos, endPos, radius, slices, rings, color) | Draw capsule wireframe with the center of its sphere caps at startPos and endPos |
+| sub DrawCapsule(startPos, endPos, radius, rings, slices, color) | Draw a capsule with the center of its sphere caps at startPos and endPos |
+| sub DrawCapsuleWires(startPos, endPos, radius, rings, slices, color) | Draw capsule wireframe with the center of its sphere caps at startPos and endPos |
 | sub DrawCircle(centerX, centerY, radius, color) | Draw a color-filled circle |
 | sub DrawCircle3D(center, radius, rotationAxis, rotationAngle, color) | Draw a circle in 3D world space |
-| sub DrawCircleGradient(centerX, centerY, radius, inner, outer) | Draw a gradient-filled circle |
+| sub DrawCircleGradient(center, radius, inner, outer) | Draw a gradient-filled circle |
 | sub DrawCircleLines(centerX, centerY, radius, color) | Draw circle outline |
 | sub DrawCircleLinesV(center, radius, color) | Draw circle outline (Vector version) |
 | sub DrawCircleSector(center, radius, startAngle, endAngle, segments, color) | Draw a piece of a circle |
@@ -83,7 +83,7 @@ Implemented APIs (646)
 | sub DrawCylinder(position, radiusTop, radiusBottom, height, slices, color) | Draw a cylinder/cone |
 | sub DrawCylinderEx(startPos, endPos, startRadius, endRadius, sides, color) | Draw a cylinder with base at startPos and top at endPos |
 | sub DrawCylinderWires(position, radiusTop, radiusBottom, height, slices, color) | Draw a cylinder/cone wires |
-| sub DrawCylinderWiresEx(startPos, endPos, startRadius, endRadius, sides, color) | Draw a cylinder wires with base at startPos and top at endPos |
+| sub DrawCylinderWiresEx(startPos, endPos, startRadius, endRadius, slices, color) | Draw a cylinder wires with base at startPos and top at endPos |
 | sub DrawEllipse(centerX, centerY, radiusH, radiusV, color) | Draw ellipse |
 | sub DrawEllipseLines(centerX, centerY, radiusH, radiusV, color) | Draw ellipse outline |
 | sub DrawEllipseLinesV(center, radiusH, radiusV, color) | Draw ellipse outline (Vector version) |
@@ -99,15 +99,13 @@ Implemented APIs (646)
 | sub DrawLineV(startPos, endPos, color) | Draw a line (using gl lines) |
 | sub DrawModel(model, position, scale, tint) | Draw a model (with texture if set) |
 | sub DrawModelEx(model, position, rotationAxis, rotationAngle, scale, tint) | Draw a model with extended parameters |
-| sub DrawModelPoints(model, position, scale, tint) | Draw a model as points |
-| sub DrawModelPointsEx(model, position, rotationAxis, rotationAngle, scale, tint) | Draw a model as points with extended parameters |
 | sub DrawModelWires(model, position, scale, tint) | Draw a model wires (with texture if set) |
 | sub DrawModelWiresEx(model, position, rotationAxis, rotationAngle, scale, tint) | Draw a model wires (with texture if set) with extended parameters |
 | sub DrawPixel(posX, posY, color) | Draw a pixel using geometry [Can be slow, use with care] |
 | sub DrawPixelV(position, color) | Draw a pixel using geometry (Vector version) [Can be slow, use with care] |
 | sub DrawPlane(centerPos, size, color) | Draw a plane XZ |
 | sub DrawPoint3D(position, color) | Draw a point in 3D space, actually a small line |
-| sub DrawPoly(center, sides, radius, rotation, color) | Draw a regular polygon (Vector version) |
+| sub DrawPoly(center, sides, radius, rotation, color) | Draw a polygon of n sides |
 | sub DrawPolyLines(center, sides, radius, rotation, color) | Draw a polygon outline of n sides |
 | sub DrawPolyLinesEx(center, sides, radius, rotation, lineThick, color) | Draw a polygon outline of n sides with extended parameters |
 | sub DrawRay(ray, color) | Draw a ray line |
@@ -121,7 +119,7 @@ Implemented APIs (646)
 | sub DrawRectangleRec(rec, color) | Draw a color-filled rectangle |
 | sub DrawRectangleRounded(rec, roundness, segments, color) | Draw rectangle with rounded edges |
 | sub DrawRectangleRoundedLines(rec, roundness, segments, color) | Draw rectangle lines with rounded edges |
-| sub DrawRectangleRoundedLinesEx(rec, roundness, segments, lineThick, color) | Draw rectangle with rounded edges outline |
+| sub DrawRectangleRoundedLinesEx(rec, roundness, segments, lineThick, color) | Draw rectangle lines with rounded edges outline |
 | sub DrawRectangleV(position, size, color) | Draw a color-filled rectangle (Vector version) |
 | sub DrawRing(center, innerRadius, outerRadius, startAngle, endAngle, segments, color) | Draw ring |
 | sub DrawRingLines(center, innerRadius, outerRadius, startAngle, endAngle, segments, color) | Draw ring outline |
@@ -140,38 +138,39 @@ Implemented APIs (646)
 | sub DrawSplineSegmentLinear(p1, p2, thick, color) | Draw spline segment: Linear, 2 points |
 | sub DrawText(text, posX, posY, fontSize, color) | Draw text (using default font) |
 | sub DrawTextCodepoint(font, codepoint, position, fontSize, tint) | Draw one character (codepoint) |
-| sub DrawTextCodepoints(font, codepoints, codepointCount, position, fontSize, spacing, tint) | Draw multiple character (codepoint) |
+| sub DrawTextCodepoints(font, codepoints, codepointCount, position, fontSize, spacing, tint) | Draw multiple characters (codepoint) |
 | sub DrawTextEx(font, text, position, fontSize, spacing, tint) | Draw text using font and additional parameters |
 | sub DrawTextPro(font, text, position, origin, rotation, fontSize, spacing, tint) | Draw text using Font and pro parameters (rotation) |
 | sub DrawTexture(texture, posX, posY, tint) | Draw a Texture2D |
 | sub DrawTextureEx(texture, position, rotation, scale, tint) | Draw a Texture2D with extended parameters |
-| sub DrawTextureNPatch(texture, nPatchInfo, dest, origin, rotation, tint) | Draws a texture (or part of it) that stretches or shrinks nicely |
+| sub DrawTextureNPatch(texture, nPatchInfo, dest, origin, rotation, tint) | Draw a texture (or part of it) that stretches or shrinks nicely |
 | sub DrawTexturePro(texture, source, dest, origin, rotation, tint) | Draw a part of a texture defined by a rectangle with 'pro' parameters |
 | sub DrawTextureRec(texture, source, position, tint) | Draw a part of a texture defined by a rectangle |
 | sub DrawTextureV(texture, position, tint) | Draw a Texture2D with position defined as Vector2 |
 | sub DrawTriangle(v1, v2, v3, color) | Draw a color-filled triangle (vertex in counter-clockwise order!) |
 | sub DrawTriangle3D(v1, v2, v3, color) | Draw a color-filled triangle (vertex in counter-clockwise order!) |
 | sub DrawTriangleFan(points, pointCount, color) | Draw a triangle fan defined by points (first vertex is the center) |
+| sub DrawTriangleGradient(v1, v2, v3, c1, c2, c3) | Draw triangle with interpolated colors (vertex in counter-clockwise order!) |
 | sub DrawTriangleLines(v1, v2, v3, color) | Draw triangle outline (vertex in counter-clockwise order!) |
 | sub DrawTriangleStrip(points, pointCount, color) | Draw a triangle strip defined by points |
 | sub DrawTriangleStrip3D(points, pointCount, color) | Draw a triangle strip defined by points |
-| sub EnableCursor() | Enables cursor (unlock cursor) |
+| sub EnableCursor() | Enable cursor (unlock cursor) |
 | sub EnableEventWaiting() | Enable waiting for events on EndDrawing(), no automatic event polling |
 | func EncodeDataBase64(data, dataSize, outputSize) | Encode data to Base64 string (includes NULL terminator), memory must be MemFree() |
 | sub EndBlendMode() | End blending mode (reset to default: alpha blending) |
-| sub EndDrawing() | End canvas drawing and swap buffers (double buffering) |
-| sub EndMode2D() | Ends 2D mode with custom camera |
-| sub EndMode3D() | Ends 3D mode and returns to default 2D orthographic mode |
+| sub EndDrawing() | End canvas (framebuffer) drawing and swap buffers (double buffering) |
+| sub EndMode2D() | End 2D mode with custom camera |
+| sub EndMode3D() | End 3D mode and returns to default 2D orthographic mode |
 | sub EndScissorMode() | End scissor mode |
 | sub EndShaderMode() | End custom shader drawing (use default shader) |
-| sub EndTextureMode() | Ends drawing to render texture |
+| sub EndTextureMode() | End drawing to render texture |
 | sub EndVrStereoMode() | End stereo rendering (requires VR simulator) |
 | func ExportAutomationEventList(list, fileName) | Export automation events list as text file |
 | func ExportDataAsCode(data, dataSize, fileName) | Export data to code (.h), returns true on success |
 | func ExportFontAsCode(font, fileName) | Export font as code file, returns true on success |
 | func ExportImage(image, fileName) | Export image data to file, returns true on success |
 | func ExportImageAsCode(image, fileName) | Export image as code file defining an array of bytes, returns true on success |
-| func ExportImageToMemory(image, fileType, fileSize) | Export image to memory buffer |
+| func ExportImageToMemory(image, fileType, fileSize) | Export image to memory buffer, memory must be MemFree() |
 | func ExportMesh(mesh, fileName) | Export mesh data to file, returns true on success |
 | func ExportMeshAsCode(mesh, fileName) | Export mesh as code file (.h) defining multiple arrays of vertex attributes |
 | func ExportWave(wave, fileName) | Export wave data to file, returns true on success |
@@ -219,6 +218,8 @@ Implemented APIs (646)
 | func GetCollisionRec(rec1, rec2) | Get collision rectangle for two rectangles collision |
 | func GetColor(hexValue) | Get Color structure from hexadecimal value |
 | func GetCurrentMonitor() | Get current monitor where window is placed |
+| func GetDirectoryFileCount(dirPath) | Get the file count in a directory |
+| func GetDirectoryFileCountEx(basePath, filter, scanSubdirs) | Get the file count in a directory with extension filtering and recursive directory scan. Use 'DIR' in the filter string to include directories in the result |
 | func GetDirectoryPath(filePath) | Get full path for a given fileName with path (uses static string) |
 | func GetFileExtension(fileName) | Get pointer to extension for a filename string (includes dot: '.png') |
 | func GetFileLength(fileName) | Get file length in bytes (NOTE: GetFileSize() conflicts with windows.h) |
@@ -279,7 +280,7 @@ Implemented APIs (646)
 | func GetRenderHeight() | Get current render height (it considers HiDPI) |
 | func GetRenderWidth() | Get current render width (it considers HiDPI) |
 | func GetScreenHeight() | Get current screen height |
-| func GetScreenToWorld2D(position, camera) | Get the world space position for a 2d camera screen space position |
+| func GetScreenToWorld2D(position, camera) | Get world space position for a 2d camera screen space position |
 | func GetScreenToWorldRay(position, camera) | Get a ray trace from screen position (i.e mouse) |
 | func GetScreenToWorldRayEx(position, camera, width, height) | Get a ray trace from screen position (i.e mouse) in a viewport |
 | func GetScreenWidth() | Get current screen width |
@@ -289,7 +290,7 @@ Implemented APIs (646)
 | func GetShapesTextureRectangle() | Get texture source rectangle that is used for shapes drawing |
 | func GetSplinePointBasis(p1, p2, p3, p4, t) | Get (evaluate) spline point: B-Spline |
 | func GetSplinePointBezierCubic(p1, c2, c3, p4, t) | Get (evaluate) spline point: Cubic Bezier |
-| func GetSplinePointBezierQuad(p1, c2, p3, t) | Get (evaluate) spline point: Quadratic Bezier |
+| func GetSplinePointBezierQuadratic(p1, c2, p3, t) | Get (evaluate) spline point: Quadratic Bezier |
 | func GetSplinePointCatmullRom(p1, p2, p3, p4, t) | Get (evaluate) spline point: Catmull-Rom |
 | func GetSplinePointLinear(startPos, endPos, t) | Get (evaluate) spline point: Linear |
 | func GetTextBetween(text, begin, end) | Get text between two strings |
@@ -303,9 +304,9 @@ Implemented APIs (646)
 | func GetWindowPosition() | Get window position XY on monitor |
 | func GetWindowScaleDPI() | Get window scale DPI factor |
 | func GetWorkingDirectory() | Get current working directory (uses static string) |
-| func GetWorldToScreen(position, camera) | Get the screen space position for a 3d world space position |
-| func GetWorldToScreen2D(position, camera) | Get the screen space position for a 2d camera world space position |
-| func GetWorldToScreenEx(position, camera, width, height) | Get size position for a 3d world space position |
+| func GetWorldToScreen(position, camera) | Get screen space position for a 3d world space position |
+| func GetWorldToScreen2D(position, camera) | Get screen space position for a 2d camera world space position |
+| func GetWorldToScreenEx(position, camera, width, height) | Get sized screen space position for a 3d world space position |
 | func guibutton() | n/a |
 | func guicheckbox() | n/a |
 | func guicolorbaralpha() | n/a |
@@ -344,7 +345,7 @@ Implemented APIs (646)
 | func guiunlock() | n/a |
 | func guivaluebox() | n/a |
 | func guiwindowbox() | n/a |
-| sub HideCursor() | Hides cursor |
+| sub HideCursor() | Hide cursor |
 | sub ImageAlphaClear(image, color, threshold) | Clear alpha channel to desired color |
 | sub ImageAlphaCrop(image, threshold) | Crop image depending on alpha value |
 | sub ImageAlphaMask(image, alphaMask) | Apply alpha mask to image |
@@ -371,14 +372,15 @@ Implemented APIs (646)
 | sub ImageDrawPixel(dst, posX, posY, color) | Draw pixel within an image |
 | sub ImageDrawPixelV(dst, position, color) | Draw pixel within an image (Vector version) |
 | sub ImageDrawRectangle(dst, posX, posY, width, height, color) | Draw rectangle within an image |
-| sub ImageDrawRectangleLines(dst, rec, thick, color) | Draw rectangle lines within an image |
+| sub ImageDrawRectangleLines(dst, posX, posY, width, height, color) | Draw rectangle lines within an image |
+| sub ImageDrawRectangleLinesEx(dst, rec, thick, color) | Draw rectangle lines within an image with extended parameters |
 | sub ImageDrawRectangleRec(dst, rec, color) | Draw rectangle within an image |
 | sub ImageDrawRectangleV(dst, position, size, color) | Draw rectangle within an image (Vector version) |
 | sub ImageDrawText(dst, text, posX, posY, fontSize, color) | Draw text (using default font) within an image (destination) |
 | sub ImageDrawTextEx(dst, font, text, position, fontSize, spacing, tint) | Draw text (custom sprite font) within an image (destination) |
 | sub ImageDrawTriangle(dst, v1, v2, v3, color) | Draw triangle within an image |
-| sub ImageDrawTriangleEx(dst, v1, v2, v3, c1, c2, c3) | Draw triangle with interpolated colors within an image |
 | sub ImageDrawTriangleFan(dst, points, pointCount, color) | Draw a triangle fan defined by points within an image (first vertex is the center) |
+| sub ImageDrawTriangleGradient(dst, v1, v2, v3, c1, c2, c3) | Draw triangle with interpolated colors within an image |
 | sub ImageDrawTriangleLines(dst, v1, v2, v3, color) | Draw triangle outline within an image |
 | sub ImageDrawTriangleStrip(dst, points, pointCount, color) | Draw a triangle strip defined by points within an image |
 | sub ImageFlipHorizontal(image) | Flip image horizontally |
@@ -403,7 +405,7 @@ Implemented APIs (646)
 | func IsAudioDeviceReady() | Check if audio device has been initialized successfully |
 | func IsAudioStreamPlaying(stream) | Check if audio stream is playing |
 | func IsAudioStreamProcessed(stream) | Check if any audio stream buffers requires refill |
-| func IsAudioStreamValid(stream) | Checks if an audio stream is valid (buffers initialized) |
+| func IsAudioStreamValid(stream) | Check if an audio stream is valid (buffers initialized) |
 | func IsCursorHidden() | Check if cursor is not visible |
 | func IsCursorOnScreen() | Check if cursor is on the screen |
 | func IsFileDropped() | Check if a file has been dropped into window |
@@ -415,7 +417,7 @@ Implemented APIs (646)
 | func IsGamepadButtonPressed(gamepad, button) | Check if a gamepad button has been pressed once |
 | func IsGamepadButtonReleased(gamepad, button) | Check if a gamepad button has been released once |
 | func IsGamepadButtonUp(gamepad, button) | Check if a gamepad button is NOT being pressed |
-| func IsGestureDetected(gesture) | Check if a gesture have been detected |
+| func IsGestureDetected(gesture) | Check if a gesture has been detected |
 | func IsImageValid(image) | Check if an image is valid (data and parameters) |
 | func IsKeyDown(key) | Check if a key is being pressed |
 | func IsKeyPressed(key) | Check if a key has been pressed once |
@@ -429,14 +431,14 @@ Implemented APIs (646)
 | func IsMouseButtonReleased(button) | Check if a mouse button has been released once |
 | func IsMouseButtonUp(button) | Check if a mouse button is NOT being pressed |
 | func IsMusicStreamPlaying(music) | Check if music is playing |
-| func IsMusicValid(music) | Checks if a music stream is valid (context and buffers initialized) |
+| func IsMusicValid(music) | Check if a music stream is valid (context and buffers initialized) |
 | func IsPathFile(path) | Check if a given path is a file or a directory |
 | func IsRenderTextureValid(target) | Check if a render texture is valid (loaded in GPU) |
 | func IsShaderValid(shader) | Check if a shader is valid (loaded on GPU) |
 | func IsSoundPlaying(sound) | Check if a sound is currently playing |
-| func IsSoundValid(sound) | Checks if a sound is valid (data loaded and buffers initialized) |
+| func IsSoundValid(sound) | Check if a sound is valid (data loaded and buffers initialized) |
 | func IsTextureValid(texture) | Check if a texture is valid (loaded in GPU) |
-| func IsWaveValid(wave) | Checks if wave data is valid (data loaded and parameters) |
+| func IsWaveValid(wave) | Check if wave data is valid (data loaded and parameters) |
 | func IsWindowFocused() | Check if window is currently focused |
 | func IsWindowFullscreen() | Check if window is currently fullscreen |
 | func IsWindowHidden() | Check if window is currently hidden |
@@ -448,8 +450,8 @@ Implemented APIs (646)
 | func LoadAudioStream(sampleRate, sampleSize, channels) | Load audio stream (to stream raw audio pcm data) |
 | func LoadAutomationEventList(fileName) | Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS |
 | func LoadCodepoints(text, count) | Load all codepoints from a UTF-8 text string, codepoints count returned by parameter |
-| func LoadDirectoryFiles(dirPath) | Load directory filepaths |
-| func LoadDirectoryFilesEx(basePath, filter, scanSubdirs) | Load directory filepaths with extension filtering and recursive directory scan. Use 'DIR' in the filter string to include directories in the result |
+| func LoadDirectoryFiles(dirPath) | Load directory filepaths, files and directories, no subdirs scan |
+| func LoadDirectoryFilesEx(basePath, filter, scanSubdirs) | Load directory filepaths with extension filtering and subdir scan; some filters available: `*.*`,`FILES*`,`DIRS*` |
 | func LoadDroppedFiles() | Load dropped filepaths |
 | func LoadFileData(fileName, dataSize) | Load file data as byte array (read) |
 | func LoadFileText(fileName) | Load text data from file (read), returns a '\\0' terminated string |
@@ -462,7 +464,7 @@ Implemented APIs (646)
 | func LoadImageAnimFromMemory(fileType, fileData, dataSize, frames) | Load image sequence from memory buffer |
 | func LoadImageColors(image) | Load color data from image as a Color array (RGBA - 32bit) |
 | func LoadImageFromMemory(fileType, fileData, dataSize) | Load image from memory buffer, fileType refers to extension: i.e. '.png' |
-| func LoadImageFromScreen() | Load image from screen buffer and (screenshot) |
+| func LoadImageFromScreen() | Load image from screen buffer (screenshot) |
 | func LoadImageFromTexture(texture) | Load image from GPU texture data |
 | func LoadImagePalette(image, maxPaletteSize, colorCount) | Load colors palette from image as a Color array (RGBA - 32bit) |
 | func LoadImageRaw(fileName, width, height, format, headerSize) | Load image from RAW file data |
@@ -476,7 +478,7 @@ Implemented APIs (646)
 | func LoadShader(vsFileName, fsFileName) | Load shader from files and bind default locations |
 | func LoadShaderFromMemory(vsCode, fsCode) | Load shader from code strings and bind default locations |
 | func LoadSound(fileName) | Load sound from file |
-| func LoadSoundAlias(source) | Create a new sound that shares the same sample data as the source sound, does not own the sound data |
+| func LoadSoundAlias(source) | Load sound alias, new sound that shares the same sample data as the source sound, does not own the sound data |
 | func LoadSoundFromWave(wave) | Load sound from wave data |
 | func LoadTexture(fileName) | Load texture from file into GPU memory (VRAM) |
 | func LoadTextureCubemap(image, layout) | Load cubemap from image, multiple image cubemap layouts supported |
@@ -488,6 +490,7 @@ Implemented APIs (646)
 | func MakeDirectory(dirPath) | Create directories (including full path requested), returns 0 on success |
 | sub MaximizeWindow() | Set window state: maximized, if resizable |
 | func MeasureText(text, fontSize) | Measure string width for default font |
+| func MeasureTextCodepoints(font, codepoints, length, fontSize, spacing) | Measure string size for an existing array of codepoints for Font |
 | func MeasureTextEx(font, text, fontSize, spacing) | Measure string size for Font |
 | func MemAlloc(size) | Internal memory allocator |
 | sub MemFree(ptr) | Internal memory free |
@@ -517,13 +520,13 @@ Implemented APIs (646)
 | func SaveFileText(fileName, text) | Save text data to file (write), string must be '\\0' terminated, returns true on success |
 | sub SeekMusicStream(music, position) | Seek music to a position (in seconds) |
 | sub SetAudioStreamBufferSizeDefault(size) | Default size for new audio streams |
-| sub SetAudioStreamPan(stream, pan) | Set pan for audio stream (0.5 is centered) |
+| sub SetAudioStreamPan(stream, pan) | Set pan for audio stream (-1.0 left, 0.0 center, 1.0 right) |
 | sub SetAudioStreamPitch(stream, pitch) | Set pitch for audio stream (1.0 is base level) |
 | sub SetAudioStreamVolume(stream, volume) | Set volume for audio stream (1.0 is max level) |
 | sub SetAutomationEventBaseFrame(frame) | Set automation event internal base frame to start recording |
 | sub SetAutomationEventList(list) | Set automation event list to record to |
 | sub SetClipboardText(text) | Set clipboard text content |
-| sub SetConfigFlags(flags) | Setup init configuration flags (view FLAGS) |
+| sub SetConfigFlags(flags) | Set up init configuration flags (view FLAGS) |
 | sub SetExitKey(key) | Set a custom key to exit program (default is ESC) |
 | func SetGamepadMappings(mappings) | Set internal gamepad mappings (SDL_GameControllerDB) |
 | sub SetGamepadVibration(gamepad, leftMotor, rightMotor, duration) | Set gamepad vibration for both motors (duration in seconds) |
@@ -536,8 +539,8 @@ Implemented APIs (646)
 | sub SetMouseOffset(offsetX, offsetY) | Set mouse offset |
 | sub SetMousePosition(x, y) | Set mouse position XY |
 | sub SetMouseScale(scaleX, scaleY) | Set mouse scaling |
-| sub SetMusicPan(music, pan) | Set pan for a music (-1.0 left, 0.0 center, 1.0 right) |
-| sub SetMusicPitch(music, pitch) | Set pitch for a music (1.0 is base level) |
+| sub SetMusicPan(music, pan) | Set pan for music (-1.0 left, 0.0 center, 1.0 right) |
+| sub SetMusicPitch(music, pitch) | Set pitch for music (1.0 is base level) |
 | sub SetMusicVolume(music, volume) | Set volume for music (1.0 is max level) |
 | func setPhysicsbodyangularvelocity() | n/a |
 | func setPhysicsbodydynamicfriction() | n/a |
@@ -585,7 +588,7 @@ Implemented APIs (646)
 | sub SetWindowSize(width, height) | Set window dimensions |
 | sub SetWindowState(flags) | Set window configuration state using flags |
 | sub SetWindowTitle(title) | Set title for window |
-| sub ShowCursor() | Shows cursor |
+| sub ShowCursor() | Show cursor |
 | sub StartAutomationEventRecording() | Start recording automation events (AutomationEventList must be set) |
 | sub StopAudioStream(stream) | Stop audio stream |
 | sub StopAutomationEventRecording() | Stop recording automation events |
@@ -597,12 +600,15 @@ Implemented APIs (646)
 | func TextCopy(dst, src) | Copy one string to another, returns bytes copied |
 | func TextFindIndex(text, search) | Find first text occurrence within a string, -1 if not found |
 | func TextFormat(text, args) | Text formatting with variables (sprintf() style) |
-| func TextInsert(text, insert, position) | Insert text in a position (WARNING: memory must be freed!) |
-| func TextIsEqual(text1, text2) | Check if two text string are equal |
+| func TextInsert(text, insert, position) | Insert text in a defined byte position |
+| func TextInsertAlloc(text, insert, position) | Insert text in a defined byte position, memory must be MemFree() |
+| func TextIsEqual(text1, text2) | Check if two text strings are equal |
 | func TextLength(text) | Get text length, checks for '\\0' ending |
 | func TextRemoveSpaces(text) | Remove text spaces, concat words |
-| func TextReplace(text, search, replacement) | Replace text string (WARNING: memory must be freed!) |
-| func TextReplaceBetween(text, begin, end, replacement) | Replace text between two specific strings (WARNING: memory must be freed!) |
+| func TextReplace(text, search, replacement) | Replace text string with new string |
+| func TextReplaceAlloc(text, search, replacement) | Replace text string with new string, memory must be MemFree() |
+| func TextReplaceBetween(text, begin, end, replacement) | Replace text between two specific strings |
+| func TextReplaceBetweenAlloc(text, begin, end, replacement) | Replace text between two specific strings, memory must be MemFree() |
 | func TextSubtext(text, position, length) | Get a piece of a text string |
 | func TextToCamel(text) | Get Camel case notation version of provided string |
 | func TextToFloat(text) | Get float value from text |
@@ -625,14 +631,13 @@ Implemented APIs (646)
 | sub UnloadImagePalette(colors) | Unload colors palette loaded with LoadImagePalette() |
 | sub UnloadMesh(mesh) | Unload mesh data from CPU and GPU |
 | sub UnloadModel(model) | Unload model (including meshes) from memory (RAM and/or VRAM) |
-| sub UnloadModelAnimation(anim) | Unload animation data |
 | sub UnloadModelAnimations(animations, animCount) | Unload animation array data |
 | sub UnloadMusicStream(music) | Unload music stream |
 | sub UnloadRandomSequence(sequence) | Unload random values sequence |
 | sub UnloadRenderTexture(target) | Unload render texture from GPU memory (VRAM) |
 | sub UnloadShader(shader) | Unload shader from GPU memory (VRAM) |
 | sub UnloadSound(sound) | Unload sound |
-| sub UnloadSoundAlias(alias) | Unload a sound alias (does not deallocate sample data) |
+| sub UnloadSoundAlias(alias) | Unload sound alias (does not deallocate sample data) |
 | sub UnloadTexture(texture) | Unload texture from GPU memory (VRAM) |
 | sub UnloadUTF8(text) | Unload UTF-8 text encoded from codepoints array |
 | sub UnloadWave(wave) | Unload wave data |
@@ -641,11 +646,11 @@ Implemented APIs (646)
 | func updateautomationeventlist() | n/a |
 | sub UpdateCamera(camera, mode) | Update camera position for selected mode |
 | sub UpdateMeshBuffer(mesh, index, data, dataSize, offset) | Update mesh vertex data in GPU for a specific buffer index |
-| sub UpdateModelAnimation(model, anim, frame) | Update model animation pose (CPU) |
-| sub UpdateModelAnimationBones(model, anim, frame) | Update model animation mesh bone matrices (GPU skinning) |
-| sub UpdateMusicStream(music) | Updates buffers for music streaming |
+| sub UpdateModelAnimation(model, anim, frame) | Update model animation pose (vertex buffers and bone matrices) |
+| sub UpdateModelAnimationEx(model, animA, frameA, animB, frameB, blend) | Update model animation pose, blending two animations |
+| sub UpdateMusicStream(music) | Update buffers for music streaming |
 | func updatePhysics() | n/a |
-| sub UpdateSound(sound, data, sampleCount) | Update sound buffer with new data (default data format: 32 bit float, stereo) |
+| sub UpdateSound(sound, data, frameCount) | Update sound buffer with new data (default data format: 32 bit float, stereo) |
 | sub UpdateTexture(texture, pixels) | Update GPU texture with new data (pixels should be able to fill texture) |
 | sub UpdateTextureRec(texture, rec, pixels) | Update GPU texture rectangle with new data (pixels and rec should fit in texture) |
 | sub UploadMesh(mesh, dynamic) | Upload mesh vertex data in GPU and provide VAO/VBO ids |
