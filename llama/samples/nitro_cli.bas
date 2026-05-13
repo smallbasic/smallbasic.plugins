@@ -31,10 +31,18 @@ const n_penalty_repeat = 1.0
 const n_penalty_last_n = 256
 const n_gpu_layers = 32
 
-sandbox_home = iff(len(command) > 0, trim(command), cwd)
-if (left(sandbox_home) == "~") then
-  sandbox_home = home + mid(sandbox_home, 1)
-endif
+'
+' joins the left and right sides with forward slash
+'
+func join_path(s1, s2)
+  if (right(s1, 1) == "/") then
+    s1 = left(s1, len(s1) - 1)
+  endif
+  if (left(s2, 1) == "/") then
+    s2 = mid(s2, 2)
+  endif
+  return s1 + "/" + s2
+end
 
 '
 ' Displays the welcome message
@@ -82,9 +90,9 @@ end
 '
 func tool_read_file(arg)
   try
-    tload sandbox_home + arg, result, 1
+    tload join_path(sandbox_home, arg), result, 1
   catch
-    result = "ERROR: File not found or unreadable."
+    result = "ERROR: File not found or unreadable: " + arg
   end try
   return result
 end
@@ -120,7 +128,7 @@ end
 '
 func tool_write_file(arg, s)
   try
-    tsave sandbox_home + arg, s
+    tsave join_path(sandbox_home, arg), s
     result = "OK: Data written successfully to " + arg
   catch e
     result = "ERROR: " + e
@@ -133,8 +141,13 @@ end
 '
 func tool_permission()
   local k
-  input "Agree?"; k
-  return iff(trim(k) == "YES", "YES", "NO")
+  input "Agree:? ", k
+  select case lower(k)
+  case "y", "yes", "sure", "okay", "k"
+    return "YES"
+  case else
+    return "NO"
+  end select
 end
 
 '
@@ -155,11 +168,11 @@ func process_tool(cmd)
     endif
   endif
 
-   ' print RED
-   ' print "["+op+"]"
-   ' print "["+arg1+"]"
-   ' print "["+arg2+"]"
-   ' print RESET
+  print RED
+  print "["+op+"]"
+  print "["+arg1+"]"
+  print "["+arg2+"]"
+  print RESET
 
   select case op
   case "TOOL:DATE"
@@ -182,7 +195,7 @@ func process_tool(cmd)
     result = "ERROR: unknown command " + op
   end select
 
-  'print RED + "TOOL RESULT:" + result + RESET
+  print RED + "TOOL RESULT:" + result + RESET
   return result
 end
 
@@ -298,6 +311,14 @@ sub main()
   wend
 end
 
+sandbox_home = iff(len(command) > 0, trim(command), cwd)
+if (left(sandbox_home) == "~") then
+  sandbox_home = join_path(home, mid(sandbox_home, 1))
+else if (left(sandbox_home, 2) == "./") then
+  sandbox_home = join_path(cwd, mid(sandbox_home, 2))
+endif
+
 welcome_message()
 main()
+
 
