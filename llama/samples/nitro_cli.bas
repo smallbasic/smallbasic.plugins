@@ -20,7 +20,7 @@ const WHITE = chr(27) + "[37m"
 const BOLD_CYAN = chr(27) + "[1;36m"
 
 ' llama configuration (quen settings)
-const n_ctx = 32768
+const n_ctx = 65536
 const n_batch = 512
 const n_max_tokens = 4096
 const n_temperature = 0.6
@@ -29,8 +29,12 @@ const n_top_p = 0.95
 const n_min_p = 0
 const n_penalty_repeat = 1.0
 const n_penalty_last_n = 256
+const n_gpu_layers = 32
 
-sandbox_home = cwd
+sandbox_home = iff(len(command) > 0, trim(command), cwd)
+if (left(sandbox_home) == "~") then
+  sandbox_home = home + mid(sandbox_home, 1)
+endif
 
 '
 ' Displays the welcome message
@@ -50,8 +54,8 @@ end sub
 ' handles the TOOL:LIST command
 '
 func tool_list_files(arg)
-  if (arg == "./") then
-    arg = sandbox_home + arg
+  if (left(arg, 2) == "./") then
+    arg = sandbox_home + mid(arg, 2)
   else if (len(arg) == 0 or arg == ".") then
     arg = sandbox_home
   endif
@@ -151,11 +155,11 @@ func process_tool(cmd)
     endif
   endif
 
-  ' print RED
-  ' print "["+op+"]"
-  ' print "["+arg1+"]"
-  ' print "["+arg2+"]"
-  ' print RESET
+   ' print RED
+   ' print "["+op+"]"
+   ' print "["+arg1+"]"
+   ' print "["+arg2+"]"
+   ' print RESET
 
   select case op
   case "TOOL:DATE"
@@ -219,7 +223,7 @@ end
 ' creates the llama instance
 '
 func create_llama()
-  local llama = llm.llama(model, n_ctx, n_batch, 50)
+  local llama = llm.llama(model, n_ctx, n_batch, n_gpu_layers)
   llama.add_stop("<|turn|>")
   llama.set_max_tokens(n_max_tokens)
   llama.set_temperature(n_temperature)
@@ -279,7 +283,16 @@ sub main()
       print
       print WHITE;
       print "--- Tokens/sec: " + round(iter.tokens_sec(), 2) + " ---\n"
-      iter = llama.add_message("user", process_input())
+      local next_iter = false
+      repeat
+        local user_input = process_input()
+        if (user_input == "/meminfo") then
+          print llama.mem_info()
+        else
+          iter = llama.add_message("user", user_input)
+          next_iter = true
+        endif
+      until next_iter
       print BLUE;
     endif
   wend
@@ -287,3 +300,4 @@ end
 
 welcome_message()
 main()
+

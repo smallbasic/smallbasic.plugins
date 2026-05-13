@@ -537,8 +537,9 @@ LlamaMemoryInfo Llama::memory_info() {
   info.kv_percent    = 100.0f * info.kv_used / info.kv_total;
 
   // Model layers
+  auto n_gpu_layers = std::max(0, _n_gpu_layers);
   info.n_layers_total = llama_model_n_layer(_model);
-  info.n_layers_gpu   = _n_gpu_layers;
+  info.n_layers_gpu   = std::min(info.n_layers_total, n_gpu_layers);
   info.n_layers_cpu   = info.n_layers_total - info.n_layers_gpu;
 
   // ram
@@ -548,6 +549,13 @@ LlamaMemoryInfo Llama::memory_info() {
 
   // Advice
   ostringstream advice;
+
+  if (n_gpu_layers < info.n_layers_total) {
+    advice << "Only " << n_gpu_layers << "/" << info.n_layers_total
+           << " layers on GPU - increase n_gpu_layers if VRAM allows. ";
+  } else {
+    advice << "All " << info.n_layers_total << " layers on GPU. ";
+  }
   if (info.n_layers_cpu > 0) {
     advice << "CPU offload active (" << info.n_layers_cpu
            << " layers on CPU) - increase n_gpu_layers if VRAM allows. ";
