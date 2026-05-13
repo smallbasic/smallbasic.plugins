@@ -53,6 +53,8 @@ Available commands:
 - TOOL:LIST  `[directory_path. items enclosed in square brackets (`[...]`) represent directories within the file listing output]`
 - TOOL:READ  `[file_path]`
 - TOOL:WRITE `[file_path]`
+- TOOL:EXISTS `[file_path]`
+- TOOL:PERMISSION `[Request user permission before overwriting a file]`
 - TOOL:DATE  `[Returns the current date as string with format “DD/MM/YYYY”]`
 - TOOL:TIME  `[Returns the time in “HH:MM:SS” format]`
 - TOOL:RND   [Returns a random number betweem 0 and 1]`

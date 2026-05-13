@@ -14,6 +14,26 @@
 
 using namespace std;
 
+struct LlamaMemoryInfo {
+  // KV cache
+  int     kv_used;        // slots currently used
+  int     kv_total;       // total slots (== n_ctx)
+  float   kv_percent;     // kv_used / kv_total
+
+  // GPU VRAM (via ggml backend)
+  size_t  vram_used;      // bytes
+  size_t  vram_total;     // bytes
+  float   vram_percent;
+
+  // Model layers
+  int     n_layers_total; // total model layers
+  int     n_layers_gpu;   // layers offloaded to GPU
+  int     n_layers_cpu;   // layers on CPU
+
+  // Advice
+  string  advice;
+};
+
 struct Llama;
 
 struct LlamaIter {
@@ -75,6 +95,9 @@ struct Llama {
   void set_log_level(int level) { _log_level = level; }
   void reset();
 
+  // memory info
+  LlamaMemoryInfo memory_info();
+
   private:
   bool ends_with_sentence_boundary(const string &out);
   bool configure_sampler();
@@ -102,6 +125,7 @@ struct Llama {
   int _top_k;
   int _max_tokens;
   int _log_level;
+  int _n_gpu_layers;
   int _n_past;
   bool _is_gemma4;
   unsigned int _seed;

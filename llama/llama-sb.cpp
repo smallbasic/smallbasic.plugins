@@ -8,11 +8,25 @@
 #include <format>
 #include <span>
 #include <utility>
+#include "ggml-cuda.h"
 
 #include "llama.h"
 #include "llama-sb.h"
 
 constexpr int MAX_REPEAT = 5;
+
+static bool read_vram(size_t &used, size_t &total) {
+  size_t free = 0;
+  total = 0;
+#ifdef GGML_USE_CUDA
+  ggml_backend_cuda_get_device_memory(0, &free, &total);
+  if (total > 0) {
+    used = total - free;
+    return true;
+  }
+#endif
+  return false;
+}
 
 LlamaIter::LlamaIter() :
   _llama(nullptr),
@@ -45,6 +59,7 @@ Llama::Llama() :
   _top_k(0),
   _max_tokens(0),
   _log_level(GGML_LOG_LEVEL_CONT),
+  _n_gpu_layers(0),
   _n_past(0),
   _is_gemma4(false),
   _seed(LLAMA_DEFAULT_SEED) {
@@ -78,6 +93,7 @@ Llama::Llama(Llama &&other) noexcept
   , _top_k(other._top_k)
   , _max_tokens(other._max_tokens)
   , _log_level(other._log_level)
+  , _n_gpu_layers(other._n_gpu_layers)
   , _n_past(other._n_past)
   , _is_gemma4(other._is_gemma4)
   , _seed(other._seed) {
@@ -128,6 +144,7 @@ bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layer
   }
 
   _log_level = log_level;
+  _n_gpu_layers = n_gpu_layers;
   _model = llama_model_load_from_file(model_path.c_str(), mparams);
   if (!_model) {
     _last_error = "Failed to load model";
@@ -141,8 +158,8 @@ bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layer
     cparams.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_ENABLED;
 
     // or Q4_0 for more aggressive saving
-    cparams.type_k = GGML_TYPE_Q8_0;
-    cparams.type_v = GGML_TYPE_Q8_0;
+    cparams.type_k = GGML_TYPE_Q4_0;
+    cparams.type_v = GGML_TYPE_Q4_0;
 
     // keep KV cache on GPU
     cparams.offload_kqv = true;
@@ -331,7 +348,8 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
     llama_batch batch = llama_batch_get_one(prompt_tokens.data() + i, batch_size);
     int result = llama_decode(_ctx, batch);
     if (result != 0) {
-      _last_error = std::format("Failed to decode batch. position:{} error:{}", i, result);
+      _last_error = std::format("Failed to decode batch. position:{} error:{} [size:{}, past:{}]",
+                                i, result, prompt_tokens.size(), _n_past);
       return false;
     }
   }
@@ -506,3 +524,44 @@ string Llama::all(LlamaIter &iter) {
 
   return out;
 }
+
+LlamaMemoryInfo Llama::memory_info() {
+  LlamaMemoryInfo info = {};
+
+  // KV cache usage
+  llama_memory_t mem = llama_get_memory(_ctx);
+  llama_pos pos_max  = llama_memory_seq_pos_max(mem, 0);
+  int n_ctx          = llama_n_ctx(_ctx);
+  info.kv_total      = n_ctx;
+  info.kv_used       = (pos_max < 0) ? 0 : (int)pos_max + 1;
+  info.kv_percent    = 100.0f * info.kv_used / info.kv_total;
+
+  // Model layers
+  info.n_layers_total = llama_model_n_layer(_model);
+  info.n_layers_gpu   = _n_gpu_layers;
+  info.n_layers_cpu   = info.n_layers_total - info.n_layers_gpu;
+
+  // ram
+  if (read_vram(info.vram_used, info.vram_total)) {
+    info.vram_percent = 100.0f * info.vram_used / info.vram_total;
+  }
+
+  // Advice
+  ostringstream advice;
+  if (info.n_layers_cpu > 0) {
+    advice << "CPU offload active (" << info.n_layers_cpu
+           << " layers on CPU) - increase n_gpu_layers if VRAM allows. ";
+  }
+  if (info.vram_percent > 90.0f) {
+    advice << "VRAM >90% - reduce n_ctx or use Q4_0 KV cache. ";
+  } else if (info.vram_percent < 60.0f && info.n_layers_cpu > 0) {
+    advice << "VRAM headroom available - try adding more GPU layers. ";
+  }
+  if (info.kv_percent > 80.0f) {
+    advice << "Context >80% full - consider calling clear_history(). ";
+  }
+  info.advice = advice.str();
+
+  return info;
+}
+

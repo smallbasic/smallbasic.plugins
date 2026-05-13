@@ -431,6 +431,35 @@ static int cmd_llama_add_message(var_s *self, int argc, slib_par_t *arg, var_s *
   return result;
 }
 
+//
+// print llama.mem_info()
+//
+static int cmd_llama_mem_info(var_s *self, int argc, slib_par_t *arg, var_s *retval) {
+  int result = 0;
+  if (argc != 0) {
+    error(retval, "llama.mem_info", 0, 0);
+  } else {
+    int id = get_llama_class_id(self, retval);
+    if (id != -1) {
+      Llama &llama = g_llama.at(id);
+      auto mem_info = llama.memory_info();
+      map_init(retval);
+      v_setint(map_add_var(retval, "kv_used", 0), mem_info.kv_used);
+      v_setint(map_add_var(retval, "kv_total", 0), mem_info.kv_total);
+      v_setreal(map_add_var(retval, "kv_percent", 0), mem_info.kv_percent);
+      v_setint(map_add_var(retval, "vram_used", 0), mem_info.vram_used);
+      v_setint(map_add_var(retval, "vram_total", 0), mem_info.vram_total);
+      v_setreal(map_add_var(retval, "vram_percent", 0), mem_info.vram_percent);
+      v_setint(map_add_var(retval, "n_layers_cpu", 0), mem_info.n_layers_cpu);
+      v_setint(map_add_var(retval, "n_layers_gpu", 0), mem_info.n_layers_gpu);
+      v_setint(map_add_var(retval, "n_layers_total", 0), mem_info.n_layers_total);
+      v_setstr(map_add_var(retval, "advice", 0), mem_info.advice.c_str());
+      result = 1;
+    }
+  }
+  return result;
+}
+
 static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   int result;
   auto model = expand_path(get_param_str(argc, params, 0, ""));
@@ -456,6 +485,7 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
     v_create_callback(retval, "set_top_p", cmd_llama_set_top_p);
     v_create_callback(retval, "set_grammar", cmd_llama_set_grammar);
     v_create_callback(retval, "set_seed", cmd_llama_set_seed);
+    v_create_callback(retval, "mem_info", cmd_llama_mem_info);
     result = 1;
   } else {
     error(retval, llama.last_error());
