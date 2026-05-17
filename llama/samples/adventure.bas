@@ -3,7 +3,7 @@ import llm
 ' Configuration
 const n_ctx = 5000
 const n_batch = 512
-const model_path = "models/Qwen_Qwen2.5-1.5B-Instruct-GGUF-Q4/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+const model_path = "models/google_gemma-4-E4B-it-Q4_K_L.gguf"
 const max_turns = 10
 
 ' Initialize two separate LLM instances

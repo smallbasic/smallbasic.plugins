@@ -171,6 +171,28 @@ set_target_properties(llm_test PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
+# -----------------------------
+# RAG indexer
+# -----------------------------
+add_executable(rag_index
+  rag_index.cpp
+)
+
+target_include_directories(rag_index PRIVATE
+  ${LLAMA_DIR}/include
+  ${LLAMA_DIR}/ggml/include
+)
+
+target_link_libraries(rag_index PRIVATE
+  llm
+  llama
+  ggml
+)
+
+set_target_properties(rag_index PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
 # ------------------------------------------------------------------
 # Android native library
 # ------------------------------------------------------------------

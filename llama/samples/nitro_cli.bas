@@ -8,7 +8,7 @@ import llm
 ' --- Configuration ---
 const model = "models/Qwen3.5-9B-Q4_K_M.gguf"
 const knowledge_files = ["nitro.md"]
-const code_files = [".py", ".cpp", ".h", ".bas", ".java", ".html", ".js", "jsp", ".tag"]
+const code_files = [".py", ".c", ".cpp", ".h", ".bas", ".java", ".html", ".js", "jsp", ".tag"]
 
 ' ANSI Color Codes
 const RESET = chr(27) + "[0m"
@@ -151,6 +151,17 @@ func tool_permission()
 end
 
 '
+' build the active project
+'
+func tool_run(arg1, arg2)
+  try
+    return run(join_path(sandbox_home, arg1) + " " + arg2)
+  catch e
+    return e
+  end try
+end
+
+'
 ' Handles file system commands received from the LLM.
 '
 func process_tool(cmd)
@@ -191,6 +202,8 @@ func process_tool(cmd)
     result = iff(exist(arg1), "YES", "NO")
   case "TOOL:PERMISSION"
     result = tool_permission()
+  case "TOOL:RUN"
+    result = tool_run(arg1, arg2)
   case else
     result = "ERROR: unknown command " + op
   end select
@@ -255,6 +268,9 @@ sub main()
   ' note: this construct requires recent sbasic fixes
   local llama = create_llama()
   local iter = llama.add_message("system", initialize_agent())
+  local mem = llama.mem_info()
+
+  print GREEN + "  ✅ " + mem.advice + RESET
 
   sub handle_think(s)
     if s == "<|think|>" then
@@ -320,5 +336,4 @@ endif
 
 welcome_message()
 main()
-
 

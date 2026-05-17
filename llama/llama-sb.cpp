@@ -7,6 +7,7 @@
 
 #include <format>
 #include <span>
+#include <cmath>
 #include <utility>
 #include "ggml-cuda.h"
 
@@ -63,8 +64,12 @@ Llama::Llama() :
   _n_past(0),
   _is_gemma4(false),
   _seed(LLAMA_DEFAULT_SEED) {
-  llama_log_set([](enum ggml_log_level level, const char * text, void *user_data) {
+  llama_log_set([](enum ggml_log_level level, const char *text, void *user_data) {
     Llama *llama = (Llama *)user_data;
+    if (level == GGML_LOG_LEVEL_ERROR && llama->_last_error.empty()) {
+      // remember the first error message
+      llama->_last_error = text;
+    }
     if (level > llama->_log_level) {
       fprintf(stderr, "LLAMA: %s", text);
     }
@@ -135,7 +140,7 @@ void Llama::reset() {
   }
 }
 
-bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layers, int log_level) {
+bool Llama::load_model(string model_path, int n_ctx, int n_batch, int n_gpu_layers, int log_level) {
   ggml_backend_load_all();
 
   llama_model_params mparams = llama_model_default_params();
@@ -143,11 +148,12 @@ bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layer
     mparams.n_gpu_layers = n_gpu_layers;
   }
 
+  _last_error.clear();
   _log_level = log_level;
   _n_gpu_layers = n_gpu_layers;
   _model = llama_model_load_from_file(model_path.c_str(), mparams);
   if (!_model) {
-    _last_error = "Failed to load model";
+    set_last_error("Load model");
   } else {
     llama_context_params cparams = llama_context_default_params();
     cparams.n_ctx   = n_ctx;
@@ -166,7 +172,7 @@ bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layer
 
     _ctx = llama_init_from_model(_model, cparams);
     if (!_ctx) {
-      _last_error = "Failed to create context";
+      set_last_error("Create context");
     } else {
       _vocab = llama_model_get_vocab(_model);
     }
@@ -177,123 +183,89 @@ bool Llama::construct(string model_path, int n_ctx, int n_batch, int n_gpu_layer
   return _last_error.empty();
 }
 
+bool Llama::load_embedding_model(string model_path) {
+  ggml_backend_load_all();
+
+  llama_model_params mparams = llama_model_default_params();
+  mparams.n_gpu_layers = 99;
+
+  _last_error.clear();
+  _model = llama_model_load_from_file(model_path.c_str(), mparams);
+  if (!_model) {
+    set_last_error("Load model");
+  } else {
+    llama_context_params cparams = llama_context_default_params();
+    cparams.n_ctx        = 512;
+    cparams.n_batch      = 512;
+    cparams.embeddings   = true;
+    cparams.pooling_type = LLAMA_POOLING_TYPE_MEAN;
+
+    _ctx = llama_init_from_model(_model, cparams);
+    if (!_ctx) {
+      set_last_error("Create context");
+    }
+  }
+
+  return _last_error.empty();
+}
+
+int Llama::get_embed_dim() {
+  return _model != nullptr ? llama_model_n_embd(_model) : 0;
+}
+
+bool Llama::embed_text(const std::string &text, std::vector<float> &out, int embed_dim) {
+  std::string prefixed = "search_document: " + text;
+
+  vector<llama_token> tokens = tokenize(prefixed);
+  if (tokens.size() == 0) {
+    return false;
+  }
+
+  // truncate to context window
+  int n_ctx = llama_n_ctx(_ctx);
+  int n = tokens.size();
+  if (n > n_ctx) {
+    _last_error = std::format("warning: chunk truncated {} -> {} tokens ", n, n_ctx);
+    n = n_ctx;
+    tokens.resize(n);
+  }
+
+  llama_memory_clear(llama_get_memory(_ctx), true);
+
+  if (!batch_decode_tokens(tokens)) {
+    return false;
+  }
+
+  float *emb = llama_get_embeddings_seq(_ctx, 0);
+  if (!emb) {
+    emb = llama_get_embeddings_ith(_ctx, n - 1);
+  }
+
+  if (!emb) {
+    _last_error = "no embedding returned\n";
+    return false;
+  }
+
+  out.assign(emb, emb + embed_dim);
+
+  /* L2 normalize */
+  float norm = 0.0f;
+  for (float v : out) {
+    norm += v * v;
+  }
+  norm = std::sqrt(norm);
+  if (norm > 1e-9f) {
+    for (float &v : out) {
+      v /= norm;
+    }
+  }
+
+  return true;
+}
+
 void Llama::set_grammar(const string &src, const string &root) {
   _grammar_src = src;
   _grammar_root = root;
-}
-
-bool Llama::configure_sampler() {
-  auto sparams = llama_sampler_chain_default_params();
-  sparams.no_perf = false;
-  llama_sampler *chain = llama_sampler_chain_init(sparams);
-
-  if (!_grammar_src.empty()) {
-    llama_sampler *grammar = llama_sampler_init_grammar(_vocab, _grammar_src.c_str(), _grammar_root.c_str());
-    if (!grammar) {
-      _last_error = "failed to initialize grammar sampler";
-      return false;
-    }
-    llama_sampler_chain_add(chain, grammar);
-  }
-  if (_penalty_last_n != 0 && _penalty_repeat != 1.0f) {
-    auto penalties = llama_sampler_init_penalties(_penalty_last_n, _penalty_repeat, _penalty_freq, _penalty_present);
-    llama_sampler_chain_add(chain, penalties);
-  }
-  if (_temperature <= 0.0f) {
-    llama_sampler_chain_add(chain, llama_sampler_init_greedy());
-  } else {
-    if (_top_k > 0) {
-      llama_sampler_chain_add(chain, llama_sampler_init_top_k(_top_k));
-    }
-    if (_top_p < 1.0f || _min_p > 0.0f) {
-      llama_sampler_chain_add(chain, llama_sampler_init_top_p(_top_p, 1));
-    }
-    if (_min_p > 0.0f) {
-      llama_sampler_chain_add(chain, llama_sampler_init_min_p(_min_p, 1));
-    }
-    llama_sampler_chain_add(chain, llama_sampler_init_temp(_temperature));
-    llama_sampler_chain_add(chain, llama_sampler_init_dist(_seed));
-  }
-  if (_sampler) {
-    llama_sampler_free(_sampler);
-  }
-  _sampler = chain;
-  return true;
-}
-
-vector<llama_token> Llama::tokenize(const string &prompt) {
-  vector<llama_token> result;
-
-  int n_prompt = -llama_tokenize(_vocab, prompt.c_str(), prompt.size(), nullptr, 0, true, true);
-  if (n_prompt <= 0) {
-    _last_error = "Failed to tokenize prompt";
-  } else {
-    result.reserve(n_prompt);
-    result.resize(n_prompt);
-    if (llama_tokenize(_vocab, prompt.c_str(), prompt.size(),
-                       result.data(), n_prompt, true, true) < 0) {
-      _last_error = "Failed to tokenize prompt";
-    }
-  }
-  return result;
-}
-
-// Makes space in the context for n_tokens by removing old tokens if necessary
-// Returns true if successful, false if impossible to make space
-//
-// Strategies:
-// - If enough space exists, does nothing
-// - If n_tokens > n_ctx, fails (impossible to fit)
-// - Otherwise, removes oldest tokens to make room
-//
-// Parameters:
-//   n_tokens  - Number of tokens we need space for
-//   keep_min  - Minimum tokens to keep (e.g., system prompt), default 0
-//
-bool Llama::make_space_for_tokens(int n_tokens, int keep_min) {
-  int n_ctx = llama_n_ctx(_ctx);
-  if (n_tokens > n_ctx) {
-    _last_error = "Too many tokens, increase context size (n_ctx)";
-    return false;
-  }
-
-  llama_memory_t mem = llama_get_memory(_ctx);
-
-  // Get current position range
-  llama_pos pos_min = llama_memory_seq_pos_min(mem, 0);
-  llama_pos pos_max = llama_memory_seq_pos_max(mem, 0);
-
-  // Empty memory - nothing to do
-  if (pos_max < 0) {
-    return true;
-  }
-
-  int current_used = pos_max - pos_min + 1;
-  int space_needed = n_tokens;
-  int space_available = n_ctx - current_used;
-
-  // Already have enough space
-  if (space_available >= space_needed) {
-    return true;
-  }
-
-  // Calculate how many tokens to remove
-  int tokens_to_remove = space_needed - space_available;
-
-  // Can't remove more than we have (minus keep_min)
-  int removable = current_used - keep_min;
-  if (tokens_to_remove > removable) {
-    _last_error = "Can't make enough space while keeping keep_min tokens";
-    return false;
-  }
-
-  // Remove oldest tokens (from pos_min to pos_min + tokens_to_remove)
-  llama_memory_seq_rm(mem, 0, pos_min, pos_min + tokens_to_remove);
-
-  // Shift remaining tokens down
-  llama_memory_seq_add(mem, 0, pos_min + tokens_to_remove, -1, -tokens_to_remove);
-
-  return true;
 }
 
 bool Llama::add_message(LlamaIter &iter, const string &role, const string &content) {
@@ -342,16 +314,8 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
   }
 
   // batch decode tokens
-  uint32_t n_batch = llama_n_batch(_ctx);
-  for (size_t i = 0; i < prompt_tokens.size(); i += n_batch) {
-    size_t batch_size = std::min((size_t)n_batch, prompt_tokens.size() - i);
-    llama_batch batch = llama_batch_get_one(prompt_tokens.data() + i, batch_size);
-    int result = llama_decode(_ctx, batch);
-    if (result != 0) {
-      _last_error = std::format("Failed to decode batch. position:{} error:{} [size:{}, past:{}]",
-                                i, result, prompt_tokens.size(), _n_past);
-      return false;
-    }
+  if (!batch_decode_tokens(prompt_tokens)) {
+    return false;
   }
 
   // handle encoder models
@@ -375,87 +339,6 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
   iter._llama = this;
   iter._has_next = true;
   return true;
-}
-
-bool Llama::ends_with_sentence_boundary(const string &text) {
-  if (text.empty()) {
-    return false;
-  }
-
-  // Get last few characters (in case of whitespace after punctuation)
-  size_t check_len = std::min(text.length(), (size_t)5);
-  std::string ending = text.substr(text.length() - check_len);
-
-  // Check for various sentence endings
-  // Period followed by space or end
-  if (ending.find(". ") != std::string::npos ||
-      ending.back() == '.') {
-    return true;
-  }
-
-  // Exclamation mark
-  if (ending.find("! ") != std::string::npos ||
-      ending.back() == '!') {
-    return true;
-  }
-
-  // Question mark
-  if (ending.find("? ") != std::string::npos ||
-      ending.back() == '?') {
-    return true;
-  }
-
-  // Newline (paragraph break)
-  if (ending.find('\n') != std::string::npos) {
-    return true;
-  }
-
-  // Quote followed by period: "something."
-  if (ending.find(".\"") != std::string::npos ||
-      ending.find("!\"") != std::string::npos ||
-      ending.find("?\"") != std::string::npos) {
-    return true;
-  }
-
-  return false;
-}
-
-string Llama::token_to_string(LlamaIter &iter, llama_token tok) {
-  string result;
-  char buf[512];
-  int n = llama_token_to_piece(_vocab, tok, buf, sizeof(buf), 0, false);
-  if (n > 0) {
-    // detect repetition
-    if (iter._last_word == buf) {
-      if (++iter._repetition_count == MAX_REPEAT) {
-        iter._has_next = false;
-      }
-    } else {
-      iter._repetition_count = 0;
-      iter._last_word = buf;
-    }
-
-    result.append(buf, n);
-
-    // detect end of max-tokens
-    if (++iter._tokens_generated > _max_tokens && ends_with_sentence_boundary(result)) {
-      iter._has_next = false;
-    }
-
-    // detect stop words
-    if (iter._has_next) {
-      for (const auto &stop : _stop_sequences) {
-        size_t pos = result.find(stop);
-        if (pos != std::string::npos) {
-          // found stop sequence - truncate and signal end
-          result = result.substr(0, pos);
-          iter._has_next = false;
-          break;
-        }
-      }
-    }
-  }
-  return result;
 }
 
 string Llama::next(LlamaIter &iter) {
@@ -573,3 +456,223 @@ LlamaMemoryInfo Llama::memory_info() {
   return info;
 }
 
+bool Llama::batch_decode_tokens(vector<llama_token> &tokens) {
+  uint32_t n_batch = llama_n_batch(_ctx);
+  for (size_t i = 0; i < tokens.size(); i += n_batch) {
+    size_t batch_size = std::min((size_t)n_batch, tokens.size() - i);
+    llama_batch batch = llama_batch_get_one(tokens.data() + i, batch_size);
+    int result = llama_decode(_ctx, batch);
+    if (result != 0) {
+      _last_error = std::format("Failed to decode batch. position:{} error:{} [size:{}, past:{}]",
+                                i, result, tokens.size(), _n_past);
+      return false;
+    }
+  }
+  return true;
+}
+
+bool Llama::configure_sampler() {
+  auto sparams = llama_sampler_chain_default_params();
+  sparams.no_perf = false;
+  llama_sampler *chain = llama_sampler_chain_init(sparams);
+
+  if (!_grammar_src.empty()) {
+    llama_sampler *grammar = llama_sampler_init_grammar(_vocab, _grammar_src.c_str(), _grammar_root.c_str());
+    if (!grammar) {
+      _last_error = "failed to initialize grammar sampler";
+      return false;
+    }
+    llama_sampler_chain_add(chain, grammar);
+  }
+  if (_penalty_last_n != 0 && _penalty_repeat != 1.0f) {
+    auto penalties = llama_sampler_init_penalties(_penalty_last_n, _penalty_repeat, _penalty_freq, _penalty_present);
+    llama_sampler_chain_add(chain, penalties);
+  }
+  if (_temperature <= 0.0f) {
+    llama_sampler_chain_add(chain, llama_sampler_init_greedy());
+  } else {
+    if (_top_k > 0) {
+      llama_sampler_chain_add(chain, llama_sampler_init_top_k(_top_k));
+    }
+    if (_top_p < 1.0f || _min_p > 0.0f) {
+      llama_sampler_chain_add(chain, llama_sampler_init_top_p(_top_p, 1));
+    }
+    if (_min_p > 0.0f) {
+      llama_sampler_chain_add(chain, llama_sampler_init_min_p(_min_p, 1));
+    }
+    llama_sampler_chain_add(chain, llama_sampler_init_temp(_temperature));
+    llama_sampler_chain_add(chain, llama_sampler_init_dist(_seed));
+  }
+  if (_sampler) {
+    llama_sampler_free(_sampler);
+  }
+  _sampler = chain;
+  return true;
+}
+
+bool Llama::ends_with_sentence_boundary(const string &text) {
+  if (text.empty()) {
+    return false;
+  }
+
+  // Get last few characters (in case of whitespace after punctuation)
+  size_t check_len = std::min(text.length(), (size_t)5);
+  std::string ending = text.substr(text.length() - check_len);
+
+  // Check for various sentence endings
+  // Period followed by space or end
+  if (ending.find(". ") != std::string::npos ||
+      ending.back() == '.') {
+    return true;
+  }
+
+  // Exclamation mark
+  if (ending.find("! ") != std::string::npos ||
+      ending.back() == '!') {
+    return true;
+  }
+
+  // Question mark
+  if (ending.find("? ") != std::string::npos ||
+      ending.back() == '?') {
+    return true;
+  }
+
+  // Newline (paragraph break)
+  if (ending.find('\n') != std::string::npos) {
+    return true;
+  }
+
+  // Quote followed by period: "something."
+  if (ending.find(".\"") != std::string::npos ||
+      ending.find("!\"") != std::string::npos ||
+      ending.find("?\"") != std::string::npos) {
+    return true;
+  }
+
+  return false;
+}
+
+// Makes space in the context for n_tokens by removing old tokens if necessary
+// Returns true if successful, false if impossible to make space
+//
+// Strategies:
+// - If enough space exists, does nothing
+// - If n_tokens > n_ctx, fails (impossible to fit)
+// - Otherwise, removes oldest tokens to make room
+//
+// Parameters:
+//   n_tokens  - Number of tokens we need space for
+//   keep_min  - Minimum tokens to keep (e.g., system prompt), default 0
+//
+bool Llama::make_space_for_tokens(int n_tokens, int keep_min) {
+  int n_ctx = llama_n_ctx(_ctx);
+  if (n_tokens > n_ctx) {
+    _last_error = "Too many tokens, increase context size (n_ctx)";
+    return false;
+  }
+
+  llama_memory_t mem = llama_get_memory(_ctx);
+
+  // Get current position range
+  llama_pos pos_min = llama_memory_seq_pos_min(mem, 0);
+  llama_pos pos_max = llama_memory_seq_pos_max(mem, 0);
+
+  // Empty memory - nothing to do
+  if (pos_max < 0) {
+    return true;
+  }
+
+  int current_used = pos_max - pos_min + 1;
+  int space_needed = n_tokens;
+  int space_available = n_ctx - current_used;
+
+  // Already have enough space
+  if (space_available >= space_needed) {
+    return true;
+  }
+
+  // Calculate how many tokens to remove
+  int tokens_to_remove = space_needed - space_available;
+
+  // Can't remove more than we have (minus keep_min)
+  int removable = current_used - keep_min;
+  if (tokens_to_remove > removable) {
+    _last_error = "Can't make enough space while keeping keep_min tokens";
+    return false;
+  }
+
+  // Remove oldest tokens (from pos_min to pos_min + tokens_to_remove)
+  llama_memory_seq_rm(mem, 0, pos_min, pos_min + tokens_to_remove);
+
+  // Shift remaining tokens down
+  llama_memory_seq_add(mem, 0, pos_min + tokens_to_remove, -1, -tokens_to_remove);
+
+  return true;
+}
+
+vector<llama_token> Llama::tokenize(const string &prompt) {
+  vector<llama_token> result;
+
+  int n_prompt = -llama_tokenize(_vocab, prompt.c_str(), prompt.size(), nullptr, 0, true, true);
+  if (n_prompt <= 0) {
+    _last_error = "Failed to tokenize prompt";
+  } else {
+    result.reserve(n_prompt);
+    result.resize(n_prompt);
+    if (llama_tokenize(_vocab, prompt.c_str(), prompt.size(),
+                       result.data(), n_prompt, true, true) < 0) {
+      _last_error = "Failed to tokenize prompt";
+    }
+  }
+  return result;
+}
+
+string Llama::token_to_string(LlamaIter &iter, llama_token tok) {
+  string result;
+  char buf[512];
+  int n = llama_token_to_piece(_vocab, tok, buf, sizeof(buf), 0, false);
+  if (n > 0) {
+    // detect repetition
+    if (iter._last_word == buf) {
+      if (++iter._repetition_count == MAX_REPEAT) {
+        iter._has_next = false;
+      }
+    } else {
+      iter._repetition_count = 0;
+      iter._last_word = buf;
+    }
+
+    result.append(buf, n);
+
+    // detect end of max-tokens
+    if (++iter._tokens_generated > _max_tokens && ends_with_sentence_boundary(result)) {
+      iter._has_next = false;
+    }
+
+    // detect stop words
+    if (iter._has_next) {
+      for (const auto &stop : _stop_sequences) {
+        size_t pos = result.find(stop);
+        if (pos != std::string::npos) {
+          // found stop sequence - truncate and signal end
+          result = result.substr(0, pos);
+          iter._has_next = false;
+          break;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+void Llama::set_last_error(const char *message) {
+  if (!_last_error.empty()) {
+    if (_last_error.back() == '\n') {
+      _last_error.pop_back();
+    }
+    _last_error = std::format("{}: {}", message, _last_error);
+  } else {
+    _last_error = std::format("{} failed", message);
+  }
+}

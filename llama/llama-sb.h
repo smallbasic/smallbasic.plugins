@@ -68,7 +68,8 @@ struct Llama {
   ~Llama();
 
   // init
-  bool construct(string model_path, int n_ctx, int n_batch, int n_gpu_layers, int log_level);
+  bool load_model(string model_path, int n_ctx, int n_batch, int n_gpu_layers, int log_level);
+  bool load_embedding_model(string model_path);
 
   // generation
   bool add_message(LlamaIter &iter, const string &role, const string &content);
@@ -98,13 +99,18 @@ struct Llama {
   // memory info
   LlamaMemoryInfo memory_info();
 
+  // rag support
+  bool embed_text(const std::string &text, std::vector<float> &out, int embed);
+  int get_embed_dim();
+
   private:
-  bool ends_with_sentence_boundary(const string &out);
+  bool batch_decode_tokens(vector<llama_token> &tokens);
   bool configure_sampler();
+  bool ends_with_sentence_boundary(const string &out);
   bool make_space_for_tokens(int n_tokens, int keep_min);
   vector<llama_token> tokenize(const string &prompt);
   string token_to_string(LlamaIter &iter, llama_token tok);
-  bool encode(const string &role, const string &content, bool add_assistant_prompt) ;
+  void set_last_error(const char *message);
 
   llama_model *_model;
   llama_context *_ctx;

@@ -469,7 +469,7 @@ static int cmd_create_llama(int argc, slib_par_t *params, var_t *retval) {
   auto n_log_level = get_param_int(argc, params, 4, GGML_LOG_LEVEL_CONT);
   int id = ++g_nextId;
   Llama &llama = g_llama[id];
-  if (llama.construct(model, n_ctx, n_batch, n_gpu_layers, n_log_level)) {
+  if (llama.load_model(model, n_ctx, n_batch, n_gpu_layers, n_log_level)) {
     map_init_id(retval, id, CLASS_ID_LLAMA);
     v_create_callback(retval, "add_stop", cmd_llama_add_stop);
     v_create_callback(retval, "add_message", cmd_llama_add_message);

@@ -58,6 +58,7 @@ Available commands:
 - TOOL:DATE  `[Returns the current date as string with format “DD/MM/YYYY”]`
 - TOOL:TIME  `[Returns the time in “HH:MM:SS” format]`
 - TOOL:RND   [Returns a random number betweem 0 and 1]`
+- TOOL:RUN   [invokes an external command or script in the active project]`
 ---
 
 ## Tool Decision Rules
