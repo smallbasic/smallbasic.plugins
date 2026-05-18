@@ -113,6 +113,7 @@ add_subdirectory(${LLAMA_DIR})
 set(PLUGIN_SOURCES
   main.cpp
   llama-sb.cpp
+  llama-sb-rag.cpp
   ../include/param.cpp
   ../include/hashmap.cpp
   ../include/apiexec.cpp
@@ -190,6 +191,17 @@ target_link_libraries(rag_index PRIVATE
 )
 
 set_target_properties(rag_index PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
+# -----------------------------
+# Header preparation for RAG indexer
+# -----------------------------
+add_executable(chunk_headers
+  chunk_headers.cpp
+)
+
+set_target_properties(chunk_headers PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 

@@ -21,7 +21,7 @@ notcurses headers
 chunk_headers        ← semantic chunker, outputs chunks.jsonl
       │
       ▼
-rag_index            ← embeds each chunk via nomic-embed-text GGUF
+rag_index            ← embeds each chunk via qwen3-embedding-0.6b-q4_k_m.gguf
       │
       ▼
 notcurses.db         ← binary vector store (embeddings + text)
@@ -64,9 +64,7 @@ history              ← appended for next turn (KV cache intact)
 
 - [llama.cpp](https://github.com/ggerganov/llama.cpp) — `libllama` + `llama.h`
 - A GGUF **inference model** — tested with `Qwen3.5-9B-Q4_K_M.gguf`
-- A GGUF **embedding model** —
-  `nomic-embed-text-v1.5.Q4_K_M.gguf`
-  ([download](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF))
+- A GGUF **embedding model** — `qwen3-embedding-0.6b-q4_k_m.gguf`
 - C++17 compiler (gcc 8+, clang 7+, MSVC 2019+)
 
 ---
@@ -114,7 +112,7 @@ head -5 chunks.jsonl | python3 -m json.tool
 
 ```bash
 ./rag_index \
-  --model nomic-embed-text-v1.5.Q4_K_M.gguf \
+  --model qwen3-embedding-0.6b-q4_k_m.gguf \
   --input chunks.jsonl \
   --output notcurses.db
 ```
@@ -127,7 +125,7 @@ until the library changes.
 ```bash
 ./example \
   --model Qwen3.5-9B-Q4_K_M.gguf \
-  --embed nomic-embed-text-v1.5.Q4_K_M.gguf \
+  --embed qwen3-embedding-0.6b-q4_k_m.gguf \
   --db    notcurses.db
 ```
 

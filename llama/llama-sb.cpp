@@ -203,64 +203,12 @@ bool Llama::load_embedding_model(string model_path) {
     _ctx = llama_init_from_model(_model, cparams);
     if (!_ctx) {
       set_last_error("Create context");
+    } else {
+      _vocab = llama_model_get_vocab(_model);
     }
   }
 
   return _last_error.empty();
-}
-
-int Llama::get_embed_dim() {
-  return _model != nullptr ? llama_model_n_embd(_model) : 0;
-}
-
-bool Llama::embed_text(const std::string &text, std::vector<float> &out, int embed_dim) {
-  std::string prefixed = "search_document: " + text;
-
-  vector<llama_token> tokens = tokenize(prefixed);
-  if (tokens.size() == 0) {
-    return false;
-  }
-
-  // truncate to context window
-  int n_ctx = llama_n_ctx(_ctx);
-  int n = tokens.size();
-  if (n > n_ctx) {
-    _last_error = std::format("warning: chunk truncated {} -> {} tokens ", n, n_ctx);
-    n = n_ctx;
-    tokens.resize(n);
-  }
-
-  llama_memory_clear(llama_get_memory(_ctx), true);
-
-  if (!batch_decode_tokens(tokens)) {
-    return false;
-  }
-
-  float *emb = llama_get_embeddings_seq(_ctx, 0);
-  if (!emb) {
-    emb = llama_get_embeddings_ith(_ctx, n - 1);
-  }
-
-  if (!emb) {
-    _last_error = "no embedding returned\n";
-    return false;
-  }
-
-  out.assign(emb, emb + embed_dim);
-
-  /* L2 normalize */
-  float norm = 0.0f;
-  for (float v : out) {
-    norm += v * v;
-  }
-  norm = std::sqrt(norm);
-  if (norm > 1e-9f) {
-    for (float &v : out) {
-      v /= norm;
-    }
-  }
-
-  return true;
 }
 
 void Llama::set_grammar(const string &src, const string &root) {

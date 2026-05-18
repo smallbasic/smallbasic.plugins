@@ -159,13 +159,18 @@ int main(int argc, char **argv) {
   /* ── read and embed chunks ────────────────────────────── */
   std::vector<Chunk> chunks;
   std::ifstream fin(input_path);
-  if (!fin) { std::cerr << "cannot open: " << input_path << "\n"; return 1; }
+  if (!fin) {
+    std::cerr << "cannot open: " << input_path << "\n";
+    return 1;
+  }
 
   std::string line;
   int skipped = 0;
 
   while (std::getline(fin, line)) {
-    if (line.empty() || line[0] != '{') continue;
+    if (line.empty() || line[0] != '{') {
+      continue;
+    }
 
     Chunk c;
     if (!json_get_string(line, "text",   c.text)   ||
@@ -178,7 +183,8 @@ int main(int argc, char **argv) {
     std::cerr << "\r[" << chunks.size() << "] embedding: "
               << c.text.substr(0, 40) << "...";
 
-    if (!llama.embed_text(c.text, c.embedding, embed_dim)) {
+    std::string text = "Instruct: Represent this API documentation for code retrieval\nQuery: " + c.text;
+    if (!llama.embed_text(text, c.embedding, embed_dim)) {
       ++skipped;
       continue;
     }

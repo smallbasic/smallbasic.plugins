@@ -14,6 +14,10 @@
 
 using namespace std;
 
+struct Llama;
+struct RagDB;
+struct RagSession;
+
 struct LlamaMemoryInfo {
   // KV cache
   int     kv_used;        // slots currently used
@@ -33,8 +37,6 @@ struct LlamaMemoryInfo {
   // Advice
   string  advice;
 };
-
-struct Llama;
 
 struct LlamaIter {
   explicit LlamaIter();
@@ -101,7 +103,9 @@ struct Llama {
 
   // rag support
   bool embed_text(const std::string &text, std::vector<float> &out, int embed);
-  int get_embed_dim();
+  int get_embed_dim() const { return _model != nullptr ? llama_model_n_embd(_model) : 0; }
+  bool rag_load(RagDB &db, const std::string &path);
+  std::string rag_retrieve(const RagDB &db, const std::string &query, int top_k, RagSession &session);
 
   private:
   bool batch_decode_tokens(vector<llama_token> &tokens);

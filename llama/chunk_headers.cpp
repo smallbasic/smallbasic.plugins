@@ -20,6 +20,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <filesystem>
 
 namespace fs = std::filesystem;
