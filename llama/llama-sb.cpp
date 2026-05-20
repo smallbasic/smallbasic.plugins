@@ -130,10 +130,6 @@ void Llama::reset() {
   _min_p = 0.0f;
   _max_tokens = 150;
   _n_past = 0;
-  _is_gemma4 = false;
-  _grammar_src.clear();
-  _grammar_root.clear();
-  _template.clear();
   _seed = LLAMA_DEFAULT_SEED;
   if (_ctx) {
     llama_memory_clear(llama_get_memory(_ctx), true);

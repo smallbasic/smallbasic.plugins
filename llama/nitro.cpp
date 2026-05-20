@@ -148,6 +148,14 @@ struct TuiState {
   int term_rows = 0;
   int term_cols = 0;
 
+  // ── thinking spinner ──────────────────────────────────────────────
+  bool    thinking      = false;
+  int     spinner_frame = 0;
+  // Advance spinner by one frame and redraw the header.
+  void tick_spinner();
+  // Toggle thinking mode; redraws header immediately.
+  void set_thinking(bool on);
+
   // ── lifecycle ─────────────────────────────────────────────────────
   void init();
   void destroy();
@@ -175,9 +183,25 @@ struct TuiState {
 };
 
 // ─── colour helpers ──────────────────────────────────────────────────────
+// Our dark background colours (must match ncplane_set_base values in init).
+static constexpr uint32_t BG_CHAT_R = 18,  BG_CHAT_G = 22,  BG_CHAT_B = 30;
+static constexpr uint32_t BG_INP_R  = 22,  BG_INP_G  = 28,  BG_INP_B  = 38;
+static constexpr uint32_t BG_HDR_R  = 30,  BG_HDR_G  = 40,  BG_HDR_B  = 55;
 
+// fg only (use only where bg is already set via ncplane_set_base)
 static inline uint64_t fg_rgb(uint32_t r, uint32_t g, uint32_t b) {
   return NCCHANNELS_INITIALIZER(r, g, b, 0, 0, 0);
+}
+// fg + explicit bg — use this for all ncplane_set_channels calls so the
+// background behind each glyph matches the plane's base colour exactly.
+static inline uint64_t chat_ch(uint32_t r, uint32_t g, uint32_t b) {
+  return NCCHANNELS_INITIALIZER(r, g, b, BG_CHAT_R, BG_CHAT_G, BG_CHAT_B);
+}
+static inline uint64_t inp_ch(uint32_t r, uint32_t g, uint32_t b) {
+  return NCCHANNELS_INITIALIZER(r, g, b, BG_INP_R, BG_INP_G, BG_INP_B);
+}
+static inline uint64_t hdr_ch(uint32_t r, uint32_t g, uint32_t b) {
+  return NCCHANNELS_INITIALIZER(r, g, b, BG_HDR_R, BG_HDR_G, BG_HDR_B);
 }
 
 // ─── TuiState::init ──────────────────────────────────────────────────────
@@ -191,6 +215,13 @@ void TuiState::init() {
   stdpl = notcurses_stdplane(nc);
   notcurses_term_dim_yx(nc, (unsigned *)&term_rows, (unsigned *)&term_cols);
 
+  // Fill the entire terminal with our dark background before creating
+  // child planes — eliminates the "terminal colour showing through" artefact.
+  uint64_t bg = NCCHANNELS_INITIALIZER(BG_CHAT_R, BG_CHAT_G, BG_CHAT_B,
+                                        BG_CHAT_R, BG_CHAT_G, BG_CHAT_B);
+  ncplane_set_base(stdpl, " ", 0, bg);
+  ncplane_erase(stdpl);
+
   // Header: row 0
   ncplane_options hopt{};
   hopt.y = 0; hopt.x = 0;
@@ -203,12 +234,18 @@ void TuiState::init() {
   copt.y = 1; copt.x = 0;
   copt.rows = (unsigned)chat_rows; copt.cols = (unsigned)term_cols;
   chatpl = ncplane_create(stdpl, &copt);
+  ncplane_set_base(chatpl, " ", 0,
+    NCCHANNELS_INITIALIZER(BG_CHAT_R, BG_CHAT_G, BG_CHAT_B,
+                            BG_CHAT_R, BG_CHAT_G, BG_CHAT_B));
 
   // Input pane: last 2 rows
   ncplane_options iopt{};
   iopt.y = term_rows - 2; iopt.x = 0;
   iopt.rows = 2; iopt.cols = (unsigned)term_cols;
   inputpl = ncplane_create(stdpl, &iopt);
+  ncplane_set_base(inputpl, " ", 0,
+    NCCHANNELS_INITIALIZER(BG_INP_R, BG_INP_G, BG_INP_B,
+                            BG_INP_R, BG_INP_G, BG_INP_B));
 
   redraw_all();
 }
@@ -231,19 +268,25 @@ void TuiState::resize() {
 
 void TuiState::redraw_header() {
   ncplane_erase(header);
-  ncplane_set_base(header, " ", 0, fg_rgb(30, 40, 55));
+  ncplane_set_base(header, " ", 0,
+    NCCHANNELS_INITIALIZER(BG_HDR_R, BG_HDR_G, BG_HDR_B,
+                            BG_HDR_R, BG_HDR_G, BG_HDR_B));
 
   float kv_pct   = kv_total   > 0 ? 100.f * (float)kv_used   / (float)kv_total   : 0.f;
   float vram_pct = vram_total  > 0 ? 100.f * (float)vram_used / (float)vram_total : 0.f;
 
+  // Spinner: braille dots rotate smoothly, clearly visible on the header
+  static const char *const SPIN[] = { "⣾","⣽","⣻","⢿","⡿","⣟","⣯","⣷" };
+  const char *spin_str = thinking ? SPIN[spinner_frame % 8] : " ";
+
   char buf[512];
   int n = std::snprintf(buf, sizeof(buf),
-    " ✦ NITRO  │ %-32s │ %5.1f tok/s │ KV %4.1f%%  VRAM %4.1f%%",
+    " ✦ NITRO  │ %-32s │ %5.1f tok/s │ KV %4.1f%%  VRAM %4.1f%%  %s",
     current_model.c_str(), (double)tokens_per_sec,
-    (double)kv_pct, (double)vram_pct);
+    (double)kv_pct, (double)vram_pct, spin_str);
   if (n > term_cols) buf[term_cols] = '\0';
 
-  ncplane_set_channels(header, fg_rgb(130, 220, 200));
+  ncplane_set_channels(header, hdr_ch(130, 220, 200));
   ncplane_putstr_yx(header, 0, 0, buf);
 }
 
@@ -262,12 +305,12 @@ void TuiState::redraw_chat() {
     const std::string &line = chat_lines[i];
 
     uint64_t ch;
-    if      (line.rfind("You: ",   0) == 0) ch = fg_rgb(100, 200, 255);
-    else if (line.rfind("Nitro: ", 0) == 0) ch = fg_rgb(180, 255, 180);
-    else if (line.rfind("[tool]",  0) == 0) ch = fg_rgb(255, 180,  80);
-    else if (line.rfind("[err]",   0) == 0) ch = fg_rgb(255,  80,  80);
-    else if (line.rfind("[sys]",   0) == 0) ch = fg_rgb(140, 140, 200);
-    else                                     ch = fg_rgb(210, 210, 210);
+    if      (line.rfind("You: ",   0) == 0) ch = chat_ch(100, 200, 255);
+    else if (line.rfind("Nitro: ", 0) == 0) ch = chat_ch(180, 255, 180);
+    else if (line.rfind("[tool]",  0) == 0) ch = chat_ch(255, 180,  80);
+    else if (line.rfind("[err]",   0) == 0) ch = chat_ch(255,  80,  80);
+    else if (line.rfind("[sys]",   0) == 0) ch = chat_ch(140, 140, 200);
+    else                                     ch = chat_ch(210, 210, 210);
 
     ncplane_set_channels(chatpl, ch);
     std::string display = line.size() > cols ? line.substr(0, cols) : line;
@@ -279,30 +322,70 @@ void TuiState::redraw_input() {
   ncplane_erase(inputpl);
 
   // Separator
-  ncplane_set_channels(inputpl, fg_rgb(80, 120, 160));
-  std::string sep(term_cols, '-');
+  ncplane_set_channels(inputpl, inp_ch(80, 120, 160));
+  std::string sep(term_cols, '─');
   ncplane_putstr_yx(inputpl, 0, 0, sep.c_str());
 
-  // Prompt + buffer
+  // Prompt
   const std::string prompt = " ❯ ";
-  ncplane_set_channels(inputpl, fg_rgb(230, 230, 230));
+  const int prompt_cols = 4;
+  ncplane_set_channels(inputpl, inp_ch(100, 210, 255));
   ncplane_putstr_yx(inputpl, 1, 0, prompt.c_str());
 
-  int max_w = std::max(0, term_cols - (int)prompt.size() - 1);
-  std::string display = input_buf;
-  if ((int)display.size() > max_w && max_w > 0)
-    display = display.substr(display.size() - max_w);
-  ncplane_putstr_yx(inputpl, 1, (int)prompt.size(), display.c_str());
+  // Buffer — split at cursor so we can render the cursor cell distinctly
+  int max_w = std::max(0, term_cols - prompt_cols - 1);
 
-  // Cursor position
-  int cx = std::min((int)prompt.size() + (int)cursor_pos, term_cols - 1);
-  ncplane_cursor_move_yx(inputpl, 1, cx);
+  // Viewport: if buffer is wider than the available space, show the tail
+  std::string visible = input_buf;
+  int view_offset = 0;
+  if ((int)visible.size() > max_w && max_w > 0) {
+    view_offset = (int)visible.size() - max_w;
+    visible = visible.substr(view_offset);
+  }
+
+  // Text before cursor
+  int cur_in_view = std::max(0, (int)cursor_pos - view_offset);
+  cur_in_view = std::min(cur_in_view, (int)visible.size());
+
+  std::string before = visible.substr(0, cur_in_view);
+  std::string after  = cur_in_view < (int)visible.size()
+                         ? visible.substr(cur_in_view + 1) : "";
+  char cursor_ch = cur_in_view < (int)visible.size()
+                     ? visible[cur_in_view] : ' ';
+
+  ncplane_set_channels(inputpl, inp_ch(230, 230, 230));
+  ncplane_putstr_yx(inputpl, 1, prompt_cols, before.c_str());
+
+  // Cursor cell: bright bg, dark text — stands out against the input bg
+  int cx = prompt_cols + cur_in_view;
+  ncplane_set_channels(inputpl,
+    NCCHANNELS_INITIALIZER(BG_INP_R, BG_INP_G, BG_INP_B, 180, 230, 255));
+  char cbuf[2] = { cursor_ch, '\0' };
+  ncplane_putstr_yx(inputpl, 1, cx, cbuf);
+
+  // Text after cursor
+  ncplane_set_channels(inputpl, inp_ch(230, 230, 230));
+  if (!after.empty())
+    ncplane_putstr_yx(inputpl, 1, cx + 1, after.c_str());
 }
 
 void TuiState::redraw_all() {
   redraw_header();
   redraw_chat();
   redraw_input();
+  notcurses_render(nc);
+}
+
+void TuiState::tick_spinner() {
+  ++spinner_frame;
+  redraw_header();
+  notcurses_render(nc);
+}
+
+void TuiState::set_thinking(bool on) {
+  thinking = on;
+  if (!on) spinner_frame = 0;
+  redraw_header();
   notcurses_render(nc);
 }
 
@@ -344,7 +427,7 @@ void TuiState::flush_token_acc() {
 
 void TuiState::confirm_dialog(const std::string &prompt, std::string &result) {
   ncplane_erase(inputpl);
-  ncplane_set_channels(inputpl, fg_rgb(255, 200, 80));
+  ncplane_set_channels(inputpl, inp_ch(255, 200, 80));
   std::string msg = " " + prompt + " [y/n] ❯ ";
   ncplane_putstr_yx(inputpl, 1, 0, msg.c_str());
   notcurses_render(nc);
@@ -358,7 +441,7 @@ void TuiState::confirm_dialog(const std::string &prompt, std::string &result) {
     else if (ni.id >= 32 && ni.id < 127) { answer += (char)ni.id; }
 
     ncplane_erase(inputpl);
-    ncplane_set_channels(inputpl, fg_rgb(255, 200, 80));
+    ncplane_set_channels(inputpl, inp_ch(255, 200, 80));
     ncplane_putstr_yx(inputpl, 1, 0, (msg + answer).c_str());
     notcurses_render(nc);
   }
@@ -663,20 +746,31 @@ bool AgentState::run_turn(const std::string &user_message,
 
   // ── label the assistant response in the chat pane ────────────────
   tui.append_line("Nitro: ");
-  tui.redraw_all();
+  tui.set_thinking(true);
 
   // ── generation loop ───────────────────────────────────────────────
-  // Exact translation of the SB streaming / tool-dispatch loop.
-  bool in_think  = false;
+  bool in_think = false;
   std::string buffer;      // accumulates tokens until we see a newline
 
-  auto handle_think = [&](const std::string &line) {
-    if (line == "<|think|>")   in_think = true;
-    else if (line == "</|think|>") in_think = false;
+  // Scan buffer for think open/close tags anywhere in the text.
+  // Models use either <think> or <|think|> depending on the template.
+  auto update_think_state = [&](const std::string &text) {
+    // Opening tags
+    if (text.find("<think>")    != std::string::npos ||
+        text.find("<|think|>")  != std::string::npos)  in_think = true;
+    // Closing tags — check after open so a single-line <think>…</think> ends correctly
+    if (text.find("</think>")   != std::string::npos ||
+        text.find("</|think|>") != std::string::npos)  in_think = false;
   };
 
   while (iter->_has_next) {
     std::string tok = llama.next(*iter);
+    tui.tick_spinner();
+
+    // Update think state on every token so tags that arrive mid-buffer
+    // suppress display immediately rather than waiting for a newline.
+    update_think_state(tok);
+
     buffer += tok;
 
     auto nl = buffer.find('\n');
@@ -689,20 +783,57 @@ bool AgentState::run_turn(const std::string &user_message,
       trimmed.erase(0, trimmed.find_first_not_of(" \t"));
 
       if (trimmed.substr(0, 5) == "TOOL:") {
-        // Collect any tail that remains in the buffer plus iter.all()
-        // — mirrors: text_line += buffer + " " + iter.all()
-        std::string tool_line = trimmed + " " + buffer + " " + llama.all(*iter);
+        // Collect remainder: rest of buffer + everything iter still has.
+        // For TOOL:WRITE the content may contain newlines, so we keep
+        // the raw text and only strip newlines from the op+arg1 prefix.
+        std::string tail = buffer + llama.all(*iter);
 
-        // Strip stray newlines from the single-line tool command
-        tool_line.erase(
-          std::remove(tool_line.begin(), tool_line.end(), '\n'),
-          tool_line.end());
+        // Parse op and arg1 from trimmed (first two space-separated tokens)
+        // then treat everything after as the raw payload (preserving newlines).
+        std::string op, arg1, payload;
+        {
+          auto s1 = trimmed.find(' ');
+          if (s1 != std::string::npos) {
+            op = trimmed.substr(0, s1);
+            std::string rest = trimmed.substr(s1 + 1);
+            rest.erase(0, rest.find_first_not_of(" \t"));
+            auto s2 = rest.find(' ');
+            if (s2 != std::string::npos) {
+              arg1    = rest.substr(0, s2);
+              payload = rest.substr(s2 + 1) + tail;
+            } else {
+              arg1    = rest;
+              payload = tail;
+            }
+          } else {
+            op = trimmed;
+          }
+        }
 
-        // Trim trailing whitespace
-        while (!tool_line.empty() && std::isspace((unsigned char)tool_line.back()))
-          tool_line.pop_back();
+        // Reconstruct the tool line.  For ops that don't carry a file payload
+        // (LIST, EXISTS, READ, DATE, TIME, RND, PERMISSION, RUN) we still
+        // collapse newlines in payload so the single-line format is preserved.
+        // For TOOL:WRITE we keep newlines in the payload intact.
+        std::string tool_line;
+        if (op == "TOOL:WRITE") {
+          tool_line = op + " " + arg1 + " " + payload;
+          // Trim only trailing whitespace
+          while (!tool_line.empty() && tool_line.back() == '\n')
+            tool_line.pop_back();
+        } else {
+          tool_line = op;
+          if (!arg1.empty())    tool_line += " " + arg1;
+          if (!payload.empty()) {
+            std::string flat = payload;
+            flat.erase(std::remove(flat.begin(), flat.end(), '\n'), flat.end());
+            while (!flat.empty() && std::isspace((unsigned char)flat.back()))
+              flat.pop_back();
+            if (!flat.empty()) tool_line += " " + flat;
+          }
+        }
 
-        tui.append_line("[tool] " + tool_line);
+        tui.append_line("[tool] " + op + " " + arg1 +
+                        (op == "TOOL:WRITE" ? " <content>" : ""));
         tui.redraw_all();
 
         std::string result = process_tool(tool_line, cfg.sandbox, tui);
@@ -711,8 +842,6 @@ bool AgentState::run_turn(const std::string &user_message,
           result.substr(0, 200) + (result.size() > 200 ? "…" : ""));
         tui.redraw_all();
 
-        // Inject tool result and get a new iter for the continuation
-        // — mirrors: iter = llama.add_message("tool", process_tool(…))
         if (!llama.add_message(*iter, "tool", result)) {
           tui.append_line(std::string("[err] tool result inject: ") + llama.last_error());
           tui.redraw_all();
@@ -721,16 +850,15 @@ bool AgentState::run_turn(const std::string &user_message,
         buffer.clear();
 
       } else {
-        // Normal output line
+        // Normal output line — suppress if inside think block
         if (!in_think) {
           tui.append_token(text_line + "\n");
         }
-        handle_think(text_line);
       }
     }
   }
 
-  // ── flush remaining buffer (SB: "Flush remaining line buffer") ────
+  // ── flush remaining buffer ────────────────────────────────────────
   if (!buffer.empty()) {
     std::string trimmed = buffer;
     trimmed.erase(0, trimmed.find_first_not_of(" \t"));
@@ -745,6 +873,7 @@ bool AgentState::run_turn(const std::string &user_message,
     }
   }
   tui.flush_token_acc();
+  tui.set_thinking(false);
 
   // ── update status bar ─────────────────────────────────────────────
   tui.tokens_per_sec = tokens_per_sec();

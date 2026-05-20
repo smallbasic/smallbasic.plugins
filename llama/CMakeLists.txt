@@ -150,27 +150,68 @@ set_target_properties(llm PROPERTIES
 )
 
 # -----------------------------
-# Optional test application
+# nitro agent application
+# (only built when notcurses is available)
 # -----------------------------
-add_executable(llm_test
-  test_main.cpp
-)
+find_package(PkgConfig QUIET)
 
-target_include_directories(llm_test PRIVATE
-  ${LLAMA_DIR}/include
-  ${LLAMA_DIR}/ggml/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
+set(NC_FOUND FALSE)
+set(NC_TARGET "")
 
-target_link_libraries(llm_test PRIVATE
-  llm
-  llama
-  ggml
-)
+if(DEFINED NOTCURSES_DIR)
+  # Explicit path — create an imported target manually
+  find_library(NC_LIB      NAMES notcurses      HINTS "${NOTCURSES_DIR}/lib" REQUIRED)
+  find_library(NC_CORE_LIB NAMES notcurses-core HINTS "${NOTCURSES_DIR}/lib")
+  add_library(notcurses_imported INTERFACE IMPORTED)
+  target_include_directories(notcurses_imported INTERFACE "${NOTCURSES_DIR}/include")
+  target_link_libraries(notcurses_imported INTERFACE ${NC_LIB})
+  if(NC_CORE_LIB)
+    target_link_libraries(notcurses_imported INTERFACE ${NC_CORE_LIB})
+  endif()
+  set(NC_TARGET notcurses_imported)
+  set(NC_FOUND TRUE)
 
-set_target_properties(llm_test PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
+elseif(PkgConfig_FOUND)
+  # IMPORTED_TARGET gives a PkgConfig::NC target with full lib paths baked in
+  pkg_check_modules(NC QUIET IMPORTED_TARGET notcurses)
+  if(NC_FOUND)
+    set(NC_TARGET PkgConfig::NC)
+  endif()
+
+else()
+  find_library(NC_LIB      NAMES notcurses)
+  find_library(NC_CORE_LIB NAMES notcurses-core)
+  if(NC_LIB AND NC_CORE_LIB)
+    add_library(notcurses_imported INTERFACE IMPORTED)
+    target_link_libraries(notcurses_imported INTERFACE ${NC_LIB} ${NC_CORE_LIB})
+    set(NC_TARGET notcurses_imported)
+    set(NC_FOUND TRUE)
+  endif()
+endif()
+
+if(NC_FOUND)
+  message(STATUS "notcurses found — building nitro")
+
+  add_executable(nitro
+    nitro.cpp
+  )
+  target_include_directories(nitro PRIVATE
+    ${LLAMA_DIR}/include
+    ${LLAMA_DIR}/ggml/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+  )
+  target_link_libraries(nitro PRIVATE
+    llm
+    llama
+    ggml
+    ${NC_TARGET}           # imported target carries include + lib paths
+  )
+  set_target_properties(nitro PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+  )
+else()
+  message(STATUS "notcurses not found — skipping nitro (set -DNOTCURSES_DIR=... to enable)")
+endif()
 
 # -----------------------------
 # RAG indexer
