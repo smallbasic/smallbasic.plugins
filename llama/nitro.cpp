@@ -71,9 +71,10 @@ static std::string  list_dir(const std::string &path);
 static bool         path_in_sandbox(const std::string &sandbox, const std::string &path);
 static std::string  strip_code_fences(const std::string &filename, const std::string &src);
 static std::string  process_tool(const std::string &line, const std::string &sandbox,
-                                  TuiState &tui);
+                                 const std::vector<std::string> &run_allowed,
+                                 TuiState &tui);
 static std::string  build_system_prompt(const std::vector<std::string> &knowledge_files,
-                                         const std::string &sandbox);
+                                        const std::string &sandbox);
 // ─── RAG indexing ─────────────────────────────────────────────────────────────
 static constexpr int BATCH_SIZE = 512;
 
@@ -209,6 +210,45 @@ class InputHistory {
     current_index = (int)history_stack.size();
   }
 
+  /**
+   * @brief Load history from ~/.config/nitro.history (one entry per line).
+   * Silently succeeds if the file doesn't exist.
+   */
+  void load(const std::string &path) {
+    std::ifstream f(path);
+    if (!f) return;
+    std::string line;
+    while (std::getline(f, line)) {
+      if (!line.empty()) history_stack.push_back(line);
+    }
+    current_index = (int)history_stack.size();
+  }
+
+  /**
+   * @brief Persist history to disk (most-recent last, one entry per line).
+   * Caps at MAX_PERSIST entries so the file never grows unbounded.
+   */
+  void save(const std::string &path) const {
+    // Ensure parent directory exists.
+    fs::path dir = fs::path(path).parent_path();
+    std::error_code ec;
+    fs::create_directories(dir, ec);
+
+    std::ofstream f(path, std::ios::trunc);
+    if (!f) return;
+
+    static constexpr int MAX_PERSIST = 500;
+    int start = std::max(0, (int)history_stack.size() - MAX_PERSIST);
+    for (int i = start; i < (int)history_stack.size(); ++i) {
+      // Escape embedded newlines so each entry stays on one line.
+      for (char c : history_stack[i]) {
+        if (c == '\n') f << "\\n";
+        else           f << c;
+      }
+      f << '\n';
+    }
+  }
+
   private:
   std::vector<std::string> history_stack;
   int current_index = 0;
@@ -237,6 +277,9 @@ struct NitroConfig {
   int   penalty_last_n = 256;
   std::vector<std::string> knowledge_files;
   int   rag_top_k      = 5;
+  // TOOL:RUN allowlist — if non-empty, only these program basenames may run.
+  // Empty means "allow anything inside the sandbox" (original behaviour).
+  std::vector<std::string> run_allowed;
 };
 
 // Returns the canonical settings path: ~/.config/nitro.settings.json
@@ -246,17 +289,24 @@ static std::string settings_path() {
   return base + "/.config/nitro.settings.json";
 }
 
+// Returns the history file path: ~/.config/nitro.history
+static std::string history_path() {
+  const char *home = getenv("HOME");
+  std::string base = home ? std::string(home) : ".";
+  return base + "/.config/nitro.history";
+}
+
 // Tiny helper: extract a quoted string value from flat JSON for a known key.
 static bool settings_get_str(const std::string &json,
-                              const std::string &key,
-                              std::string &out) {
+                             const std::string &key,
+                             std::string &out) {
   return json_get_string(json, key, out);
 }
 
 // Tiny helper: extract an integer value from flat JSON.
 static bool settings_get_int(const std::string &json,
-                              const std::string &key,
-                              int &out) {
+                             const std::string &key,
+                             int &out) {
   std::string search = "\"" + key + "\":";
   size_t pos = json.find(search);
   if (pos == std::string::npos) return false;
@@ -274,8 +324,8 @@ static bool settings_get_int(const std::string &json,
 
 // Tiny helper: extract a float value from flat JSON.
 static bool settings_get_float(const std::string &json,
-                                const std::string &key,
-                                float &out) {
+                               const std::string &key,
+                               float &out) {
   std::string search = "\"" + key + "\":";
   size_t pos = json.find(search);
   if (pos == std::string::npos) return false;
@@ -327,11 +377,11 @@ static std::string json_escape(const std::string &s) {
   out.reserve(s.size() + 4);
   for (char c : s) {
     switch (c) {
-      case '"':  out += "\\\""; break;
-      case '\\': out += "\\\\"; break;
-      case '\n': out += "\\n";  break;
-      case '\t': out += "\\t";  break;
-      default:   out += c;      break;
+    case '"':  out += "\\\""; break;
+    case '\\': out += "\\\\"; break;
+    case '\n': out += "\\n";  break;
+    case '\t': out += "\\t";  break;
+    default:   out += c;      break;
     }
   }
   return out;
@@ -472,7 +522,7 @@ void TuiState::init() {
   stdpl = notcurses_stdplane(nc);
   notcurses_term_dim_yx(nc, (unsigned *)&term_rows, (unsigned *)&term_cols);
   uint64_t bg = NCCHANNELS_INITIALIZER(BG_CHAT_R, BG_CHAT_G, BG_CHAT_B,
-                                        BG_CHAT_R, BG_CHAT_G, BG_CHAT_B);
+                                       BG_CHAT_R, BG_CHAT_G, BG_CHAT_B);
   ncplane_set_base(stdpl, " ", 0, bg);
   ncplane_erase(stdpl);
   ncplane_options hopt{};
@@ -485,15 +535,15 @@ void TuiState::init() {
   copt.rows = (unsigned)chat_rows; copt.cols = (unsigned)term_cols;
   chatpl = ncplane_create(stdpl, &copt);
   ncplane_set_base(chatpl, " ", 0,
-    NCCHANNELS_INITIALIZER(BG_CHAT_R, BG_CHAT_G, BG_CHAT_B,
-                            BG_CHAT_R, BG_CHAT_G, BG_CHAT_B));
+                   NCCHANNELS_INITIALIZER(BG_CHAT_R, BG_CHAT_G, BG_CHAT_B,
+                                          BG_CHAT_R, BG_CHAT_G, BG_CHAT_B));
   ncplane_options iopt{};
   iopt.y = term_rows - 2; iopt.x = 0;
   iopt.rows = 2; iopt.cols = (unsigned)term_cols;
   inputpl = ncplane_create(stdpl, &iopt);
   ncplane_set_base(inputpl, " ", 0,
-    NCCHANNELS_INITIALIZER(BG_INP_R, BG_INP_G, BG_INP_B,
-                            BG_INP_R, BG_INP_G, BG_INP_B));
+                   NCCHANNELS_INITIALIZER(BG_INP_R, BG_INP_G, BG_INP_B,
+                                          BG_INP_R, BG_INP_G, BG_INP_B));
   redraw_all();
 }
 
@@ -515,17 +565,17 @@ void TuiState::resize() {
 void TuiState::redraw_header() {
   ncplane_erase(header);
   ncplane_set_base(header, " ", 0,
-    NCCHANNELS_INITIALIZER(BG_HDR_R, BG_HDR_G, BG_HDR_B,
-                            BG_HDR_R, BG_HDR_G, BG_HDR_B));
+                   NCCHANNELS_INITIALIZER(BG_HDR_R, BG_HDR_G, BG_HDR_B,
+                                          BG_HDR_R, BG_HDR_G, BG_HDR_B));
   float kv_pct   = kv_total   > 0 ? 100.f * (float)kv_used   / (float)kv_total   : 0.f;
   float vram_pct = vram_total  > 0 ? 100.f * (float)vram_used / (float)vram_total : 0.f;
   static const char *const SPIN[] = { "⣾","⣽","⣻","⢿","⡿","⣟","⣯","⣷" };
   const char *spin_str = thinking ? SPIN[spinner_frame % 8] : " ";
   char buf[512];
   int n = std::snprintf(buf, sizeof(buf),
-    " ✦ NITRO  │ %-32s │ %5.1f tok/s │ KV %4.1f%%  VRAM %4.1f%%  %s",
-    current_model.c_str(), (double)tokens_per_sec,
-    (double)kv_pct, (double)vram_pct, spin_str);
+                        " ✦ NITRO  │ %-32s │ %5.1f tok/s │ KV %4.1f%%  VRAM %4.1f%%  %s",
+                        current_model.c_str(), (double)tokens_per_sec,
+                        (double)kv_pct, (double)vram_pct, spin_str);
   if (n > term_cols) buf[term_cols] = '\0';
   ncplane_set_channels(header, hdr_ch(130, 220, 200));
   ncplane_putstr_yx(header, 0, 0, buf);
@@ -543,14 +593,29 @@ void TuiState::redraw_chat() {
   for (int i = start, row = 0; i < end; ++i, ++row) {
     const std::string &line = chat_lines[i];
     uint64_t ch;
-    if      (line.rfind("You: ",   0) == 0) ch = chat_ch(100, 200, 255);
+    // Logo lines use prefix "[logo_N]" where N is the row index 0-6.
+    // We interpolate a cyan→magenta gradient across the 7 art rows.
+    if (line.rfind("[logo_", 0) == 0 && line.size() > 7 && line[7] == ']') {
+      int logo_row = line[6] - '0';
+      // Gradient: cyan (0,230,255) → green (80,255,160) → magenta (220,80,255)
+      // 7 steps, indices 0-6.
+      static const uint32_t GRAD_R[] = {  0,  20,  60, 120, 180, 210, 220 };
+      static const uint32_t GRAD_G[] = { 230, 255, 255, 255, 200, 130,  80 };
+      static const uint32_t GRAD_B[] = { 255, 200, 140,  80, 100, 200, 255 };
+      int gi = std::max(0, std::min(logo_row, 6));
+      ch = chat_ch(GRAD_R[gi], GRAD_G[gi], GRAD_B[gi]);
+    }
+    else if (line.rfind("You: ",   0) == 0) ch = chat_ch(100, 200, 255);
     else if (line.rfind("Nitro: ", 0) == 0) ch = chat_ch(180, 255, 180);
     else if (line.rfind("[tool]",  0) == 0) ch = chat_ch(255, 180,  80);
     else if (line.rfind("[err]",   0) == 0) ch = chat_ch(255,  80,  80);
     else if (line.rfind("[sys]",   0) == 0) ch = chat_ch(140, 140, 200);
     else                                     ch = chat_ch(210, 210, 210);
     ncplane_set_channels(chatpl, ch);
-    std::string display = line.size() > cols ? line.substr(0, cols) : line;
+    // Strip the [logo_N] prefix before rendering.
+    std::string display = (line.rfind("[logo_", 0) == 0 && line.size() > 8)
+      ? line.substr(8) : line;
+    if (display.size() > cols) display = display.substr(0, cols);
     ncplane_putstr_yx(chatpl, row, 0, display.c_str());
   }
 }
@@ -575,14 +640,14 @@ void TuiState::redraw_input() {
   cur_in_view = std::min(cur_in_view, (int)visible.size());
   std::string before = visible.substr(0, cur_in_view);
   std::string after  = cur_in_view < (int)visible.size()
-                         ? visible.substr(cur_in_view + 1) : "";
+    ? visible.substr(cur_in_view + 1) : "";
   char cursor_ch_val = cur_in_view < (int)visible.size()
-                     ? visible[cur_in_view] : ' ';
+    ? visible[cur_in_view] : ' ';
   ncplane_set_channels(inputpl, inp_ch(230, 230, 230));
   ncplane_putstr_yx(inputpl, 1, prompt_cols, before.c_str());
   int cx = prompt_cols + cur_in_view;
   ncplane_set_channels(inputpl,
-    NCCHANNELS_INITIALIZER(BG_INP_R, BG_INP_G, BG_INP_B, 180, 230, 255));
+                       NCCHANNELS_INITIALIZER(BG_INP_R, BG_INP_G, BG_INP_B, 180, 230, 255));
   char cbuf[2] = { cursor_ch_val, '\0' };
   ncplane_putstr_yx(inputpl, 1, cx, cbuf);
   ncplane_set_channels(inputpl, inp_ch(230, 230, 230));
@@ -667,7 +732,7 @@ void TuiState::show_modal_popup(const std::string &message) {
   // Background: deep navy.
   static constexpr uint32_t PBG_R = 20, PBG_G = 28, PBG_B = 50;
   ncplane_set_base(modal_plane, " ", 0,
-    NCCHANNELS_INITIALIZER(PBG_R, PBG_G, PBG_B, PBG_R, PBG_G, PBG_B));
+                   NCCHANNELS_INITIALIZER(PBG_R, PBG_G, PBG_B, PBG_R, PBG_G, PBG_B));
   ncplane_erase(modal_plane);
 
   // Border — bright cyan.
@@ -702,8 +767,8 @@ void TuiState::show_modal_popup(const std::string &message) {
   // Truncate message to fit inside border.
   int max_msg = popup_w - 4;
   std::string display = message.size() > (size_t)max_msg
-                          ? message.substr(0, max_msg)
-                          : message;
+    ? message.substr(0, max_msg)
+    : message;
   ncplane_putstr_yx(modal_plane, 2, 2, display.c_str());
 
   notcurses_render(nc);
@@ -732,7 +797,7 @@ std::string TuiState::rag_folder_picker(const std::string &start_dir) {
 
   // Build an entry list for the current directory.
   auto load_entries = [](const std::string &dir,
-                          std::vector<std::string> &entries) {
+                         std::vector<std::string> &entries) {
     entries.clear();
     std::error_code ec;
     // Add ".." for going up (except at fs root).
@@ -771,7 +836,7 @@ std::string TuiState::rag_folder_picker(const std::string &start_dir) {
 
   static constexpr uint32_t PBG_R = 18, PBG_G = 24, PBG_B = 40;
   ncplane_set_base(picker, " ", 0,
-    NCCHANNELS_INITIALIZER(PBG_R, PBG_G, PBG_B, PBG_R, PBG_G, PBG_B));
+                   NCCHANNELS_INITIALIZER(PBG_R, PBG_G, PBG_B, PBG_R, PBG_G, PBG_B));
 
   auto draw_picker = [&]() {
     ncplane_erase(picker);
@@ -791,7 +856,7 @@ std::string TuiState::rag_folder_picker(const std::string &start_dir) {
 
     // Title
     ncplane_set_channels(picker,
-      NCCHANNELS_INITIALIZER(255, 220, 80, PBG_R, PBG_G, PBG_B));
+                         NCCHANNELS_INITIALIZER(255, 220, 80, PBG_R, PBG_G, PBG_B));
     ncplane_putstr_yx(picker, 0, 2, " 📂 RAG Folder Picker ");
 
     // Current path (truncated to fit)
@@ -799,14 +864,14 @@ std::string TuiState::rag_folder_picker(const std::string &start_dir) {
     if ((int)path_display.size() > PW - 4)
       path_display = "…" + path_display.substr(path_display.size() - (PW - 5));
     ncplane_set_channels(picker,
-      NCCHANNELS_INITIALIZER(160, 200, 240, PBG_R, PBG_G, PBG_B));
+                         NCCHANNELS_INITIALIZER(160, 200, 240, PBG_R, PBG_G, PBG_B));
     ncplane_putstr_yx(picker, 1, 2, path_display.c_str());
 
     // Hint line
     ncplane_set_channels(picker,
-      NCCHANNELS_INITIALIZER(120, 120, 160, PBG_R, PBG_G, PBG_B));
+                         NCCHANNELS_INITIALIZER(120, 120, 160, PBG_R, PBG_G, PBG_B));
     ncplane_putstr_yx(picker, PH - 2, 2,
-      "↑↓ navigate  Enter open  s=select dir  Esc cancel");
+                      "↑↓ navigate  Enter open  s=select dir  Esc cancel");
 
     // Entry list
     int list_rows = PH - 5;   // rows 2 … PH-4 available
@@ -827,7 +892,7 @@ std::string TuiState::rag_folder_picker(const std::string &start_dir) {
       uint32_t bg = is_selected ? 180 : PBG_G;
       uint32_t bb = is_selected ? 255 : PBG_B;
       ncplane_set_channels(picker,
-        NCCHANNELS_INITIALIZER(fr, fg, fb, br, bg, bb));
+                           NCCHANNELS_INITIALIZER(fr, fg, fb, br, bg, bb));
       // Pad entry to fill width
       std::string label = (is_selected ? " ▶ " : "   ") + entries[idx];
       if ((int)label.size() > PW - 2) label = label.substr(0, PW - 2);
@@ -1091,7 +1156,7 @@ bool AgentState::setup_model(const NitroConfig &cfg, TuiState &tui) {
   llama.reset();
   apply_generation_params(cfg);
   if (!llama.load_model(cfg.model_path, cfg.n_ctx, cfg.n_batch,
-                         cfg.n_gpu_layers, cfg.log_level)) {
+                        cfg.n_gpu_layers, cfg.log_level)) {
     tui.dismiss_modal_popup();
     tui.append_line(std::string("[err] ") + llama.last_error());
     tui.redraw_all();
@@ -1196,8 +1261,8 @@ bool AgentState::rag_index(const std::string &path, TuiState &tui) {
 // Agent turn
 // ═══════════════════════════════════════════════════════════════════════════
 bool AgentState::run_turn(const std::string &user_message,
-                           const NitroConfig &cfg,
-                           TuiState          &tui) {
+                          const NitroConfig &cfg,
+                          TuiState          &tui) {
   if (!model_loaded) {
     tui.append_line("[err] No model loaded. Use /model <path>");
     tui.redraw_all();
@@ -1206,7 +1271,7 @@ bool AgentState::run_turn(const std::string &user_message,
   std::string effective_message = user_message;
   if (embed_llama && rag_db && rag_session) {
     std::string context = llama.rag_retrieve(*rag_db, user_message,
-                                              cfg.rag_top_k, *rag_session);
+                                             cfg.rag_top_k, *rag_session);
     if (!context.empty()) {
       effective_message = "Context:\n" + context + "\n\nUser: " + user_message;
     }
@@ -1292,9 +1357,9 @@ bool AgentState::run_turn(const std::string &user_message,
         tui.append_line("[tool] " + op + " " + arg1 +
                         (op == "TOOL:WRITE" ? " <content>" : ""));
         tui.redraw_all();
-        std::string result = process_tool(tool_line, cfg.sandbox, tui);
+        std::string result = process_tool(tool_line, cfg.sandbox, cfg.run_allowed, tui);
         tui.append_line("[tool] → " +
-          result.substr(0, 200) + (result.size() > 200 ? "…" : ""));
+                        result.substr(0, 200) + (result.size() > 200 ? "…" : ""));
         tui.redraw_all();
         if (!llama.add_message(*iter, "tool", result)) {
           tui.append_line(std::string("[err] tool result inject: ") + llama.last_error());
@@ -1314,7 +1379,7 @@ bool AgentState::run_turn(const std::string &user_message,
     std::string trimmed = buffer;
     trimmed.erase(0, trimmed.find_first_not_of(" \t"));
     if (trimmed.substr(0, 5) == "TOOL:") {
-      std::string result = process_tool(trimmed, cfg.sandbox, tui);
+      std::string result = process_tool(trimmed, cfg.sandbox, cfg.run_allowed, tui);
       tui.append_line("[tool] → " + result.substr(0, 200));
       tui.redraw_all();
       llama.add_message(*iter, "tool", result);
@@ -1335,9 +1400,9 @@ bool AgentState::run_turn(const std::string &user_message,
 
   char stat[128];
   std::snprintf(stat, sizeof(stat), "[sys] %.1f tok/s  (%d tokens)  KV %.1f%%",
-    (double)tui.tokens_per_sec,
-    iter->_tokens_generated,
-    (double)mem.kv_percent);
+                (double)tui.tokens_per_sec,
+                iter->_tokens_generated,
+                (double)mem.kv_percent);
   tui.append_line(stat);
   tui.redraw_all();
   return true;
@@ -1401,10 +1466,10 @@ static const std::vector<std::string> CODE_EXTENSIONS = {
 };
 
 static std::string strip_code_fences(const std::string &filename,
-                                      const std::string &src) {
+                                     const std::string &src) {
   auto ext = fs::path(filename).extension().string();
   bool is_code = std::any_of(CODE_EXTENSIONS.begin(), CODE_EXTENSIONS.end(),
-                              [&](const std::string &e){ return ext == e; });
+                             [&](const std::string &e){ return ext == e; });
   if (!is_code) return src;
   auto pos = src.find("```");
   if (pos == std::string::npos) return src;
@@ -1414,6 +1479,137 @@ static std::string strip_code_fences(const std::string &filename,
   auto end = inner.rfind("```");
   if (end != std::string::npos) inner = inner.substr(0, end);
   return inner;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// html_to_text — strip HTML for cleaner TOOL:CURL context
+// ═══════════════════════════════════════════════════════════════════════════
+// Lightweight HTML→plain-text conversion:
+//   • Drops <head>, <script>, <style> blocks entirely.
+//   • Inserts newlines at block-level tags (p, div, br, li, h1-h6 …).
+//   • Strips all remaining tags.
+//   • Decodes common named & numeric HTML entities.
+//   • Collapses whitespace runs; caps consecutive blank lines at 2.
+static std::string html_to_text(const std::string &html) {
+  std::string s = html;
+
+  // 1. Remove <head>…</head>
+  {
+    std::string lo = s;
+    std::transform(lo.begin(), lo.end(), lo.begin(), ::tolower);
+    auto p0 = lo.find("<head");
+    auto p1 = lo.find("</head>");
+    if (p0 != std::string::npos && p1 != std::string::npos)
+      s.erase(p0, p1 + 7 - p0);
+  }
+
+  // 2. Remove <script>…</script> and <style>…</style>
+  for (const std::string &tag : {"script", "style"}) {
+    std::string open  = "<" + tag;
+    std::string close = "</" + tag + ">";
+    std::string lo = s;
+    std::transform(lo.begin(), lo.end(), lo.begin(), ::tolower);
+    for (;;) {
+      auto p0 = lo.find(open);
+      if (p0 == std::string::npos) break;
+      auto p1 = lo.find(close, p0);
+      if (p1 == std::string::npos) { s.erase(p0); lo.erase(p0); break; }
+      s.erase(p0, p1 + close.size() - p0);
+      lo.erase(p0, p1 + close.size() - p0);
+    }
+  }
+
+  // 3. Replace block-level tags with '\n' before stripping all tags.
+  static const char *const BLOCK[] = {
+    "p","div","br","li","tr","h1","h2","h3","h4","h5","h6",
+    "article","section","header","footer","nav","main", nullptr
+  };
+  {
+    std::string out;
+    out.reserve(s.size());
+    size_t i = 0;
+    while (i < s.size()) {
+      if (s[i] != '<') { out += s[i++]; continue; }
+      auto ce = s.find('>', i);
+      if (ce == std::string::npos) { out += s[i++]; continue; }
+      std::string inner = s.substr(i + 1, ce - i - 1);
+      size_t sp = inner.find_first_of(" \t/\r\n");
+      std::string name = (sp != std::string::npos) ? inner.substr(0, sp) : inner;
+      std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+      for (int k = 0; BLOCK[k]; ++k)
+        if (name == BLOCK[k]) { out += '\n'; break; }
+      i = ce + 1;
+    }
+    s = out;
+  }
+
+  // 4. Strip all remaining tags.
+  {
+    std::string out; out.reserve(s.size());
+    bool in_tag = false;
+    for (char c : s) {
+      if (c == '<')  { in_tag = true;  continue; }
+      if (c == '>')  { in_tag = false; continue; }
+      if (!in_tag)     out += c;
+    }
+    s = out;
+  }
+
+  // 5. Decode common HTML entities.
+  static const std::pair<const char*, const char*> ENT[] = {
+    {"&amp;","&"},{"&lt;","<"},{"&gt;",">"},{"&quot;","\""},
+    {"&apos;","'"},{"&nbsp;"," "},{"&mdash;","—"},{"&ndash;","–"},
+    {"&hellip;","…"},{"&#39;","'"},{"&#34;","\""},
+    {nullptr,nullptr}
+  };
+  for (int k = 0; ENT[k].first; ++k) {
+    std::string e = ENT[k].first, r = ENT[k].second;
+    size_t pos = 0;
+    while ((pos = s.find(e, pos)) != std::string::npos)
+      { s.replace(pos, e.size(), r); pos += r.size(); }
+  }
+  // Numeric entities &#NNN; and &#xHHH;
+  {
+    std::string out; out.reserve(s.size());
+    size_t i = 0;
+    while (i < s.size()) {
+      if (s[i]=='&' && i+2<s.size() && s[i+1]=='#') {
+        size_t semi = s.find(';', i+2);
+        if (semi != std::string::npos && semi-i < 10) {
+          std::string num = s.substr(i+2, semi-i-2);
+          try {
+            uint32_t cp = (num[0]=='x'||num[0]=='X')
+              ? (uint32_t)std::stoul(num.substr(1),nullptr,16)
+              : (uint32_t)std::stoul(num);
+            if      (cp < 0x80)  { out += (char)cp; }
+            else if (cp < 0x800) { out += (char)(0xC0|(cp>>6)); out += (char)(0x80|(cp&0x3F)); }
+            else                 { out += (char)(0xE0|(cp>>12)); out += (char)(0x80|((cp>>6)&0x3F)); out += (char)(0x80|(cp&0x3F)); }
+            i = semi+1; continue;
+          } catch (...) {}
+        }
+      }
+      out += s[i++];
+    }
+    s = out;
+  }
+
+  // 6. Collapse whitespace; cap blank lines at 2.
+  {
+    std::string out; out.reserve(s.size());
+    int nl_run = 0; bool last_sp = false;
+    for (char c : s) {
+      if (c == '\r') continue;
+      if (c == '\t') c = ' ';
+      if (c == '\n') { ++nl_run; last_sp=false; if (nl_run<=2) out+='\n'; continue; }
+      nl_run = 0;
+      if (c == ' ') { if (!last_sp) { out+=' '; last_sp=true; } continue; }
+      last_sp = false; out += c;
+    }
+    size_t f = out.find_first_not_of(" \n");
+    size_t l = out.find_last_not_of(" \n");
+    s = (f == std::string::npos) ? "" : out.substr(f, l-f+1);
+  }
+  return s;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1453,6 +1649,14 @@ static std::string tool_curl(const std::string &url) {
   CURLcode res = curl_easy_perform(curl);
   long http_code = 0;
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+  // Query content-type before cleanup (pointer is only valid while handle lives).
+  char *ct_raw = nullptr;
+  curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct_raw);
+  std::string content_type = ct_raw ? ct_raw : "";
+  std::transform(content_type.begin(), content_type.end(),
+                 content_type.begin(), ::tolower);
+
   curl_easy_cleanup(curl);
 
   if (res != CURLE_OK) {
@@ -1462,6 +1666,13 @@ static std::string tool_curl(const std::string &url) {
     return "ERROR: HTTP " + std::to_string(http_code) + " from " + url;
   }
   if (body.empty()) return "(empty response)";
+
+  // Strip HTML tags so the model receives clean plain text.
+  bool is_html = (content_type.find("text/html") != std::string::npos)
+    || (body.size() > 5 && body.substr(0,5) == "<!DOC")
+    || (body.size() > 6 && body.substr(0,6) == "<html>");
+  if (is_html) body = html_to_text(body);
+
   return body;
 }
 
@@ -1469,8 +1680,9 @@ static std::string tool_curl(const std::string &url) {
 // Tool dispatch
 // ═══════════════════════════════════════════════════════════════════════════
 static std::string process_tool(const std::string &cmd,
-                                  const std::string &sandbox,
-                                  TuiState &tui) {
+                                const std::string &sandbox,
+                                const std::vector<std::string> &run_allowed,
+                                TuiState &tui) {
   std::string op, arg1, arg2;
   auto sp1 = cmd.find(' ');
   if (sp1 == std::string::npos) {
@@ -1528,7 +1740,7 @@ static std::string process_tool(const std::string &cmd,
     if (!path_in_sandbox(sandbox, p)) return "ERROR: path outside sandbox";
     std::string content = strip_code_fences(arg1, arg2);
     return write_file(p, content) ? "OK: written to " + arg1
-                                   : "ERROR: write failed for " + arg1;
+      : "ERROR: write failed for " + arg1;
   }
   if (op == "TOOL:PERMISSION") {
     std::string result;
@@ -1542,6 +1754,16 @@ static std::string process_tool(const std::string &cmd,
   if (op == "TOOL:RUN") {
     std::string prog = resolve(arg1);
     if (!path_in_sandbox(sandbox, prog)) return "ERROR: path outside sandbox";
+    // Enforce allowlist if one is configured.
+    if (!run_allowed.empty()) {
+      std::string basename = fs::path(prog).filename().string();
+      bool permitted = std::any_of(run_allowed.begin(), run_allowed.end(),
+                                   [&](const std::string &a){ return a == basename; });
+      if (!permitted) {
+        return "ERROR: '" + basename + "' is not in the TOOL:RUN allowlist. "
+          "Use /set run_allowed <name> to permit it.";
+      }
+    }
     std::string command = prog + " " + arg2 + " 2>&1";
     FILE *fp = popen(command.c_str(), "r");
     if (!fp) return "ERROR: popen failed";
@@ -1559,30 +1781,30 @@ static std::string process_tool(const std::string &cmd,
 // System prompt
 // ═══════════════════════════════════════════════════════════════════════════
 static std::string build_system_prompt(const std::vector<std::string> &knowledge_files,
-                                        const std::string &sandbox) {
+                                       const std::string &sandbox) {
   std::string p;
   p += "You are Nitro, an agentic AI assistant for software development.\n"
-       "Your sandbox (project directory) is: " + sandbox + "\n\n"
-       "## Tool protocol\n"
-       "Emit tool calls on their own line. The host executes them and returns\n"
-       "TOOL_RESULT: <value> on the next line.\n\n"
-       "Available tools:\n"
-       "  TOOL:LIST   [dir]          list files (default: sandbox root)\n"
-       "  TOOL:READ   <file>         read file contents\n"
-       "  TOOL:WRITE  <file> <text>  write text to file\n"
-       "  TOOL:EXISTS <file>         YES or NO\n"
-       "  TOOL:RUN    <prog> [args]  run program inside sandbox\n"
-       "  TOOL:DATE                  current date\n"
-       "  TOOL:TIME                  current time\n"
-       "  TOOL:RND                   random float\n"
-       "  TOOL:PERMISSION            ask user for explicit permission\n"
-       "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
-       "Rules:\n"
-       "- Never access files outside the sandbox.\n"
-       "- Use TOOL:PERMISSION before destructive or irreversible operations.\n"
-       "- Use TOOL:CURL to fetch documentation, APIs, or web content you need.\n"
-       "- Reason step-by-step inside <|think|>…</|think|> (hidden from user).\n"
-       "- After each tool call, explain what you did in plain English.\n\n";
+    "Your sandbox (project directory) is: " + sandbox + "\n\n"
+    "## Tool protocol\n"
+    "Emit tool calls on their own line. The host executes them and returns\n"
+    "TOOL_RESULT: <value> on the next line.\n\n"
+    "Available tools:\n"
+    "  TOOL:LIST   [dir]          list files (default: sandbox root)\n"
+    "  TOOL:READ   <file>         read file contents\n"
+    "  TOOL:WRITE  <file> <text>  write text to file\n"
+    "  TOOL:EXISTS <file>         YES or NO\n"
+    "  TOOL:RUN    <prog> [args]  run program inside sandbox\n"
+    "  TOOL:DATE                  current date\n"
+    "  TOOL:TIME                  current time\n"
+    "  TOOL:RND                   random float\n"
+    "  TOOL:PERMISSION            ask user for explicit permission\n"
+    "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
+    "Rules:\n"
+    "- Never access files outside the sandbox.\n"
+    "- Use TOOL:PERMISSION before destructive or irreversible operations.\n"
+    "- Use TOOL:CURL to fetch documentation, APIs, or web content you need.\n"
+    "- Reason step-by-step inside <|think|>…</|think|> (hidden from user).\n"
+    "- After each tool call, explain what you did in plain English.\n\n";
   for (const auto &kf : knowledge_files) {
     std::ifstream f(kf);
     if (!f) continue;
@@ -1596,9 +1818,9 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
 // Slash command handler
 // ═══════════════════════════════════════════════════════════════════════════
 static void handle_slash(const std::string &input,
-                          NitroConfig       &cfg,
-                          AgentState        &agent,
-                          TuiState          &tui) {
+                         NitroConfig       &cfg,
+                         AgentState        &agent,
+                         TuiState          &tui) {
   auto sp = input.find(' ');
   std::string verb = (sp == std::string::npos) ? input : input.substr(0, sp);
   std::string rest;
@@ -1609,14 +1831,19 @@ static void handle_slash(const std::string &input,
 
   if (verb == "/help") {
     tui.append_line("[sys] Commands:");
-    tui.append_line("[sys]   /model  <path>   load a GGUF model");
-    tui.append_line("[sys]   /embed  <path>   load an embedding model for RAG");
-    tui.append_line("[sys]   /rag    [path]   index file or directory (picker if no path)");
-    tui.append_line("[sys]   /memory          KV / VRAM / layer stats");
-    tui.append_line("[sys]   /clear           reset conversation");
-    tui.append_line("[sys]   /settings        show current settings");
-    tui.append_line("[sys]   /help            this message");
-    tui.append_line("[sys]   exit / quit      exit Nitro");
+    tui.append_line("[sys]   /model  <path>           load a GGUF model");
+    tui.append_line("[sys]   /embed  <path>           load an embedding model for RAG");
+    tui.append_line("[sys]   /rag    [path]           index file or directory (picker if no path)");
+    tui.append_line("[sys]   /memory                  KV / VRAM / layer stats");
+    tui.append_line("[sys]   /clear                   reset conversation");
+    tui.append_line("[sys]   /settings                show current settings");
+    tui.append_line("[sys]   /set    <key> <value>    change a setting live");
+    tui.append_line("[sys]   /help                    this message");
+    tui.append_line("[sys]   exit / quit              exit Nitro");
+    tui.append_line("[sys] Settable keys (via /set):");
+    tui.append_line("[sys]   temperature  top_p  top_k  min_p  penalty_repeat");
+    tui.append_line("[sys]   n_max_tokens  penalty_last_n  rag_top_k  n_gpu_layers");
+    tui.append_line("[sys]   run_allowed  (comma-separated list, e.g. python3,make)");
     tui.redraw_all();
     return;
   }
@@ -1701,6 +1928,72 @@ static void handle_slash(const std::string &input,
     return;
   }
 
+  if (verb == "/set") {
+    // Usage: /set <key> <value>
+    // Parses the key and value, updates cfg in place, re-applies generation
+    // params if needed, and saves settings to disk.
+    auto sp2 = rest.find(' ');
+    std::string key = (sp2 == std::string::npos) ? rest : rest.substr(0, sp2);
+    std::string val = (sp2 == std::string::npos) ? "" : rest.substr(sp2 + 1);
+    val.erase(0, val.find_first_not_of(" \t"));
+
+    if (key.empty() || val.empty()) {
+      tui.append_line("[err] Usage: /set <key> <value>");
+      tui.redraw_all(); return;
+    }
+
+    bool ok = true;
+    bool needs_reparam = false; // whether to re-apply generation params
+
+    try {
+      if (key == "temperature")    { cfg.temperature    = std::stof(val); needs_reparam = true; }
+      else if (key == "top_p")     { cfg.top_p          = std::stof(val); needs_reparam = true; }
+      else if (key == "min_p")     { cfg.min_p          = std::stof(val); needs_reparam = true; }
+      else if (key == "top_k")     { cfg.top_k          = std::stoi(val); needs_reparam = true; }
+      else if (key == "penalty_repeat") { cfg.penalty_repeat = std::stof(val); needs_reparam = true; }
+      else if (key == "penalty_last_n") { cfg.penalty_last_n = std::stoi(val); needs_reparam = true; }
+      else if (key == "n_max_tokens")   { cfg.n_max_tokens   = std::stoi(val); needs_reparam = true; }
+      else if (key == "rag_top_k")      { cfg.rag_top_k      = std::stoi(val); }
+      else if (key == "n_gpu_layers")   {
+        cfg.n_gpu_layers = std::stoi(val);
+        tui.append_line("[sys] n_gpu_layers will take effect on next /model load.");
+      }
+      else if (key == "run_allowed") {
+        // Accept a comma-separated list of basenames, or "none" to clear.
+        cfg.run_allowed.clear();
+        if (val != "none") {
+          std::istringstream iss(val);
+          std::string tok;
+          while (std::getline(iss, tok, ',')) {
+            tok.erase(0, tok.find_first_not_of(" \t"));
+            tok.erase(tok.find_last_not_of(" \t") + 1);
+            if (!tok.empty()) cfg.run_allowed.push_back(tok);
+          }
+        }
+        if (cfg.run_allowed.empty()) {
+          tui.append_line("[sys] run_allowed cleared — all sandbox programs permitted.");
+        } else {
+          std::string list;
+          for (const auto &e : cfg.run_allowed) list += e + " ";
+          tui.append_line("[sys] run_allowed: " + list);
+        }
+      }
+      else { tui.append_line("[err] Unknown key '" + key + "'.  Try /help for list."); ok = false; }
+    } catch (const std::exception &ex) {
+      tui.append_line(std::string("[err] /set: ") + ex.what());
+      ok = false;
+    }
+
+    if (ok) {
+      if (needs_reparam && agent.model_loaded)
+        agent.apply_generation_params(cfg);
+      save_settings(cfg);
+      tui.append_line("[sys] " + key + " = " + val);
+    }
+    tui.redraw_all();
+    return;
+  }
+
   tui.append_line("[err] Unknown command: " + verb + "  (try /help)");
   tui.redraw_all();
 }
@@ -1709,51 +2002,16 @@ static void handle_slash(const std::string &input,
 // Welcome banner  — colourful multi-line ASCII logo
 // ═══════════════════════════════════════════════════════════════════════════
 static void welcome(TuiState &tui, const std::string &sandbox) {
-  // Each line is tagged with a [sys] prefix so redraw_chat applies the
-  // right channel (chat_ch 140,140,200). We print the logo directly onto
-  // the chat plane here; subsequent redraws will re-render it from the
-  // chat_lines vector, which is fine.
-  //
-  // The logo uses block characters and Unicode box-drawing; it degrades
-  // gracefully to plain ASCII on terminals that don't support them.
-  //
-  // Colour coding: each row gets a different fg colour via a small gradient
-  // from cyan → magenta so it looks "fancy" without requiring custom planes.
-  // Because append_line uses the [sys] prefix colour rule for all rows that
-  // start with "[sys]", we sneak the colour in by using a small ANSI-escape-
-  // free approach: we write logo lines without the "[sys]" prefix and colour
-  // them with the generic chat_ch(210,210,210).  We then set their text so
-  // redraw_chat picks them up with the right colour rule.
-  //
-  // The easiest approach: use special prefix "[logo]" → handled in
-  // redraw_chat just like [sys] but with a different per-row colour.
-  // To avoid touching redraw_chat, we instead pick a gradient and embed it
-  // directly into the strings, relying on notcurses to render the UTF-8
-  // box-art as-is (no ANSI escapes — notcurses owns the terminal).
-
-  // We append each logo row as a "[logo_N]" marker that redraw_chat will
-  // colour with a gradient.  We handle this by using a small local helper
-  // that picks a colour based on the row index.
-
-  // ── Logo rows (pure text, no ANSI) ──────────────────────────────────
-  // The prefix "⚡" keeps the colour rule from matching "[sys]" etc.
-  // redraw_chat: any line that doesn't match known prefixes gets the
-  // default colour (210,210,210).  We rely on that for most logo rows.
-  //
-  // To get a gradient we insert a thin λ-wrapper that adds lines with
-  // distinct prefixes we interpret in redraw_chat.  But that requires
-  // editing redraw_chat — so instead we just use [sys] lines with
-  // embedded Unicode art; they all get the same blue-ish colour which
-  // still looks great.
-
+  // Logo lines use the "[logo_N]" prefix so redraw_chat applies a
+  // per-row cyan→magenta gradient (N = 0-6 maps to the gradient table).
   tui.append_line("");
-  tui.append_line("[sys]  ███╗   ██╗██╗████████╗██████╗  ██████╗ ");
-  tui.append_line("[sys]  ████╗  ██║██║╚══██╔══╝██╔══██╗██╔═══██╗");
-  tui.append_line("[sys]  ██╔██╗ ██║██║   ██║   ██████╔╝██║   ██║");
-  tui.append_line("[sys]  ██║╚██╗██║██║   ██║   ██╔══██╗██║   ██║");
-  tui.append_line("[sys]  ██║ ╚████║██║   ██║   ██║  ██║╚██████╔╝");
-  tui.append_line("[sys]  ╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ");
-  tui.append_line("[sys]  ─────────── agentic LLM shell v1.0 ────────────");
+  tui.append_line("[logo_0]  ███╗   ██╗██╗████████╗██████╗  ██████╗ ");
+  tui.append_line("[logo_1]  ████╗  ██║██║╚══██╔══╝██╔══██╗██╔═══██╗");
+  tui.append_line("[logo_2]  ██╔██╗ ██║██║   ██║   ██████╔╝██║   ██║");
+  tui.append_line("[logo_3]  ██║╚██╗██║██║   ██║   ██╔══██╗██║   ██║");
+  tui.append_line("[logo_4]  ██║ ╚████║██║   ██║   ██║  ██║╚██████╔╝");
+  tui.append_line("[logo_5]  ╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ");
+  tui.append_line("[logo_6]  ─────────── agentic LLM shell v1.0 ──────────────");
   tui.append_line("");
   tui.append_line("[sys]  Sandbox : " + sandbox);
   tui.append_line("[sys]  /help for commands  ·  exit to quit");
@@ -1798,26 +2056,26 @@ int main(int argc, char **argv) {
       cfg.n_gpu_layers = std::stoi(take_next(a.c_str()));
     } else if (a == "-h" || a == "--help") {
       std::puts(
-        "Usage: nitro [options] [project_dir]\n"
-        "\n"
-        "Options:\n"
-        "  -m, --model  <path>      GGUF model to load on startup\n"
-        "  -e, --embed  <path>      embedding model for RAG\n"
-        "  -g, --gpu-layers <n>     GPU layers to offload (default: 32)\n"
-        "  -h, --help               show this help\n"
-        "\n"
-        "project_dir defaults to the current working directory.\n"
-        "Settings are persisted to ~/.config/nitro.settings.json.\n"
-        "\n"
-        "Slash commands inside nitro:\n"
-        "  /model  <path>           load / hot-reload a GGUF\n"
-        "  /embed  <path>           load an embedding model\n"
-        "  /rag    [path]           index file or directory (picker if no path)\n"
-        "  /memory                  KV / VRAM / layer stats\n"
-        "  /settings                show current settings\n"
-        "  /clear                   reset conversation\n"
-        "  /help                    list commands\n"
-      );
+                "Usage: nitro [options] [project_dir]\n"
+                "\n"
+                "Options:\n"
+                "  -m, --model  <path>      GGUF model to load on startup\n"
+                "  -e, --embed  <path>      embedding model for RAG\n"
+                "  -g, --gpu-layers <n>     GPU layers to offload (default: 32)\n"
+                "  -h, --help               show this help\n"
+                "\n"
+                "project_dir defaults to the current working directory.\n"
+                "Settings are persisted to ~/.config/nitro.settings.json.\n"
+                "\n"
+                "Slash commands inside nitro:\n"
+                "  /model  <path>           load / hot-reload a GGUF\n"
+                "  /embed  <path>           load an embedding model\n"
+                "  /rag    [path]           index file or directory (picker if no path)\n"
+                "  /memory                  KV / VRAM / layer stats\n"
+                "  /settings                show current settings\n"
+                "  /clear                   reset conversation\n"
+                "  /help                    list commands\n"
+                );
       return 0;
     } else if (!a.empty() && a[0] == '-') {
       std::fprintf(stderr, "nitro: unknown option '%s'  (try --help)\n", a.c_str());
@@ -1845,6 +2103,8 @@ int main(int argc, char **argv) {
   // ── Init TUI ──────────────────────────────────────────────────────
   TuiState tui;
   tui.init();
+  // Load persisted input history so up-arrow works across sessions.
+  tui.history.load(history_path());
   welcome(tui, cfg.sandbox);
 
   // ── Init agent ────────────────────────────────────────────────────
@@ -1886,6 +2146,8 @@ int main(int argc, char **argv) {
   }
 
   tui.destroy();
+  // Persist input history for the next session.
+  tui.history.save(history_path());
   curl_global_cleanup();
   return 0;
 }
