@@ -18,8 +18,8 @@
 //   -g, --gpu-layers <n>      layers to offload to GPU (default: 32)
 //
 // Slash commands:
-//   /model  <path>            — load / hot-reload a GGUF model
-//   /embed  <path>            — load an embedding model for RAG
+//   /model  <path>            — load / hot-reload a GGUF model (picker if no path)
+//   /embed  <path>            — load an embedding model for RAG (picker if no path)
 //   /rag    <path>            — index a file or directory into RAG
 //   /memory                   — show KV / VRAM / layer stats
 //   /clear                    — reset conversation (keeps system prompt)
@@ -494,13 +494,23 @@ struct TuiState {
   // Presents an interactive directory browser to let the user choose a
   // folder (or file) to index.  Returns the selected path, or empty string
   // if the user cancelled.
-  std::string rag_folder_picker(const std::string &start_dir);
+  // ── RAG / file browser popup ─────────────────────────────────────
+  // Used by /rag, /model, and /embed to pick a path interactively.
+  // Pass a hint string shown in the title bar (e.g. "RAG Folder",
+  // "Model File", "Embedding Model").
+  // Returns the selected path, or empty string if the user cancelled.
+  std::string file_picker(const std::string &start_dir,
+                          const std::string &title_hint = "File");
+  // Legacy alias kept for callers that used the old name.
+  std::string rag_folder_picker(const std::string &start_dir) {
+    return file_picker(start_dir, "RAG Folder");
+  }
 };
+
 // ─── colour helpers ──────────────────────────────────────────────────────
 static constexpr uint32_t BG_CHAT_R = 18,  BG_CHAT_G = 22,  BG_CHAT_B = 30;
 static constexpr uint32_t BG_INP_R  = 22,  BG_INP_G  = 28,  BG_INP_B  = 38;
 static constexpr uint32_t BG_HDR_R  = 30,  BG_HDR_G  = 40,  BG_HDR_B  = 55;
-
 static inline uint64_t fg_rgb(uint32_t r, uint32_t g, uint32_t b) {
   return NCCHANNELS_INITIALIZER(r, g, b, 0, 0, 0);
 }
@@ -513,6 +523,7 @@ static inline uint64_t inp_ch(uint32_t r, uint32_t g, uint32_t b) {
 static inline uint64_t hdr_ch(uint32_t r, uint32_t g, uint32_t b) {
   return NCCHANNELS_INITIALIZER(r, g, b, BG_HDR_R, BG_HDR_G, BG_HDR_B);
 }
+
 // ─── TuiState::init ──────────────────────────────────────────────────────
 void TuiState::init() {
   notcurses_options opts{};
@@ -544,13 +555,12 @@ void TuiState::init() {
   ncplane_set_base(inputpl, " ", 0,
                    NCCHANNELS_INITIALIZER(BG_INP_R, BG_INP_G, BG_INP_B,
                                           BG_INP_R, BG_INP_G, BG_INP_B));
+  notcurses_mice_enable(nc, NCMICE_ALL_EVENTS);
   redraw_all();
 }
-
 void TuiState::destroy() {
   if (nc) { notcurses_stop(nc); nc = nullptr; }
 }
-
 void TuiState::resize() {
   notcurses_term_dim_yx(nc, (unsigned *)&term_rows, (unsigned *)&term_cols);
   ncplane_resize_simple(header,  1,                       (unsigned)term_cols);
@@ -787,23 +797,33 @@ void TuiState::dismiss_modal_popup() {
 // Keyboard:  ↑/↓ navigate,  Enter select/descend,  Backspace go up,
 //            's' select current dir for indexing,   Esc cancel.
 // Returns the chosen path or "" on cancel.
-std::string TuiState::rag_folder_picker(const std::string &start_dir) {
+// ─── TuiState::file_picker ────────────────────────────────────────────────
+// Unified interactive directory/file browser used by /rag, /model, /embed.
+// title_hint appears in the popup header (e.g. "RAG Folder", "Model File").
+//
+// Keyboard:
+//   ↑/↓        navigate list
+//   Enter      descend into directory, or select a file
+//   Backspace  go up one directory
+//   s          select the current directory itself (useful for /rag)
+//   Esc        cancel → returns ""
+//
+// Returns the chosen path, or "" on cancel.
+std::string TuiState::file_picker(const std::string &start_dir,
+                                  const std::string &title_hint) {
   std::string current_dir = start_dir;
   {
     std::error_code ec;
     auto canon = fs::canonical(start_dir, ec);
     if (!ec) current_dir = canon.string();
   }
-
-  // Build an entry list for the current directory.
   auto load_entries = [](const std::string &dir,
                          std::vector<std::string> &entries) {
     entries.clear();
     std::error_code ec;
-    // Add ".." for going up (except at fs root).
-    if (fs::path(dir).has_parent_path() && fs::path(dir) != fs::path(dir).root_path())
+    if (fs::path(dir).has_parent_path() &&
+        fs::path(dir) != fs::path(dir).root_path())
       entries.push_back("..");
-    // Dirs first, then files.
     std::vector<std::string> dirs, files;
     for (const auto &e : fs::directory_iterator(dir, ec)) {
       if (ec) break;
@@ -837,12 +857,17 @@ std::string TuiState::rag_folder_picker(const std::string &start_dir) {
   static constexpr uint32_t PBG_R = 18, PBG_G = 24, PBG_B = 40;
   ncplane_set_base(picker, " ", 0,
                    NCCHANNELS_INITIALIZER(PBG_R, PBG_G, PBG_B, PBG_R, PBG_G, PBG_B));
-
+  // Build a compact hint line appropriate to the operation.
+  // /rag adds 's=select dir'; /model and /embed only need file selection.
+  std::string hint_line = "↑↓ navigate  Enter open/select  Esc cancel";
+  if (title_hint.find("RAG") != std::string::npos ||
+      title_hint.find("Folder") != std::string::npos) {
+    hint_line = "↑↓ navigate  Enter open  s=select dir  Esc cancel";
+  }
   auto draw_picker = [&]() {
     ncplane_erase(picker);
     uint64_t border_ch = NCCHANNELS_INITIALIZER(100, 180, 255, PBG_R, PBG_G, PBG_B);
     ncplane_set_channels(picker, border_ch);
-    // Border
     ncplane_putstr_yx(picker, 0, 0, "╔");
     for (int c = 1; c < PW - 1; ++c) ncplane_putstr_yx(picker, 0, c, "═");
     ncplane_putstr_yx(picker, 0, PW - 1, "╗");
@@ -857,43 +882,40 @@ std::string TuiState::rag_folder_picker(const std::string &start_dir) {
     // Title
     ncplane_set_channels(picker,
                          NCCHANNELS_INITIALIZER(255, 220, 80, PBG_R, PBG_G, PBG_B));
-    ncplane_putstr_yx(picker, 0, 2, " 📂 RAG Folder Picker ");
-
-    // Current path (truncated to fit)
+    std::string title_str = " 📂 " + title_hint + " Picker ";
+    if ((int)title_str.size() > PW - 4) title_str = title_str.substr(0, PW - 4);
+    ncplane_putstr_yx(picker, 0, 2, title_str.c_str());
+    // Current path (truncated).
     std::string path_display = current_dir;
     if ((int)path_display.size() > PW - 4)
       path_display = "…" + path_display.substr(path_display.size() - (PW - 5));
     ncplane_set_channels(picker,
                          NCCHANNELS_INITIALIZER(160, 200, 240, PBG_R, PBG_G, PBG_B));
     ncplane_putstr_yx(picker, 1, 2, path_display.c_str());
-
-    // Hint line
+    // Hint line (bottom interior row).
     ncplane_set_channels(picker,
                          NCCHANNELS_INITIALIZER(120, 120, 160, PBG_R, PBG_G, PBG_B));
-    ncplane_putstr_yx(picker, PH - 2, 2,
-                      "↑↓ navigate  Enter open  s=select dir  Esc cancel");
-
-    // Entry list
-    int list_rows = PH - 5;   // rows 2 … PH-4 available
-    // Clamp scroll so selected stays visible
+    std::string hint_trunc = hint_line;
+    if ((int)hint_trunc.size() > PW - 4) hint_trunc = hint_trunc.substr(0, PW - 4);
+    ncplane_putstr_yx(picker, PH - 2, 2, hint_trunc.c_str());
+    // Entry list.
+    int list_rows = PH - 5;
     if (selected < scroll) scroll = selected;
     if (selected >= scroll + list_rows) scroll = selected - list_rows + 1;
-
     for (int i = 0; i < list_rows; ++i) {
       int idx = scroll + i;
       if (idx >= (int)entries.size()) break;
       bool is_selected = (idx == selected);
       bool is_dir = !entries[idx].empty() && entries[idx].back() == '/';
       uint32_t fr, fg, fb;
-      if (is_selected)            { fr = 20;  fg = 20;  fb = 20;  }
-      else if (is_dir)             { fr = 120; fg = 200; fb = 255; }
-      else                         { fr = 200; fg = 200; fb = 200; }
+      if (is_selected)  { fr = 20;  fg = 20;  fb = 20;  }
+      else if (is_dir)   { fr = 120; fg = 200; fb = 255; }
+      else               { fr = 200; fg = 200; fb = 200; }
       uint32_t br = is_selected ? 100 : PBG_R;
       uint32_t bg = is_selected ? 180 : PBG_G;
       uint32_t bb = is_selected ? 255 : PBG_B;
       ncplane_set_channels(picker,
                            NCCHANNELS_INITIALIZER(fr, fg, fb, br, bg, bb));
-      // Pad entry to fill width
       std::string label = (is_selected ? " ▶ " : "   ") + entries[idx];
       if ((int)label.size() > PW - 2) label = label.substr(0, PW - 2);
       while ((int)label.size() < PW - 2) label += ' ';
@@ -922,6 +944,7 @@ std::string TuiState::rag_folder_picker(const std::string &start_dir) {
       draw_picker();
       continue;
     }
+    // 's' — select the current directory (useful for /rag, ignored for file pickers).
     if (ni.id == 's' || ni.id == 'S') {
       // Select current directory for RAG indexing.
       result = current_dir;
@@ -962,13 +985,13 @@ std::string TuiState::rag_folder_picker(const std::string &start_dir) {
         draw_picker();
       } else {
         // Select a specific file.
+        // Select the highlighted file.
         result = current_dir + "/" + entry;
         break;
       }
       continue;
     }
   }
-
   ncplane_destroy(picker);
   notcurses_render(nc);
   return result;
@@ -1029,6 +1052,7 @@ std::string TuiState::readline_blocking() {
       return result;
     }
 
+
     if (ni.id == NCKEY_UP) {
       // Entering history from a fresh prompt: save current text as draft.
       std::string hist_entry;
@@ -1077,7 +1101,18 @@ std::string TuiState::readline_blocking() {
       notcurses_render(nc);
       continue;
     }
-
+    if (ni.id == NCKEY_SCROLL_UP && scroll_offset < term_rows + 10) {
+      scroll_offset += 1;
+      redraw_chat();
+      notcurses_render(nc);
+      continue;
+    }
+    if (ni.id == NCKEY_SCROLL_DOWN && scroll_offset > 0) {
+      scroll_offset -= 1;
+      redraw_chat();
+      notcurses_render(nc);
+      continue;
+    }
     if (ni.id == NCKEY_BACKSPACE || ni.id == 127) {
       if (cursor_pos > 0) { input_buf.erase(cursor_pos - 1, 1); --cursor_pos; }
     } else if (ni.id == NCKEY_LEFT) {
@@ -1108,7 +1143,7 @@ std::string TuiState::readline_blocking() {
 // AgentState
 // ═══════════════════════════════════════════════════════════════════════════
 struct AgentState {
-  Llama llama;
+  std::unique_ptr<Llama> llama;
   std::unique_ptr<LlamaIter> iter;
   std::unique_ptr<Llama> embed_llama;
   std::unique_ptr<RagDB>      rag_db;
@@ -1127,18 +1162,17 @@ struct AgentState {
   std::string memory_info_text();
   float tokens_per_sec() const;
 };
-
 void AgentState::apply_generation_params(const NitroConfig &cfg) {
-  llama.add_stop("<|turn|>");
-  llama.add_stop("<|im_end|>");
-  llama.set_max_tokens(cfg.n_max_tokens);
-  llama.set_temperature(cfg.temperature);
-  llama.set_top_k(cfg.top_k);
-  llama.set_top_p(cfg.top_p);
-  llama.set_min_p(cfg.min_p);
-  llama.set_penalty_repeat(cfg.penalty_repeat);
-  llama.set_penalty_last_n(cfg.penalty_last_n);
-  llama.set_log_level(cfg.log_level);
+  llama->add_stop("<|turn|>");
+  llama->add_stop("<|im_end|>");
+  llama->set_max_tokens(cfg.n_max_tokens);
+  llama->set_temperature(cfg.temperature);
+  llama->set_top_k(cfg.top_k);
+  llama->set_top_p(cfg.top_p);
+  llama->set_min_p(cfg.min_p);
+  llama->set_penalty_repeat(cfg.penalty_repeat);
+  llama->set_penalty_last_n(cfg.penalty_last_n);
+  llama->set_log_level(cfg.log_level);
 }
 
 // ─── AgentState::setup_model ──────────────────────────────────────────────
@@ -1152,22 +1186,25 @@ bool AgentState::setup_model(const NitroConfig &cfg, TuiState &tui) {
   // Show a modal popup so the user knows loading is in progress.
   std::string model_name = fs::path(cfg.model_path).filename().string();
   tui.show_modal_popup("Loading " + model_name);
+  // Destroy the iterator first — it holds references into the llama context.
+  // Freeing llama while iter is still alive causes use-after-free / load failure.
+  iter.reset();
+  model_loaded = false;
+  llama = std::make_unique<Llama>();
 
-  llama.reset();
   apply_generation_params(cfg);
-  if (!llama.load_model(cfg.model_path, cfg.n_ctx, cfg.n_batch,
-                        cfg.n_gpu_layers, cfg.log_level)) {
+  if (!llama->load_model(cfg.model_path, cfg.n_ctx, cfg.n_batch,
+                         cfg.n_gpu_layers, cfg.log_level)) {
     tui.dismiss_modal_popup();
-    tui.append_line(std::string("[err] ") + llama.last_error());
+    tui.append_line(std::string("[err] ") + llama->last_error());
     tui.redraw_all();
     return false;
   }
   tui.dismiss_modal_popup();
-
   model_loaded = true;
   tui.current_model = model_name;
   tui.append_line("[sys] Model ready: " + tui.current_model);
-  LlamaMemoryInfo mem = llama.memory_info();
+  LlamaMemoryInfo mem = llama->memory_info();
   tui.append_line("[sys] " + mem.advice);
   tui.kv_used  = mem.kv_used;
   tui.kv_total = mem.kv_total;
@@ -1198,11 +1235,11 @@ bool AgentState::setup_embed(const std::string &path, TuiState &tui) {
 
 void AgentState::reset_conversation(const std::string &sysprompt, TuiState &tui) {
   system_prompt = sysprompt;
-  llama.reset();
+  llama->reset();
   apply_generation_params(NitroConfig{});
   iter = std::make_unique<LlamaIter>();
-  if (!llama.add_message(*iter, "system", system_prompt)) {
-    tui.append_line(std::string("[err] System prompt injection: ") + llama.last_error());
+  if (!llama->add_message(*iter, "system", system_prompt)) {
+    tui.append_line(std::string("[err] System prompt injection: ") + llama->last_error());
     tui.redraw_all();
   }
 }
@@ -1217,7 +1254,7 @@ float AgentState::tokens_per_sec() const {
 
 std::string AgentState::memory_info_text() {
   if (!model_loaded) return "No model loaded.";
-  LlamaMemoryInfo m = llama.memory_info();
+  LlamaMemoryInfo m = llama->memory_info();
   std::ostringstream oss;
   oss << "KV cache  : " << m.kv_used << " / " << m.kv_total
       << "  (" << m.kv_percent << "%)\n";
@@ -1270,8 +1307,8 @@ bool AgentState::run_turn(const std::string &user_message,
   }
   std::string effective_message = user_message;
   if (embed_llama && rag_db && rag_session) {
-    std::string context = llama.rag_retrieve(*rag_db, user_message,
-                                             cfg.rag_top_k, *rag_session);
+    std::string context = llama->rag_retrieve(*rag_db, user_message,
+                                              cfg.rag_top_k, *rag_session);
     if (!context.empty()) {
       effective_message = "Context:\n" + context + "\n\nUser: " + user_message;
     }
@@ -1281,24 +1318,21 @@ bool AgentState::run_turn(const std::string &user_message,
     tui.redraw_all();
     return false;
   }
-  if (!llama.add_message(*iter, "user", effective_message)) {
-    tui.append_line(std::string("[err] add_message: ") + llama.last_error());
+  if (!llama->add_message(*iter, "user", effective_message)) {
+    tui.append_line(std::string("[err] add_message: ") + llama->last_error());
     tui.redraw_all();
     return false;
   }
   tui.append_line("Nitro: ");
   tui.set_thinking(true);
-
   bool in_think = true;
   std::string buffer;
-
   auto update_think_state = [&](const std::string &text) {
     if (text.find("<think>")    != std::string::npos ||
         text.find("<|think|>")  != std::string::npos)  in_think = true;
     if (text.find("</think>")   != std::string::npos ||
         text.find("</|think|>") != std::string::npos)  in_think = false;
   };
-
   auto remove_substr = [](std::string str, const std::string& toRemove) {
     size_t pos = str.find(toRemove);
     while (pos != std::string::npos) {
@@ -1309,7 +1343,7 @@ bool AgentState::run_turn(const std::string &user_message,
   };
 
   while (iter->_has_next) {
-    std::string tok = llama.next(*iter);
+    std::string tok = llama->next(*iter);
     tui.tick_spinner();
     update_think_state(tok);
     buffer += tok;
@@ -1320,7 +1354,7 @@ bool AgentState::run_turn(const std::string &user_message,
       std::string trimmed = text_line;
       trimmed.erase(0, trimmed.find_first_not_of(" \t"));
       if (trimmed.substr(0, 5) == "TOOL:") {
-        std::string tail = buffer + llama.all(*iter);
+        std::string tail = buffer + llama->all(*iter);
         std::string op, arg1, payload;
         {
           auto s1 = trimmed.find(' ');
@@ -1361,8 +1395,14 @@ bool AgentState::run_turn(const std::string &user_message,
         tui.append_line("[tool] → " +
                         result.substr(0, 200) + (result.size() > 200 ? "…" : ""));
         tui.redraw_all();
-        if (!llama.add_message(*iter, "tool", result)) {
-          tui.append_line(std::string("[err] tool result inject: ") + llama.last_error());
+        // Inject the tool result back into the conversation as a user-role
+        // message using the TOOL_RESULT: prefix that the system prompt
+        // describes.  Using "user" role ensures the injected text is correctly
+        // formatted regardless of whether the underlying llama-sb layer knows
+        // a dedicated "tool" role.
+        std::string tool_result_msg = "TOOL_RESULT: " + result;
+        if (!llama->add_message(*iter, "user", tool_result_msg)) {
+          tui.append_line(std::string("[err] tool result inject: ") + llama->last_error());
           tui.redraw_all();
           break;
         }
@@ -1382,22 +1422,20 @@ bool AgentState::run_turn(const std::string &user_message,
       std::string result = process_tool(trimmed, cfg.sandbox, cfg.run_allowed, tui);
       tui.append_line("[tool] → " + result.substr(0, 200));
       tui.redraw_all();
-      llama.add_message(*iter, "tool", result);
+      std::string tool_result_msg = "TOOL_RESULT: " + result;
+      llama->add_message(*iter, "user", tool_result_msg);
     } else if (!in_think) {
       tui.append_token(buffer);
     }
   }
-
   tui.flush_token_acc();
   tui.set_thinking(false);
-
   tui.tokens_per_sec = tokens_per_sec();
-  LlamaMemoryInfo mem = llama.memory_info();
+  LlamaMemoryInfo mem = llama->memory_info();
   tui.kv_used    = mem.kv_used;
   tui.kv_total   = mem.kv_total;
   tui.vram_used  = mem.vram_used;
   tui.vram_total = mem.vram_total;
-
   char stat[128];
   std::snprintf(stat, sizeof(stat), "[sys] %.1f tok/s  (%d tokens)  KV %.1f%%",
                 (double)tui.tokens_per_sec,
@@ -1613,35 +1651,30 @@ static std::string html_to_text(const std::string &html) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TOOL:CURL — HTTP GET with libcurl, returns body text (capped at 32 KB).
+// TOOL:CURL
 // ═══════════════════════════════════════════════════════════════════════════
 static size_t curl_write_cb(void *contents, size_t size, size_t nmemb, void *userp) {
   std::string *buf = static_cast<std::string *>(userp);
   size_t total = size * nmemb;
-  // Enforce a 32 KB cap to prevent flooding the context window.
   static constexpr size_t MAX_BODY = 32 * 1024;
   if (buf->size() < MAX_BODY) {
     size_t room = MAX_BODY - buf->size();
     buf->append(static_cast<char *>(contents), std::min(total, room));
   }
-  return total;  // Return full amount so curl doesn't abort.
+  return total;
 }
-
 static std::string tool_curl(const std::string &url) {
   if (url.empty()) return "ERROR: TOOL:CURL requires a URL argument";
-
   CURL *curl = curl_easy_init();
   if (!curl) return "ERROR: curl_easy_init failed";
-
   std::string body;
   body.reserve(4096);
-
   curl_easy_setopt(curl, CURLOPT_URL,            url.c_str());
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,  curl_write_cb);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA,      &body);
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(curl, CURLOPT_MAXREDIRS,      5L);
-  curl_easy_setopt(curl, CURLOPT_TIMEOUT,        15L);        // 15-second timeout
+  curl_easy_setopt(curl, CURLOPT_TIMEOUT,        15L);
   curl_easy_setopt(curl, CURLOPT_USERAGENT,      "nitro/1.0");
   // Accept compressed responses; curl will decompress automatically.
   curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
@@ -1656,9 +1689,7 @@ static std::string tool_curl(const std::string &url) {
   std::string content_type = ct_raw ? ct_raw : "";
   std::transform(content_type.begin(), content_type.end(),
                  content_type.begin(), ::tolower);
-
   curl_easy_cleanup(curl);
-
   if (res != CURLE_OK) {
     return std::string("ERROR: curl: ") + curl_easy_strerror(res);
   }
@@ -1748,13 +1779,11 @@ static std::string process_tool(const std::string &cmd,
     return result;
   }
   if (op == "TOOL:CURL") {
-    // arg1 holds the URL (no sandbox restriction — network, not filesystem).
     return tool_curl(arg1);
   }
   if (op == "TOOL:RUN") {
     std::string prog = resolve(arg1);
     if (!path_in_sandbox(sandbox, prog)) return "ERROR: path outside sandbox";
-    // Enforce allowlist if one is configured.
     if (!run_allowed.empty()) {
       std::string basename = fs::path(prog).filename().string();
       bool permitted = std::any_of(run_allowed.begin(), run_allowed.end(),
@@ -1788,7 +1817,7 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "## Tool protocol\n"
     "Emit tool calls on their own line. The host executes them and returns\n"
     "TOOL_RESULT: <value> on the next line.\n\n"
-    "Available tools:\n"
+    "## Available tools:\n"
     "  TOOL:LIST   [dir]          list files (default: sandbox root)\n"
     "  TOOL:READ   <file>         read file contents\n"
     "  TOOL:WRITE  <file> <text>  write text to file\n"
@@ -1799,12 +1828,25 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "  TOOL:RND                   random float\n"
     "  TOOL:PERMISSION            ask user for explicit permission\n"
     "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
-    "Rules:\n"
+    "## Rules:\n"
     "- Never access files outside the sandbox.\n"
-    "- Use TOOL:PERMISSION before destructive or irreversible operations.\n"
+    "- Use TOOL:PERMISSION when you're about to modify files, delete data, or run external programs.\n"
     "- Use TOOL:CURL to fetch documentation, APIs, or web content you need.\n"
     "- Reason step-by-step inside <|think|>…</|think|> (hidden from user).\n"
-    "- After each tool call, explain what you did in plain English.\n\n";
+    "- After each tool call, explain what you did in plain English.\n"
+    "Ask the user for explicit permission before proceeding.\n\n"
+    "## File Reading\n"
+    "When you read a file with TOOL:READ, you MUST:\n"
+    "1. Acknowledge what you found\n"
+    "2. Use that information in your response\n"
+    "3. If the file contains code, explain it or show relevant parts\n"
+    "4. If the file contains documentation, summarize key points\n"
+    "## Tool Result Integration\n"
+    "When you see TOOL_RESULT in the conversation, it contains tool output.\n"
+    "Use it to:\n"
+    "- Answer questions based on file contents\n"
+    "- Explain code or configuration\n"
+    "- Provide accurate information from the file\n";
   for (const auto &kf : knowledge_files) {
     std::ifstream f(kf);
     if (!f) continue;
@@ -1831,8 +1873,8 @@ static void handle_slash(const std::string &input,
 
   if (verb == "/help") {
     tui.append_line("[sys] Commands:");
-    tui.append_line("[sys]   /model  <path>           load a GGUF model");
-    tui.append_line("[sys]   /embed  <path>           load an embedding model for RAG");
+    tui.append_line("[sys]   /model  [path]           load a GGUF model (picker if no path)");
+    tui.append_line("[sys]   /embed  [path]           load an embedding model (picker if no path)");
     tui.append_line("[sys]   /rag    [path]           index file or directory (picker if no path)");
     tui.append_line("[sys]   /memory                  KV / VRAM / layer stats");
     tui.append_line("[sys]   /clear                   reset conversation");
@@ -1847,11 +1889,19 @@ static void handle_slash(const std::string &input,
     tui.redraw_all();
     return;
   }
-
+  // ── /model ──────────────────────────────────────────────────────────────
+  // If no path is given, open the file picker so the user can browse to a
+  // GGUF.  The picker starts in the current sandbox directory.
   if (verb == "/model") {
     if (rest.empty()) {
-      tui.append_line("[err] Usage: /model <path-to-gguf>");
-      tui.redraw_all(); return;
+      tui.append_line("[sys] Opening model picker…");
+      tui.redraw_all();
+      rest = tui.file_picker(cfg.sandbox, "Model File");
+      if (rest.empty()) {
+        tui.append_line("[sys] /model cancelled.");
+        tui.redraw_all();
+        return;
+      }
     }
     cfg.model_path = rest;
     if (agent.setup_model(cfg, tui)) {
@@ -1863,10 +1913,19 @@ static void handle_slash(const std::string &input,
     return;
   }
 
+  // ── /embed ──────────────────────────────────────────────────────────────
+  // If no path is given, open the file picker so the user can browse to an
+  // embedding GGUF.
   if (verb == "/embed") {
     if (rest.empty()) {
-      tui.append_line("[err] Usage: /embed <path-to-gguf>");
-      tui.redraw_all(); return;
+      tui.append_line("[sys] Opening embedding model picker…");
+      tui.redraw_all();
+      rest = tui.file_picker(cfg.sandbox, "Embedding Model");
+      if (rest.empty()) {
+        tui.append_line("[sys] /embed cancelled.");
+        tui.redraw_all();
+        return;
+      }
     }
     cfg.embed_path = rest;
     if (agent.setup_embed(rest, tui)) {
@@ -1875,6 +1934,7 @@ static void handle_slash(const std::string &input,
     return;
   }
 
+  // ── /rag ────────────────────────────────────────────────────────────────
   if (verb == "/rag") {
     std::string path = rest;
     if (path.empty()) {
@@ -1943,8 +2003,7 @@ static void handle_slash(const std::string &input,
     }
 
     bool ok = true;
-    bool needs_reparam = false; // whether to re-apply generation params
-
+    bool needs_reparam = false;
     try {
       if (key == "temperature")    { cfg.temperature    = std::stof(val); needs_reparam = true; }
       else if (key == "top_p")     { cfg.top_p          = std::stof(val); needs_reparam = true; }
@@ -2002,8 +2061,6 @@ static void handle_slash(const std::string &input,
 // Welcome banner  — colourful multi-line ASCII logo
 // ═══════════════════════════════════════════════════════════════════════════
 static void welcome(TuiState &tui, const std::string &sandbox) {
-  // Logo lines use the "[logo_N]" prefix so redraw_chat applies a
-  // per-row cyan→magenta gradient (N = 0-6 maps to the gradient table).
   tui.append_line("");
   tui.append_line("[logo_0]  ███╗   ██╗██╗████████╗██████╗  ██████╗ ");
   tui.append_line("[logo_1]  ████╗  ██║██║╚══██╔══╝██╔══██╗██╔═══██╗");
@@ -2025,9 +2082,8 @@ static void welcome(TuiState &tui, const std::string &sandbox) {
 int main(int argc, char **argv) {
   // ── Load persisted settings first (provides defaults) ────────────
   NitroConfig cfg;
-  load_settings(cfg);   // silently no-ops if ~/.config/nitro.settings.json absent
-
   // ── Parse arguments (command-line overrides saved settings) ──────
+  load_settings(cfg);
   auto resolve_path = [](const std::string &arg) -> std::string {
     std::error_code ec;
     if (arg.substr(0, 2) == "~/") {
@@ -2068,9 +2124,9 @@ int main(int argc, char **argv) {
                 "Settings are persisted to ~/.config/nitro.settings.json.\n"
                 "\n"
                 "Slash commands inside nitro:\n"
-                "  /model  <path>           load / hot-reload a GGUF\n"
-                "  /embed  <path>           load an embedding model\n"
-                "  /rag    [path]           index file or directory (picker if no path)\n"
+                "  /model  [path]           load / hot-reload a GGUF (picker if no path)\n"
+                "  /embed  [path]           load an embedding model  (picker if no path)\n"
+                "  /rag    [path]           index file or directory  (picker if no path)\n"
                 "  /memory                  KV / VRAM / layer stats\n"
                 "  /settings                show current settings\n"
                 "  /clear                   reset conversation\n"
@@ -2117,7 +2173,8 @@ int main(int argc, char **argv) {
     if (!cfg.embed_path.empty())
       agent.setup_embed(cfg.embed_path, tui);
   } else {
-    tui.append_line("[sys] No model specified.  Use /model <path> to load one.");
+    tui.append_line("[sys] No model specified.  Use /model to open the file picker,");
+    tui.append_line("[sys] or /model <path> to load directly.");
     tui.append_line("[sys] Example: /model ~/models/qwen2.5-7b-q4_k_m.gguf");
     tui.redraw_all();
   }
