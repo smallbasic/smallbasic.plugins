@@ -70,11 +70,8 @@ static bool         write_file(const std::string &path, const std::string &data)
 static std::string  list_dir(const std::string &path);
 static bool         path_in_sandbox(const std::string &sandbox, const std::string &path);
 static std::string  strip_code_fences(const std::string &filename, const std::string &src);
-static std::string  process_tool(const std::string &line, const std::string &sandbox,
-                                 const std::vector<std::string> &run_allowed,
-                                 TuiState &tui);
-static std::string  build_system_prompt(const std::vector<std::string> &knowledge_files,
-                                        const std::string &sandbox);
+static std::string  process_tool(const std::string &line, const NitroConfig &cfg, TuiState &tui);
+static std::string  build_system_prompt(const std::vector<std::string> &knowledge_files, const std::string &sandbox);
 
 // ─── RAG indexing ─────────────────────────────────────────────────────────────
 static constexpr int BATCH_SIZE = 512;
@@ -388,6 +385,41 @@ static std::string json_escape(const std::string &s) {
   return out;
 }
 
+static std::string introspect(const NitroConfig &cfg) {
+  static constexpr std::string_view tmpl =
+    "{{\n"
+    "  \"model_path\":     \"{}\",\n"
+    "  \"embed_path\":     \"{}\",\n"
+    "  \"sandbox\":        \"{}\",\n"
+    "  \"n_ctx\":          {},\n"
+    "  \"n_batch\":        {},\n"
+    "  \"n_gpu_layers\":   {},\n"
+    "  \"n_max_tokens\":   {},\n"
+    "  \"temperature\":    {},\n"
+    "  \"top_p\":          {},\n"
+    "  \"min_p\":          {},\n"
+    "  \"top_k\":          {},\n"
+    "  \"penalty_repeat\": {},\n"
+    "  \"penalty_last_n\": {},\n"
+    "  \"rag_top_k\":      {}\n"
+    "}}\n";
+  return std::format(tmpl,
+                     cfg.model_path,
+                     cfg.embed_path,
+                     cfg.sandbox,
+                     cfg.n_ctx,
+                     cfg.n_batch,
+                     cfg.n_gpu_layers,
+                     cfg.n_max_tokens,
+                     cfg.temperature,
+                     cfg.top_p,
+                     cfg.min_p,
+                     cfg.top_k,
+                     cfg.penalty_repeat,
+                     cfg.penalty_last_n,
+                     cfg.rag_top_k);
+}
+
 // Persist the current cfg to ~/.config/nitro.settings.json.
 static bool save_settings(const NitroConfig &cfg) {
   std::string path = settings_path();
@@ -397,24 +429,11 @@ static bool save_settings(const NitroConfig &cfg) {
   fs::create_directories(dir, ec);
 
   std::ofstream f(path, std::ios::trunc);
-  if (!f) return false;
+  if (!f) {
+    return false;
+  }
 
-  f << "{\n";
-  f << "  \"model_path\":    \"" << json_escape(cfg.model_path)  << "\",\n";
-  f << "  \"embed_path\":    \"" << json_escape(cfg.embed_path)   << "\",\n";
-  f << "  \"sandbox\":       \"" << json_escape(cfg.sandbox)      << "\",\n";
-  f << "  \"n_ctx\":          " << cfg.n_ctx          << ",\n";
-  f << "  \"n_batch\":        " << cfg.n_batch         << ",\n";
-  f << "  \"n_gpu_layers\":   " << cfg.n_gpu_layers    << ",\n";
-  f << "  \"n_max_tokens\":   " << cfg.n_max_tokens    << ",\n";
-  f << "  \"temperature\":    " << cfg.temperature     << ",\n";
-  f << "  \"top_p\":          " << cfg.top_p           << ",\n";
-  f << "  \"min_p\":          " << cfg.min_p           << ",\n";
-  f << "  \"top_k\":          " << cfg.top_k           << ",\n";
-  f << "  \"penalty_repeat\": " << cfg.penalty_repeat  << ",\n";
-  f << "  \"penalty_last_n\": " << cfg.penalty_last_n  << ",\n";
-  f << "  \"rag_top_k\":      " << cfg.rag_top_k       << "\n";
-  f << "}\n";
+  f << introspect(cfg);
 
   return f.good();
 }
@@ -1195,6 +1214,7 @@ struct AgentState {
   std::string memory_info_text();
   float tokens_per_sec() const;
 };
+
 void AgentState::apply_generation_params(const NitroConfig &cfg) {
   llama->add_stop("<|turn|>");
   llama->add_stop("<|im_end|>");
@@ -1461,7 +1481,7 @@ bool AgentState::run_turn(const std::string &user_message,
         tui.append_line("[tool] " + op + " " + arg1 +
                         (op == "TOOL:WRITE" ? " <content>" : ""));
         tui.redraw_all();
-        std::string result = process_tool(tool_line, cfg.sandbox, cfg.run_allowed, tui);
+        std::string result = process_tool(tool_line, cfg, tui);
         tui.append_line("[tool] → " +
                         result.substr(0, 200) + (result.size() > 200 ? "…" : ""));
         tui.redraw_all();
@@ -1486,7 +1506,7 @@ bool AgentState::run_turn(const std::string &user_message,
     std::string trimmed = buffer;
     trimmed.erase(0, trimmed.find_first_not_of(" \t"));
     if (trimmed.substr(0, 5) == "TOOL:") {
-      std::string result = process_tool(trimmed, cfg.sandbox, cfg.run_allowed, tui);
+      std::string result = process_tool(trimmed, cfg, tui);
       tui.append_line("[tool] → " + result.substr(0, 200));
       tui.redraw_all();
       std::string tool_result_msg = "TOOL_RESULT: " + result;
@@ -1777,10 +1797,10 @@ static std::string tool_curl(const std::string &url) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Tool dispatch
 // ═══════════════════════════════════════════════════════════════════════════
-static std::string process_tool(const std::string &cmd,
-                                const std::string &sandbox,
-                                const std::vector<std::string> &run_allowed,
-                                TuiState &tui) {
+static std::string process_tool(const std::string &cmd, const NitroConfig &cfg, TuiState &tui) {
+  const std::string &sandbox = cfg.sandbox;
+  const std::vector<std::string> &run_allowed = cfg.run_allowed;
+
   std::string op, arg1, arg2;
   auto sp1 = cmd.find(' ');
   if (sp1 == std::string::npos) {
@@ -1848,6 +1868,9 @@ static std::string process_tool(const std::string &cmd,
   if (op == "TOOL:CURL") {
     return tool_curl(arg1);
   }
+  if (op == "TOOL:INTROSPECT") {
+    return introspect(cfg);
+  }
   if (op == "TOOL:RUN") {
     std::string prog = resolve(arg1);
     if (!path_in_sandbox(sandbox, prog)) return "ERROR: path outside sandbox";
@@ -1894,6 +1917,7 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "  TOOL:TIME                  current time\n"
     "  TOOL:RND                   random float\n"
     "  TOOL:PERMISSION            ask user for explicit permission\n"
+    "  TOOL:INTROSPECT            introspect your settings, top_k etc\n"
     "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
     "Rules:\n"
     "- Never access files outside the sandbox.\n"
@@ -2084,8 +2108,9 @@ static void handle_slash(const std::string &input,
     }
 
     if (ok) {
-      if (needs_reparam && agent.model_loaded)
+      if (needs_reparam && agent.model_loaded) {
         agent.apply_generation_params(cfg);
+      }
       save_settings(cfg);
       tui.append_line("[sys] " + key + " = " + val);
     }
@@ -2185,7 +2210,10 @@ int main(int argc, char **argv) {
     std::error_code ec;
     cfg.sandbox = fs::current_path(ec).string();
   }
-  { std::error_code ec; fs::create_directories(cfg.sandbox, ec); }
+  {
+    std::error_code ec;
+    fs::create_directories(cfg.sandbox, ec);
+  }
 
   // ── Auto-discover knowledge files ─────────────────────────────────
   for (const char *kf : {"nitro.md", "AGENTS.md", "README.md"}) {
