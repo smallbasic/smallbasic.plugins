@@ -38,7 +38,8 @@
 //   TOOL:CURL   <url>
 //
 // Copyright (C) 2026 Chris Warren-Smith  —  GPLv2 or later
-// ─── Standard library ────────────────────────────────────────────────────────
+//
+
 #include <algorithm>
 #include <chrono>
 #include <ctime>
@@ -50,14 +51,13 @@
 #include <sstream>
 #include <string>
 #include <vector>
-// ─── curl ─────────────────────────────────────────────────────────────────────
 #include <curl/curl.h>
-// ─── Integration layer (sole llama.cpp dependency for nitro) ─────────────────
 #include "llama-sb.h"
 #include "llama-sb-rag.h"
-// ─── TUI ─────────────────────────────────────────────────────────────────────
 #include <notcurses/notcurses.h>
+
 namespace fs = std::filesystem;
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Forward declarations
 // ═══════════════════════════════════════════════════════════════════════════
@@ -75,6 +75,7 @@ static std::string  process_tool(const std::string &line, const std::string &san
                                  TuiState &tui);
 static std::string  build_system_prompt(const std::vector<std::string> &knowledge_files,
                                         const std::string &sandbox);
+
 // ─── RAG indexing ─────────────────────────────────────────────────────────────
 static constexpr int BATCH_SIZE = 512;
 
@@ -448,6 +449,7 @@ struct TuiState {
   // ── input ─────────────────────────────────────────────────────────
   std::string input_buf;
   size_t      cursor_pos = 0;
+  bool        mouse_mode = true;
   // ── status bar values ─────────────────────────────────────────────
   std::string current_model  = "none";
   float       tokens_per_sec = 0.0f;
@@ -489,6 +491,7 @@ struct TuiState {
   // handle — or just use the paired helpers below.
   struct ncplane *modal_plane = nullptr;
   void show_modal_popup(const std::string &message);
+  void show_help();
   void dismiss_modal_popup();
   // ── RAG folder picker popup ───────────────────────────────────────
   // Presents an interactive directory browser to let the user choose a
@@ -555,7 +558,7 @@ void TuiState::init() {
   ncplane_set_base(inputpl, " ", 0,
                    NCCHANNELS_INITIALIZER(BG_INP_R, BG_INP_G, BG_INP_B,
                                           BG_INP_R, BG_INP_G, BG_INP_B));
-  notcurses_mice_enable(nc, NCMICE_ALL_EVENTS);
+  notcurses_mice_enable(nc, NCMICE_BUTTON_EVENT);
   redraw_all();
 }
 void TuiState::destroy() {
@@ -782,6 +785,24 @@ void TuiState::show_modal_popup(const std::string &message) {
   ncplane_putstr_yx(modal_plane, 2, 2, display.c_str());
 
   notcurses_render(nc);
+}
+
+void TuiState::show_help() {
+  append_line("[sys] Commands:");
+  append_line("[sys]   /model  [path]           load a GGUF model (picker if no path)");
+  append_line("[sys]   /embed  [path]           load an embedding model (picker if no path)");
+  append_line("[sys]   /rag    [path]           index file or directory (picker if no path)");
+  append_line("[sys]   /memory                  KV / VRAM / layer stats");
+  append_line("[sys]   /clear                   reset conversation");
+  append_line("[sys]   /settings                show current settings");
+  append_line("[sys]   /set    <key> <value>    change a setting live");
+  append_line("[sys]   /help                    this message");
+  append_line("[sys]   exit / quit              exit Nitro");
+  append_line("[sys] Settable keys (via /set):");
+  append_line("[sys]   temperature  top_p  top_k  min_p  penalty_repeat");
+  append_line("[sys]   n_max_tokens  penalty_last_n  rag_top_k  n_gpu_layers");
+  append_line("[sys]   run_allowed  (comma-separated list, e.g. python3,make)");
+  redraw_all();
 }
 
 void TuiState::dismiss_modal_popup() {
@@ -1052,7 +1073,6 @@ std::string TuiState::readline_blocking() {
       return result;
     }
 
-
     if (ni.id == NCKEY_UP) {
       // Entering history from a fresh prompt: save current text as draft.
       std::string hist_entry;
@@ -1107,10 +1127,23 @@ std::string TuiState::readline_blocking() {
       notcurses_render(nc);
       continue;
     }
-    if (ni.id == NCKEY_SCROLL_DOWN && scroll_offset > 0) {
+    if (ni.id == NCKEY_SCROLL_DOWN && scroll_offset > 1) {
       scroll_offset -= 1;
       redraw_chat();
       notcurses_render(nc);
+      continue;
+    }
+    if (ni.id == NCKEY_F01) {
+      show_help();
+      continue;
+    }
+    if (ni.id == NCKEY_F02) {
+      mouse_mode = !mouse_mode;
+      if (mouse_mode) {
+        notcurses_mice_enable(nc, NCMICE_BUTTON_EVENT);
+      } else {
+        notcurses_mice_disable(nc);
+      }
       continue;
     }
     if (ni.id == NCKEY_BACKSPACE || ni.id == 127) {
@@ -1295,6 +1328,40 @@ bool AgentState::rag_index(const std::string &path, TuiState &tui) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Think-tag filtering
+// ═══════════════════════════════════════════════════════════════════════════
+// Strips everything between (and including) <think>…</think> or the
+// <|think|>…</|think|> variant from a completed line/buffer.
+// Also strips any bare close-tag that appears without a matching open-tag
+// (can happen when the open was in a previous chunk already consumed).
+// Returns the visible text that should be shown to the user.
+std::string filter_think_tags(const std::string &text) {
+  static const struct { const char *open; const char *close; } PAIRS[] = {
+    { "<think>",   "</think>"   },
+    { "<|think|>", "</|think|>" },
+  };
+  std::string out = text;
+  for (auto &p : PAIRS) {
+    std::string open(p.open), close(p.close);
+    for (;;) {
+      auto ob = out.find(open);
+      if (ob == std::string::npos) break;
+      auto ce = out.find(close, ob);
+      if (ce == std::string::npos) {
+        out.erase(ob);   // no closing tag — strip to end
+        break;
+      }
+      out.erase(ob, ce + close.size() - ob);
+    }
+    // Strip orphan close-tags (open tag was in an earlier chunk).
+    size_t pos = 0;
+    while ((pos = out.find(close, pos)) != std::string::npos)
+      out.erase(pos, close.size());
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Agent turn
 // ═══════════════════════════════════════════════════════════════════════════
 bool AgentState::run_turn(const std::string &user_message,
@@ -1324,29 +1391,32 @@ bool AgentState::run_turn(const std::string &user_message,
     return false;
   }
   tui.append_line("Nitro: ");
-  tui.set_thinking(true);
-  bool in_think = true;
+  // in_think starts false — models that don't use <think> blocks emit
+  // visible text immediately.  The spinner activates only while thinking.
+  bool in_think = false;
+  tui.set_thinking(false);
   std::string buffer;
-  auto update_think_state = [&](const std::string &text) {
-    if (text.find("<think>")    != std::string::npos ||
-        text.find("<|think|>")  != std::string::npos)  in_think = true;
-    if (text.find("</think>")   != std::string::npos ||
-        text.find("</|think|>") != std::string::npos)  in_think = false;
-  };
-  auto remove_substr = [](std::string str, const std::string& toRemove) {
-    size_t pos = str.find(toRemove);
-    while (pos != std::string::npos) {
-      str.erase(pos, toRemove.length());
-      pos = str.find(toRemove, pos);
-    }
-    return str;
-  };
-
   while (iter->_has_next) {
     std::string tok = llama->next(*iter);
-    tui.tick_spinner();
-    update_think_state(tok);
     buffer += tok;
+    // Detect think-tag transitions on the accumulated buffer so we never
+    // miss a tag that was split across two tokens.
+    bool was_thinking = in_think;
+    if (!in_think) {
+      if (buffer.find("<think>")   != std::string::npos ||
+          buffer.find("<|think|>") != std::string::npos)
+        in_think = true;
+    }
+    if (in_think) {
+      if (buffer.find("</think>")   != std::string::npos ||
+          buffer.find("</|think|>") != std::string::npos)
+        in_think = false;
+    }
+    // Update spinner: animate only while in a think block.
+    if (in_think || was_thinking) {
+      tui.set_thinking(in_think);
+      if (in_think) tui.tick_spinner();
+    }
     auto nl = buffer.find('\n');
     if (nl != std::string::npos) {
       std::string text_line = buffer.substr(0, nl);
@@ -1408,13 +1478,10 @@ bool AgentState::run_turn(const std::string &user_message,
         }
         buffer.clear();
       } else if (!in_think) {
-        text_line = remove_substr(text_line, "</think>");
-        text_line = remove_substr(text_line, "</|think|>");
-        tui.append_token(text_line + "\n");
+        tui.append_token(filter_think_tags(text_line) + "\n");
       }
     }
   }
-
   if (!buffer.empty()) {
     std::string trimmed = buffer;
     trimmed.erase(0, trimmed.find_first_not_of(" \t"));
@@ -1425,7 +1492,7 @@ bool AgentState::run_turn(const std::string &user_message,
       std::string tool_result_msg = "TOOL_RESULT: " + result;
       llama->add_message(*iter, "user", tool_result_msg);
     } else if (!in_think) {
-      tui.append_token(buffer);
+      tui.append_token(filter_think_tags(buffer));
     }
   }
   tui.flush_token_acc();
@@ -1817,7 +1884,7 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "## Tool protocol\n"
     "Emit tool calls on their own line. The host executes them and returns\n"
     "TOOL_RESULT: <value> on the next line.\n\n"
-    "## Available tools:\n"
+    "Available tools:\n"
     "  TOOL:LIST   [dir]          list files (default: sandbox root)\n"
     "  TOOL:READ   <file>         read file contents\n"
     "  TOOL:WRITE  <file> <text>  write text to file\n"
@@ -1828,25 +1895,12 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "  TOOL:RND                   random float\n"
     "  TOOL:PERMISSION            ask user for explicit permission\n"
     "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
-    "## Rules:\n"
+    "Rules:\n"
     "- Never access files outside the sandbox.\n"
-    "- Use TOOL:PERMISSION when you're about to modify files, delete data, or run external programs.\n"
+    "- Use TOOL:PERMISSION before destructive or irreversible operations.\n"
     "- Use TOOL:CURL to fetch documentation, APIs, or web content you need.\n"
     "- Reason step-by-step inside <|think|>…</|think|> (hidden from user).\n"
-    "- After each tool call, explain what you did in plain English.\n"
-    "Ask the user for explicit permission before proceeding.\n\n"
-    "## File Reading\n"
-    "When you read a file with TOOL:READ, you MUST:\n"
-    "1. Acknowledge what you found\n"
-    "2. Use that information in your response\n"
-    "3. If the file contains code, explain it or show relevant parts\n"
-    "4. If the file contains documentation, summarize key points\n"
-    "## Tool Result Integration\n"
-    "When you see TOOL_RESULT in the conversation, it contains tool output.\n"
-    "Use it to:\n"
-    "- Answer questions based on file contents\n"
-    "- Explain code or configuration\n"
-    "- Provide accurate information from the file\n";
+    "- After each tool call, explain what you did in plain English.\n\n";
   for (const auto &kf : knowledge_files) {
     std::ifstream f(kf);
     if (!f) continue;
@@ -1872,21 +1926,7 @@ static void handle_slash(const std::string &input,
   }
 
   if (verb == "/help") {
-    tui.append_line("[sys] Commands:");
-    tui.append_line("[sys]   /model  [path]           load a GGUF model (picker if no path)");
-    tui.append_line("[sys]   /embed  [path]           load an embedding model (picker if no path)");
-    tui.append_line("[sys]   /rag    [path]           index file or directory (picker if no path)");
-    tui.append_line("[sys]   /memory                  KV / VRAM / layer stats");
-    tui.append_line("[sys]   /clear                   reset conversation");
-    tui.append_line("[sys]   /settings                show current settings");
-    tui.append_line("[sys]   /set    <key> <value>    change a setting live");
-    tui.append_line("[sys]   /help                    this message");
-    tui.append_line("[sys]   exit / quit              exit Nitro");
-    tui.append_line("[sys] Settable keys (via /set):");
-    tui.append_line("[sys]   temperature  top_p  top_k  min_p  penalty_repeat");
-    tui.append_line("[sys]   n_max_tokens  penalty_last_n  rag_top_k  n_gpu_layers");
-    tui.append_line("[sys]   run_allowed  (comma-separated list, e.g. python3,make)");
-    tui.redraw_all();
+    tui.show_help();
     return;
   }
   // ── /model ──────────────────────────────────────────────────────────────
@@ -2111,8 +2151,7 @@ int main(int argc, char **argv) {
     } else if (a == "-g" || a == "--gpu-layers") {
       cfg.n_gpu_layers = std::stoi(take_next(a.c_str()));
     } else if (a == "-h" || a == "--help") {
-      std::puts(
-                "Usage: nitro [options] [project_dir]\n"
+      std::puts("Usage: nitro [options] [project_dir]\n"
                 "\n"
                 "Options:\n"
                 "  -m, --model  <path>      GGUF model to load on startup\n"
