@@ -81,17 +81,17 @@ struct Llama {
   // generation parameters
   void add_stop(const char *stop) { _stop_sequences.push_back(stop); }
   void clear_stops() { _stop_sequences.clear(); }
-  void set_penalty_last_n(int32_t penalty_last_n) { _penalty_last_n = penalty_last_n; }
-  void set_penalty_repeat(float penalty_repeat) { _penalty_repeat = penalty_repeat; }
-  void set_penalty_freq(float penalty_freq) { _penalty_freq = penalty_freq; }
-  void set_penalty_present(float penalty_present) { _penalty_present = penalty_present; }
-  void set_max_tokens(int max_tokens) { _max_tokens = max_tokens; }
-  void set_min_p(float min_p) { _min_p = min_p; }
-  void set_temperature(float temperature) { _temperature = temperature; }
-  void set_top_k(int top_k) { _top_k = top_k; }
-  void set_top_p(float top_p) { _top_p = top_p; }
+  void set_penalty_last_n(int32_t penalty_last_n) { _penalty_last_n = penalty_last_n; dirty(); }
+  void set_penalty_repeat(float penalty_repeat) { _penalty_repeat = penalty_repeat; dirty(); }
+  void set_penalty_freq(float penalty_freq) { _penalty_freq = penalty_freq; dirty(); }
+  void set_penalty_present(float penalty_present) { _penalty_present = penalty_present; dirty(); }
+  void set_max_tokens(int max_tokens) { _max_tokens = max_tokens; dirty(); }
+  void set_min_p(float min_p) { _min_p = min_p; dirty(); }
+  void set_temperature(float temperature) { _temperature = temperature; dirty(); }
+  void set_top_k(int top_k) { _top_k = top_k; dirty(); }
+  void set_top_p(float top_p) { _top_p = top_p; dirty(); }
   void set_grammar(const string &src, const string &root);
-  void set_seed(unsigned int seed) { _seed = seed; }
+  void set_seed(unsigned int seed) { _seed = seed; dirty(); }
 
   // error handling
   const char *last_error() { return _last_error.c_str(); }
@@ -110,8 +110,9 @@ struct Llama {
   private:
   bool batch_decode_tokens(vector<llama_token> &tokens);
   bool configure_sampler();
+  void dirty() {_sampler_dirty = true; }
   bool ends_with_sentence_boundary(const string &out);
-  bool make_space_for_tokens(int n_tokens, int keep_min);
+  bool make_space_for_tokens(int n_tokens);
   vector<llama_token> tokenize(const string &prompt);
   string token_to_string(LlamaIter &iter, llama_token tok);
   void set_last_error(const char *message);
@@ -136,7 +137,8 @@ struct Llama {
   int _max_tokens;
   int _log_level;
   int _n_gpu_layers;
-  int _n_past;
+  int _n_system_tokens;
   bool _is_gemma4;
+  bool _sampler_dirty;
   unsigned int _seed;
 };

@@ -253,6 +253,38 @@ class InputHistory {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Logging
+// ═══════════════════════════════════════════════════════════════════════════
+// ─── Debug logging (file-backed, safe to call while notcurses is active) ──
+static FILE *g_logfile = nullptr;
+
+static void log_open() {
+  const char *home = getenv("HOME");
+  std::string path = std::string(home ? home : ".") + "/.config/nitro.log";
+  g_logfile = fopen(path.c_str(), "a");
+}
+
+static void log_close() {
+  if (g_logfile) { fclose(g_logfile); g_logfile = nullptr; }
+}
+
+static void log_write(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+static void log_write(const char *fmt, ...) {
+  if (!g_logfile) return;
+  // timestamp
+  time_t t = time(nullptr);
+  char ts[32];
+  strftime(ts, sizeof(ts), "%H:%M:%S", localtime(&t));
+  fprintf(g_logfile, "[%s] ", ts);
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(g_logfile, fmt, ap);
+  va_end(ap);
+  fputc('\n', g_logfile);
+  fflush(g_logfile);  // flush immediately so tail -f works
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Settings persistence  (~/.config/nitro.settings.json)
 // ═══════════════════════════════════════════════════════════════════════════
 // A minimal hand-rolled JSON reader/writer for the flat key-value settings
@@ -326,14 +358,26 @@ static bool settings_get_float(const std::string &json,
                                float &out) {
   std::string search = "\"" + key + "\":";
   size_t pos = json.find(search);
-  if (pos == std::string::npos) return false;
+  if (pos == std::string::npos) {
+    return false;
+  }
   pos += search.size();
-  while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t')) ++pos;
-  if (pos >= json.size()) return false;
+  while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t')) {
+    ++pos;
+  }
+  if (pos >= json.size()) {
+    return false;
+  }
   size_t start = pos;
-  if (json[pos] == '-') ++pos;
-  while (pos < json.size() && (std::isdigit((unsigned char)json[pos]) || json[pos] == '.')) ++pos;
-  if (pos == start) return false;
+  if (json[pos] == '-') {
+    ++pos;
+  }
+  while (pos < json.size() && (std::isdigit((unsigned char)json[pos]) || json[pos] == '.')) {
+    ++pos;
+  }
+  if (pos == start) {
+    return false;
+  }
   out = std::stof(json.substr(start, pos - start));
   return true;
 }
@@ -436,6 +480,23 @@ static bool save_settings(const NitroConfig &cfg) {
   f << introspect(cfg);
 
   return f.good();
+}
+
+// Trims whitespace from both ends of a string
+std::string trim(std::string_view str) {
+  const std::string_view whitespace = " \t\n\r\f\v";
+
+  // Find the first non-whitespace character
+  const auto start = str.find_first_not_of(whitespace);
+  if (start == std::string_view::npos) {
+    return ""; // The string is entirely whitespace
+  }
+
+  // Find the last non-whitespace character
+  const auto end = str.find_last_not_of(whitespace);
+
+  // Return the substring between start and end
+  return std::string(str.substr(start, end - start + 1));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -580,9 +641,11 @@ void TuiState::init() {
   notcurses_mice_enable(nc, NCMICE_BUTTON_EVENT);
   redraw_all();
 }
+
 void TuiState::destroy() {
   if (nc) { notcurses_stop(nc); nc = nullptr; }
 }
+
 void TuiState::resize() {
   notcurses_term_dim_yx(nc, (unsigned *)&term_rows, (unsigned *)&term_cols);
   ncplane_resize_simple(header,  1,                       (unsigned)term_cols);
@@ -678,13 +741,13 @@ void TuiState::redraw_input() {
   ncplane_set_channels(inputpl, inp_ch(230, 230, 230));
   ncplane_putstr_yx(inputpl, 1, prompt_cols, before.c_str());
   int cx = prompt_cols + cur_in_view;
-  ncplane_set_channels(inputpl,
-                       NCCHANNELS_INITIALIZER(BG_INP_R, BG_INP_G, BG_INP_B, 180, 230, 255));
+  ncplane_set_channels(inputpl, NCCHANNELS_INITIALIZER(BG_INP_R, BG_INP_G, BG_INP_B, 180, 230, 255));
   char cbuf[2] = { cursor_ch_val, '\0' };
   ncplane_putstr_yx(inputpl, 1, cx, cbuf);
   ncplane_set_channels(inputpl, inp_ch(230, 230, 230));
-  if (!after.empty())
+  if (!after.empty()) {
     ncplane_putstr_yx(inputpl, 1, cx + 1, after.c_str());
+  }
 }
 
 void TuiState::redraw_all() {
@@ -714,8 +777,9 @@ void TuiState::append_line(const std::string &line) {
   if ((int)line.size() <= w) {
     chat_lines.push_back(line);
   } else {
-    for (int off = 0; off < (int)line.size(); off += w)
+    for (int off = 0; off < (int)line.size(); off += w) {
       chat_lines.push_back(line.substr(off, w));
+    }
   }
 }
 
@@ -723,7 +787,9 @@ void TuiState::append_token(const std::string &token) {
   token_acc += token;
   for (;;) {
     auto pos = token_acc.find('\n');
-    if (pos == std::string::npos) break;
+    if (pos == std::string::npos) {
+      break;
+    }
     append_line(token_acc.substr(0, pos));
     token_acc = token_acc.substr(pos + 1);
   }
@@ -895,8 +961,7 @@ std::string TuiState::file_picker(const std::string &start_dir,
   if (!picker) return "";
 
   static constexpr uint32_t PBG_R = 18, PBG_G = 24, PBG_B = 40;
-  ncplane_set_base(picker, " ", 0,
-                   NCCHANNELS_INITIALIZER(PBG_R, PBG_G, PBG_B, PBG_R, PBG_G, PBG_B));
+  ncplane_set_base(picker, " ", 0, NCCHANNELS_INITIALIZER(PBG_R, PBG_G, PBG_B, PBG_R, PBG_G, PBG_B));
   // Build a compact hint line appropriate to the operation.
   // /rag adds 's=select dir'; /model and /embed only need file selection.
   std::string hint_line = "↑↓ navigate  Enter open/select  Esc cancel";
@@ -920,8 +985,7 @@ std::string TuiState::file_picker(const std::string &start_dir,
     ncplane_putstr_yx(picker, PH - 1, PW - 1, "╝");
 
     // Title
-    ncplane_set_channels(picker,
-                         NCCHANNELS_INITIALIZER(255, 220, 80, PBG_R, PBG_G, PBG_B));
+    ncplane_set_channels(picker, NCCHANNELS_INITIALIZER(255, 220, 80, PBG_R, PBG_G, PBG_B));
     std::string title_str = " 📂 " + title_hint + " Picker ";
     if ((int)title_str.size() > PW - 4) title_str = title_str.substr(0, PW - 4);
     ncplane_putstr_yx(picker, 0, 2, title_str.c_str());
@@ -929,12 +993,10 @@ std::string TuiState::file_picker(const std::string &start_dir,
     std::string path_display = current_dir;
     if ((int)path_display.size() > PW - 4)
       path_display = "…" + path_display.substr(path_display.size() - (PW - 5));
-    ncplane_set_channels(picker,
-                         NCCHANNELS_INITIALIZER(160, 200, 240, PBG_R, PBG_G, PBG_B));
+    ncplane_set_channels(picker, NCCHANNELS_INITIALIZER(160, 200, 240, PBG_R, PBG_G, PBG_B));
     ncplane_putstr_yx(picker, 1, 2, path_display.c_str());
     // Hint line (bottom interior row).
-    ncplane_set_channels(picker,
-                         NCCHANNELS_INITIALIZER(120, 120, 160, PBG_R, PBG_G, PBG_B));
+    ncplane_set_channels(picker, NCCHANNELS_INITIALIZER(120, 120, 160, PBG_R, PBG_G, PBG_B));
     std::string hint_trunc = hint_line;
     if ((int)hint_trunc.size() > PW - 4) hint_trunc = hint_trunc.substr(0, PW - 4);
     ncplane_putstr_yx(picker, PH - 2, 2, hint_trunc.c_str());
@@ -954,8 +1016,7 @@ std::string TuiState::file_picker(const std::string &start_dir,
       uint32_t br = is_selected ? 100 : PBG_R;
       uint32_t bg = is_selected ? 180 : PBG_G;
       uint32_t bb = is_selected ? 255 : PBG_B;
-      ncplane_set_channels(picker,
-                           NCCHANNELS_INITIALIZER(fr, fg, fb, br, bg, bb));
+      ncplane_set_channels(picker, NCCHANNELS_INITIALIZER(fr, fg, fb, br, bg, bb));
       std::string label = (is_selected ? " ▶ " : "   ") + entries[idx];
       if ((int)label.size() > PW - 2) label = label.substr(0, PW - 2);
       while ((int)label.size() < PW - 2) label += ' ';
@@ -1216,6 +1277,7 @@ struct AgentState {
 };
 
 void AgentState::apply_generation_params(const NitroConfig &cfg) {
+  //  llama->add_stop(MARKER_END_TOOL);
   llama->add_stop("<|turn|>");
   llama->add_stop("<|im_end|>");
   llama->set_max_tokens(cfg.n_max_tokens);
@@ -1348,40 +1410,6 @@ bool AgentState::rag_index(const std::string &path, TuiState &tui) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Think-tag filtering
-// ═══════════════════════════════════════════════════════════════════════════
-// Strips everything between (and including) <think>…</think> or the
-// <|think|>…</|think|> variant from a completed line/buffer.
-// Also strips any bare close-tag that appears without a matching open-tag
-// (can happen when the open was in a previous chunk already consumed).
-// Returns the visible text that should be shown to the user.
-std::string filter_think_tags(const std::string &text) {
-  static const struct { const char *open; const char *close; } PAIRS[] = {
-    { "<think>",   "</think>"   },
-    { "<|think|>", "</|think|>" },
-  };
-  std::string out = text;
-  for (auto &p : PAIRS) {
-    std::string open(p.open), close(p.close);
-    for (;;) {
-      auto ob = out.find(open);
-      if (ob == std::string::npos) break;
-      auto ce = out.find(close, ob);
-      if (ce == std::string::npos) {
-        out.erase(ob);   // no closing tag — strip to end
-        break;
-      }
-      out.erase(ob, ce + close.size() - ob);
-    }
-    // Strip orphan close-tags (open tag was in an earlier chunk).
-    size_t pos = 0;
-    while ((pos = out.find(close, pos)) != std::string::npos)
-      out.erase(pos, close.size());
-  }
-  return out;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
 // Agent turn
 // ═══════════════════════════════════════════════════════════════════════════
 bool AgentState::run_turn(const std::string &user_message,
@@ -1411,110 +1439,88 @@ bool AgentState::run_turn(const std::string &user_message,
     return false;
   }
   tui.append_line("Nitro: ");
+
   // in_think starts false — models that don't use <think> blocks emit
   // visible text immediately.  The spinner activates only while thinking.
-  bool in_think = false;
+  enum {t_init, t_think, t_thunk} think_mode = t_init;
   tui.set_thinking(false);
   std::string buffer;
+
+  auto invoke_tool = [&](const std::string &buffer, const std::string_view template_str) -> void {
+    std::string result = process_tool(buffer, cfg, tui);
+    std::string content = std::vformat(template_str, std::make_format_args(result));
+    if (!llama->add_message(*iter, "tool_result", content)) {
+      tui.append_line(std::string("[err] tool result inject: ") + llama->last_error());
+      tui.redraw_all();
+    }
+    if (!iter->_has_next) {
+      tui.append_line(std::string("[err] failed to evoke tool response: ") + llama->last_error());
+      tui.redraw_all();
+    }
+  };
+
+  auto start_think = [&](const std::string &tag) {
+    if (think_mode == t_init) {
+      auto pos = buffer.find(tag);
+      if (pos != std::string::npos) {
+        think_mode = t_think;
+        tui.set_thinking(true);
+        // display prededing text
+        buffer = buffer.substr(0, pos);
+      }
+    }
+  };
+
+  auto end_think = [&](const std::string &tag) {
+    if (think_mode == t_think) {
+      auto pos = buffer.find(tag);
+      if (pos != std::string::npos) {
+        think_mode = t_thunk;
+        tui.set_thinking(false);
+        // display remaining text
+        buffer = buffer.substr(pos + tag.length());
+      }
+    }
+  };
+
   while (iter->_has_next) {
     std::string tok = llama->next(*iter);
     buffer += tok;
-    // Detect think-tag transitions on the accumulated buffer so we never
-    // miss a tag that was split across two tokens.
-    bool was_thinking = in_think;
-    if (!in_think) {
-      if (buffer.find("<think>")   != std::string::npos ||
-          buffer.find("<|think|>") != std::string::npos)
-        in_think = true;
+
+    if (think_mode == t_init) {
+      start_think("<think>");
+      start_think("<|think|>");
+      start_think("<think|>");
+      start_think("<|channel>thought");
     }
-    if (in_think) {
-      if (buffer.find("</think>")   != std::string::npos ||
-          buffer.find("</|think|>") != std::string::npos)
-        in_think = false;
+    if (think_mode == t_think) {
+      tui.tick_spinner();
+      end_think("</think>");
+      end_think("</|think|>");
+      end_think("<think|>");
+      end_think("<channel|>");
     }
-    // Update spinner: animate only while in a think block.
-    if (in_think || was_thinking) {
-      tui.set_thinking(in_think);
-      if (in_think) tui.tick_spinner();
-    }
-    auto nl = buffer.find('\n');
-    if (nl != std::string::npos) {
-      std::string text_line = buffer.substr(0, nl);
-      buffer = buffer.substr(nl + 1);
-      std::string trimmed = text_line;
-      trimmed.erase(0, trimmed.find_first_not_of(" \t"));
-      if (trimmed.substr(0, 5) == "TOOL:") {
-        std::string tail = buffer + llama->all(*iter);
-        std::string op, arg1, payload;
-        {
-          auto s1 = trimmed.find(' ');
-          if (s1 != std::string::npos) {
-            op = trimmed.substr(0, s1);
-            std::string rest = trimmed.substr(s1 + 1);
-            rest.erase(0, rest.find_first_not_of(" \t"));
-            auto s2 = rest.find(' ');
-            if (s2 != std::string::npos) {
-              arg1    = rest.substr(0, s2);
-              payload = rest.substr(s2 + 1) + tail;
-            } else {
-              arg1    = rest;
-              payload = tail;
-            }
-          } else {
-            op = trimmed;
-          }
-        }
-        std::string tool_line;
-        if (op == "TOOL:WRITE") {
-          tool_line = op + " " + arg1 + " " + payload;
-          while (!tool_line.empty() && tool_line.back() == '\n') tool_line.pop_back();
-        } else {
-          tool_line = op;
-          if (!arg1.empty()) tool_line += " " + arg1;
-          if (!payload.empty()) {
-            std::string flat = payload;
-            flat.erase(std::remove(flat.begin(), flat.end(), '\n'), flat.end());
-            while (!flat.empty() && std::isspace((unsigned char)flat.back())) flat.pop_back();
-            if (!flat.empty()) tool_line += " " + flat;
-          }
-        }
-        tui.append_line("[tool] " + op + " " + arg1 +
-                        (op == "TOOL:WRITE" ? " <content>" : ""));
-        tui.redraw_all();
-        std::string result = process_tool(tool_line, cfg, tui);
-        tui.append_line("[tool] → " +
-                        result.substr(0, 200) + (result.size() > 200 ? "…" : ""));
-        tui.redraw_all();
-        // Inject the tool result back into the conversation as a user-role
-        // message using the TOOL_RESULT: prefix that the system prompt
-        // describes.  Using "user" role ensures the injected text is correctly
-        // formatted regardless of whether the underlying llama-sb layer knows
-        // a dedicated "tool" role.
-        std::string tool_result_msg = "TOOL_RESULT: " + result;
-        if (!llama->add_message(*iter, "user", tool_result_msg)) {
-          tui.append_line(std::string("[err] tool result inject: ") + llama->last_error());
-          tui.redraw_all();
-          break;
-        }
+    if (think_mode == t_thunk) {
+      auto tool_start = buffer.find("TOOL:");
+      if (tool_start != std::string::npos) {
+        // fetch all remaining tokens
+        invoke_tool(buffer + llama->all(*iter), "TOOL_RESULT: {}");
         buffer.clear();
-      } else if (!in_think) {
-        tui.append_token(filter_think_tags(text_line) + "\n");
+        think_mode = t_init;
+        continue;
+      }
+      auto pos = buffer.find('\n');
+      if (pos != std::string::npos && pos > 0) {
+        tui.append_token(buffer.substr(0, pos) + "\n");
+        buffer = buffer.substr(pos + 1);
       }
     }
   }
+
   if (!buffer.empty()) {
-    std::string trimmed = buffer;
-    trimmed.erase(0, trimmed.find_first_not_of(" \t"));
-    if (trimmed.substr(0, 5) == "TOOL:") {
-      std::string result = process_tool(trimmed, cfg, tui);
-      tui.append_line("[tool] → " + result.substr(0, 200));
-      tui.redraw_all();
-      std::string tool_result_msg = "TOOL_RESULT: " + result;
-      llama->add_message(*iter, "user", tool_result_msg);
-    } else if (!in_think) {
-      tui.append_token(filter_think_tags(buffer));
-    }
+    tui.append_token(buffer + "\n");
   }
+
   tui.flush_token_acc();
   tui.set_thinking(false);
   tui.tokens_per_sec = tokens_per_sec();
@@ -1556,7 +1562,9 @@ static bool path_in_sandbox(const std::string &sandbox, const std::string &path)
 
 static std::string read_file(const std::string &path) {
   std::ifstream f(path, std::ios::binary);
-  if (!f) return "ERROR: cannot open " + path;
+  if (!f) {
+    return "ERROR: cannot open [" + path + "]";
+  }
   std::ostringstream oss; oss << f.rdbuf();
   return oss.str();
 }
@@ -1661,8 +1669,11 @@ static std::string html_to_text(const std::string &html) {
       size_t sp = inner.find_first_of(" \t/\r\n");
       std::string name = (sp != std::string::npos) ? inner.substr(0, sp) : inner;
       std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-      for (int k = 0; BLOCK[k]; ++k)
-        if (name == BLOCK[k]) { out += '\n'; break; }
+      for (int k = 0; BLOCK[k]; ++k) {
+        if (name == BLOCK[k]) {
+          out += '\n'; break;
+        }
+      }
       i = ce + 1;
     }
     s = out;
@@ -1750,6 +1761,7 @@ static size_t curl_write_cb(void *contents, size_t size, size_t nmemb, void *use
   }
   return total;
 }
+
 static std::string tool_curl(const std::string &url) {
   if (url.empty()) return "ERROR: TOOL:CURL requires a URL argument";
   CURL *curl = curl_easy_init();
@@ -1804,9 +1816,9 @@ static std::string process_tool(const std::string &cmd, const NitroConfig &cfg, 
   std::string op, arg1, arg2;
   auto sp1 = cmd.find(' ');
   if (sp1 == std::string::npos) {
-    op = cmd;
+    op = trim(cmd);
   } else {
-    op = cmd.substr(0, sp1);
+    op = trim(cmd.substr(0, sp1));
     std::string rest = cmd.substr(sp1 + 1);
     rest.erase(0, rest.find_first_not_of(" \t"));
     auto sp2 = rest.find(' ');
@@ -1824,6 +1836,9 @@ static std::string process_tool(const std::string &cmd, const NitroConfig &cfg, 
     if (p[0] == '/') return p;
     return join_path(sandbox, p);
   };
+
+  tui.append_line("[tool] → " + op);
+  tui.redraw_all();
 
   if (op == "TOOL:DATE") {
     char buf[32]; time_t t = time(nullptr);
@@ -1873,7 +1888,9 @@ static std::string process_tool(const std::string &cmd, const NitroConfig &cfg, 
   }
   if (op == "TOOL:RUN") {
     std::string prog = resolve(arg1);
-    if (!path_in_sandbox(sandbox, prog)) return "ERROR: path outside sandbox";
+    if (!path_in_sandbox(sandbox, prog)) {
+      return "ERROR: path outside sandbox";
+    }
     if (!run_allowed.empty()) {
       std::string basename = fs::path(prog).filename().string();
       bool permitted = std::any_of(run_allowed.begin(), run_allowed.end(),
@@ -1885,15 +1902,21 @@ static std::string process_tool(const std::string &cmd, const NitroConfig &cfg, 
     }
     std::string command = prog + " " + arg2 + " 2>&1";
     FILE *fp = popen(command.c_str(), "r");
-    if (!fp) return "ERROR: popen failed";
+    if (!fp) {
+      return "ERROR: popen failed";
+    }
     std::string out;
     char buf[256];
-    while (fgets(buf, sizeof(buf), fp)) out += buf;
+    while (fgets(buf, sizeof(buf), fp)) {
+      out += buf;
+    }
     pclose(fp);
-    if (out.size() > 4096) out = out.substr(0, 4096) + "\n…(truncated)";
+    if (out.size() > 4096) {
+      out = out.substr(0, 4096) + "\n…(truncated)";
+    }
     return out;
   }
-  return "ERROR: unknown tool: " + op;
+  return "ERROR: unknown tool: [" + op + "]";
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1905,8 +1928,9 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
   p += "You are Nitro, an agentic AI assistant for software development.\n"
     "Your sandbox (project directory) is: " + sandbox + "\n\n"
     "## Tool protocol\n"
-    "Emit tool calls on their own line. The host executes them and returns\n"
-    "TOOL_RESULT: <value> on the next line.\n\n"
+    " - Emit tool calls on their own new line. for example:\n\n"
+    "TOOL:LIST\n"
+    " - The host executes the tool and returns TOOL_RESULT: <value> on the next line.\n\n"
     "Available tools:\n"
     "  TOOL:LIST   [dir]          list files (default: sandbox root)\n"
     "  TOOL:READ   <file>         read file contents\n"
@@ -1923,7 +1947,7 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "- Never access files outside the sandbox.\n"
     "- Use TOOL:PERMISSION before destructive or irreversible operations.\n"
     "- Use TOOL:CURL to fetch documentation, APIs, or web content you need.\n"
-    "- Reason step-by-step inside <|think|>…</|think|> (hidden from user).\n"
+    "- Reason step-by-step inside <|think|> </|think|> (hidden from user).\n"
     "- After each tool call, explain what you did in plain English.\n\n";
   for (const auto &kf : knowledge_files) {
     std::ifstream f(kf);
@@ -2080,8 +2104,7 @@ static void handle_slash(const std::string &input,
       else if (key == "n_gpu_layers")   {
         cfg.n_gpu_layers = std::stoi(val);
         tui.append_line("[sys] n_gpu_layers will take effect on next /model load.");
-      }
-      else if (key == "run_allowed") {
+      } else if (key == "run_allowed") {
         // Accept a comma-separated list of basenames, or "none" to clear.
         cfg.run_allowed.clear();
         if (val != "none") {
@@ -2100,8 +2123,10 @@ static void handle_slash(const std::string &input,
           for (const auto &e : cfg.run_allowed) list += e + " ";
           tui.append_line("[sys] run_allowed: " + list);
         }
+      } else {
+        tui.append_line("[err] Unknown key '" + key + "'.  Try /help for list.");
+        ok = false;
       }
-      else { tui.append_line("[err] Unknown key '" + key + "'.  Try /help for list."); ok = false; }
     } catch (const std::exception &ex) {
       tui.append_line(std::string("[err] /set: ") + ex.what());
       ok = false;
@@ -2246,28 +2271,38 @@ int main(int argc, char **argv) {
     tui.redraw_all();
   }
 
+  // log_open();
+
   // ── Main loop ─────────────────────────────────────────────────────
   for (;;) {
     {
       unsigned rows = 0, cols = 0;
       notcurses_stddim_yx(tui.nc, &rows, &cols);
-      if ((int)rows != tui.term_rows || (int)cols != tui.term_cols)
+      if ((int)rows != tui.term_rows || (int)cols != tui.term_cols) {
         tui.resize();
+      }
     }
     std::string input = tui.readline_blocking();
     input.erase(0, input.find_first_not_of(" \t"));
-    if (!input.empty())
+    if (!input.empty()) {
       input.erase(input.find_last_not_of(" \t\r\n") + 1);
-    if (input.empty()) continue;
+    }
+    if (input.empty()) {
+      continue;
+    }
     tui.append_line("You: " + input);
     tui.redraw_all();
-    if (input == "exit" || input == "quit") break;
+    if (input == "exit" || input == "quit") {
+      break;
+    }
     if (input[0] == '/') {
       handle_slash(input, cfg, agent, tui);
     } else {
       agent.run_turn(input, cfg, tui);
     }
   }
+
+  // log_close();
 
   tui.destroy();
   // Persist input history for the next session.

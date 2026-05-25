@@ -61,8 +61,9 @@ Llama::Llama() :
   _max_tokens(0),
   _log_level(GGML_LOG_LEVEL_CONT),
   _n_gpu_layers(0),
-  _n_past(0),
+  _n_system_tokens(0),
   _is_gemma4(false),
+  _sampler_dirty(false),
   _seed(LLAMA_DEFAULT_SEED) {
   llama_log_set([](enum ggml_log_level level, const char *text, void *user_data) {
     Llama *llama = (Llama *)user_data;
@@ -99,8 +100,9 @@ Llama::Llama(Llama &&other) noexcept
   , _max_tokens(other._max_tokens)
   , _log_level(other._log_level)
   , _n_gpu_layers(other._n_gpu_layers)
-  , _n_past(other._n_past)
+  , _n_system_tokens(other._n_system_tokens)
   , _is_gemma4(other._is_gemma4)
+  , _sampler_dirty(other._sampler_dirty)
   , _seed(other._seed) {
 }
 
@@ -129,8 +131,9 @@ void Llama::reset() {
   _top_p = 1.0f;
   _min_p = 0.0f;
   _max_tokens = 150;
-  _n_past = 0;
+  _n_system_tokens = 0;
   _seed = LLAMA_DEFAULT_SEED;
+  _sampler_dirty = true;
   if (_ctx) {
     llama_memory_clear(llama_get_memory(_ctx), true);
   }
@@ -210,13 +213,13 @@ bool Llama::load_embedding_model(string model_path) {
 void Llama::set_grammar(const string &src, const string &root) {
   _grammar_src = src;
   _grammar_root = root;
+  dirty();
 }
 
 bool Llama::add_message(LlamaIter &iter, const string &role, const string &content) {
   llama_chat_message message = {role.c_str(), content.c_str()};
   int buf_size = 2 * (int)(role.size() + content.size() + 64);
   vector<char> buf(buf_size);
-  bool add_ass = (role == "user" || role == "tool");
   int32_t n = 0;
 
   if (_template.empty()) {
@@ -225,14 +228,18 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
   }
 
   if (_is_gemma4) {
-    string str = "<|turn>" + role + "\n" + content + "<turn|>\n";
-    if (add_ass) {
-      str += "<|turn>model\n";
+    // see: https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4
+    string str;
+    if (role == "system") {
+      str = "<|turn>system\n<|think|>" + content + "<turn|>\n";
+    } else {
+      str = "<|turn>" + role + "\n" + content + "<turn|>\n";
     }
     n = str.size();
     buf.assign(str.begin(), str.end());
     buf.push_back('\0');
   } else {
+    bool add_ass = (role == "user" || role == "tool" || role == "tool_result");
     n = llama_chat_apply_template(_template.c_str(), &message, 1, add_ass, buf.data(), buf_size);
     if (n < 0) {
       _last_error = "No chat template no supported";
@@ -244,8 +251,12 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
   }
   string prompt(buf.data(), n);
 
-  if (!configure_sampler()) {
-    return false;
+  if (_sampler_dirty) {
+    // avoid wasteful rebuild
+    if (!configure_sampler()) {
+      return false;
+    }
+    _sampler_dirty = false;
   }
 
   vector<llama_token> prompt_tokens = tokenize(prompt);
@@ -253,7 +264,12 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
     return false;
   }
 
-  if (!make_space_for_tokens(prompt_tokens.size(), _n_past)) {
+  if (role == "system") {
+    // always retain system tokens
+    _n_system_tokens = prompt_tokens.size();
+  }
+
+  if (!make_space_for_tokens(prompt_tokens.size())) {
     return false;
   }
 
@@ -278,7 +294,6 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
     }
   }
 
-  _n_past += prompt_tokens.size();
   iter._t_start = std::chrono::high_resolution_clock::now();
   iter._llama = this;
   iter._has_next = true;
@@ -326,7 +341,6 @@ string Llama::all(LlamaIter &iter) {
 
     // end-of-generation check
     if (llama_vocab_is_eog(_vocab, tok)) {
-      iter._has_next = false;
       break;
     }
 
@@ -341,6 +355,9 @@ string Llama::all(LlamaIter &iter) {
       break;
     }
   }
+
+  // tokens exhausted - call add_message to continue
+  iter._has_next = false;
 
   // detokenize sequentially
   if (!decoded.empty()) {
@@ -407,8 +424,8 @@ bool Llama::batch_decode_tokens(vector<llama_token> &tokens) {
     llama_batch batch = llama_batch_get_one(tokens.data() + i, batch_size);
     int result = llama_decode(_ctx, batch);
     if (result != 0) {
-      _last_error = std::format("Failed to decode batch. position:{} error:{} [size:{}, past:{}]",
-                                i, result, tokens.size(), _n_past);
+      _last_error = std::format("Failed to decode batch. position:{} error:{} [size:{}]",
+                                i, result, tokens.size());
       return false;
     }
   }
@@ -507,9 +524,8 @@ bool Llama::ends_with_sentence_boundary(const string &text) {
 //
 // Parameters:
 //   n_tokens  - Number of tokens we need space for
-//   keep_min  - Minimum tokens to keep (e.g., system prompt), default 0
 //
-bool Llama::make_space_for_tokens(int n_tokens, int keep_min) {
+bool Llama::make_space_for_tokens(int n_tokens) {
   int n_ctx = llama_n_ctx(_ctx);
   if (n_tokens > n_ctx) {
     _last_error = "Too many tokens, increase context size (n_ctx)";
@@ -539,10 +555,10 @@ bool Llama::make_space_for_tokens(int n_tokens, int keep_min) {
   // Calculate how many tokens to remove
   int tokens_to_remove = space_needed - space_available;
 
-  // Can't remove more than we have (minus keep_min)
-  int removable = current_used - keep_min;
+  // Can't remove more than we have (minus _n_system_tokens)
+  int removable = current_used - _n_system_tokens;
   if (tokens_to_remove > removable) {
-    _last_error = "Can't make enough space while keeping keep_min tokens";
+    _last_error = "Can't make enough space while keeping num_system_tokens tokens";
     return false;
   }
 
