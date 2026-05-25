@@ -1446,8 +1446,8 @@ bool AgentState::run_turn(const std::string &user_message,
   tui.set_thinking(false);
   std::string buffer;
 
-  auto invoke_tool = [&](const std::string &buffer, const std::string_view template_str) -> void {
-    std::string result = process_tool(buffer, cfg, tui);
+  auto invoke_tool = [&](const std::string &tool, const std::string_view template_str) -> void {
+    std::string result = process_tool(tool, cfg, tui);
     std::string content = std::vformat(template_str, std::make_format_args(result));
     if (!llama->add_message(*iter, "tool_result", content)) {
       tui.append_line(std::string("[err] tool result inject: ") + llama->last_error());
@@ -1486,7 +1486,6 @@ bool AgentState::run_turn(const std::string &user_message,
   while (iter->_has_next) {
     std::string tok = llama->next(*iter);
     buffer += tok;
-
     if (think_mode == t_init) {
       start_think("<think>");
       start_think("<|think|>");
@@ -1502,7 +1501,7 @@ bool AgentState::run_turn(const std::string &user_message,
     }
     if (think_mode == t_thunk) {
       auto tool_start = buffer.find("TOOL:");
-      if (tool_start != std::string::npos) {
+      if (tool_start == 0) {
         // fetch all remaining tokens
         invoke_tool(buffer + llama->all(*iter), "TOOL_RESULT: {}");
         buffer.clear();
@@ -1510,8 +1509,8 @@ bool AgentState::run_turn(const std::string &user_message,
         continue;
       }
       auto pos = buffer.find('\n');
-      if (pos != std::string::npos && pos > 0) {
-        tui.append_token(buffer.substr(0, pos) + "\n");
+      if (pos != std::string::npos) {
+        tui.append_token(buffer.substr(0, pos + 1));
         buffer = buffer.substr(pos + 1);
       }
     }
@@ -1945,6 +1944,7 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
     "Rules:\n"
     "- Never access files outside the sandbox.\n"
+    "- Only use one TOOL at a time. Never combine, always use each tool step by step\n"
     "- Use TOOL:PERMISSION before destructive or irreversible operations.\n"
     "- Use TOOL:CURL to fetch documentation, APIs, or web content you need.\n"
     "- Reason step-by-step inside <|think|> </|think|> (hidden from user).\n"
@@ -2200,6 +2200,8 @@ int main(int argc, char **argv) {
       cfg.embed_path = resolve_path(take_next(a.c_str()));
     } else if (a == "-g" || a == "--gpu-layers") {
       cfg.n_gpu_layers = std::stoi(take_next(a.c_str()));
+    } else if (a == "-l" || a == "--log") {
+      log_open();
     } else if (a == "-h" || a == "--help") {
       std::puts("Usage: nitro [options] [project_dir]\n"
                 "\n"
@@ -2207,6 +2209,7 @@ int main(int argc, char **argv) {
                 "  -m, --model  <path>      GGUF model to load on startup\n"
                 "  -e, --embed  <path>      embedding model for RAG\n"
                 "  -g, --gpu-layers <n>     GPU layers to offload (default: 32)\n"
+                "  -l, --log                enabled logging\n"
                 "  -h, --help               show this help\n"
                 "\n"
                 "project_dir defaults to the current working directory.\n"
@@ -2271,8 +2274,6 @@ int main(int argc, char **argv) {
     tui.redraw_all();
   }
 
-  // log_open();
-
   // ── Main loop ─────────────────────────────────────────────────────
   for (;;) {
     {
@@ -2302,8 +2303,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  // log_close();
-
+  log_close();
   tui.destroy();
   // Persist input history for the next session.
   tui.history.save(history_path());
