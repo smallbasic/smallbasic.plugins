@@ -58,20 +58,6 @@
 namespace fs = std::filesystem;
 
 //
-// Forward declarations
-//
-struct NitroConfig;
-struct TuiState;
-struct AgentState;
-static bool         path_in_sandbox(const std::string &sandbox, const std::string &path);
-static bool         write_file(const std::string &path, const std::string &data);
-static std::string  build_system_prompt(const std::vector<std::string> &knowledge_files, const std::string &sandbox);
-static std::string  join_path(const std::string &a, const std::string &b);
-static std::string  list_dir(const std::string &path);
-static std::string  read_file(const std::string &path);
-static std::string  strip_code_fences(const std::string &filename, const std::string &src);
-static std::string  tool_curl(const std::string &url);
-//
 // NitroConfig
 //
 struct NitroConfig {
@@ -350,6 +336,14 @@ static void log_write(const char *fmt, ...) {
 }
 
 //
+// constant for strip_code_fences
+//
+static const std::vector<std::string> CODE_EXTENSIONS = {
+  ".py",".c",".cpp",".h",".bas",".java",".html",".js",".ts",
+  ".json",".yaml",".toml",".sh",".go",".rs",".jsx",".tsx"
+};
+
+//
 // Settings persistence  (~/.config/nitro/nitro.settings.json)
 //
 // A minimal hand-rolled JSON reader/writer for the flat key-value settings
@@ -614,6 +608,317 @@ static inline uint64_t inp_ch(uint32_t r, uint32_t g, uint32_t b) {
 
 static inline uint64_t hdr_ch(uint32_t r, uint32_t g, uint32_t b) {
   return NCCHANNELS_INITIALIZER(r, g, b, BG_HDR_R, BG_HDR_G, BG_HDR_B);
+}
+
+//
+// File-system helpers
+//
+static std::string join_path(const std::string &a, const std::string &b) {
+  if (b.empty()) return a;
+  if (b[0] == '/') return b;
+  std::string pa = a;
+  if (!pa.empty() && pa.back() == '/') pa.pop_back();
+  std::string pb = (b.front() == '/') ? b.substr(1) : b;
+  return pa + "/" + pb;
+}
+
+static std::string read_file(const std::string &path) {
+  std::ifstream f(path, std::ios::binary);
+  if (!f) {
+    return "ERROR: cannot open [" + path + "]";
+  }
+  std::ostringstream oss; oss << f.rdbuf();
+  return oss.str();
+}
+
+static std::string list_dir(const std::string &path) {
+  std::ostringstream oss;
+  std::error_code ec;
+  for (const auto &e : fs::directory_iterator(path, ec)) {
+    if (ec) break;
+    std::string name = e.path().filename().string();
+    if (name.empty() || name[0] == '.') continue;
+    oss << (e.is_directory() ? "[" + name + "]" : name) << "\n";
+  }
+  return oss.str();
+}
+
+static bool path_in_sandbox(const std::string &sandbox, const std::string &path) {
+  std::error_code ec;
+  auto base   = fs::canonical(sandbox, ec);  if (ec) return false;
+  auto target = fs::weakly_canonical(path, ec);
+  std::string bstr = base.string() + "/";
+  std::string tstr = target.string();
+  return tstr == base.string() || tstr.compare(0, bstr.size(), bstr) == 0;
+}
+
+static bool write_file(const std::string &path, const std::string &data) {
+  fs::path p(path);
+  if (p.has_parent_path()) {
+    std::error_code ec;
+    fs::create_directories(p.parent_path(), ec);
+  }
+  std::ofstream f(path, std::ios::binary | std::ios::trunc);
+  if (!f) return false;
+  f.write(data.data(), (std::streamsize)data.size());
+  return f.good();
+}
+
+//
+// System prompt
+//
+static std::string build_system_prompt(const std::vector<std::string> &knowledge_files,
+                                       const std::string &sandbox) {
+  std::string p;
+  p += "You are Nitro, an agentic AI assistant for software development.\n"
+    "Your sandbox (project directory) is: " + sandbox + "\n\n"
+    "## Tool protocol\n"
+    " - Emit tool calls on their own new line. for example:\n\n"
+    "TOOL:LIST\n"
+    " - The host executes the tool and returns TOOL_RESULT: <value> on the next line.\n\n"
+    "Available tools:\n"
+    "  TOOL:LIST   [dir]          list files (default: sandbox root)\n"
+    "  TOOL:READ   <file>         read file contents\n"
+    "  TOOL:WRITE  <file> <text>  write text to file\n"
+    "  TOOL:EXISTS <file>         YES or NO\n"
+    "  TOOL:RUN    <prog> [args]  run program inside sandbox\n"
+    "  TOOL:DATE                  current date\n"
+    "  TOOL:TIME                  current time\n"
+    "  TOOL:RND                   random float\n"
+    "  TOOL:RAG    <query>        query the RAG index for additional context\n"
+    "  TOOL:INTROSPECT            introspect your settings, top_k etc\n"
+    "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
+    "Rules:\n"
+    "- Never access files outside the sandbox.\n"
+    "- Only use one TOOL at a time. Never combine, always use each tool step by step\n"
+    "- Use TOOL:CURL to fetch documentation, APIs, or web content you need.\n"
+    "- Reason step-by-step inside <|think|> </|think|> (hidden from user).\n"
+    "- After each tool call, explain what you did in plain English.\n\n";
+  for (const auto &kf : knowledge_files) {
+    auto path = join_path(sandbox, kf);
+    std::ifstream f(path);
+    if (!f) {
+      continue;
+    }
+    log_write("loaded [%s]", path.c_str());
+    std::ostringstream oss;
+    oss << f.rdbuf();
+    p += "## Knowledge: " + kf + "\n" + oss.str() + "\n\n";
+  }
+  return p;
+}
+
+static std::string strip_code_fences(const std::string &filename,
+                                     const std::string &src) {
+  auto ext = fs::path(filename).extension().string();
+  bool is_code = std::any_of(CODE_EXTENSIONS.begin(), CODE_EXTENSIONS.end(),
+                             [&](const std::string &e){ return ext == e; });
+  if (!is_code) return src;
+  auto pos = src.find("```");
+  if (pos == std::string::npos) return src;
+  auto nl = src.find('\n', pos + 3);
+  if (nl == std::string::npos) return src;
+  std::string inner = src.substr(nl + 1);
+  auto end = inner.rfind("```");
+  if (end != std::string::npos) inner = inner.substr(0, end);
+  return inner;
+}
+
+//
+// TOOL:CURL
+//
+static size_t curl_write_cb(void *contents, size_t size, size_t nmemb, void *userp) {
+  std::string *buf = static_cast<std::string *>(userp);
+  size_t total = size * nmemb;
+  static constexpr size_t MAX_BODY = 32 * 1024;
+  if (buf->size() < MAX_BODY) {
+    size_t room = MAX_BODY - buf->size();
+    buf->append(static_cast<char *>(contents), std::min(total, room));
+  }
+  return total;
+}
+
+//
+// html_to_text — strip HTML for cleaner TOOL:CURL context
+//
+// Lightweight HTML→plain-text conversion:
+//   • Drops <head>, <script>, <style> blocks entirely.
+//   • Inserts newlines at block-level tags (p, div, br, li, h1-h6 …).
+//   • Strips all remaining tags.
+//   • Decodes common named & numeric HTML entities.
+//   • Collapses whitespace runs; caps consecutive blank lines at 2.
+//
+static std::string html_to_text(const std::string &html) {
+  std::string s = html;
+
+  // 1. Remove <head>…</head>
+  {
+    std::string lo = s;
+    std::transform(lo.begin(), lo.end(), lo.begin(), ::tolower);
+    auto p0 = lo.find("<head");
+    auto p1 = lo.find("</head>");
+    if (p0 != std::string::npos && p1 != std::string::npos)
+      s.erase(p0, p1 + 7 - p0);
+  }
+
+  // 2. Remove <script>…</script> and <style>…</style>
+  for (const std::string &tag : {"script", "style"}) {
+    std::string open  = "<" + tag;
+    std::string close = "</" + tag + ">";
+    std::string lo = s;
+    std::transform(lo.begin(), lo.end(), lo.begin(), ::tolower);
+    for (;;) {
+      auto p0 = lo.find(open);
+      if (p0 == std::string::npos) break;
+      auto p1 = lo.find(close, p0);
+      if (p1 == std::string::npos) { s.erase(p0); lo.erase(p0); break; }
+      s.erase(p0, p1 + close.size() - p0);
+      lo.erase(p0, p1 + close.size() - p0);
+    }
+  }
+
+  // 3. Replace block-level tags with '\n' before stripping all tags.
+  static const char *const BLOCK[] = {
+    "p","div","br","li","tr","h1","h2","h3","h4","h5","h6",
+    "article","section","header","footer","nav","main", nullptr
+  };
+  {
+    std::string out;
+    out.reserve(s.size());
+    size_t i = 0;
+    while (i < s.size()) {
+      if (s[i] != '<') { out += s[i++]; continue; }
+      auto ce = s.find('>', i);
+      if (ce == std::string::npos) { out += s[i++]; continue; }
+      std::string inner = s.substr(i + 1, ce - i - 1);
+      size_t sp = inner.find_first_of(" \t/\r\n");
+      std::string name = (sp != std::string::npos) ? inner.substr(0, sp) : inner;
+      std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+      for (int k = 0; BLOCK[k]; ++k) {
+        if (name == BLOCK[k]) {
+          out += '\n'; break;
+        }
+      }
+      i = ce + 1;
+    }
+    s = out;
+  }
+
+  // 4. Strip all remaining tags.
+  {
+    std::string out; out.reserve(s.size());
+    bool in_tag = false;
+    for (char c : s) {
+      if (c == '<')  { in_tag = true;  continue; }
+      if (c == '>')  { in_tag = false; continue; }
+      if (!in_tag)     out += c;
+    }
+    s = out;
+  }
+
+  // 5. Decode common HTML entities.
+  static const std::pair<const char*, const char*> ENT[] = {
+    {"&amp;","&"},{"&lt;","<"},{"&gt;",">"},{"&quot;","\""},
+    {"&apos;","'"},{"&nbsp;"," "},{"&mdash;","—"},{"&ndash;","–"},
+    {"&hellip;","…"},{"&#39;","'"},{"&#34;","\""},
+    {nullptr,nullptr}
+  };
+  for (int k = 0; ENT[k].first; ++k) {
+    std::string e = ENT[k].first, r = ENT[k].second;
+    size_t pos = 0;
+    while ((pos = s.find(e, pos)) != std::string::npos)
+      { s.replace(pos, e.size(), r); pos += r.size(); }
+  }
+  // Numeric entities &#NNN; and &#xHHH;
+  {
+    std::string out; out.reserve(s.size());
+    size_t i = 0;
+    while (i < s.size()) {
+      if (s[i]=='&' && i+2<s.size() && s[i+1]=='#') {
+        size_t semi = s.find(';', i+2);
+        if (semi != std::string::npos && semi-i < 10) {
+          std::string num = s.substr(i+2, semi-i-2);
+          try {
+            uint32_t cp = (num[0]=='x'||num[0]=='X')
+              ? (uint32_t)std::stoul(num.substr(1),nullptr,16)
+              : (uint32_t)std::stoul(num);
+            if      (cp < 0x80)  { out += (char)cp; }
+            else if (cp < 0x800) { out += (char)(0xC0|(cp>>6)); out += (char)(0x80|(cp&0x3F)); }
+            else                 { out += (char)(0xE0|(cp>>12)); out += (char)(0x80|((cp>>6)&0x3F)); out += (char)(0x80|(cp&0x3F)); }
+            i = semi+1; continue;
+          } catch (...) {}
+        }
+      }
+      out += s[i++];
+    }
+    s = out;
+  }
+
+  // 6. Collapse whitespace; cap blank lines at 2.
+  {
+    std::string out; out.reserve(s.size());
+    int nl_run = 0; bool last_sp = false;
+    for (char c : s) {
+      if (c == '\r') continue;
+      if (c == '\t') c = ' ';
+      if (c == '\n') { ++nl_run; last_sp=false; if (nl_run<=2) out+='\n'; continue; }
+      nl_run = 0;
+      if (c == ' ') { if (!last_sp) { out+=' '; last_sp=true; } continue; }
+      last_sp = false; out += c;
+    }
+    size_t f = out.find_first_not_of(" \n");
+    size_t l = out.find_last_not_of(" \n");
+    s = (f == std::string::npos) ? "" : out.substr(f, l-f+1);
+  }
+  return s;
+}
+
+static std::string tool_curl(const std::string &url) {
+  if (url.empty()) return "ERROR: TOOL:CURL requires a URL argument";
+  CURL *curl = curl_easy_init();
+  if (!curl) return "ERROR: curl_easy_init failed";
+  std::string body;
+  body.reserve(4096);
+  curl_easy_setopt(curl, CURLOPT_URL,            url.c_str());
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,  curl_write_cb);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA,      &body);
+  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt(curl, CURLOPT_MAXREDIRS,      5L);
+  curl_easy_setopt(curl, CURLOPT_TIMEOUT,        15L);
+  curl_easy_setopt(curl, CURLOPT_USERAGENT,      "nitro/1.0");
+  // Accept compressed responses; curl will decompress automatically.
+  curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
+
+  CURLcode res = curl_easy_perform(curl);
+  long http_code = 0;
+  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+  // Query content-type before cleanup (pointer is only valid while handle lives).
+  char *ct_raw = nullptr;
+  curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct_raw);
+  std::string content_type = ct_raw ? ct_raw : "";
+  std::transform(content_type.begin(), content_type.end(),
+                 content_type.begin(), ::tolower);
+  curl_easy_cleanup(curl);
+  if (res != CURLE_OK) {
+    return std::string("ERROR: curl: ") + curl_easy_strerror(res);
+  }
+  if (http_code >= 400) {
+    return "ERROR: HTTP " + std::to_string(http_code) + " from " + url;
+  }
+  if (body.empty()) {
+    return "(empty response)";
+  }
+
+  // Strip HTML tags so the model receives clean plain text.
+  bool is_html = (content_type.find("text/html") != std::string::npos)
+    || (body.size() > 5 && body.substr(0,5) == "<!DOC")
+    || (body.size() > 6 && body.substr(0,6) == "<html>");
+  if (is_html) {
+    body = html_to_text(body);
+  }
+
+  return body;
 }
 
 //
@@ -1729,320 +2034,6 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
 }
 
 //
-// File-system helpers
-//
-static std::string join_path(const std::string &a, const std::string &b) {
-  if (b.empty()) return a;
-  if (b[0] == '/') return b;
-  std::string pa = a;
-  if (!pa.empty() && pa.back() == '/') pa.pop_back();
-  std::string pb = (b.front() == '/') ? b.substr(1) : b;
-  return pa + "/" + pb;
-}
-
-static bool path_in_sandbox(const std::string &sandbox, const std::string &path) {
-  std::error_code ec;
-  auto base   = fs::canonical(sandbox, ec);  if (ec) return false;
-  auto target = fs::weakly_canonical(path, ec);
-  std::string bstr = base.string() + "/";
-  std::string tstr = target.string();
-  return tstr == base.string() || tstr.compare(0, bstr.size(), bstr) == 0;
-}
-
-static std::string read_file(const std::string &path) {
-  std::ifstream f(path, std::ios::binary);
-  if (!f) {
-    return "ERROR: cannot open [" + path + "]";
-  }
-  std::ostringstream oss; oss << f.rdbuf();
-  return oss.str();
-}
-
-static bool write_file(const std::string &path, const std::string &data) {
-  fs::path p(path);
-  if (p.has_parent_path()) {
-    std::error_code ec;
-    fs::create_directories(p.parent_path(), ec);
-  }
-  std::ofstream f(path, std::ios::binary | std::ios::trunc);
-  if (!f) return false;
-  f.write(data.data(), (std::streamsize)data.size());
-  return f.good();
-}
-
-static std::string list_dir(const std::string &path) {
-  std::ostringstream oss;
-  std::error_code ec;
-  for (const auto &e : fs::directory_iterator(path, ec)) {
-    if (ec) break;
-    std::string name = e.path().filename().string();
-    if (name.empty() || name[0] == '.') continue;
-    oss << (e.is_directory() ? "[" + name + "]" : name) << "\n";
-  }
-  return oss.str();
-}
-
-static const std::vector<std::string> CODE_EXTENSIONS = {
-  ".py",".c",".cpp",".h",".bas",".java",".html",".js",".ts",
-  ".json",".yaml",".toml",".sh",".go",".rs",".jsx",".tsx"
-};
-
-static std::string strip_code_fences(const std::string &filename,
-                                     const std::string &src) {
-  auto ext = fs::path(filename).extension().string();
-  bool is_code = std::any_of(CODE_EXTENSIONS.begin(), CODE_EXTENSIONS.end(),
-                             [&](const std::string &e){ return ext == e; });
-  if (!is_code) return src;
-  auto pos = src.find("```");
-  if (pos == std::string::npos) return src;
-  auto nl = src.find('\n', pos + 3);
-  if (nl == std::string::npos) return src;
-  std::string inner = src.substr(nl + 1);
-  auto end = inner.rfind("```");
-  if (end != std::string::npos) inner = inner.substr(0, end);
-  return inner;
-}
-
-//
-// html_to_text — strip HTML for cleaner TOOL:CURL context
-//
-// Lightweight HTML→plain-text conversion:
-//   • Drops <head>, <script>, <style> blocks entirely.
-//   • Inserts newlines at block-level tags (p, div, br, li, h1-h6 …).
-//   • Strips all remaining tags.
-//   • Decodes common named & numeric HTML entities.
-//   • Collapses whitespace runs; caps consecutive blank lines at 2.
-//
-static std::string html_to_text(const std::string &html) {
-  std::string s = html;
-
-  // 1. Remove <head>…</head>
-  {
-    std::string lo = s;
-    std::transform(lo.begin(), lo.end(), lo.begin(), ::tolower);
-    auto p0 = lo.find("<head");
-    auto p1 = lo.find("</head>");
-    if (p0 != std::string::npos && p1 != std::string::npos)
-      s.erase(p0, p1 + 7 - p0);
-  }
-
-  // 2. Remove <script>…</script> and <style>…</style>
-  for (const std::string &tag : {"script", "style"}) {
-    std::string open  = "<" + tag;
-    std::string close = "</" + tag + ">";
-    std::string lo = s;
-    std::transform(lo.begin(), lo.end(), lo.begin(), ::tolower);
-    for (;;) {
-      auto p0 = lo.find(open);
-      if (p0 == std::string::npos) break;
-      auto p1 = lo.find(close, p0);
-      if (p1 == std::string::npos) { s.erase(p0); lo.erase(p0); break; }
-      s.erase(p0, p1 + close.size() - p0);
-      lo.erase(p0, p1 + close.size() - p0);
-    }
-  }
-
-  // 3. Replace block-level tags with '\n' before stripping all tags.
-  static const char *const BLOCK[] = {
-    "p","div","br","li","tr","h1","h2","h3","h4","h5","h6",
-    "article","section","header","footer","nav","main", nullptr
-  };
-  {
-    std::string out;
-    out.reserve(s.size());
-    size_t i = 0;
-    while (i < s.size()) {
-      if (s[i] != '<') { out += s[i++]; continue; }
-      auto ce = s.find('>', i);
-      if (ce == std::string::npos) { out += s[i++]; continue; }
-      std::string inner = s.substr(i + 1, ce - i - 1);
-      size_t sp = inner.find_first_of(" \t/\r\n");
-      std::string name = (sp != std::string::npos) ? inner.substr(0, sp) : inner;
-      std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-      for (int k = 0; BLOCK[k]; ++k) {
-        if (name == BLOCK[k]) {
-          out += '\n'; break;
-        }
-      }
-      i = ce + 1;
-    }
-    s = out;
-  }
-
-  // 4. Strip all remaining tags.
-  {
-    std::string out; out.reserve(s.size());
-    bool in_tag = false;
-    for (char c : s) {
-      if (c == '<')  { in_tag = true;  continue; }
-      if (c == '>')  { in_tag = false; continue; }
-      if (!in_tag)     out += c;
-    }
-    s = out;
-  }
-
-  // 5. Decode common HTML entities.
-  static const std::pair<const char*, const char*> ENT[] = {
-    {"&amp;","&"},{"&lt;","<"},{"&gt;",">"},{"&quot;","\""},
-    {"&apos;","'"},{"&nbsp;"," "},{"&mdash;","—"},{"&ndash;","–"},
-    {"&hellip;","…"},{"&#39;","'"},{"&#34;","\""},
-    {nullptr,nullptr}
-  };
-  for (int k = 0; ENT[k].first; ++k) {
-    std::string e = ENT[k].first, r = ENT[k].second;
-    size_t pos = 0;
-    while ((pos = s.find(e, pos)) != std::string::npos)
-      { s.replace(pos, e.size(), r); pos += r.size(); }
-  }
-  // Numeric entities &#NNN; and &#xHHH;
-  {
-    std::string out; out.reserve(s.size());
-    size_t i = 0;
-    while (i < s.size()) {
-      if (s[i]=='&' && i+2<s.size() && s[i+1]=='#') {
-        size_t semi = s.find(';', i+2);
-        if (semi != std::string::npos && semi-i < 10) {
-          std::string num = s.substr(i+2, semi-i-2);
-          try {
-            uint32_t cp = (num[0]=='x'||num[0]=='X')
-              ? (uint32_t)std::stoul(num.substr(1),nullptr,16)
-              : (uint32_t)std::stoul(num);
-            if      (cp < 0x80)  { out += (char)cp; }
-            else if (cp < 0x800) { out += (char)(0xC0|(cp>>6)); out += (char)(0x80|(cp&0x3F)); }
-            else                 { out += (char)(0xE0|(cp>>12)); out += (char)(0x80|((cp>>6)&0x3F)); out += (char)(0x80|(cp&0x3F)); }
-            i = semi+1; continue;
-          } catch (...) {}
-        }
-      }
-      out += s[i++];
-    }
-    s = out;
-  }
-
-  // 6. Collapse whitespace; cap blank lines at 2.
-  {
-    std::string out; out.reserve(s.size());
-    int nl_run = 0; bool last_sp = false;
-    for (char c : s) {
-      if (c == '\r') continue;
-      if (c == '\t') c = ' ';
-      if (c == '\n') { ++nl_run; last_sp=false; if (nl_run<=2) out+='\n'; continue; }
-      nl_run = 0;
-      if (c == ' ') { if (!last_sp) { out+=' '; last_sp=true; } continue; }
-      last_sp = false; out += c;
-    }
-    size_t f = out.find_first_not_of(" \n");
-    size_t l = out.find_last_not_of(" \n");
-    s = (f == std::string::npos) ? "" : out.substr(f, l-f+1);
-  }
-  return s;
-}
-
-//
-// TOOL:CURL
-//
-static size_t curl_write_cb(void *contents, size_t size, size_t nmemb, void *userp) {
-  std::string *buf = static_cast<std::string *>(userp);
-  size_t total = size * nmemb;
-  static constexpr size_t MAX_BODY = 32 * 1024;
-  if (buf->size() < MAX_BODY) {
-    size_t room = MAX_BODY - buf->size();
-    buf->append(static_cast<char *>(contents), std::min(total, room));
-  }
-  return total;
-}
-
-static std::string tool_curl(const std::string &url) {
-  if (url.empty()) return "ERROR: TOOL:CURL requires a URL argument";
-  CURL *curl = curl_easy_init();
-  if (!curl) return "ERROR: curl_easy_init failed";
-  std::string body;
-  body.reserve(4096);
-  curl_easy_setopt(curl, CURLOPT_URL,            url.c_str());
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,  curl_write_cb);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA,      &body);
-  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-  curl_easy_setopt(curl, CURLOPT_MAXREDIRS,      5L);
-  curl_easy_setopt(curl, CURLOPT_TIMEOUT,        15L);
-  curl_easy_setopt(curl, CURLOPT_USERAGENT,      "nitro/1.0");
-  // Accept compressed responses; curl will decompress automatically.
-  curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
-
-  CURLcode res = curl_easy_perform(curl);
-  long http_code = 0;
-  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-
-  // Query content-type before cleanup (pointer is only valid while handle lives).
-  char *ct_raw = nullptr;
-  curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct_raw);
-  std::string content_type = ct_raw ? ct_raw : "";
-  std::transform(content_type.begin(), content_type.end(),
-                 content_type.begin(), ::tolower);
-  curl_easy_cleanup(curl);
-  if (res != CURLE_OK) {
-    return std::string("ERROR: curl: ") + curl_easy_strerror(res);
-  }
-  if (http_code >= 400) {
-    return "ERROR: HTTP " + std::to_string(http_code) + " from " + url;
-  }
-  if (body.empty()) {
-    return "(empty response)";
-  }
-
-  // Strip HTML tags so the model receives clean plain text.
-  bool is_html = (content_type.find("text/html") != std::string::npos)
-    || (body.size() > 5 && body.substr(0,5) == "<!DOC")
-    || (body.size() > 6 && body.substr(0,6) == "<html>");
-  if (is_html) body = html_to_text(body);
-
-  return body;
-}
-
-//
-// System prompt
-//
-static std::string build_system_prompt(const std::vector<std::string> &knowledge_files,
-                                       const std::string &sandbox) {
-  std::string p;
-  p += "You are Nitro, an agentic AI assistant for software development.\n"
-    "Your sandbox (project directory) is: " + sandbox + "\n\n"
-    "## Tool protocol\n"
-    " - Emit tool calls on their own new line. for example:\n\n"
-    "TOOL:LIST\n"
-    " - The host executes the tool and returns TOOL_RESULT: <value> on the next line.\n\n"
-    "Available tools:\n"
-    "  TOOL:LIST   [dir]          list files (default: sandbox root)\n"
-    "  TOOL:READ   <file>         read file contents\n"
-    "  TOOL:WRITE  <file> <text>  write text to file\n"
-    "  TOOL:EXISTS <file>         YES or NO\n"
-    "  TOOL:RUN    <prog> [args]  run program inside sandbox\n"
-    "  TOOL:DATE                  current date\n"
-    "  TOOL:TIME                  current time\n"
-    "  TOOL:RND                   random float\n"
-    "  TOOL:RAG    <query>        query the RAG index for additional context\n"
-    "  TOOL:INTROSPECT            introspect your settings, top_k etc\n"
-    "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
-    "Rules:\n"
-    "- Never access files outside the sandbox.\n"
-    "- Only use one TOOL at a time. Never combine, always use each tool step by step\n"
-    "- Use TOOL:CURL to fetch documentation, APIs, or web content you need.\n"
-    "- Reason step-by-step inside <|think|> </|think|> (hidden from user).\n"
-    "- After each tool call, explain what you did in plain English.\n\n";
-  for (const auto &kf : knowledge_files) {
-    auto path = join_path(sandbox, kf);
-    std::ifstream f(path);
-    if (!f) {
-      continue;
-    }
-    log_write("loaded [%s]", path.c_str());
-    std::ostringstream oss;
-    oss << f.rdbuf();
-    p += "## Knowledge: " + kf + "\n" + oss.str() + "\n\n";
-  }
-  return p;
-}
-
-//
 // Slash command handler
 //
 static void handle_slash(const std::string &input,
@@ -2127,6 +2118,8 @@ static void handle_slash(const std::string &input,
       tui.redraw_all();
       agent.rag_index(path, cfg, tui);
     }
+    tui.append_line("[sys] done");
+    tui.redraw_all();
     return;
   }
 
@@ -2358,8 +2351,9 @@ int main(int argc, char **argv) {
       std::string sysp = build_system_prompt(cfg.knowledge_files, cfg.sandbox);
       agent.reset_conversation(sysp, tui);
     }
-    if (!cfg.embed_path.empty())
+    if (!cfg.embed_path.empty()) {
       agent.setup_embed(cfg.embed_path, tui);
+    }
   } else {
     tui.append_line("[sys] No model specified.  Use /model to open the file picker,");
     tui.append_line("[sys] or /model <path> to load directly.");
