@@ -72,80 +72,30 @@ static std::string  strip_code_fences(const std::string &filename, const std::st
 static std::string  process_tool(const std::string &line, const NitroConfig &cfg, TuiState &tui);
 static std::string  build_system_prompt(const std::vector<std::string> &knowledge_files, const std::string &sandbox);
 
-// ─── RAG indexing ─────────────────────────────────────────────────────────────
-static constexpr int BATCH_SIZE = 512;
-
-struct Chunk {
-  std::string         text;
-  std::string         source;
-  std::string         type;
-  std::vector<float>  embedding;
+// ═══════════════════════════════════════════════════════════════════════════
+// NitroConfig
+// ═══════════════════════════════════════════════════════════════════════════
+struct NitroConfig {
+  std::string model_path;
+  std::string embed_path;
+  std::string sandbox;
+  int   n_ctx          = 65536;
+  int   n_batch        = 512;
+  int   n_gpu_layers   = 32;
+  int   n_max_tokens   = 4096;
+  int   log_level      = GGML_LOG_LEVEL_CONT;
+  float temperature    = 0.6f;
+  float top_p          = 0.95f;
+  float min_p          = 0.0f;
+  int   top_k          = 20;
+  float penalty_repeat = 1.0f;
+  int   penalty_last_n = 256;
+  std::vector<std::string> knowledge_files;
+  int   rag_top_k      = 5;
+  // TOOL:RUN allowlist — if non-empty, only these program basenames may run.
+  // Empty means "allow anything inside the sandbox" (original behaviour).
+  std::vector<std::string> run_allowed;
 };
-
-static bool json_get_string(const std::string &json,
-                            const std::string &key,
-                            std::string       &out) {
-  std::string search = "\"" + key + "\":";
-  size_t pos = json.find(search);
-  if (pos == std::string::npos) return false;
-  pos += search.size();
-  while (pos < json.size() && json[pos] == ' ') ++pos;
-  if (pos >= json.size() || json[pos] != '"') return false;
-  ++pos;
-  out.clear();
-  while (pos < json.size()) {
-    char c = json[pos++];
-    if (c == '\\' && pos < json.size()) {
-      char e = json[pos++];
-      switch (e) {
-      case 'n':  out += '\n'; break;
-      case 't':  out += '\t'; break;
-      case '"':  out += '"';  break;
-      case '\\': out += '\\'; break;
-      default:   out += e;    break;
-      }
-    } else if (c == '"') {
-      break;
-    } else {
-      out += c;
-    }
-  }
-  return true;
-}
-
-static bool save_db(const std::string        &path,
-                    const std::vector<Chunk> &chunks,
-                    int                       embed_dim) {
-  std::ofstream f(path, std::ios::binary);
-  if (!f) {
-    std::fprintf(stderr, "cannot open for write: %s\n\n", path);
-    return false;
-  }
-  auto write32 = [&](uint32_t v) { f.write((char*)&v, 4); };
-  auto write16 = [&](uint16_t v) { f.write((char*)&v, 2); };
-  auto write8  = [&](uint8_t  v) { f.write((char*)&v, 1); };
-  auto writestr = [&](const std::string &s, size_t max_len) {
-    size_t len = std::min(s.size(), max_len);
-    f.write(s.c_str(), (std::streamsize)len);
-  };
-  write32(0x52414744);
-  write32(2);
-  write32((uint32_t)chunks.size());
-  write32((uint32_t)embed_dim);
-  for (const Chunk &c : chunks) {
-    write32((uint32_t)c.text.size());
-    f.write(c.text.c_str(), (std::streamsize)c.text.size());
-    uint16_t src_len = (uint16_t)std::min(c.source.size(), (size_t)65535);
-    write16(src_len);
-    writestr(c.source, src_len);
-    uint8_t type_len = (uint8_t)std::min(c.type.size(), (size_t)255);
-    write8(type_len);
-    writestr(c.type, type_len);
-    f.write((char*)c.embedding.data(),
-            (std::streamsize)(embed_dim * sizeof(float)));
-  }
-  return f.good();
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // InputHistory — up/down arrow navigation through submitted inputs
@@ -252,6 +202,121 @@ class InputHistory {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Notcurses TUI
+// ═══════════════════════════════════════════════════════════════════════════
+//
+//  ┌──────────────────── header (1 row) ─────────────────────────────────┐
+//  │ ✦ NITRO  model: …  tok/s: …  KV: …%  VRAM: …%                       │
+//  ├─────────────────────────────────────────────────────────────────────┤
+//  │                                                                     │
+//  │  chat pane  (rows 1 … term_rows-3)                                  │
+//  │                                                                     │
+//  ├─────────────────────────────────────────────────────────────────────┤
+//  │ ─────────────────────────────────────  (separator)                  │
+//  │ ❯ input                                                             │
+//  └─────────────────────────────────────────────────────────────────────┘
+struct TuiState {
+  // ── notcurses handles ──────────────────────────────────────────────
+  struct notcurses *nc      = nullptr;
+  struct ncplane   *stdpl   = nullptr;
+  struct ncplane   *header  = nullptr;
+  struct ncplane   *chatpl  = nullptr;
+  struct ncplane   *inputpl = nullptr;
+  // ── chat buffer ───────────────────────────────────────────────────
+  std::vector<std::string> chat_lines;
+  int scroll_offset = 0;
+  std::mutex lines_mutex;
+  // ── streaming accumulator ─────────────────────────────────────────
+  std::string token_acc;
+  // ── input ─────────────────────────────────────────────────────────
+  std::string input_buf;
+  size_t      cursor_pos = 0;
+  bool        mouse_mode = true;
+  // ── status bar values ─────────────────────────────────────────────
+  std::string current_model  = "none";
+  float       tokens_per_sec = 0.0f;
+  int         kv_used        = 0;
+  int         kv_total       = 1;
+  size_t      vram_used      = 0;
+  size_t      vram_total     = 1;
+  int term_rows = 0;
+  int term_cols = 0;
+  // ── thinking spinner ──────────────────────────────────────────────
+  bool    thinking      = false;
+  int     spinner_frame = 0;
+  // ── input history ─────────────────────────────────────────────────
+  InputHistory history;
+  // Advance spinner by one frame and redraw the header.
+  void tick_spinner();
+  // Toggle thinking mode; redraws header immediately.
+  void set_thinking(bool on);
+  // ── lifecycle ─────────────────────────────────────────────────────
+  void init();
+  void destroy();
+  void resize();
+  // ── draw ──────────────────────────────────────────────────────────
+  void redraw_header();
+  void redraw_chat();
+  void redraw_input();
+  void redraw_all();
+  // ── content helpers ───────────────────────────────────────────────
+  void append_line(const std::string &line);
+  void append_token(const std::string &token);
+  void flush_token_acc();
+  // ── interaction ───────────────────────────────────────────────────
+  bool confirm_dialog(const std::string &prompt);
+  // Blocking readline with history navigation, cursor, arrow-key scrolling.
+  std::string readline_blocking();
+  // Modal popup overlay while a long operation runs.
+  // Call show_modal_popup to display; dismiss_modal_popup to remove.
+  // The popup plane is stored in modal_plane; callers hold it as an opaque
+  // handle — or just use the paired helpers below.
+  struct ncplane *modal_plane = nullptr;
+  void show_modal_popup(const std::string &message);
+  void show_help();
+  void dismiss_modal_popup();
+  // ── folder picker popup ───────────────────────────────────────
+  // Presents an interactive directory browser to let the user choose a
+  // folder (or file) to index.  Returns the selected path, or empty string
+  // if the user cancelled.
+  // ── file browser popup ─────────────────────────────────────
+  // Used by /rag, /model, and /embed to pick a path interactively.
+  // Pass a hint string shown in the title bar (e.g. "RAG Folder",
+  // "Model File", "Embedding Model").
+  // Returns the selected path, or empty string if the user cancelled.
+  std::string file_picker(const std::string &start_dir,
+                          const std::string &title_hint = "File");
+  // Legacy alias kept for callers that used the old name.
+  std::string rag_folder_picker(const std::string &start_dir) {
+    return file_picker(start_dir, "RAG Folder");
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AgentState
+// ═══════════════════════════════════════════════════════════════════════════
+struct AgentState {
+  std::unique_ptr<Llama> llama;
+  std::unique_ptr<LlamaIter> iter;
+  std::unique_ptr<Llama> embed_llama;
+  std::unique_ptr<RagDB>      rag_db;
+  std::unique_ptr<RagSession> rag_session;
+  bool model_loaded = false;
+  std::string system_prompt;
+
+  bool setup_model(const NitroConfig &cfg, TuiState &tui);
+  bool setup_embed(const std::string &path, TuiState &tui);
+  void apply_generation_params(const NitroConfig &cfg);
+  void reset_conversation(const std::string &sysprompt, TuiState &tui);
+  bool run_turn(const std::string &user_message,
+                const NitroConfig &cfg,
+                TuiState          &tui);
+  bool rag_index(const std::string &path, TuiState &tui);
+  std::string memory_info_text();
+  float tokens_per_sec() const;
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Logging
 // ═══════════════════════════════════════════════════════════════════════════
 // ─── Debug logging (file-backed, safe to call while notcurses is active) ──
@@ -289,28 +354,6 @@ static void log_write(const char *fmt, ...) {
 // A minimal hand-rolled JSON reader/writer for the flat key-value settings
 // we care about.  We deliberately avoid a full JSON library dependency.
 
-struct NitroConfig {
-  std::string model_path;
-  std::string embed_path;
-  std::string sandbox;
-  int   n_ctx          = 65536;
-  int   n_batch        = 512;
-  int   n_gpu_layers   = 32;
-  int   n_max_tokens   = 4096;
-  int   log_level      = GGML_LOG_LEVEL_CONT;
-  float temperature    = 0.6f;
-  float top_p          = 0.95f;
-  float min_p          = 0.0f;
-  int   top_k          = 20;
-  float penalty_repeat = 1.0f;
-  int   penalty_last_n = 256;
-  std::vector<std::string> knowledge_files;
-  int   rag_top_k      = 5;
-  // TOOL:RUN allowlist — if non-empty, only these program basenames may run.
-  // Empty means "allow anything inside the sandbox" (original behaviour).
-  std::vector<std::string> run_allowed;
-};
-
 // Returns the canonical settings path: ~/.config/nitro/settings.json
 static std::string settings_path() {
   const char *home = getenv("HOME");
@@ -323,6 +366,37 @@ static std::string history_path() {
   const char *home = getenv("HOME");
   std::string base = home ? std::string(home) : ".";
   return base + "/.config/nitro/history.txt";
+}
+
+static bool json_get_string(const std::string &json,
+                            const std::string &key,
+                            std::string       &out) {
+  std::string search = "\"" + key + "\":";
+  size_t pos = json.find(search);
+  if (pos == std::string::npos) return false;
+  pos += search.size();
+  while (pos < json.size() && json[pos] == ' ') ++pos;
+  if (pos >= json.size() || json[pos] != '"') return false;
+  ++pos;
+  out.clear();
+  while (pos < json.size()) {
+    char c = json[pos++];
+    if (c == '\\' && pos < json.size()) {
+      char e = json[pos++];
+      switch (e) {
+      case 'n':  out += '\n'; break;
+      case 't':  out += '\t'; break;
+      case '"':  out += '"';  break;
+      case '\\': out += '\\'; break;
+      default:   out += e;    break;
+      }
+    } else if (c == '"') {
+      break;
+    } else {
+      out += c;
+    }
+  }
+  return true;
 }
 
 // Tiny helper: extract a quoted string value from flat JSON for a known key.
@@ -496,97 +570,6 @@ std::string trim(std::string_view str) {
   // Return the substring between start and end
   return std::string(str.substr(start, end - start + 1));
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Notcurses TUI
-// ═══════════════════════════════════════════════════════════════════════════
-//
-//  ┌──────────────────── header (1 row) ─────────────────────────────────┐
-//  │ ✦ NITRO  model: …  tok/s: …  KV: …%  VRAM: …%                       │
-//  ├─────────────────────────────────────────────────────────────────────┤
-//  │                                                                     │
-//  │  chat pane  (rows 1 … term_rows-3)                                  │
-//  │                                                                     │
-//  ├─────────────────────────────────────────────────────────────────────┤
-//  │ ─────────────────────────────────────  (separator)                  │
-//  │ ❯ input                                                             │
-//  └─────────────────────────────────────────────────────────────────────┘
-struct TuiState {
-  // ── notcurses handles ──────────────────────────────────────────────
-  struct notcurses *nc      = nullptr;
-  struct ncplane   *stdpl   = nullptr;
-  struct ncplane   *header  = nullptr;
-  struct ncplane   *chatpl  = nullptr;
-  struct ncplane   *inputpl = nullptr;
-  // ── chat buffer ───────────────────────────────────────────────────
-  std::vector<std::string> chat_lines;
-  int scroll_offset = 0;
-  std::mutex lines_mutex;
-  // ── streaming accumulator ─────────────────────────────────────────
-  std::string token_acc;
-  // ── input ─────────────────────────────────────────────────────────
-  std::string input_buf;
-  size_t      cursor_pos = 0;
-  bool        mouse_mode = true;
-  // ── status bar values ─────────────────────────────────────────────
-  std::string current_model  = "none";
-  float       tokens_per_sec = 0.0f;
-  int         kv_used        = 0;
-  int         kv_total       = 1;
-  size_t      vram_used      = 0;
-  size_t      vram_total     = 1;
-  int term_rows = 0;
-  int term_cols = 0;
-  // ── thinking spinner ──────────────────────────────────────────────
-  bool    thinking      = false;
-  int     spinner_frame = 0;
-  // ── input history ─────────────────────────────────────────────────
-  InputHistory history;
-  // Advance spinner by one frame and redraw the header.
-  void tick_spinner();
-  // Toggle thinking mode; redraws header immediately.
-  void set_thinking(bool on);
-  // ── lifecycle ─────────────────────────────────────────────────────
-  void init();
-  void destroy();
-  void resize();
-  // ── draw ──────────────────────────────────────────────────────────
-  void redraw_header();
-  void redraw_chat();
-  void redraw_input();
-  void redraw_all();
-  // ── content helpers ───────────────────────────────────────────────
-  void append_line(const std::string &line);
-  void append_token(const std::string &token);
-  void flush_token_acc();
-  // ── interaction ───────────────────────────────────────────────────
-  bool confirm_dialog(const std::string &prompt);
-  // Blocking readline with history navigation, cursor, arrow-key scrolling.
-  std::string readline_blocking();
-  // Modal popup overlay while a long operation runs.
-  // Call show_modal_popup to display; dismiss_modal_popup to remove.
-  // The popup plane is stored in modal_plane; callers hold it as an opaque
-  // handle — or just use the paired helpers below.
-  struct ncplane *modal_plane = nullptr;
-  void show_modal_popup(const std::string &message);
-  void show_help();
-  void dismiss_modal_popup();
-  // ── folder picker popup ───────────────────────────────────────
-  // Presents an interactive directory browser to let the user choose a
-  // folder (or file) to index.  Returns the selected path, or empty string
-  // if the user cancelled.
-  // ── file browser popup ─────────────────────────────────────
-  // Used by /rag, /model, and /embed to pick a path interactively.
-  // Pass a hint string shown in the title bar (e.g. "RAG Folder",
-  // "Model File", "Embedding Model").
-  // Returns the selected path, or empty string if the user cancelled.
-  std::string file_picker(const std::string &start_dir,
-                          const std::string &title_hint = "File");
-  // Legacy alias kept for callers that used the old name.
-  std::string rag_folder_picker(const std::string &start_dir) {
-    return file_picker(start_dir, "RAG Folder");
-  }
-};
 
 // ─── colour helpers ──────────────────────────────────────────────────────
 static constexpr uint32_t BG_CHAT_R = 18,  BG_CHAT_G = 22,  BG_CHAT_B = 30;
@@ -1205,7 +1188,7 @@ std::string TuiState::readline_blocking() {
       notcurses_render(nc);
       continue;
     }
-    if (ni.id == NCKEY_SCROLL_DOWN && scroll_offset > 1) {
+    if (ni.id == NCKEY_SCROLL_DOWN && scroll_offset > 0) {
       scroll_offset -= 1;
       redraw_chat();
       notcurses_render(nc);
@@ -1249,30 +1232,6 @@ std::string TuiState::readline_blocking() {
     notcurses_render(nc);
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// AgentState
-// ═══════════════════════════════════════════════════════════════════════════
-struct AgentState {
-  std::unique_ptr<Llama> llama;
-  std::unique_ptr<LlamaIter> iter;
-  std::unique_ptr<Llama> embed_llama;
-  std::unique_ptr<RagDB>      rag_db;
-  std::unique_ptr<RagSession> rag_session;
-  bool model_loaded = false;
-  std::string system_prompt;
-
-  bool setup_model(const NitroConfig &cfg, TuiState &tui);
-  bool setup_embed(const std::string &path, TuiState &tui);
-  void apply_generation_params(const NitroConfig &cfg);
-  void reset_conversation(const std::string &sysprompt, TuiState &tui);
-  bool run_turn(const std::string &user_message,
-                const NitroConfig &cfg,
-                TuiState          &tui);
-  bool rag_index(const std::string &path, TuiState &tui);
-  std::string memory_info_text();
-  float tokens_per_sec() const;
-};
 
 void AgentState::apply_generation_params(const NitroConfig &cfg) {
   //  llama->add_stop(MARKER_END_TOOL);
@@ -1428,10 +1387,12 @@ bool AgentState::run_turn(const std::string &user_message,
   }
   std::string effective_message = user_message;
   if (embed_llama && rag_db && rag_session) {
-    std::string context = llama->rag_retrieve(*rag_db, user_message,
-                                              cfg.rag_top_k, *rag_session);
+    std::string context = embed_llama->rag_retrieve(*rag_db, user_message, cfg.rag_top_k, *rag_session);
     if (!context.empty()) {
+      log_write("RAG: %s", context.c_str());
       effective_message = "Context:\n" + context + "\n\nUser: " + user_message;
+    } else {
+      log_write("RAG: no context found [%s]", embed_llama->last_error());
     }
   }
   if (!iter) {
@@ -1490,6 +1451,14 @@ bool AgentState::run_turn(const std::string &user_message,
   };
 
   while (iter->_has_next) {
+    ncinput ni{};
+    notcurses_get_nblock(tui.nc, &ni);
+    if (ni.id == NCKEY_ESC) {
+      tui.set_thinking(false);
+      tui.append_line("[err] Generation cancelled by user (Escape)");
+      tui.redraw_all();
+      return false;
+    }
     std::string tok = llama->next(*iter);
     buffer += tok;
     if (think_mode == t_init) {
@@ -1521,7 +1490,7 @@ bool AgentState::run_turn(const std::string &user_message,
         auto pos = buffer.find_last_not_of("}<tool_call|>");
         if (pos != std::string::npos) {
           buffer = buffer.substr(0, pos);
-         }
+        }
         pos = buffer.find_first_not_of("{");
         if (pos != std::string::npos) {
           buffer = buffer.substr(0, pos) + buffer.substr(pos + 1);
@@ -2280,6 +2249,8 @@ int main(int argc, char **argv) {
   tui.history.load(history_path());
   welcome(tui, cfg.sandbox);
 
+  log_write("nitro starting");
+
   // ── Init agent ────────────────────────────────────────────────────
   AgentState agent;
   if (!cfg.model_path.empty()) {
@@ -2325,6 +2296,7 @@ int main(int argc, char **argv) {
     }
   }
 
+  log_write("nitro exiting");
   log_close();
   tui.destroy();
   // Persist input history for the next session.
