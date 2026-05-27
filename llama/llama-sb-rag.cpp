@@ -312,12 +312,14 @@ std::string Llama::rag_retrieve(const RagDB &db,
                                 int top_k,
                                 RagSession &session) {
   if (db.empty()) {
+    _last_error = "no input";
     return {};
   }
 
   std::vector<float> qvec;
   std::string text = INSTRUCT_QUERY + query;
   if (!embed_text(text, qvec, db.embed_dim)) {
+    _last_error = "failed to embed text";
     return {};
   }
 
