@@ -555,8 +555,10 @@ static bool save_settings(const NitroConfig &cfg) {
   return f.good();
 }
 
+//
 // Trims whitespace from both ends of a string
-std::string trim(std::string_view str) {
+//
+static std::string trim(std::string_view str) {
   const std::string_view whitespace = " \t\n\r\f\v";
 
   // Find the first non-whitespace character
@@ -572,19 +574,44 @@ std::string trim(std::string_view str) {
   return std::string(str.substr(start, end - start + 1));
 }
 
+//
+// Removes any front and back characters
+//
+static std::string disclose(const std::string &input, char c1, char c2) {
+  // Check if string has at least 2 characters
+  if (input.length() < 2) {
+    return input;
+  }
+
+  // Check if first and last characters match the specified delimiters
+  if (input[0] == c1 && input[input.length() - 1] == c2) {
+    // Remove first and last characters
+    std::string result = input;
+    result.erase(0, 1);
+    result.erase(input.length() - 1, 1);
+    return result;
+  }
+
+  return input;
+}
+
 // ─── colour helpers ──────────────────────────────────────────────────────
 static constexpr uint32_t BG_CHAT_R = 18,  BG_CHAT_G = 22,  BG_CHAT_B = 30;
 static constexpr uint32_t BG_INP_R  = 22,  BG_INP_G  = 28,  BG_INP_B  = 38;
 static constexpr uint32_t BG_HDR_R  = 30,  BG_HDR_G  = 40,  BG_HDR_B  = 55;
+
 static inline uint64_t fg_rgb(uint32_t r, uint32_t g, uint32_t b) {
   return NCCHANNELS_INITIALIZER(r, g, b, 0, 0, 0);
 }
+
 static inline uint64_t chat_ch(uint32_t r, uint32_t g, uint32_t b) {
   return NCCHANNELS_INITIALIZER(r, g, b, BG_CHAT_R, BG_CHAT_G, BG_CHAT_B);
 }
+
 static inline uint64_t inp_ch(uint32_t r, uint32_t g, uint32_t b) {
   return NCCHANNELS_INITIALIZER(r, g, b, BG_INP_R, BG_INP_G, BG_INP_B);
 }
+
 static inline uint64_t hdr_ch(uint32_t r, uint32_t g, uint32_t b) {
   return NCCHANNELS_INITIALIZER(r, g, b, BG_HDR_R, BG_HDR_G, BG_HDR_B);
 }
@@ -627,7 +654,10 @@ void TuiState::init() {
 }
 
 void TuiState::destroy() {
-  if (nc) { notcurses_stop(nc); nc = nullptr; }
+  if (nc) {
+    notcurses_stop(nc);
+    nc = nullptr;
+  }
 }
 
 void TuiState::resize() {
@@ -1445,10 +1475,16 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
   }
 
   auto resolve = [&](const std::string &p) -> std::string {
-    if (p.empty() || p == ".") return sandbox;
-    if (p.substr(0, 2) == "./") return join_path(sandbox, p.substr(2));
-    if (p[0] == '/') return p;
-    return join_path(sandbox, p);
+    if (p.empty() || p == ".") {
+      return sandbox;
+    }
+    if (p.substr(0, 2) == "./") {
+      return join_path(sandbox, p.substr(2));
+    }
+    if (p[0] == '/') {
+      return p;
+    }
+    return join_path(sandbox, disclose(disclose(p, '<', '>'), '[', ']'));
   };
 
   tui.append_line("[tool] → " + op);
@@ -1493,7 +1529,7 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
     if (!tui.confirm_dialog(std::format("Allow model to write {}?", p))) {
       return "ERROR: action prevented by user";
     }
-    std::string content = strip_code_fences(arg1, arg2);
+    std::string content = disclose(strip_code_fences(arg1, arg2), '`', '`');
     return write_file(p, content) ? "OK: written to " + arg1 : "ERROR: write failed for " + arg1;
   }
   if (op == "TOOL:CURL") {
@@ -1577,6 +1613,7 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
   auto invoke_tool = [&](const std::string &tool, const std::string_view template_str) -> void {
     std::string result = process_tool(tool, cfg, tui);
     std::string content = std::vformat(template_str, std::make_format_args(result));
+    log_write("tool: [%s] result: [%s]", tool.c_str(), result.c_str());
     if (!llama->add_message(*iter, "tool_result", content)) {
       tui.append_line(std::string("[err] tool result inject: ") + llama->last_error());
       tui.redraw_all();
@@ -1948,7 +1985,9 @@ static std::string tool_curl(const std::string &url) {
   if (http_code >= 400) {
     return "ERROR: HTTP " + std::to_string(http_code) + " from " + url;
   }
-  if (body.empty()) return "(empty response)";
+  if (body.empty()) {
+    return "(empty response)";
+  }
 
   // Strip HTML tags so the model receives clean plain text.
   bool is_html = (content_type.find("text/html") != std::string::npos)
@@ -1990,9 +2029,14 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "- Reason step-by-step inside <|think|> </|think|> (hidden from user).\n"
     "- After each tool call, explain what you did in plain English.\n\n";
   for (const auto &kf : knowledge_files) {
-    std::ifstream f(kf);
-    if (!f) continue;
-    std::ostringstream oss; oss << f.rdbuf();
+    auto path = join_path(sandbox, kf);
+    std::ifstream f(path);
+    if (!f) {
+      continue;
+    }
+    log_write("loaded [%s]", path.c_str());
+    std::ostringstream oss;
+    oss << f.rdbuf();
     p += "## Knowledge: " + kf + "\n" + oss.str() + "\n\n";
   }
   return p;
@@ -2226,8 +2270,9 @@ int main(int argc, char **argv) {
       const char *home = getenv("HOME");
       return std::string(home ? home : ".") + "/" + arg.substr(2);
     }
-    if (arg.substr(0, 2) == "./")
+    if (arg.substr(0, 2) == "./") {
       return (fs::current_path(ec) / arg.substr(2)).string();
+    }
     return arg;
   };
 
