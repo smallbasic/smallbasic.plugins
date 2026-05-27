@@ -57,24 +57,23 @@
 
 namespace fs = std::filesystem;
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // Forward declarations
-// ═══════════════════════════════════════════════════════════════════════════
+//
 struct NitroConfig;
 struct TuiState;
 struct AgentState;
-static std::string  join_path(const std::string &a, const std::string &b);
-static std::string  read_file(const std::string &path);
-static bool         write_file(const std::string &path, const std::string &data);
-static std::string  list_dir(const std::string &path);
 static bool         path_in_sandbox(const std::string &sandbox, const std::string &path);
-static std::string  strip_code_fences(const std::string &filename, const std::string &src);
-static std::string  process_tool(const std::string &line, const NitroConfig &cfg, TuiState &tui);
+static bool         write_file(const std::string &path, const std::string &data);
 static std::string  build_system_prompt(const std::vector<std::string> &knowledge_files, const std::string &sandbox);
-
-// ═══════════════════════════════════════════════════════════════════════════
+static std::string  join_path(const std::string &a, const std::string &b);
+static std::string  list_dir(const std::string &path);
+static std::string  read_file(const std::string &path);
+static std::string  strip_code_fences(const std::string &filename, const std::string &src);
+static std::string  tool_curl(const std::string &url);
+//
 // NitroConfig
-// ═══════════════════════════════════════════════════════════════════════════
+//
 struct NitroConfig {
   std::string model_path;
   std::string embed_path;
@@ -97,9 +96,9 @@ struct NitroConfig {
   std::vector<std::string> run_allowed;
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // InputHistory — up/down arrow navigation through submitted inputs
-// ═══════════════════════════════════════════════════════════════════════════
+//
 class InputHistory {
   public:
   explicit InputHistory() = default;
@@ -201,9 +200,9 @@ class InputHistory {
   int current_index = 0;
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // Notcurses TUI
-// ═══════════════════════════════════════════════════════════════════════════
+//
 //
 //  ┌──────────────────── header (1 row) ─────────────────────────────────┐
 //  │ ✦ NITRO  model: …  tok/s: …  KV: …%  VRAM: …%                       │
@@ -292,9 +291,9 @@ struct TuiState {
   }
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // AgentState
-// ═══════════════════════════════════════════════════════════════════════════
+//
 struct AgentState {
   std::unique_ptr<Llama> llama;
   std::unique_ptr<LlamaIter> iter;
@@ -304,21 +303,23 @@ struct AgentState {
   bool model_loaded = false;
   std::string system_prompt;
 
-  bool setup_model(const NitroConfig &cfg, TuiState &tui);
+  bool rag_index(const std::string &path, const NitroConfig &cfg, TuiState &tui);
+  bool rag_load_index(const std::string &path, TuiState &tui);
+  bool run_turn(const std::string &user_message, const NitroConfig &cfg, TuiState &tui);
   bool setup_embed(const std::string &path, TuiState &tui);
+  bool setup_model(const NitroConfig &cfg, TuiState &tui);
   void apply_generation_params(const NitroConfig &cfg);
   void reset_conversation(const std::string &sysprompt, TuiState &tui);
-  bool run_turn(const std::string &user_message,
-                const NitroConfig &cfg,
-                TuiState          &tui);
-  bool rag_index(const std::string &path, TuiState &tui);
   std::string memory_info_text();
+  std::string process_tool(const std::string &cmd, const NitroConfig &cfg, TuiState &tui);
+  std::string rag_tool(const NitroConfig &cfg, const std::string &agent_query);
   float tokens_per_sec() const;
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // Logging
-// ═══════════════════════════════════════════════════════════════════════════
+//
+
 // ─── Debug logging (file-backed, safe to call while notcurses is active) ──
 static FILE *g_logfile = nullptr;
 
@@ -348,9 +349,9 @@ static void log_write(const char *fmt, ...) {
   fflush(g_logfile);  // flush immediately so tail -f works
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // Settings persistence  (~/.config/nitro/nitro.settings.json)
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // A minimal hand-rolled JSON reader/writer for the flat key-value settings
 // we care about.  We deliberately avoid a full JSON library dependency.
 
@@ -588,7 +589,9 @@ static inline uint64_t hdr_ch(uint32_t r, uint32_t g, uint32_t b) {
   return NCCHANNELS_INITIALIZER(r, g, b, BG_HDR_R, BG_HDR_G, BG_HDR_B);
 }
 
-// ─── TuiState::init ──────────────────────────────────────────────────────
+//
+// TuiState::init
+//
 void TuiState::init() {
   notcurses_options opts{};
   opts.flags = NCOPTION_SUPPRESS_BANNERS;
@@ -637,7 +640,9 @@ void TuiState::resize() {
   redraw_all();
 }
 
-// ─── TuiState::redraw_* ──────────────────────────────────────────────────
+//
+// TuiState::redraw
+//
 void TuiState::redraw_header() {
   ncplane_erase(header);
   ncplane_set_base(header, " ", 0,
@@ -751,7 +756,9 @@ void TuiState::set_thinking(bool on) {
   notcurses_render(nc);
 }
 
-// ─── TuiState content helpers ─────────────────────────────────────────────
+//
+// TuiState content helpers
+//
 void TuiState::append_line(const std::string &line) {
   std::lock_guard<std::mutex> lk(lines_mutex);
   int w = std::max(1, term_cols - 1);
@@ -787,9 +794,10 @@ void TuiState::flush_token_acc() {
   }
 }
 
-// ─── TuiState::show_modal_popup / dismiss_modal_popup ─────────────────────
+//
 // Creates a centred floating plane with a border and a status message.
 // The popup sits above all other planes and blocks until explicitly dismissed.
+//
 void TuiState::show_modal_popup(const std::string &message) {
   // Dismiss any previous popup first.
   dismiss_modal_popup();
@@ -879,6 +887,7 @@ void TuiState::dismiss_modal_popup() {
   }
 }
 
+//
 // ─── TuiState::file_picker ────────────────────────────────────────────────
 // Interactive directory/file browser popup.
 // Keyboard:  ↑/↓ navigate,  Enter select/descend,  Backspace go up,
@@ -896,6 +905,7 @@ void TuiState::dismiss_modal_popup() {
 //   Esc        cancel → returns ""
 //
 // Returns the chosen path, or "" on cancel.
+//
 std::string TuiState::file_picker(const std::string &start_dir,
                                   const std::string &title_hint) {
   std::string current_dir = start_dir;
@@ -1079,7 +1089,9 @@ std::string TuiState::file_picker(const std::string &start_dir,
   return result;
 }
 
+//
 // ─── TuiState::confirm_dialog ─────────────────────────────────────────────
+//
 bool TuiState::confirm_dialog(const std::string &prompt) {
   ncplane_erase(inputpl);
   ncplane_set_channels(inputpl, inp_ch(255, 200, 80));
@@ -1105,9 +1117,10 @@ bool TuiState::confirm_dialog(const std::string &prompt) {
   return (lo == "y" || lo == "yes" || lo == "sure" || lo == "k");
 }
 
-// ─── TuiState::readline_blocking ──────────────────────────────────────────
+//
 // Integrates InputHistory:  Up/Down arrows navigate the history stack.
 // On submit the entry is pushed to history, and nav is reset.
+//
 std::string TuiState::readline_blocking() {
   input_buf.clear();
   cursor_pos = 0;
@@ -1234,7 +1247,6 @@ std::string TuiState::readline_blocking() {
 }
 
 void AgentState::apply_generation_params(const NitroConfig &cfg) {
-  //  llama->add_stop(MARKER_END_TOOL);
   llama->add_stop("<|turn|>");
   llama->add_stop("<|im_end|>");
   llama->set_max_tokens(cfg.n_max_tokens);
@@ -1247,8 +1259,9 @@ void AgentState::apply_generation_params(const NitroConfig &cfg) {
   llama->set_log_level(cfg.log_level);
 }
 
-// ─── AgentState::setup_model ──────────────────────────────────────────────
+//
 // Shows a modal loading popup while the model loads.
+//
 bool AgentState::setup_model(const NitroConfig &cfg, TuiState &tui) {
   if (cfg.model_path.empty()) {
     tui.append_line("[sys] No model loaded.  Use /model <path> to load a GGUF.");
@@ -1340,7 +1353,35 @@ std::string AgentState::memory_info_text() {
   return oss.str();
 }
 
-bool AgentState::rag_index(const std::string &path, TuiState &tui) {
+std::string AgentState::rag_tool(const NitroConfig &cfg, const std::string &agent_query) {
+  std::string result;
+  if (embed_llama && rag_db && rag_session) {
+    result = embed_llama->rag_retrieve(*rag_db, agent_query, cfg.rag_top_k, *rag_session);
+    if (result.empty()) {
+      result = "RAG: no context found";
+    }
+  } else {
+    result = "RAG: not enabled";
+  }
+  return result;
+}
+
+bool AgentState::rag_load_index(const std::string &path, TuiState &tui) {
+  if (!embed_llama || !rag_db) {
+    tui.append_line("[err] Load an embedding model first: /embed <path>");
+    tui.redraw_all();
+    return false;
+  }
+
+  if (!rag_db->load(path)) {
+    tui.append_line("[sys] failed to load");
+    tui.redraw_all();
+  }
+
+  return true;
+}
+
+bool AgentState::rag_index(const std::string &path, const NitroConfig &cfg, TuiState &tui) {
   if (!embed_llama || !rag_db) {
     tui.append_line("[err] Load an embedding model first: /embed <path>");
     tui.redraw_all();
@@ -1371,15 +1412,135 @@ bool AgentState::rag_index(const std::string &path, TuiState &tui) {
     index_one(path);
   }
 
+  std::string save_path = join_path(cfg.sandbox, "rag-index.bin");
+  tui.append_line("[sys] saving index: " + save_path);
+  tui.redraw_all();
+  rag_db->save(save_path);
+
   return true;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
+// Tool dispatch
+//
+std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &cfg, TuiState &tui) {
+  const std::string &sandbox = cfg.sandbox;
+  const std::vector<std::string> &run_allowed = cfg.run_allowed;
+
+  std::string op, arg1, arg2;
+  auto sp1 = cmd.find(' ');
+  if (sp1 == std::string::npos) {
+    op = trim(cmd);
+  } else {
+    op = trim(cmd.substr(0, sp1));
+    std::string rest = cmd.substr(sp1 + 1);
+    rest.erase(0, rest.find_first_not_of(" \t"));
+    auto sp2 = rest.find(' ');
+    if (sp2 == std::string::npos) {
+      arg1 = rest;
+    } else {
+      arg1 = rest.substr(0, sp2);
+      arg2 = rest.substr(sp2 + 1);
+    }
+  }
+
+  auto resolve = [&](const std::string &p) -> std::string {
+    if (p.empty() || p == ".") return sandbox;
+    if (p.substr(0, 2) == "./") return join_path(sandbox, p.substr(2));
+    if (p[0] == '/') return p;
+    return join_path(sandbox, p);
+  };
+
+  tui.append_line("[tool] → " + op);
+  tui.redraw_all();
+
+  if (op == "TOOL:DATE") {
+    char buf[32]; time_t t = time(nullptr);
+    strftime(buf, sizeof(buf), "%Y-%m-%d", localtime(&t));
+    return buf;
+  }
+  if (op == "TOOL:TIME") {
+    char buf[32]; time_t t = time(nullptr);
+    strftime(buf, sizeof(buf), "%H:%M:%S", localtime(&t));
+    return buf;
+  }
+  if (op == "TOOL:RND") {
+    return std::to_string((double)rand() / RAND_MAX);
+  }
+  if (op == "TOOL:RAG") {
+    return rag_tool(cfg, arg1);
+  }
+  if (op == "TOOL:LIST") {
+    std::string dir = resolve(arg1);
+    if (!path_in_sandbox(sandbox, dir)) return "ERROR: path outside sandbox";
+    return list_dir(dir);
+  }
+  if (op == "TOOL:EXISTS") {
+    std::string p = resolve(arg1);
+    if (!path_in_sandbox(sandbox, p)) return "NO";
+    return fs::exists(p) ? "YES" : "NO";
+  }
+  if (op == "TOOL:READ") {
+    std::string p = resolve(arg1);
+    if (!path_in_sandbox(sandbox, p)) return "ERROR: path outside sandbox";
+    return read_file(p);
+  }
+  if (op == "TOOL:WRITE") {
+    std::string p = resolve(arg1);
+    if (!path_in_sandbox(sandbox, p)) {
+      return "ERROR: path outside sandbox";
+    }
+    if (!tui.confirm_dialog(std::format("Allow model to write {}?", p))) {
+      return "ERROR: action prevented by user";
+    }
+    std::string content = strip_code_fences(arg1, arg2);
+    return write_file(p, content) ? "OK: written to " + arg1 : "ERROR: write failed for " + arg1;
+  }
+  if (op == "TOOL:CURL") {
+    return tool_curl(arg1);
+  }
+  if (op == "TOOL:INTROSPECT") {
+    return introspect(cfg);
+  }
+  if (op == "TOOL:RUN") {
+    std::string prog = resolve(arg1);
+    if (!path_in_sandbox(sandbox, prog)) {
+      return "ERROR: path outside sandbox";
+    }
+    if (!run_allowed.empty()) {
+      std::string basename = fs::path(prog).filename().string();
+      bool permitted = std::any_of(run_allowed.begin(), run_allowed.end(),
+                                   [&](const std::string &a){ return a == basename; });
+      if (!permitted) {
+        return "ERROR: '" + basename + "' is not in the TOOL:RUN allowlist. "
+          "Use /set run_allowed <name> to permit it.";
+      }
+    } else if (!tui.confirm_dialog(std::format("Allow {} to run?", prog))) {
+      return "ERROR: prevented by user";
+    }
+    std::string command = prog + " " + arg2 + " 2>&1";
+    FILE *fp = popen(command.c_str(), "r");
+    if (!fp) {
+      return "ERROR: popen failed";
+    }
+    std::string out;
+    char buf[256];
+    while (fgets(buf, sizeof(buf), fp)) {
+      out += buf;
+    }
+    pclose(fp);
+    if (out.size() > 4096) {
+      out = out.substr(0, 4096) + "\n…(truncated)";
+    }
+    return out;
+  }
+  return "ERROR: unknown tool: [" + op + "]";
+}
+
+//
 // Agent turn
-// ═══════════════════════════════════════════════════════════════════════════
-bool AgentState::run_turn(const std::string &user_message,
-                          const NitroConfig &cfg,
-                          TuiState          &tui) {
+//
+bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cfg, TuiState &tui) {
   if (!model_loaded) {
     tui.append_line("[err] No model loaded. Use /model <path>");
     tui.redraw_all();
@@ -1530,9 +1691,9 @@ bool AgentState::run_turn(const std::string &user_message,
   return true;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // File-system helpers
-// ═══════════════════════════════════════════════════════════════════════════
+//
 static std::string join_path(const std::string &a, const std::string &b) {
   if (b.empty()) return a;
   if (b[0] == '/') return b;
@@ -1605,15 +1766,16 @@ static std::string strip_code_fences(const std::string &filename,
   return inner;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // html_to_text — strip HTML for cleaner TOOL:CURL context
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // Lightweight HTML→plain-text conversion:
 //   • Drops <head>, <script>, <style> blocks entirely.
 //   • Inserts newlines at block-level tags (p, div, br, li, h1-h6 …).
 //   • Strips all remaining tags.
 //   • Decodes common named & numeric HTML entities.
 //   • Collapses whitespace runs; caps consecutive blank lines at 2.
+//
 static std::string html_to_text(const std::string &html) {
   std::string s = html;
 
@@ -1739,9 +1901,9 @@ static std::string html_to_text(const std::string &html) {
   return s;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // TOOL:CURL
-// ═══════════════════════════════════════════════════════════════════════════
+//
 static size_t curl_write_cb(void *contents, size_t size, size_t nmemb, void *userp) {
   std::string *buf = static_cast<std::string *>(userp);
   size_t total = size * nmemb;
@@ -1797,123 +1959,9 @@ static std::string tool_curl(const std::string &url) {
   return body;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Tool dispatch
-// ═══════════════════════════════════════════════════════════════════════════
-static std::string process_tool(const std::string &cmd, const NitroConfig &cfg, TuiState &tui) {
-  const std::string &sandbox = cfg.sandbox;
-  const std::vector<std::string> &run_allowed = cfg.run_allowed;
-
-  std::string op, arg1, arg2;
-  auto sp1 = cmd.find(' ');
-  if (sp1 == std::string::npos) {
-    op = trim(cmd);
-  } else {
-    op = trim(cmd.substr(0, sp1));
-    std::string rest = cmd.substr(sp1 + 1);
-    rest.erase(0, rest.find_first_not_of(" \t"));
-    auto sp2 = rest.find(' ');
-    if (sp2 == std::string::npos) {
-      arg1 = rest;
-    } else {
-      arg1 = rest.substr(0, sp2);
-      arg2 = rest.substr(sp2 + 1);
-    }
-  }
-
-  auto resolve = [&](const std::string &p) -> std::string {
-    if (p.empty() || p == ".") return sandbox;
-    if (p.substr(0, 2) == "./") return join_path(sandbox, p.substr(2));
-    if (p[0] == '/') return p;
-    return join_path(sandbox, p);
-  };
-
-  tui.append_line("[tool] → " + op);
-  tui.redraw_all();
-
-  if (op == "TOOL:DATE") {
-    char buf[32]; time_t t = time(nullptr);
-    strftime(buf, sizeof(buf), "%Y-%m-%d", localtime(&t));
-    return buf;
-  }
-  if (op == "TOOL:TIME") {
-    char buf[32]; time_t t = time(nullptr);
-    strftime(buf, sizeof(buf), "%H:%M:%S", localtime(&t));
-    return buf;
-  }
-  if (op == "TOOL:RND") {
-    return std::to_string((double)rand() / RAND_MAX);
-  }
-  if (op == "TOOL:LIST") {
-    std::string dir = resolve(arg1);
-    if (!path_in_sandbox(sandbox, dir)) return "ERROR: path outside sandbox";
-    return list_dir(dir);
-  }
-  if (op == "TOOL:EXISTS") {
-    std::string p = resolve(arg1);
-    if (!path_in_sandbox(sandbox, p)) return "NO";
-    return fs::exists(p) ? "YES" : "NO";
-  }
-  if (op == "TOOL:READ") {
-    std::string p = resolve(arg1);
-    if (!path_in_sandbox(sandbox, p)) return "ERROR: path outside sandbox";
-    return read_file(p);
-  }
-  if (op == "TOOL:WRITE") {
-    std::string p = resolve(arg1);
-    if (!path_in_sandbox(sandbox, p)) {
-      return "ERROR: path outside sandbox";
-    }
-    if (!tui.confirm_dialog(std::format("Allow model to write {}?", p))) {
-      return "ERROR: action prevented by user";
-    }
-    std::string content = strip_code_fences(arg1, arg2);
-    return write_file(p, content) ? "OK: written to " + arg1 : "ERROR: write failed for " + arg1;
-  }
-  if (op == "TOOL:CURL") {
-    return tool_curl(arg1);
-  }
-  if (op == "TOOL:INTROSPECT") {
-    return introspect(cfg);
-  }
-  if (op == "TOOL:RUN") {
-    std::string prog = resolve(arg1);
-    if (!path_in_sandbox(sandbox, prog)) {
-      return "ERROR: path outside sandbox";
-    }
-    if (!run_allowed.empty()) {
-      std::string basename = fs::path(prog).filename().string();
-      bool permitted = std::any_of(run_allowed.begin(), run_allowed.end(),
-                                   [&](const std::string &a){ return a == basename; });
-      if (!permitted) {
-        return "ERROR: '" + basename + "' is not in the TOOL:RUN allowlist. "
-          "Use /set run_allowed <name> to permit it.";
-      }
-    } else if (!tui.confirm_dialog(std::format("Allow {} to run?", prog))) {
-      return "ERROR: prevented by user";
-    }
-    std::string command = prog + " " + arg2 + " 2>&1";
-    FILE *fp = popen(command.c_str(), "r");
-    if (!fp) {
-      return "ERROR: popen failed";
-    }
-    std::string out;
-    char buf[256];
-    while (fgets(buf, sizeof(buf), fp)) {
-      out += buf;
-    }
-    pclose(fp);
-    if (out.size() > 4096) {
-      out = out.substr(0, 4096) + "\n…(truncated)";
-    }
-    return out;
-  }
-  return "ERROR: unknown tool: [" + op + "]";
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // System prompt
-// ═══════════════════════════════════════════════════════════════════════════
+//
 static std::string build_system_prompt(const std::vector<std::string> &knowledge_files,
                                        const std::string &sandbox) {
   std::string p;
@@ -1932,6 +1980,7 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "  TOOL:DATE                  current date\n"
     "  TOOL:TIME                  current time\n"
     "  TOOL:RND                   random float\n"
+    "  TOOL:RAG    <query>        query the RAG index for additional context\n"
     "  TOOL:INTROSPECT            introspect your settings, top_k etc\n"
     "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
     "Rules:\n"
@@ -1949,9 +1998,9 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
   return p;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // Slash command handler
-// ═══════════════════════════════════════════════════════════════════════════
+//
 static void handle_slash(const std::string &input,
                          NitroConfig       &cfg,
                          AgentState        &agent,
@@ -2025,9 +2074,15 @@ static void handle_slash(const std::string &input,
         return;
       }
     }
-    tui.append_line("[sys] Indexing: " + path);
-    tui.redraw_all();
-    agent.rag_index(path, tui);
+    if (path.find_last_not_of(".bin") != std::string::npos) {
+      tui.append_line("[sys] Loading index: " + path);
+      tui.redraw_all();
+      agent.rag_load_index(path, tui);
+    } else {
+      tui.append_line("[sys] Indexing: " + path);
+      tui.redraw_all();
+      agent.rag_index(path, cfg, tui);
+    }
     return;
   }
 
@@ -2138,9 +2193,9 @@ static void handle_slash(const std::string &input,
   tui.redraw_all();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // Welcome banner  — colourful multi-line ASCII logo
-// ═══════════════════════════════════════════════════════════════════════════
+//
 static void welcome(TuiState &tui, const std::string &sandbox) {
   tui.append_line("");
   tui.append_line("[logo_0]  ███╗   ██╗██╗████████╗██████╗  ██████╗ ");
@@ -2157,9 +2212,9 @@ static void welcome(TuiState &tui, const std::string &sandbox) {
   tui.redraw_all();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+//
 // main()
-// ═══════════════════════════════════════════════════════════════════════════
+//
 int main(int argc, char **argv) {
   // ── Load persisted settings first (provides defaults) ────────────
   NitroConfig cfg;
