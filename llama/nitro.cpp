@@ -34,7 +34,6 @@
 //   TOOL:DATE
 //   TOOL:TIME
 //   TOOL:RND
-//   TOOL:PERMISSION
 //   TOOL:CURL   <url>
 //
 // Copyright (C) 2026 Chris Warren-Smith  —  GPLv2 or later
@@ -209,7 +208,7 @@ class InputHistory {
   }
 
   /**
-   * @brief Load history from ~/.config/nitro.history (one entry per line).
+   * @brief Load history from ~/.config/nitro/nitro.history (one entry per line).
    * Silently succeeds if the file doesn't exist.
    */
   void load(const std::string &path) {
@@ -260,7 +259,7 @@ static FILE *g_logfile = nullptr;
 
 static void log_open() {
   const char *home = getenv("HOME");
-  std::string path = std::string(home ? home : ".") + "/.config/nitro.log";
+  std::string path = std::string(home ? home : ".") + "/.config/nitro/nitro.log";
   g_logfile = fopen(path.c_str(), "a");
 }
 
@@ -285,7 +284,7 @@ static void log_write(const char *fmt, ...) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Settings persistence  (~/.config/nitro.settings.json)
+// Settings persistence  (~/.config/nitro/nitro.settings.json)
 // ═══════════════════════════════════════════════════════════════════════════
 // A minimal hand-rolled JSON reader/writer for the flat key-value settings
 // we care about.  We deliberately avoid a full JSON library dependency.
@@ -312,18 +311,18 @@ struct NitroConfig {
   std::vector<std::string> run_allowed;
 };
 
-// Returns the canonical settings path: ~/.config/nitro.settings.json
+// Returns the canonical settings path: ~/.config/nitro/settings.json
 static std::string settings_path() {
   const char *home = getenv("HOME");
   std::string base = home ? std::string(home) : ".";
-  return base + "/.config/nitro.settings.json";
+  return base + "/.config/nitro/settings.json";
 }
 
-// Returns the history file path: ~/.config/nitro.history
+// Returns the history file path: ~/.config/nitro/history.txt
 static std::string history_path() {
   const char *home = getenv("HOME");
   std::string base = home ? std::string(home) : ".";
-  return base + "/.config/nitro.history";
+  return base + "/.config/nitro/history.txt";
 }
 
 // Tiny helper: extract a quoted string value from flat JSON for a known key.
@@ -464,10 +463,9 @@ static std::string introspect(const NitroConfig &cfg) {
                      cfg.rag_top_k);
 }
 
-// Persist the current cfg to ~/.config/nitro.settings.json.
+// Persist the current cfg to ~/.config/nitro/settings.json.
 static bool save_settings(const NitroConfig &cfg) {
   std::string path = settings_path();
-  // Ensure ~/.config/ exists
   fs::path dir = fs::path(path).parent_path();
   std::error_code ec;
   fs::create_directories(dir, ec);
@@ -562,7 +560,7 @@ struct TuiState {
   void append_token(const std::string &token);
   void flush_token_acc();
   // ── interaction ───────────────────────────────────────────────────
-  void confirm_dialog(const std::string &prompt, std::string &result);
+  bool confirm_dialog(const std::string &prompt);
   // Blocking readline with history navigation, cursor, arrow-key scrolling.
   std::string readline_blocking();
   // Modal popup overlay while a long operation runs.
@@ -573,11 +571,11 @@ struct TuiState {
   void show_modal_popup(const std::string &message);
   void show_help();
   void dismiss_modal_popup();
-  // ── RAG folder picker popup ───────────────────────────────────────
+  // ── folder picker popup ───────────────────────────────────────
   // Presents an interactive directory browser to let the user choose a
   // folder (or file) to index.  Returns the selected path, or empty string
   // if the user cancelled.
-  // ── RAG / file browser popup ─────────────────────────────────────
+  // ── file browser popup ─────────────────────────────────────
   // Used by /rag, /model, and /embed to pick a path interactively.
   // Pass a hint string shown in the title bar (e.g. "RAG Folder",
   // "Model File", "Embedding Model").
@@ -898,7 +896,7 @@ void TuiState::dismiss_modal_popup() {
   }
 }
 
-// ─── TuiState::rag_folder_picker ──────────────────────────────────────────
+// ─── TuiState::file_picker ────────────────────────────────────────────────
 // Interactive directory/file browser popup.
 // Keyboard:  ↑/↓ navigate,  Enter select/descend,  Backspace go up,
 //            's' select current dir for indexing,   Esc cancel.
@@ -1099,7 +1097,7 @@ std::string TuiState::file_picker(const std::string &start_dir,
 }
 
 // ─── TuiState::confirm_dialog ─────────────────────────────────────────────
-void TuiState::confirm_dialog(const std::string &prompt, std::string &result) {
+bool TuiState::confirm_dialog(const std::string &prompt) {
   ncplane_erase(inputpl);
   ncplane_set_channels(inputpl, inp_ch(255, 200, 80));
   std::string msg = " " + prompt + " [y/n] ❯ ";
@@ -1119,9 +1117,9 @@ void TuiState::confirm_dialog(const std::string &prompt, std::string &result) {
   }
   std::string lo = answer;
   std::transform(lo.begin(), lo.end(), lo.begin(), ::tolower);
-  result = (lo == "y" || lo == "yes" || lo == "sure" || lo == "k") ? "YES" : "NO";
   redraw_input();
   notcurses_render(nc);
+  return (lo == "y" || lo == "yes" || lo == "sure" || lo == "k");
 }
 
 // ─── TuiState::readline_blocking ──────────────────────────────────────────
@@ -1389,23 +1387,31 @@ bool AgentState::rag_index(const std::string &path, TuiState &tui) {
     tui.redraw_all();
     return false;
   }
+
   auto index_one = [&](const std::string &filepath) {
     tui.append_line("[sys]   indexing: " + filepath);
     tui.redraw_all();
-    if (!embed_llama->rag_load(*rag_db, filepath)) {
+    if (!embed_llama->rag_index(*rag_db, filepath)) {
       tui.append_line(std::string("[err] rag_load: ") + embed_llama->last_error());
       tui.redraw_all();
     }
   };
+
+  // must be set before indexing
+  rag_db->embed_dim = embed_llama->get_embed_dim();
+
   fs::path rp(path);
   std::error_code ec;
   if (fs::is_directory(rp, ec)) {
     for (const auto &entry : fs::recursive_directory_iterator(rp, ec)) {
-      if (entry.is_regular_file()) index_one(entry.path().string());
+      if (entry.is_regular_file()) {
+        index_one(entry.path().string());
+      }
     }
   } else {
     index_one(path);
   }
+
   return true;
 }
 
@@ -1503,7 +1509,24 @@ bool AgentState::run_turn(const std::string &user_message,
       auto tool_start = buffer.find("TOOL:");
       if (tool_start == 0) {
         // fetch all remaining tokens
-        invoke_tool(buffer + llama->all(*iter), "TOOL_RESULT: {}");
+        invoke_tool(trim(buffer + llama->all(*iter)), "TOOL_RESULT: {}");
+        buffer.clear();
+        think_mode = t_init;
+        continue;
+      }
+      // see https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4
+      tool_start = buffer.find("<|tool_call>call:");
+      if (tool_start != std::string::npos) {
+        buffer += llama->all(*iter);
+        auto pos = buffer.find_last_not_of("}<tool_call|>");
+        if (pos != std::string::npos) {
+          buffer = buffer.substr(0, pos);
+         }
+        pos = buffer.find_first_not_of("{");
+        if (pos != std::string::npos) {
+          buffer = buffer.substr(0, pos) + buffer.substr(pos + 1);
+        }
+        invoke_tool(trim(buffer), "<|tool_response>{}<tool_response|>");
         buffer.clear();
         think_mode = t_init;
         continue;
@@ -1869,15 +1892,14 @@ static std::string process_tool(const std::string &cmd, const NitroConfig &cfg, 
   }
   if (op == "TOOL:WRITE") {
     std::string p = resolve(arg1);
-    if (!path_in_sandbox(sandbox, p)) return "ERROR: path outside sandbox";
+    if (!path_in_sandbox(sandbox, p)) {
+      return "ERROR: path outside sandbox";
+    }
+    if (!tui.confirm_dialog(std::format("Allow model to write {}?", p))) {
+      return "ERROR: action prevented by user";
+    }
     std::string content = strip_code_fences(arg1, arg2);
-    return write_file(p, content) ? "OK: written to " + arg1
-      : "ERROR: write failed for " + arg1;
-  }
-  if (op == "TOOL:PERMISSION") {
-    std::string result;
-    tui.confirm_dialog("Allow model to proceed?", result);
-    return result;
+    return write_file(p, content) ? "OK: written to " + arg1 : "ERROR: write failed for " + arg1;
   }
   if (op == "TOOL:CURL") {
     return tool_curl(arg1);
@@ -1898,6 +1920,8 @@ static std::string process_tool(const std::string &cmd, const NitroConfig &cfg, 
         return "ERROR: '" + basename + "' is not in the TOOL:RUN allowlist. "
           "Use /set run_allowed <name> to permit it.";
       }
+    } else if (!tui.confirm_dialog(std::format("Allow {} to run?", prog))) {
+      return "ERROR: prevented by user";
     }
     std::string command = prog + " " + arg2 + " 2>&1";
     FILE *fp = popen(command.c_str(), "r");
@@ -1939,13 +1963,11 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "  TOOL:DATE                  current date\n"
     "  TOOL:TIME                  current time\n"
     "  TOOL:RND                   random float\n"
-    "  TOOL:PERMISSION            ask user for explicit permission\n"
     "  TOOL:INTROSPECT            introspect your settings, top_k etc\n"
     "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
     "Rules:\n"
     "- Never access files outside the sandbox.\n"
     "- Only use one TOOL at a time. Never combine, always use each tool step by step\n"
-    "- Use TOOL:PERMISSION before destructive or irreversible operations.\n"
     "- Use TOOL:CURL to fetch documentation, APIs, or web content you need.\n"
     "- Reason step-by-step inside <|think|> </|think|> (hidden from user).\n"
     "- After each tool call, explain what you did in plain English.\n\n";
@@ -2213,7 +2235,7 @@ int main(int argc, char **argv) {
                 "  -h, --help               show this help\n"
                 "\n"
                 "project_dir defaults to the current working directory.\n"
-                "Settings are persisted to ~/.config/nitro.settings.json.\n"
+                "Settings are persisted to ~/.config/nitro/settings.json.\n"
                 "\n"
                 "Slash commands inside nitro:\n"
                 "  /model  [path]           load / hot-reload a GGUF (picker if no path)\n"

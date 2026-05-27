@@ -101,11 +101,17 @@ struct Llama {
   // memory info
   LlamaMemoryInfo memory_info();
 
-  // rag support
-  bool embed_text(const std::string &text, std::vector<float> &out, int embed);
-  int get_embed_dim() const { return _model != nullptr ? llama_model_n_embd(_model) : 0; }
-  bool rag_load(RagDB &db, const std::string &path);
+  // creates an embedding vector of the given dimension for the given text
+  bool embed_text(const std::string &text, std::vector<float> &out, int embed_dim);
+
+  // retrieves rag query context informatiion from the rag database
   std::string rag_retrieve(const RagDB &db, const std::string &query, int top_k, RagSession &session);
+
+  // indexes the details from the given file
+  bool rag_index(RagDB &db, const std::string &filepath);
+
+  //  returns the emdedding dimension for the loaded model
+  int get_embed_dim() const { return _model != nullptr ? llama_model_n_embd(_model) : 0; }
 
   private:
   bool batch_decode_tokens(vector<llama_token> &tokens);

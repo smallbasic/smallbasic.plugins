@@ -14,9 +14,29 @@ struct RagChunk {
   std::vector<float> embedding;
 };
 
+/* ── on-disk chunk (variable-length text) ──────────────────── */
+/*
+ * db header  (16 bytes):
+ *   uint32  magic      = 0x52414744  "RAGD"
+ *   uint32  version    = 2
+ *   uint32  n_chunks
+ *   uint32  embed_dim
+ *
+ * per chunk:
+ *   uint32  text_len
+ *   char[]  text          (text_len bytes, no null)
+ *   uint16  source_len
+ *   char[]  source        (source_len bytes, no null)
+ *   uint8   type_len
+ *   char[]  type          (type_len bytes, no null)
+ *   float[] embedding     (embed_dim floats)
+ */
 struct RagDB {
   std::vector<RagChunk> chunks;
   int embed_dim = 0;
+
+  bool load(const std::string &path);
+  bool save(const std::string &path);
 
   int  size()  const { return (int)chunks.size(); }
   bool empty() const { return chunks.empty(); }
