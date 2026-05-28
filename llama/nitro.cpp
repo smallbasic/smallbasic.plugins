@@ -643,6 +643,21 @@ static bool write_file(const std::string &path, const std::string &data) {
   return f.good();
 }
 
+static bool make_dir(const std::string &path) {
+  try {
+    std::filesystem::path p(path);
+    if (fs::exists(p)) {
+      return true;
+    }
+    std::error_code ec;
+    return fs::create_directories(p, ec);
+  }
+  catch (const std::filesystem::filesystem_error &e) {
+    log_write("mkdir failed [%s]", e.what());
+    return false;
+  }
+}
+
 //
 // System prompt
 //
@@ -659,6 +674,7 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "  TOOL:LIST   [dir]          list files (default: sandbox root)\n"
     "  TOOL:READ   <file>         read file contents\n"
     "  TOOL:WRITE  <file> <text>  write text to file\n"
+    "  TOOL:MKDIR  <dir>          create a subfolder inside the sandbox\n"
     "  TOOL:EXISTS <file>         YES or NO\n"
     "  TOOL:RUN    <prog> [args]  run program inside sandbox\n"
     "  TOOL:DATE                  current date\n"
@@ -1768,7 +1784,7 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
   const std::vector<std::string> &run_allowed = cfg.run_allowed;
 
   std::string op, arg1, arg2;
-  auto sp1 = cmd.find(' ');
+  auto sp1 = cmd.find_first_of(" \n");
   if (sp1 == std::string::npos) {
     op = trim(cmd);
   } else {
@@ -1839,8 +1855,15 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
     if (!tui.confirm_dialog(std::format("Allow model to write {}?", p))) {
       return "ERROR: action prevented by user";
     }
-    std::string content = disclose(strip_code_fences(arg1, arg2), '`', '`');
+    std::string content = disclose(disclose(strip_code_fences(arg1, arg2), '`', '`'), '"', '"');
     return write_file(p, content) ? "OK: written to " + arg1 : "ERROR: write failed for " + arg1;
+  }
+  if (op == "TOOL:MKDIR") {
+    std::string p = resolve(arg1);
+    if (!path_in_sandbox(sandbox, p)) {
+      return "ERROR: path outside sandbox";
+    }
+    return make_dir(p) ? "OK: created " + arg1 : "ERROR: mkdir failed for " + arg1;
   }
   if (op == "TOOL:CURL") {
     return tool_curl(arg1);
@@ -1849,22 +1872,16 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
     return introspect(cfg);
   }
   if (op == "TOOL:RUN") {
-    std::string prog = resolve(arg1);
-    if (!path_in_sandbox(sandbox, prog)) {
-      return "ERROR: path outside sandbox";
-    }
     if (!run_allowed.empty()) {
-      std::string basename = fs::path(prog).filename().string();
-      bool permitted = ranges::any_of(run_allowed,
-                                      [&](const std::string &a){ return a == basename; });
+      bool permitted = ranges::any_of(run_allowed, [&](const std::string &a) {return a == arg1;});
       if (!permitted) {
-        return "ERROR: '" + basename + "' is not in the TOOL:RUN allowlist. "
+        return "ERROR: '" + arg1 + "' is not in the TOOL:RUN allowlist. "
           "Use /set run_allowed <name> to permit it.";
       }
-    } else if (!tui.confirm_dialog(std::format("Allow {} to run?", prog))) {
+    } else if (!tui.confirm_dialog(std::format("Allow {} {} to run?", arg1, arg2))) {
       return "ERROR: prevented by user";
     }
-    std::string command = prog + " " + arg2 + " 2>&1";
+    std::string command = arg1 + " " + arg2 + " 2>&1";
     FILE *fp = popen(command.c_str(), "r");
     if (!fp) {
       return "ERROR: popen failed";
