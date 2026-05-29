@@ -50,8 +50,11 @@
 #include <string>
 #include <vector>
 #include <curl/curl.h>
+#include <iostream>
+
 #include "llama-sb.h"
 #include "llama-sb-rag.h"
+
 #include <notcurses/notcurses.h>
 
 namespace fs = std::filesystem;
@@ -344,12 +347,13 @@ static const std::vector<std::string> CODE_EXTENSIONS = {
 
 //
 // Settings persistence  (~/.config/nitro/nitro.settings.json)
-//
-// A minimal hand-rolled JSON reader/writer for the flat key-value settings
-// we care about.  We deliberately avoid a full JSON library dependency.
-
 // Returns the canonical settings path: ~/.config/nitro/settings.json
+//
 static std::string settings_path() {
+  // Attempt to read settings from the current working directory first
+  if (fs::exists("settings.json")) {
+    return "settings.json";
+  }
   const char *home = getenv("HOME");
   std::string base = home ? std::string(home) : ".";
   return base + "/.config/nitro/settings.json";
@@ -362,6 +366,10 @@ static std::string history_path() {
   return base + "/.config/nitro/history.txt";
 }
 
+//
+// A minimal hand-rolled JSON reader/writer for the flat key-value settings
+// we care about.  We deliberately avoid a full JSON library dependency.
+//
 static bool json_get_string(const std::string &json,
                             const std::string &key,
                             std::string       &out) {
@@ -551,25 +559,93 @@ static std::string trim(std::string_view str) {
   return std::string(str.substr(start, end - start + 1));
 }
 
-//
-// Removes any front and back characters
-//
-static std::string disclose(const std::string &input, char c1, char c2) {
-  // Check if string has at least 2 characters
-  if (input.length() < 2) {
+/*
+ * unwrap() - Remove a matching outer "wrapper" from a string.
+ *
+ * Trims leading/trailing whitespace first, then checks (in order):
+ *
+ *  1. Same-character pairs   "..."  '...'  |...|  `...`
+ *  2. Mirror pairs           (...)  [...]  {...}
+ *  3. HTML-like tags         <tag>...</tag>
+ *  4. Plain angle brackets   <...>          (fallback if tags don't match)
+ *
+ * If none of the above apply, returns the whitespace-trimmed input unchanged.
+ *
+ * Examples:
+ *   unwrap("\"hello\"")        -> "hello"
+ *   unwrap("  [foo]  ")        -> "foo"
+ *   unwrap("<b>bold</b>")      -> "bold"
+ *   unwrap("<file>x</file>")   -> "x"
+ *   unwrap("<hello>")          -> "hello"
+ *   unwrap("plain")            -> "plain"
+ *   unwrap("")                 -> ""
+ */
+std::string unwrap(const std::string &input) {
+  if (input.empty()) {
     return input;
   }
+ 
+  size_t left = 0;
+  size_t right = input.length() - 1;
 
-  // Check if first and last characters match the specified delimiters
-  if (input[0] == c1 && input[input.length() - 1] == c2) {
-    // Remove first and last characters
-    std::string result = input;
-    result.erase(0, 1);
-    result.erase(input.length() - 1, 1);
-    return result;
+  while (left <= right && std::isspace(static_cast<unsigned char>(input[left]))) {
+    left++;
+  }
+  while (left <= right && std::isspace(static_cast<unsigned char>(input[right]))) {
+    right--;
   }
 
-  return input;
+  if (left > right) {
+    return "";
+  }
+
+  // Same-character pairs: "", '', ||, ``
+  // Note: [], {} are NOT same-char pairs — they belong in mirror pairs only
+  if (input[left] == input[right]) {
+    if (input[left] == '"'  || input[left] == '\'' ||
+        input[left] == '|'  || input[left] == '`') {
+      return input.substr(left + 1, right - left - 1);
+    }
+  }
+
+  // Mirror pairs: (), [], {}, but NOT <> (handled below as possible HTML tags)
+  if (input[left] != input[right]) {
+    if ((input[left] == '(' && input[right] == ')') ||
+        (input[left] == '[' && input[right] == ']') ||
+        (input[left] == '{' && input[right] == '}')) {
+      return input.substr(left + 1, right - left - 1);
+    }
+  }
+
+  // HTML-like tags: <tag>content</tag>
+  // Also handles plain <...> as a fallback at the end
+  if (input[left] == '<' && input[right] == '>') {
+    // Find end of opening tag
+    size_t openTagEnd = left + 1;
+    while (openTagEnd <= right && input[openTagEnd] != '>') openTagEnd++;
+
+    if (openTagEnd < right) {
+      std::string openTagName = input.substr(left + 1, openTagEnd - left - 1);
+
+      // Find start of closing tag (search backwards for '<')
+      size_t closeTagStart = right;
+      while (closeTagStart > openTagEnd && input[closeTagStart] != '<') closeTagStart--;
+
+      if (closeTagStart > openTagEnd && input[closeTagStart + 1] == '/') {
+        std::string closeTagName = input.substr(closeTagStart + 2, right - closeTagStart - 2);
+
+        if (!openTagName.empty() && openTagName == closeTagName) {
+          // Return content between the tags
+          return input.substr(openTagEnd + 1, closeTagStart - openTagEnd - 1);
+        }
+      }
+    }
+
+    // Fallback: plain <...> with no matching HTML tags — unwrap the angle brackets
+    return input.substr(left + 1, right - left - 1);
+  }
+
+  return input.substr(left, right - left + 1);
 }
 
 // ─── colour helpers ──────────────────────────────────────────────────────
@@ -1810,7 +1886,7 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
     if (p[0] == '/') {
       return p;
     }
-    return join_path(sandbox, disclose(disclose(p, '<', '>'), '[', ']'));
+    return join_path(sandbox, unwrap(p));
   };
 
   tui.append_line("[tool] → " + op);
@@ -1855,7 +1931,7 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
     if (!tui.confirm_dialog(std::format("Allow model to write {}?", p))) {
       return "ERROR: action prevented by user";
     }
-    std::string content = disclose(disclose(strip_code_fences(arg1, arg2), '`', '`'), '"', '"');
+    std::string content = unwrap(strip_code_fences(arg1, arg2));
     return write_file(p, content) ? "OK: written to " + arg1 : "ERROR: write failed for " + arg1;
   }
   if (op == "TOOL:MKDIR") {
