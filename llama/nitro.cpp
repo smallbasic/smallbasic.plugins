@@ -79,6 +79,7 @@ struct NitroConfig {
   int   penalty_last_n = 256;
   std::vector<std::string> knowledge_files;
   int   rag_top_k      = 5;
+  bool  thinking       = true;
   // TOOL:RUN allowlist — if non-empty, only these program basenames may run.
   // Empty means "allow anything inside the sandbox" (original behaviour).
   std::vector<std::string> run_allowed;
@@ -467,6 +468,8 @@ static void load_settings(NitroConfig &cfg) {
   std::ostringstream oss; oss << f.rdbuf();
   std::string json = oss.str();
 
+  cfg.thinking = true;
+  
   // String fields
   settings_get_str(json, "model_path",  cfg.model_path);
   settings_get_str(json, "embed_path",  cfg.embed_path);
@@ -584,7 +587,7 @@ std::string unwrap(const std::string &input) {
   if (input.empty()) {
     return input;
   }
- 
+
   size_t left = 0;
   size_t right = input.length() - 1;
 
@@ -740,13 +743,46 @@ static bool make_dir(const std::string &path) {
 static std::string build_system_prompt(const std::vector<std::string> &knowledge_files,
                                        const std::string &sandbox) {
   std::string p;
-  p += "You are Nitro, an agentic AI assistant for software development.\n"
+  p +=
+    "You are Nitro, an agentic AI assistant for software development. "
+    "Proceed with caution, guided by logic and the pursuit of knowledge.\n\n"
+
     "Your sandbox (project directory) is: " + sandbox + "\n\n"
-    "## Tool protocol\n"
-    " - Emit tool calls on their own new line. for example:\n\n"
+
+    "## Core Principle\n"
+    "Always follow this loop: THINK → DECIDE → ACT → RESPOND\n\n"
+
+    "## Reasoning Protocol\n"
+    "Use <|think|> to reason BEFORE acting. Keep it concise and structured.\n"
+    "Format:\n"
+    "<|think|>\n"
+    "- What is the user asking?\n"
+    "- Do I need external data (files, tools)?\n"
+    "- What is the safest and most correct action?\n"
+    "</|think|>\n\n"
+    "Rules:\n"
+    "- Do NOT call tools inside <|think|>\n"
+    "- Do NOT include the final answer inside <|think|>\n"
+    "- Always follow <|think|> with either a tool call OR a final answer\n"
+    "- Skip <|think|> only for trivial or conversational responses\n\n"
+
+    "## Tool Protocol\n"
+    "Emit ONE tool call at a time, immediately followed by NITRO_END_TOOL.\n"
+    "Do NOT add any commentary, explanation, or text between the tool call and NITRO_END_TOOL.\n"
+    "The host executes the tool and returns NITRO_TOOL_RESULT: <value>.\n"
+    "Wait for the result before continuing.\n"
+    "After receiving NITRO_TOOL_RESULT you may explain what you did.\n\n"
+    "Examples:\n\n"
     "TOOL:LIST\n"
-    " - The host executes the tool and returns TOOL_RESULT: <value> on the next line.\n\n"
-    "Available tools:\n"
+    "NITRO_END_TOOL\n\n"
+    "TOOL:READ readme.txt\n"
+    "NITRO_END_TOOL\n\n"
+    "TOOL:WRITE index.html <!DOCTYPE html><html>...</html>\n"
+    "NITRO_END_TOOL\n\n"
+    "TOOL:RUN ./build.sh\n"
+    "NITRO_END_TOOL\n\n"
+
+    "## Available Tools\n"
     "  TOOL:LIST   [dir]          list files (default: sandbox root)\n"
     "  TOOL:READ   <file>         read file contents\n"
     "  TOOL:WRITE  <file> <text>  write text to file\n"
@@ -755,25 +791,47 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "  TOOL:RUN    <prog> [args]  run program inside sandbox\n"
     "  TOOL:DATE                  current date\n"
     "  TOOL:TIME                  current time\n"
-    "  TOOL:RND                   random float\n"
+    "  TOOL:RND                   random float 0..1\n"
     "  TOOL:RAG    <query>        query the RAG index for additional context\n"
-    "  TOOL:INTROSPECT            introspect your settings, top_k etc\n"
-    "  TOOL:CURL   <url>          HTTP GET; returns response body (max 32 KB)\n\n"
-    "Rules:\n"
-    "- Never access files outside the sandbox.\n"
-    "- Only use one TOOL at a time. Never combine, always use each tool step by step\n"
-    "- Use TOOL:CURL to fetch documentation, APIs, or web content you need.\n"
-    "- Reason step-by-step inside <|think|> </|think|> (hidden from user).\n"
-    "- After each tool call, explain what you did in plain English.\n\n";
+    "  TOOL:INTROSPECT            show current model settings\n"
+    "  TOOL:CURL   <url>          HTTP GET, returns response body (max 32 KB)\n"
+    "  TOOL:PERMISSION            ask user for explicit permission\n\n"
+
+    "## Tool Decision Rules\n"
+    "Use tools ONLY if:\n"
+    "- The user explicitly references files or the project, OR\n"
+    "- The answer depends on local or project data, OR\n"
+    "- The user asks for date, time, or a random number\n"
+    "Otherwise answer directly using internal knowledge.\n\n"
+
+    "## Tool Rules\n"
+    "- NITRO_END_TOOL must immediately follow the tool call — no exceptions\n"
+    "- Never add commentary before NITRO_END_TOOL\n"
+    "- Only use one tool at a time, step by step\n"
+    "- Never access files outside the sandbox\n"
+    "- Use TOOL:PERMISSION before destructive or irreversible operations\n"
+    "- Do NOT hallucinate file contents\n"
+    "- Do NOT fabricate tool outputs\n"
+    "- Do NOT assume files exist — use TOOL:EXISTS to check first\n\n"
+
+    "## File Writing Rules\n"
+    "Use TOOL:WRITE only if explicitly requested.\n"
+    "- Write complete and valid content\n"
+    "- Do not overwrite without clear intent\n"
+    "- Use TOOL:PERMISSION before overwriting an existing file\n"
+    "- Format: TOOL:WRITE <filename> <complete file content>\n\n"
+
+    "## Interaction Guidelines\n"
+    "- Be precise and efficient\n"
+    "- Ask clarifying questions if the request is ambiguous or missing parameters\n"
+    "- Prefer direct answers when no tools are needed\n"
+    "- After each tool result, explain in plain English what was done\n"
+    "- If no user request is provided, respond with a brief readiness message\n\n";
+
   for (const auto &kf : knowledge_files) {
-    auto path = join_path(sandbox, kf);
-    std::ifstream f(path);
-    if (!f) {
-      continue;
-    }
-    log_write("loaded [%s]", path.c_str());
-    std::ostringstream oss;
-    oss << f.rdbuf();
+    std::ifstream f(kf);
+    if (!f) continue;
+    std::ostringstream oss; oss << f.rdbuf();
     p += "## Knowledge: " + kf + "\n" + oss.str() + "\n\n";
   }
   return p;
@@ -1727,7 +1785,9 @@ bool AgentState::setup_model(const NitroConfig &cfg, TuiState &tui) {
   tui.kv_total = mem.kv_total;
   tui.vram_used  = mem.vram_used;
   tui.vram_total = mem.vram_total;
-  tui.redraw_all();
+
+  tui.append_line(std::string("[sys] Thinking mode: ") + (cfg.thinking ? "enabled" : "disabled"));
+  tui.redraw_all();  
   return true;
 }
 
@@ -2009,14 +2069,29 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
 
   // in_think starts false — models that don't use <think> blocks emit
   // visible text immediately.  The spinner activates only while thinking.
-  enum {t_init, t_think, t_thunk} think_mode = t_init;
+  enum {t_init, t_think, t_thunk} think_mode = (cfg.thinking ? t_init : t_thunk);
   tui.set_thinking(false);
   std::string buffer;
 
-  auto invoke_tool = [&](const std::string &tool, const std::string_view template_str) -> void {
+  auto invoke_tool = [&](const std::string &buffer, const std::string_view template_str) -> void {
+    static constexpr std::string_view END_TOOL = "\nNITRO_END_TOOL";
+    static const std::string TOOL_RESULT = "NITRO_TOOL_RESULT: ";
+
+    std::string tool;
+    const auto pos = buffer.rfind(END_TOOL);
+    if (pos != std::string::npos) {
+      tool = buffer.substr(0, pos);
+      auto endTool = buffer.substr(pos);
+      if (endTool.length() > END_TOOL.length()) {
+        log_write("ERROR: trailing delimiter: [%s]", endTool.c_str());
+      }
+    } else {
+      tool = buffer;
+    }
+
     log_write("tool request: [%s]", tool.c_str());
     std::string result = process_tool(tool, cfg, tui);
-    std::string content = std::vformat(template_str, std::make_format_args(result));
+    std::string content = TOOL_RESULT + std::vformat(template_str, std::make_format_args(result));
     log_write("tool: [%s] result: [%s]", tool.c_str(), result.c_str());
     if (!llama->add_message(*iter, "tool_result", content)) {
       tui.append_line(std::string("[err] tool result inject: ") + llama->last_error());
@@ -2386,6 +2461,8 @@ int main(int argc, char **argv) {
       cfg.n_gpu_layers = std::stoi(take_next(a.c_str()));
     } else if (a == "-l" || a == "--log") {
       log_open();
+    } else if (a == "-t" || a == "--think") {
+      cfg.thinking = false;
     } else if (a == "-h" || a == "--help") {
       std::puts("Usage: nitro [options] [project_dir]\n"
                 "\n"
