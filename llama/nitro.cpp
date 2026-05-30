@@ -41,6 +41,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
@@ -469,7 +470,7 @@ static void load_settings(NitroConfig &cfg) {
   std::string json = oss.str();
 
   cfg.thinking = true;
-  
+
   // String fields
   settings_get_str(json, "model_path",  cfg.model_path);
   settings_get_str(json, "embed_path",  cfg.embed_path);
@@ -1170,23 +1171,30 @@ void TuiState::redraw_input() const {
   ncplane_erase(inputpl);
 
   if (thinking) {
-    static constexpr const char *ROBOT_RIGHT = "🤖➡";
-    static constexpr const char *ROBOT_LEFT  = "⬅🤖";
-    // 15 steps each way = 20 frame cycle
-    static constexpr int STEPS = 15;
-    int cycle = spinner_frame % (STEPS * 2);
-    bool going_right = (cycle < STEPS);
-    int pos = going_right ? cycle : (STEPS * 2 - 1 - cycle);
+    static constexpr const char *BLOCKS[] = { "-", "~", "≈", "~", "-" };
+    static constexpr int    N_BLOCKS = 5;
+    static constexpr double FREQ     = 0.25;  // gentler wave
+    static constexpr double SPEED    = 0.15;  // slower scroll
+    static constexpr int    DELAY    = 12;    // frames before animation starts
 
-    std::string sep(term_cols, '-');
-    // blank 4 cols to fit robot + arrow (each emoji is 2 cols wide)
-    for (int i = pos; i < std::min(pos + 4, term_cols); ++i) sep[i] = ' ';
-    ncplane_set_channels(inputpl, inp_ch(80, 120, 160));
-    ncplane_putstr_yx(inputpl, 0, 0, sep.c_str());
-
-    ncplane_set_channels(inputpl, NCCHANNELS_INITIALIZER(255, 220, 80, BG_INP_R, BG_INP_G, BG_INP_B));
-    ncplane_putstr_yx(inputpl, 0, pos, going_right ? ROBOT_RIGHT : ROBOT_LEFT);
-
+    if (spinner_frame < DELAY) {
+      // still just a plain separator during the pause
+      ncplane_set_channels(inputpl, inp_ch(80, 120, 160));
+      std::string sep(term_cols, '-');
+      ncplane_putstr_yx(inputpl, 0, 0, sep.c_str());
+    } else {
+      int frame = spinner_frame - DELAY;  // animation frame relative to start
+      for (int col = 0; col < term_cols; ++col) {
+        double phase = (col * FREQ) - (frame * SPEED);
+        int idx = (int)((std::sin(phase) + 1.0) * 0.5 * (N_BLOCKS - 1));
+        idx = std::max(0, std::min(idx, N_BLOCKS - 1));
+        // subtle brightness shift — blue-grey, not full glow
+        int brightness = 80 + idx * 20;
+        ncplane_set_channels(inputpl, NCCHANNELS_INITIALIZER(brightness, brightness + 20, brightness + 40,
+                                                             BG_INP_R, BG_INP_G, BG_INP_B));
+        ncplane_putstr_yx(inputpl, 0, col, BLOCKS[idx]);
+      }
+    }
     ncplane_set_channels(inputpl, inp_ch(140, 140, 180));
     ncplane_putstr_yx(inputpl, 1, 2, "thinking…");
   } else {
@@ -1787,7 +1795,7 @@ bool AgentState::setup_model(const NitroConfig &cfg, TuiState &tui) {
   tui.vram_total = mem.vram_total;
 
   tui.append_line(std::string("[sys] Thinking mode: ") + (cfg.thinking ? "enabled" : "disabled"));
-  tui.redraw_all();  
+  tui.redraw_all();
   return true;
 }
 
@@ -2070,6 +2078,7 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
   // in_think starts false — models that don't use <think> blocks emit
   // visible text immediately.  The spinner activates only while thinking.
   enum {t_init, t_think, t_thunk} think_mode = (cfg.thinking ? t_init : t_thunk);
+
   tui.set_thinking(false);
   std::string buffer;
 
@@ -2089,7 +2098,7 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
       tool = buffer;
     }
 
-    log_write("tool request: [%s]", tool.c_str());
+    log_write("tool request: mode:[%d] [%s]", think_mode, tool.c_str());
     std::string result = process_tool(tool, cfg, tui);
     std::string content = TOOL_RESULT + std::vformat(template_str, std::make_format_args(result));
     log_write("tool: [%s] result: [%s]", tool.c_str(), result.c_str());
@@ -2137,7 +2146,23 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
       return false;
     }
     std::string tok = llama->next(*iter);
-    buffer += tok;
+    if (tok == "<") {
+      // fetch the complete tag
+      std::string tag = tok;
+      while (iter->_has_next && tag.find(">") == std::string::npos) {
+        tag += llama->next(*iter);
+      }
+      if (tag == "<|think|>") {
+        think_mode = t_think;
+        tui.set_thinking(true);
+        continue;
+      } else {
+        buffer += tag;
+      }
+    } else {
+      buffer += tok;
+    }
+
     if (think_mode == t_init) {
       start_think("<think>");
       start_think("<|think|>");
