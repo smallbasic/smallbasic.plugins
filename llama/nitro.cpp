@@ -40,18 +40,21 @@
 //
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <ctime>
+#include <curl/curl.h>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <memory>
 #include <mutex>
+#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <curl/curl.h>
-#include <iostream>
 
 #include "llama-sb.h"
 #include "llama-sb-rag.h"
@@ -67,6 +70,7 @@ struct NitroConfig {
   std::string model_path;
   std::string embed_path;
   std::string sandbox;
+  std::string agent_id;
   int   n_ctx          = 65536;
   int   n_batch        = 512;
   int   n_gpu_layers   = 32;
@@ -81,6 +85,7 @@ struct NitroConfig {
   std::vector<std::string> knowledge_files;
   int   rag_top_k      = 5;
   bool  thinking       = true;
+  bool  permission_prompt = false;
   // TOOL:RUN allowlist — if non-empty, only these program basenames may run.
   // Empty means "allow anything inside the sandbox" (original behaviour).
   std::vector<std::string> run_allowed;
@@ -105,11 +110,11 @@ class InputHistory {
     if (input.empty()) return;
     if (!history_stack.empty() && history_stack.back() == input) {
       // Don't push duplicate of last entry; just reset nav position.
-      current_index = (int)history_stack.size();
+      current_index = static_cast<int>(history_stack.size());
       return;
     }
     history_stack.push_back(input);
-    current_index = (int)history_stack.size();
+    current_index = static_cast<int>(history_stack.size());
   }
 
   /**
@@ -132,8 +137,8 @@ class InputHistory {
   bool down(std::string &out) {
     if (history_stack.empty()) return false;
     ++current_index;
-    if (current_index >= (int)history_stack.size()) {
-      current_index = (int)history_stack.size();
+    if (current_index >= static_cast<int>(history_stack.size())) {
+      current_index = static_cast<int>(history_stack.size());
       out.clear();
       return false; // signal: restore blank input
     }
@@ -143,7 +148,7 @@ class InputHistory {
 
   /** Reset navigation position without modifying the stack. */
   void reset_nav() {
-    current_index = (int)history_stack.size();
+    current_index = static_cast<int>(history_stack.size());
   }
 
   /**
@@ -157,7 +162,7 @@ class InputHistory {
     while (std::getline(f, line)) {
       if (!line.empty()) history_stack.push_back(line);
     }
-    current_index = (int)history_stack.size();
+    current_index = static_cast<int>(history_stack.size());
   }
 
   /**
@@ -174,8 +179,8 @@ class InputHistory {
     if (!f) return;
 
     static constexpr int MAX_PERSIST = 500;
-    int start = std::max(0, (int)history_stack.size() - MAX_PERSIST);
-    for (int i = start; i < (int)history_stack.size(); ++i) {
+    int start = std::max(0, static_cast<int>(history_stack.size()) - MAX_PERSIST);
+    for (int i = start; i < static_cast<int>(history_stack.size()); ++i) {
       // Escape embedded newlines so each entry stays on one line.
       for (char c : history_stack[i]) {
         if (c == '\n') f << "\\n";
@@ -325,7 +330,9 @@ static void log_close() {
 
 static void log_write(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 static void log_write(const char *fmt, ...) {
-  if (!g_logfile) return;
+  if (!g_logfile) {
+    return;
+  }
   // timestamp
   time_t t = time(nullptr);
   char ts[32];
@@ -336,8 +343,85 @@ static void log_write(const char *fmt, ...) {
   vfprintf(g_logfile, fmt, ap);
   va_end(ap);
   fputc('\n', g_logfile);
-  fflush(g_logfile);  // flush immediately so tail -f works
+  // flush immediately so tail -f works
+  fflush(g_logfile);
 }
+
+//
+// Agent uniqueId
+//
+inline std::string encode_base64(const std::vector<char>& data) {
+  static const char base64_chars[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+  std::string encoded;
+  encoded.reserve((data.size() + 2) / 3 * 4);
+
+  size_t i = 0;
+  while (i < data.size()) {
+    uint32_t val = static_cast<uint32_t>(data[i] << 16) |
+      (i + 1 < data.size() ? static_cast<uint32_t>(data[i+1]) << 8 : 0) |
+      (i + 2 < data.size() ? static_cast<uint32_t>(data[i+2]) : 0);
+
+    encoded.push_back(base64_chars[(val >> 18) & 0x3F]);
+    encoded.push_back(base64_chars[(val >> 12) & 0x3F]);
+    encoded.push_back((i + 1 < data.size()) ? base64_chars[(val >> 6) & 0x3F] : '=');
+    encoded.push_back((i + 2 < data.size()) ? base64_chars[val & 0x3F] : '=');
+    i += 3;
+  }
+  return encoded;
+}
+
+class AgentSessionId {
+  public:
+  // Static method: Generates ID once, then returns it
+  static std::string uniqueId() {
+    // Yoda condition: static variable initialized only once
+    static std::string s_id;
+
+    if (s_id.empty()) {
+      // 1. Get high-resolution timestamp (nanoseconds since epoch)
+      auto now = std::chrono::steady_clock::now();
+      auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+
+      // 2. Generate 48 bits of randomness
+      std::random_device rd;
+      std::mt19937_64 rng(rd());
+      std::uniform_int_distribution<uint64_t> dist(0, UINT64_MAX);
+
+      // Fill with random bytes
+      std::array<char, 6> random_bytes;
+      for (auto& b : random_bytes) {
+        b = static_cast<char>(dist(rng) & 0xFF);
+
+      }
+
+      // 3. Combine timestamp (48 bits) and random (48 bits) into a 96-bit integer
+      std::vector<char> data;
+      data.reserve(12); // 96 bits = 12 bytes
+
+      // Pack timestamp (upper 48 bits)
+      data.push_back(static_cast<char>((nanos >> 40) & 0xFF));
+      data.push_back(static_cast<char>((nanos >> 32) & 0xFF));
+      data.push_back(static_cast<char>((nanos >> 24) & 0xFF));
+      data.push_back(static_cast<char>((nanos >> 16) & 0xFF));
+      data.push_back(static_cast<char>((nanos >> 8) & 0xFF));
+      data.push_back(static_cast<char>(nanos & 0xFF));
+
+      // Pack random (lower 48 bits)
+      data.push_back(static_cast<char>((dist(rng) >> 40) & 0xFF));
+      data.push_back(static_cast<char>((dist(rng) >> 32) & 0xFF));
+      data.push_back(static_cast<char>((dist(rng) >> 24) & 0xFF));
+      data.push_back(static_cast<char>((dist(rng) >> 16) & 0xFF));
+      data.push_back(static_cast<char>((dist(rng) >> 8) & 0xFF));
+      data.push_back(static_cast<char>(dist(rng) & 0xFF));
+
+      // 4. Encode to Base64
+      s_id = encode_base64(data);
+    }
+    return s_id;
+  }
+};
 
 //
 // handling for strip_code_fences
@@ -470,6 +554,7 @@ static void load_settings(NitroConfig &cfg) {
   std::string json = oss.str();
 
   cfg.thinking = true;
+  cfg.agent_id = AgentSessionId::uniqueId();
 
   // String fields
   settings_get_str(json, "model_path",  cfg.model_path);
@@ -741,14 +826,13 @@ static bool make_dir(const std::string &path) {
 //
 // System prompt
 //
-static std::string build_system_prompt(const std::vector<std::string> &knowledge_files,
-                                       const std::string &sandbox) {
+static std::string build_system_prompt(NitroConfig &cfg) {
   std::string p;
   p +=
     "You are Nitro, an agentic AI assistant for software development. "
     "Proceed with caution, guided by logic and the pursuit of knowledge.\n\n"
 
-    "Your sandbox (project directory) is: " + sandbox + "\n\n"
+    "Your sandbox (project directory) is: " + cfg.sandbox + "\n\n"
 
     "## Core Principle\n"
     "Always follow this loop: THINK → DECIDE → ACT → RESPOND\n\n"
@@ -794,6 +878,7 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "  TOOL:TIME                  current time\n"
     "  TOOL:RND                   random float 0..1\n"
     "  TOOL:RAG    <query>        query the RAG index for additional context\n"
+    "  TOOL:ASK    <query>        ask the user for clarification or additional context\n"
     "  TOOL:INTROSPECT            show current model settings\n"
     "  TOOL:CURL   <url>          HTTP GET, returns response body (max 32 KB)\n"
     "  TOOL:PERMISSION            ask user for explicit permission\n\n"
@@ -829,7 +914,7 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
     "- After each tool result, explain in plain English what was done\n"
     "- If no user request is provided, respond with a brief readiness message\n\n";
 
-  for (const auto &kf : knowledge_files) {
+  for (const auto &kf : cfg.knowledge_files) {
     std::ifstream f(kf);
     if (!f) continue;
     std::ostringstream oss; oss << f.rdbuf();
@@ -841,16 +926,23 @@ static std::string build_system_prompt(const std::vector<std::string> &knowledge
 static std::string strip_code_fences(const std::string &filename,
                                      const std::string &src) {
   auto ext = fs::path(filename).extension().string();
-  bool is_code = ranges::any_of(CODE_EXTENSIONS,
-                                [&](const std::string &e){ return ext == e; });
-  if (!is_code) return src;
+  bool is_code = ranges::any_of(CODE_EXTENSIONS, [&](const std::string &e){ return ext == e; });
+  if (!is_code) {
+    return unwrap(src);
+  }
   auto pos = src.find("```");
-  if (pos == std::string::npos) return src;
+  if (pos == std::string::npos) {
+    return unwrap(src);
+  }
   auto nl = src.find('\n', pos + 3);
-  if (nl == std::string::npos) return src;
+  if (nl == std::string::npos) {
+    return unwrap(src);
+  }
   std::string inner = src.substr(nl + 1);
   auto end = inner.rfind("```");
-  if (end != std::string::npos) inner = inner.substr(0, end);
+  if (end != std::string::npos) {
+    inner = inner.substr(0, end);
+  }
   return inner;
 }
 
@@ -1097,11 +1189,11 @@ void TuiState::destroy() {
 
 void TuiState::resize() {
   notcurses_term_dim_yx(nc, (unsigned *)&term_rows, (unsigned *)&term_cols);
-  ncplane_resize_simple(header,  1,                       (unsigned)term_cols);
+  ncplane_resize_simple(header, 1, (unsigned)term_cols);
   int cr = std::max(1, term_rows - 3);
-  ncplane_resize_simple(chatpl,  (unsigned)cr,            (unsigned)term_cols);
+  ncplane_resize_simple(chatpl, (unsigned)cr, (unsigned)term_cols);
   ncplane_move_yx(inputpl, term_rows - 2, 0);
-  ncplane_resize_simple(inputpl, 2,                       (unsigned)term_cols);
+  ncplane_resize_simple(inputpl, 2, (unsigned)term_cols);
   redraw_all();
 }
 
@@ -1133,8 +1225,8 @@ void TuiState::redraw_chat() {
   unsigned rows, cols;
   ncplane_dim_yx(chatpl, &rows, &cols);
   std::lock_guard<std::mutex> lk(lines_mutex);
-  int total   = (int)chat_lines.size();
-  int visible = (int)rows;
+  int total   = static_cast<int>(chat_lines.size());
+  int visible = static_cast<int>(rows);
   int start   = std::max(0, total - visible - scroll_offset);
   int end     = std::min(total, start + visible);
   for (int i = start, row = 0; i < end; ++i, ++row) {
@@ -1154,10 +1246,11 @@ void TuiState::redraw_chat() {
     }
     else if (line.rfind("You: ",   0) == 0) ch = chat_ch(100, 200, 255);
     else if (line.rfind("Nitro: ", 0) == 0) ch = chat_ch(180, 255, 180);
-    else if (line.rfind("[tool]",  0) == 0) ch = chat_ch(255, 180,  80);
-    else if (line.rfind("[err]",   0) == 0) ch = chat_ch(255,  80,  80);
+    else if (line.rfind("[🔧]",  0) == 0) ch = chat_ch(255, 180,  80);
+    else if (line.rfind("[⚠]",   0) == 0) ch = chat_ch(255,  80,  80);
     else if (line.rfind("[sys]",   0) == 0) ch = chat_ch(140, 140, 200);
-    else                                     ch = chat_ch(210, 210, 210);
+    else if (line.rfind("[🤔]",    0) == 0) ch = chat_ch(140, 140, 200);
+    else                                    ch = chat_ch(210, 210, 210);
     ncplane_set_channels(chatpl, ch);
     // Strip the [logo_N] prefix before rendering.
     std::string display = (line.rfind("[logo_", 0) == 0 && line.size() > 8)
@@ -1186,7 +1279,7 @@ void TuiState::redraw_input() const {
       int frame = spinner_frame - DELAY;  // animation frame relative to start
       for (int col = 0; col < term_cols; ++col) {
         double phase = (col * FREQ) - (frame * SPEED);
-        int idx = (int)((std::sin(phase) + 1.0) * 0.5 * (N_BLOCKS - 1));
+        int idx = static_cast<int>(((std::sin(phase) + 1.0) * 0.5 * (N_BLOCKS - 1)));
         idx = std::max(0, std::min(idx, N_BLOCKS - 1));
         // subtle brightness shift — blue-grey, not full glow
         int brightness = 80 + idx * 20;
@@ -1208,11 +1301,11 @@ void TuiState::redraw_input() const {
     int max_w = std::max(0, term_cols - prompt_cols - 1);
     std::string visible = input_buf;
     int view_offset = 0;
-    if ((int)visible.size() > max_w && max_w > 0) {
-      view_offset = (int)visible.size() - max_w;
+    if (visible.size() > max_w && max_w > 0) {
+      view_offset = static_cast<int>(visible.size() - max_w);
       visible = visible.substr(view_offset);
     }
-    int cur_in_view = std::max(0, (int)cursor_pos - view_offset);
+    int cur_in_view = std::max(0, static_cast<int>(cursor_pos - view_offset));
     cur_in_view = std::min(cur_in_view, (int)visible.size());
     std::string before = visible.substr(0, cur_in_view);
     std::string after  = cur_in_view < (int)visible.size()
@@ -1779,7 +1872,7 @@ bool AgentState::setup_model(const NitroConfig &cfg, TuiState &tui) {
   if (!llama->load_model(cfg.model_path, cfg.n_ctx, cfg.n_batch,
                          cfg.n_gpu_layers, cfg.log_level)) {
     tui.dismiss_modal_popup();
-    tui.append_line(std::string("[err] ") + llama->last_error());
+    tui.append_line(std::string("[⚠] ") + llama->last_error());
     tui.redraw_all();
     return false;
   }
@@ -1805,7 +1898,7 @@ bool AgentState::setup_embed(const std::string &path, TuiState &tui) {
   embed_llama = std::make_unique<Llama>();
   if (!embed_llama->load_embedding_model(path)) {
     tui.dismiss_modal_popup();
-    tui.append_line(std::string("[err] ") + embed_llama->last_error());
+    tui.append_line(std::string("[⚠] ") + embed_llama->last_error());
     tui.redraw_all();
     embed_llama.reset();
     return false;
@@ -1824,7 +1917,7 @@ void AgentState::reset_conversation(const std::string &sysprompt, TuiState &tui)
   apply_generation_params(NitroConfig{});
   iter = std::make_unique<LlamaIter>();
   if (!llama->add_message(*iter, "system", system_prompt)) {
-    tui.append_line(std::string("[err] System prompt injection: ") + llama->last_error());
+    tui.append_line(std::string("[⚠] System prompt injection: ") + llama->last_error());
     tui.redraw_all();
   }
 }
@@ -1868,7 +1961,7 @@ std::string AgentState::rag_tool(const NitroConfig &cfg, const std::string &agen
 
 bool AgentState::rag_load_index(const std::string &path, TuiState &tui) const {
   if (!embed_llama || !rag_db) {
-    tui.append_line("[err] Load an embedding model first: /embed <path>");
+    tui.append_line("[⚠] Load an embedding model first: /embed <path>");
     tui.redraw_all();
     return false;
   }
@@ -1883,7 +1976,7 @@ bool AgentState::rag_load_index(const std::string &path, TuiState &tui) const {
 
 bool AgentState::rag_index(const std::string &path, const NitroConfig &cfg, TuiState &tui) const {
   if (!embed_llama || !rag_db) {
-    tui.append_line("[err] Load an embedding model first: /embed <path>");
+    tui.append_line("[⚠] Load an embedding model first: /embed <path>");
     tui.redraw_all();
     return false;
   }
@@ -1892,7 +1985,7 @@ bool AgentState::rag_index(const std::string &path, const NitroConfig &cfg, TuiS
     tui.append_line("[sys]   indexing: " + filepath);
     tui.redraw_all();
     if (!embed_llama->rag_index(*rag_db, filepath)) {
-      tui.append_line(std::string("[err] rag_load: ") + embed_llama->last_error());
+      tui.append_line(std::string("[⚠] rag_load: ") + embed_llama->last_error());
       tui.redraw_all();
     }
   };
@@ -1957,63 +2050,80 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
     return join_path(sandbox, unwrap(p));
   };
 
-  tui.append_line("[tool] → " + op);
-  tui.redraw_all();
+  auto show_tool = [&](const std::string &tool) -> void {
+    tui.append_line("[🔧] → " + tool);
+    tui.redraw_all();
+  };
 
   if (op == "TOOL:DATE") {
+    show_tool(op);
     char buf[32]; time_t t = time(nullptr);
     strftime(buf, sizeof(buf), "%Y-%m-%d", localtime(&t));
     return buf;
   }
   if (op == "TOOL:TIME") {
+    show_tool(op);
     char buf[32]; time_t t = time(nullptr);
     strftime(buf, sizeof(buf), "%H:%M:%S", localtime(&t));
     return buf;
   }
   if (op == "TOOL:RND") {
+    show_tool(op);
     return std::to_string((double)rand() / RAND_MAX);
   }
   if (op == "TOOL:RAG") {
+    show_tool(op);
     return rag_tool(cfg, arg1);
   }
   if (op == "TOOL:LIST") {
     std::string dir = resolve(arg1);
+    show_tool("listing: " + dir);
     if (!path_in_sandbox(sandbox, dir)) return "ERROR: path outside sandbox";
     return list_dir(dir);
   }
   if (op == "TOOL:EXISTS") {
     std::string p = resolve(arg1);
+    show_tool("checking: " + p);
     if (!path_in_sandbox(sandbox, p)) return "NO";
     return fs::exists(p) ? "YES" : "NO";
   }
   if (op == "TOOL:READ") {
+    show_tool("reading: " + arg1);
     std::string p = resolve(arg1);
     if (!path_in_sandbox(sandbox, p)) return "ERROR: path outside sandbox";
     return read_file(p);
   }
   if (op == "TOOL:WRITE") {
+    show_tool("writing: " + arg1);
     std::string p = resolve(arg1);
     if (!path_in_sandbox(sandbox, p)) {
       return "ERROR: path outside sandbox";
     }
-    if (!tui.confirm_dialog(std::format("Allow model to write {}?", p))) {
+    if (cfg.permission_prompt && !tui.confirm_dialog(std::format("Allow model to write {}?", p))) {
       return "ERROR: action prevented by user";
     }
-    std::string content = unwrap(strip_code_fences(arg1, arg2));
+    std::string content = strip_code_fences(arg1, arg2);
     return write_file(p, content) ? "OK: written to " + arg1 : "ERROR: write failed for " + arg1;
   }
   if (op == "TOOL:MKDIR") {
     std::string p = resolve(arg1);
+    show_tool("mkdir: " + arg1);
     if (!path_in_sandbox(sandbox, p)) {
       return "ERROR: path outside sandbox";
     }
     return make_dir(p) ? "OK: created " + arg1 : "ERROR: mkdir failed for " + arg1;
   }
   if (op == "TOOL:CURL") {
+    show_tool("curl: " + arg1);
     return tool_curl(arg1);
   }
   if (op == "TOOL:INTROSPECT") {
+    show_tool("introspecting: " + arg1);
     return introspect(cfg);
+  }
+  if (op == "TOOL:ASK") {
+    show_tool("asking: " + arg1);
+    return tui.readline_blocking();
   }
   if (op == "TOOL:RUN") {
     if (!run_allowed.empty()) {
@@ -2022,10 +2132,11 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
         return "ERROR: '" + arg1 + "' is not in the TOOL:RUN allowlist. "
           "Use /set run_allowed <name> to permit it.";
       }
-    } else if (!tui.confirm_dialog(std::format("Allow {} {} to run?", arg1, arg2))) {
+    } else if (cfg.permission_prompt && !tui.confirm_dialog(std::format("Allow {} {} to run?", arg1, arg2))) {
       return "ERROR: prevented by user";
     }
     std::string command = arg1 + " " + arg2 + " 2>&1";
+    show_tool("running: " + command);
     FILE *fp = popen(command.c_str(), "r");
     if (!fp) {
       return "ERROR: popen failed";
@@ -2049,7 +2160,7 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
 //
 bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cfg, TuiState &tui) const {
   if (!model_loaded) {
-    tui.append_line("[err] No model loaded. Use /model <path>");
+    tui.append_line("[⚠] No model loaded. Use /model <path>");
     tui.redraw_all();
     return false;
   }
@@ -2064,12 +2175,12 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     }
   }
   if (!iter) {
-    tui.append_line("[err] Conversation not initialised (call /clear to reset)");
+    tui.append_line("[⚠] Conversation not initialised (call /clear to reset)");
     tui.redraw_all();
     return false;
   }
   if (!llama->add_message(*iter, "user", effective_message)) {
-    tui.append_line(std::string("[err] add_message: ") + llama->last_error());
+    tui.append_line(std::string("[⚠] add_message: ") + llama->last_error());
     tui.redraw_all();
     return false;
   }
@@ -2079,7 +2190,7 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
   // visible text immediately.  The spinner activates only while thinking.
   enum {t_init, t_think, t_thunk} think_mode = (cfg.thinking ? t_init : t_thunk);
 
-  tui.set_thinking(false);
+  tui.set_thinking(true);
   std::string buffer;
 
   auto invoke_tool = [&](const std::string &buffer, const std::string_view template_str) -> void {
@@ -2102,14 +2213,14 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     std::string result = process_tool(tool, cfg, tui);
     std::string content = TOOL_RESULT + std::vformat(template_str, std::make_format_args(result));
     log_write("tool: [%s] result: [%s]", tool.c_str(), result.c_str());
+
     if (!llama->add_message(*iter, "tool_result", content)) {
-      tui.append_line(std::string("[err] tool result inject: ") + llama->last_error());
-      tui.redraw_all();
+      tui.append_line(std::string("[⚠] tool result inject: ") + llama->last_error());
     }
     if (!iter->_has_next) {
-      tui.append_line(std::string("[err] failed to evoke tool response: ") + llama->last_error());
-      tui.redraw_all();
+      tui.append_line(std::string("[⚠] failed to evoke tool response: ") + llama->last_error());
     }
+    tui.redraw_all();
   };
 
   auto start_think = [&](const std::string &tag) {
@@ -2117,7 +2228,6 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
       auto pos = buffer.find(tag);
       if (pos != std::string::npos) {
         think_mode = t_think;
-        tui.set_thinking(true);
         // display prededing text
         buffer = buffer.substr(0, pos);
       }
@@ -2129,7 +2239,6 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
       auto pos = buffer.find(tag);
       if (pos != std::string::npos) {
         think_mode = t_thunk;
-        tui.set_thinking(false);
         // display remaining text
         buffer = buffer.substr(pos + tag.length());
       }
@@ -2141,9 +2250,9 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     notcurses_get_nblock(tui.nc, &ni);
     if (ni.id == NCKEY_ESC) {
       tui.set_thinking(false);
-      tui.append_line("[err] Generation cancelled by user (Escape)");
+      tui.append_line("[⚠] Generation cancelled by user (Escape)");
       tui.redraw_all();
-      return false;
+      break;
     }
     std::string tok = llama->next(*iter);
     if (tok == "<") {
@@ -2154,7 +2263,6 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
       }
       if (tag == "<|think|>") {
         think_mode = t_think;
-        tui.set_thinking(true);
         continue;
       } else {
         buffer += tag;
@@ -2173,6 +2281,7 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
       tui.tick_spinner();
       end_think("</think>");
       end_think("</|think|>");
+      end_think("</|think>");
       end_think("<think|>");
       end_think("<channel|>");
     }
@@ -2205,6 +2314,12 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
       auto pos = buffer.find('\n');
       if (pos != std::string::npos) {
         tui.append_token(buffer.substr(0, pos + 1));
+        buffer = buffer.substr(pos + 1);
+      }
+    } else {
+      auto pos = buffer.find('\n');
+      if (pos != std::string::npos) {
+        tui.append_token("[🤔] " + buffer.substr(0, pos + 1));
         buffer = buffer.substr(pos + 1);
       }
     }
@@ -2267,7 +2382,7 @@ static void handle_slash(const std::string &input,
     }
     cfg.model_path = rest;
     if (agent.setup_model(cfg, tui)) {
-      std::string sysp = build_system_prompt(cfg.knowledge_files, cfg.sandbox);
+      std::string sysp = build_system_prompt(cfg);
       agent.reset_conversation(sysp, tui);
       save_settings(cfg);
     }
@@ -2333,7 +2448,7 @@ static void handle_slash(const std::string &input,
   if (verb == "/clear") {
     { std::lock_guard<std::mutex> lk(tui.lines_mutex);
       tui.chat_lines.clear(); }
-    std::string sysp = build_system_prompt(cfg.knowledge_files, cfg.sandbox);
+    std::string sysp = build_system_prompt(cfg);
     agent.reset_conversation(sysp, tui);
     tui.append_line("[sys] Conversation cleared.");
     tui.redraw_all();
@@ -2368,7 +2483,7 @@ static void handle_slash(const std::string &input,
     val.erase(0, val.find_first_not_of(" \t"));
 
     if (key.empty() || val.empty()) {
-      tui.append_line("[err] Usage: /set <key> <value>");
+      tui.append_line("[⚠] Usage: /set <key> <value>");
       tui.redraw_all(); return;
     }
 
@@ -2406,11 +2521,11 @@ static void handle_slash(const std::string &input,
           tui.append_line("[sys] run_allowed: " + list);
         }
       } else {
-        tui.append_line("[err] Unknown key '" + key + "'.  Try /help for list.");
+        tui.append_line("[⚠] Unknown key '" + key + "'.  Try /help for list.");
         ok = false;
       }
     } catch (const std::exception &ex) {
-      tui.append_line(std::string("[err] /set: ") + ex.what());
+      tui.append_line(std::string("[⚠] /set: ") + ex.what());
       ok = false;
     }
 
@@ -2425,7 +2540,7 @@ static void handle_slash(const std::string &input,
     return;
   }
 
-  tui.append_line("[err] Unknown command: " + verb + "  (try /help)");
+  tui.append_line("[⚠] Unknown command: " + verb + "  (try /help)");
   tui.redraw_all();
 }
 
@@ -2488,6 +2603,8 @@ int main(int argc, char **argv) {
       log_open();
     } else if (a == "-t" || a == "--think") {
       cfg.thinking = false;
+    } else if (a == "-p" || a == "--prompt-permission") {
+      cfg.permission_prompt = true;
     } else if (a == "-h" || a == "--help") {
       std::puts("Usage: nitro [options] [project_dir]\n"
                 "\n"
@@ -2550,7 +2667,7 @@ int main(int argc, char **argv) {
   AgentState agent;
   if (!cfg.model_path.empty()) {
     if (agent.setup_model(cfg, tui)) {
-      std::string sysp = build_system_prompt(cfg.knowledge_files, cfg.sandbox);
+      std::string sysp = build_system_prompt(cfg);
       agent.reset_conversation(sysp, tui);
     }
     if (!cfg.embed_path.empty()) {

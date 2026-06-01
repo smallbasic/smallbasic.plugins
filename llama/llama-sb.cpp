@@ -14,7 +14,7 @@
 #include "llama.h"
 #include "llama-sb.h"
 
-constexpr int MAX_REPEAT = 5;
+constexpr int MAX_REPEAT = 50;
 
 static bool read_vram(size_t &used, size_t &total) {
   size_t free = 0;
@@ -391,8 +391,17 @@ LlamaMemoryInfo Llama::memory_info() {
     info.vram_percent = 100.0f * info.vram_used / info.vram_total;
   }
 
+  info.model_native_max_ctx = llama_model_n_ctx_train(_model);
+
   // Advice
   ostringstream advice;
+
+  // Check structural limits & model configuration quirks
+  if (info.kv_total > info.model_native_max_ctx) {
+    advice << "WARNING: Configured context size (" << info.kv_total
+           << ") exceeds model native training length (" << info.model_native_max_ctx
+           << "). Logic flaws or repetition bugs will occur unless RoPE scaling options are enabled. ";
+  }
 
   if (n_gpu_layers < info.n_layers_total) {
     advice << "Only " << n_gpu_layers << "/" << info.n_layers_total
@@ -519,49 +528,6 @@ bool Llama::configure_sampler() {
   return true;
 }
 
-bool Llama::ends_with_sentence_boundary(const string &text) {
-  if (text.empty()) {
-    return false;
-  }
-
-  // Get last few characters (in case of whitespace after punctuation)
-  size_t check_len = std::min(text.length(), (size_t)5);
-  std::string ending = text.substr(text.length() - check_len);
-
-  // Check for various sentence endings
-  // Period followed by space or end
-  if (ending.find(". ") != std::string::npos ||
-      ending.back() == '.') {
-    return true;
-  }
-
-  // Exclamation mark
-  if (ending.find("! ") != std::string::npos ||
-      ending.back() == '!') {
-    return true;
-  }
-
-  // Question mark
-  if (ending.find("? ") != std::string::npos ||
-      ending.back() == '?') {
-    return true;
-  }
-
-  // Newline (paragraph break)
-  if (ending.find('\n') != std::string::npos) {
-    return true;
-  }
-
-  // Quote followed by period: "something."
-  if (ending.find(".\"") != std::string::npos ||
-      ending.find("!\"") != std::string::npos ||
-      ending.find("?\"") != std::string::npos) {
-    return true;
-  }
-
-  return false;
-}
-
 // Makes space in the context for n_tokens by removing old tokens if necessary
 // Returns true if successful, false if impossible to make space
 //
@@ -641,22 +607,22 @@ string Llama::token_to_string(LlamaIter &iter, llama_token tok) {
   char buf[512];
   int n = llama_token_to_piece(_vocab, tok, buf, sizeof(buf), 0, false);
   if (n > 0) {
-    // detect repetition
-    if (iter._last_word == buf) {
-      if (++iter._repetition_count == MAX_REPEAT) {
-        iter._has_next = false;
+    // detect repetition - only on non-whitespace tokens, otherwise
+    // spaces/newlines trigger false positives almost immediately.
+    string piece(buf, n);
+    bool is_trivial = piece.find_first_not_of(" \t\n\r") == string::npos;
+    if (!is_trivial) {
+      if (iter._last_word == piece) {
+        if (++iter._repetition_count >= MAX_REPEAT) {
+          iter._has_next = false;
+        }
+      } else {
+        iter._repetition_count = 0;
+        iter._last_word = piece;
       }
-    } else {
-      iter._repetition_count = 0;
-      iter._last_word = buf;
     }
 
     result.append(buf, n);
-
-    // detect end of max-tokens
-    if (++iter._tokens_generated > _max_tokens && ends_with_sentence_boundary(result)) {
-      iter._has_next = false;
-    }
 
     // detect stop words
     if (iter._has_next) {

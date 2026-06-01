@@ -33,6 +33,7 @@ struct LlamaMemoryInfo {
   int     n_layers_total; // total model layers
   int     n_layers_gpu;   // layers offloaded to GPU
   int     n_layers_cpu;   // layers on CPU
+  int     model_native_max_ctx;
 
   // Advice
   string  advice;
@@ -117,7 +118,6 @@ struct Llama {
   bool batch_decode_tokens(vector<llama_token> &tokens);
   bool configure_sampler();
   void dirty() {_sampler_dirty = true; }
-  bool ends_with_sentence_boundary(const string &out);
   bool make_space_for_tokens(int n_tokens);
   vector<llama_token> tokenize(const string &prompt);
   string token_to_string(LlamaIter &iter, llama_token tok);
