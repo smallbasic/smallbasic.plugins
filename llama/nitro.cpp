@@ -74,7 +74,6 @@ struct NitroConfig {
   int   n_ctx          = 65536;
   int   n_batch        = 512;
   int   n_gpu_layers   = 32;
-  int   n_max_tokens   = 4096;
   int   log_level      = GGML_LOG_LEVEL_CONT;
   float temperature    = 0.6f;
   float top_p          = 0.95f;
@@ -565,7 +564,6 @@ static void load_settings(NitroConfig &cfg) {
   settings_get_int(json, "n_ctx",          cfg.n_ctx);
   settings_get_int(json, "n_batch",        cfg.n_batch);
   settings_get_int(json, "n_gpu_layers",   cfg.n_gpu_layers);
-  settings_get_int(json, "n_max_tokens",   cfg.n_max_tokens);
   settings_get_int(json, "top_k",          cfg.top_k);
   settings_get_int(json, "penalty_last_n", cfg.penalty_last_n);
   settings_get_int(json, "rag_top_k",      cfg.rag_top_k);
@@ -577,6 +575,14 @@ static void load_settings(NitroConfig &cfg) {
   settings_get_float(json, "penalty_repeat", cfg.penalty_repeat);
 }
 
+//
+// icons
+//
+static constexpr std::string ICON_ERR   = " ⚡ ▏";
+static constexpr std::string ICON_THINK = " 🤔 ▏";
+static constexpr std::string ICON_TOOL  = " 🔧 ▏";
+static constexpr std::string ICON_SYS   = " 🤖 ▏";
+
 static std::string introspect(const NitroConfig &cfg) {
   static constexpr std::string_view tmpl =
     "{{\n"
@@ -586,7 +592,6 @@ static std::string introspect(const NitroConfig &cfg) {
     "  \"n_ctx\":          {},\n"
     "  \"n_batch\":        {},\n"
     "  \"n_gpu_layers\":   {},\n"
-    "  \"n_max_tokens\":   {},\n"
     "  \"temperature\":    {},\n"
     "  \"top_p\":          {},\n"
     "  \"min_p\":          {},\n"
@@ -602,7 +607,6 @@ static std::string introspect(const NitroConfig &cfg) {
                      cfg.n_ctx,
                      cfg.n_batch,
                      cfg.n_gpu_layers,
-                     cfg.n_max_tokens,
                      cfg.temperature,
                      cfg.top_p,
                      cfg.min_p,
@@ -932,11 +936,11 @@ static std::string strip_code_fences(const std::string &filename,
   }
   auto pos = src.find("```");
   if (pos == std::string::npos) {
-    return unwrap(src);
+    return src;
   }
   auto nl = src.find('\n', pos + 3);
   if (nl == std::string::npos) {
-    return unwrap(src);
+    return src;
   }
   std::string inner = src.substr(nl + 1);
   auto end = inner.rfind("```");
@@ -1244,13 +1248,13 @@ void TuiState::redraw_chat() {
       int gi = std::max(0, std::min(logo_row, 6));
       ch = chat_ch(GRAD_R[gi], GRAD_G[gi], GRAD_B[gi]);
     }
-    else if (line.rfind("You: ",   0) == 0) ch = chat_ch(100, 200, 255);
-    else if (line.rfind("Nitro: ", 0) == 0) ch = chat_ch(180, 255, 180);
-    else if (line.rfind("[🔧]",  0) == 0) ch = chat_ch(255, 180,  80);
-    else if (line.rfind("[⚠]",   0) == 0) ch = chat_ch(255,  80,  80);
-    else if (line.rfind("[sys]",   0) == 0) ch = chat_ch(140, 140, 200);
-    else if (line.rfind("[🤔]",    0) == 0) ch = chat_ch(140, 140, 200);
-    else                                    ch = chat_ch(210, 210, 210);
+    else if (line.rfind("You: ",   0) == 0)  ch = chat_ch(100, 200, 255);
+    else if (line.rfind("Nitro: ", 0) == 0)  ch = chat_ch(180, 255, 180);
+    else if (line.rfind(ICON_SYS,  0) == 0)  ch = chat_ch(140, 140, 200);
+    else if (line.rfind(ICON_TOOL, 0) == 0)  ch = chat_ch(255, 180,  80);
+    else if (line.rfind(ICON_ERR,  0) == 0)  ch = chat_ch(255,  80,  80);
+    else if (line.rfind(ICON_THINK, 0) == 0) ch = chat_ch(140, 140, 200);
+    else                                     ch = chat_ch(210, 210, 210);
     ncplane_set_channels(chatpl, ch);
     // Strip the [logo_N] prefix before rendering.
     std::string display = (line.rfind("[logo_", 0) == 0 && line.size() > 8)
@@ -1453,20 +1457,20 @@ void TuiState::show_modal_popup(const std::string &message) {
 }
 
 void TuiState::show_help() {
-  append_line("[sys] Commands:");
-  append_line("[sys]   /model  [path]           load a GGUF model (picker if no path)");
-  append_line("[sys]   /embed  [path]           load an embedding model (picker if no path)");
-  append_line("[sys]   /rag    [path]           index file or directory (picker if no path)");
-  append_line("[sys]   /memory                  KV / VRAM / layer stats");
-  append_line("[sys]   /clear                   reset conversation");
-  append_line("[sys]   /settings                show current settings");
-  append_line("[sys]   /set    <key> <value>    change a setting live");
-  append_line("[sys]   /help                    this message");
-  append_line("[sys]   exit / quit              exit Nitro");
-  append_line("[sys] Settable keys (via /set):");
-  append_line("[sys]   temperature  top_p  top_k  min_p  penalty_repeat");
-  append_line("[sys]   n_max_tokens  penalty_last_n  rag_top_k  n_gpu_layers");
-  append_line("[sys]   run_allowed  (comma-separated list, e.g. python3,make)");
+  append_line(ICON_SYS + "Commands:");
+  append_line(ICON_SYS + "  /model  [path]           load a GGUF model (picker if no path)");
+  append_line(ICON_SYS + "  /embed  [path]           load an embedding model (picker if no path)");
+  append_line(ICON_SYS + "  /rag    [path]           index file or directory (picker if no path)");
+  append_line(ICON_SYS + "  /memory                  KV / VRAM / layer stats");
+  append_line(ICON_SYS + "  /clear                   reset conversation");
+  append_line(ICON_SYS + "  /settings                show current settings");
+  append_line(ICON_SYS + "  /set    <key> <value>    change a setting live");
+  append_line(ICON_SYS + "  /help                    this message");
+  append_line(ICON_SYS + "  exit / quit              exit Nitro");
+  append_line(ICON_SYS + "Settable keys (via /set):");
+  append_line(ICON_SYS + "  temperature  top_p  top_k  min_p  penalty_repeat");
+  append_line(ICON_SYS + "  penalty_last_n  rag_top_k  n_gpu_layers");
+  append_line(ICON_SYS + "  run_allowed  (comma-separated list, e.g. python3,make)");
   redraw_all();
 }
 
@@ -1840,7 +1844,7 @@ std::string TuiState::readline_blocking() {
 void AgentState::apply_generation_params(const NitroConfig &cfg) const {
   llama->add_stop("<|turn|>");
   llama->add_stop("<|im_end|>");
-  llama->set_max_tokens(cfg.n_max_tokens);
+  llama->set_max_tokens(512000);
   llama->set_temperature(cfg.temperature);
   llama->set_top_k(cfg.top_k);
   llama->set_top_p(cfg.top_p);
@@ -1855,7 +1859,7 @@ void AgentState::apply_generation_params(const NitroConfig &cfg) const {
 //
 bool AgentState::setup_model(const NitroConfig &cfg, TuiState &tui) {
   if (cfg.model_path.empty()) {
-    tui.append_line("[sys] No model loaded.  Use /model <path> to load a GGUF.");
+    tui.append_line(ICON_SYS + "No model loaded.  Use /model <path> to load a GGUF.");
     tui.redraw_all();
     return false;
   }
@@ -1872,22 +1876,21 @@ bool AgentState::setup_model(const NitroConfig &cfg, TuiState &tui) {
   if (!llama->load_model(cfg.model_path, cfg.n_ctx, cfg.n_batch,
                          cfg.n_gpu_layers, cfg.log_level)) {
     tui.dismiss_modal_popup();
-    tui.append_line(std::string("[⚠] ") + llama->last_error());
+    tui.append_line(ICON_ERR + llama->last_error());
     tui.redraw_all();
     return false;
   }
   tui.dismiss_modal_popup();
   model_loaded = true;
   tui.current_model = model_name;
-  tui.append_line("[sys] Model ready: " + tui.current_model);
+  tui.append_line(ICON_SYS + "Model ready: " + tui.current_model);
   LlamaMemoryInfo mem = llama->memory_info();
-  tui.append_line("[sys] " + mem.advice);
+  tui.append_line(ICON_SYS + "" + mem.advice);
   tui.kv_used  = mem.kv_used;
   tui.kv_total = mem.kv_total;
   tui.vram_used  = mem.vram_used;
   tui.vram_total = mem.vram_total;
-
-  tui.append_line(std::string("[sys] Thinking mode: ") + (cfg.thinking ? "enabled" : "disabled"));
+  tui.append_line(ICON_SYS + "Thinking mode: " + (cfg.thinking ? "enabled" : "disabled"));
   tui.redraw_all();
   return true;
 }
@@ -1898,7 +1901,7 @@ bool AgentState::setup_embed(const std::string &path, TuiState &tui) {
   embed_llama = std::make_unique<Llama>();
   if (!embed_llama->load_embedding_model(path)) {
     tui.dismiss_modal_popup();
-    tui.append_line(std::string("[⚠] ") + embed_llama->last_error());
+    tui.append_line(ICON_ERR + embed_llama->last_error());
     tui.redraw_all();
     embed_llama.reset();
     return false;
@@ -1906,7 +1909,7 @@ bool AgentState::setup_embed(const std::string &path, TuiState &tui) {
   tui.dismiss_modal_popup();
   rag_db      = std::make_unique<RagDB>();
   rag_session = std::make_unique<RagSession>();
-  tui.append_line("[sys] Embedding model ready.");
+  tui.append_line(ICON_SYS + "Embedding model ready.");
   tui.redraw_all();
   return true;
 }
@@ -1917,7 +1920,7 @@ void AgentState::reset_conversation(const std::string &sysprompt, TuiState &tui)
   apply_generation_params(NitroConfig{});
   iter = std::make_unique<LlamaIter>();
   if (!llama->add_message(*iter, "system", system_prompt)) {
-    tui.append_line(std::string("[⚠] System prompt injection: ") + llama->last_error());
+    tui.append_line(ICON_ERR + "System prompt injection: " + llama->last_error());
     tui.redraw_all();
   }
 }
@@ -1961,13 +1964,13 @@ std::string AgentState::rag_tool(const NitroConfig &cfg, const std::string &agen
 
 bool AgentState::rag_load_index(const std::string &path, TuiState &tui) const {
   if (!embed_llama || !rag_db) {
-    tui.append_line("[⚠] Load an embedding model first: /embed <path>");
+    tui.append_line(ICON_ERR + "Load an embedding model first: /embed <path>");
     tui.redraw_all();
     return false;
   }
 
   if (!rag_db->load(path)) {
-    tui.append_line("[sys] failed to load");
+    tui.append_line(ICON_SYS + "failed to load");
     tui.redraw_all();
   }
 
@@ -1976,16 +1979,16 @@ bool AgentState::rag_load_index(const std::string &path, TuiState &tui) const {
 
 bool AgentState::rag_index(const std::string &path, const NitroConfig &cfg, TuiState &tui) const {
   if (!embed_llama || !rag_db) {
-    tui.append_line("[⚠] Load an embedding model first: /embed <path>");
+    tui.append_line(ICON_ERR + "Load an embedding model first: /embed <path>");
     tui.redraw_all();
     return false;
   }
 
   auto index_one = [&](const std::string &filepath) {
-    tui.append_line("[sys]   indexing: " + filepath);
+    tui.append_line(ICON_SYS + "  indexing: " + filepath);
     tui.redraw_all();
     if (!embed_llama->rag_index(*rag_db, filepath)) {
-      tui.append_line(std::string("[⚠] rag_load: ") + embed_llama->last_error());
+      tui.append_line(ICON_ERR + "rag_load: " + embed_llama->last_error());
       tui.redraw_all();
     }
   };
@@ -2006,7 +2009,7 @@ bool AgentState::rag_index(const std::string &path, const NitroConfig &cfg, TuiS
   }
 
   std::string save_path = join_path(cfg.sandbox, "rag-index.bin");
-  tui.append_line("[sys] saving index: " + save_path);
+  tui.append_line(ICON_SYS + "saving index: " + save_path);
   tui.redraw_all();
   rag_db->save(save_path);
 
@@ -2051,7 +2054,7 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
   };
 
   auto show_tool = [&](const std::string &tool) -> void {
-    tui.append_line("[🔧] → " + tool);
+    tui.append_line(ICON_TOOL + "→ " + tool);
     tui.redraw_all();
   };
 
@@ -2160,7 +2163,7 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
 //
 bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cfg, TuiState &tui) const {
   if (!model_loaded) {
-    tui.append_line("[⚠] No model loaded. Use /model <path>");
+    tui.append_line(ICON_ERR + "No model loaded. Use /model <path>");
     tui.redraw_all();
     return false;
   }
@@ -2175,12 +2178,12 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     }
   }
   if (!iter) {
-    tui.append_line("[⚠] Conversation not initialised (call /clear to reset)");
+    tui.append_line(ICON_ERR + "Conversation not initialised (call /clear to reset)");
     tui.redraw_all();
     return false;
   }
   if (!llama->add_message(*iter, "user", effective_message)) {
-    tui.append_line(std::string("[⚠] add_message: ") + llama->last_error());
+    tui.append_line(ICON_ERR + "add_message: " + llama->last_error());
     tui.redraw_all();
     return false;
   }
@@ -2215,15 +2218,15 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     log_write("tool: [%s] result: [%s]", tool.c_str(), result.c_str());
 
     if (!llama->add_message(*iter, "tool_result", content)) {
-      tui.append_line(std::string("[⚠] tool result inject: ") + llama->last_error());
+      tui.append_line(ICON_ERR + "tool result inject: " + llama->last_error());
     }
     if (!iter->_has_next) {
-      tui.append_line(std::string("[⚠] failed to evoke tool response: ") + llama->last_error());
+      tui.append_line(ICON_ERR + "failed to evoke tool response: " + llama->last_error());
     }
     tui.redraw_all();
   };
 
-  auto start_think = [&](const std::string &tag) {
+  auto start_think = [&](const std::string &tag) -> void {
     if (think_mode == t_init) {
       auto pos = buffer.find(tag);
       if (pos != std::string::npos) {
@@ -2234,7 +2237,7 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     }
   };
 
-  auto end_think = [&](const std::string &tag) {
+  auto end_think = [&](const std::string &tag) -> void {
     if (think_mode == t_think) {
       auto pos = buffer.find(tag);
       if (pos != std::string::npos) {
@@ -2245,15 +2248,26 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     }
   };
 
-  while (iter->_has_next) {
+  auto is_escape = [&]() -> bool {
     ncinput ni{};
     notcurses_get_nblock(tui.nc, &ni);
     if (ni.id == NCKEY_ESC) {
       tui.set_thinking(false);
-      tui.append_line("[⚠] Generation cancelled by user (Escape)");
+      tui.append_line(ICON_ERR + "Generation cancelled by user (Escape)");
       tui.redraw_all();
-      break;
     }
+    return ni.id == NCKEY_ESC;
+  };
+  
+  auto fetch_all = [&]() -> void {
+    while (iter->_has_next && !is_escape()) {
+      std::string tok = llama->next(*iter);
+      buffer += tok;
+      tui.tick_spinner();
+    }
+  };
+
+  while (iter->_has_next && !is_escape()) {
     std::string tok = llama->next(*iter);
     if (tok == "<") {
       // fetch the complete tag
@@ -2270,7 +2284,6 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     } else {
       buffer += tok;
     }
-
     if (think_mode == t_init) {
       start_think("<think>");
       start_think("<|think|>");
@@ -2288,16 +2301,16 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     if (think_mode == t_thunk) {
       auto tool_start = buffer.find("TOOL:");
       if (tool_start == 0) {
-        // fetch all remaining tokens
-        invoke_tool(trim(buffer + llama->all(*iter)), "TOOL_RESULT: {}");
+        fetch_all();
+        invoke_tool(trim(buffer), "TOOL_RESULT: {}");
         buffer.clear();
         think_mode = t_init;
         continue;
       }
-      // see https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4
       tool_start = buffer.find("<|tool_call>call:");
       if (tool_start != std::string::npos) {
-        buffer += llama->all(*iter);
+        // see https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4
+        fetch_all();
         auto pos = buffer.find_last_not_of("}<tool_call|>");
         if (pos != std::string::npos) {
           buffer = buffer.substr(0, pos);
@@ -2319,7 +2332,10 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     } else {
       auto pos = buffer.find('\n');
       if (pos != std::string::npos) {
-        tui.append_token("[🤔] " + buffer.substr(0, pos + 1));
+        auto thought = buffer.substr(0, pos + 1);
+        if (thought.length() > 1) {
+          tui.append_token(ICON_THINK + thought);
+        }
         buffer = buffer.substr(pos + 1);
       }
     }
@@ -2338,7 +2354,8 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
   tui.vram_used  = mem.vram_used;
   tui.vram_total = mem.vram_total;
   char stat[128];
-  std::snprintf(stat, sizeof(stat), "[sys] %.1f tok/s  (%d tokens)  KV %.1f%%",
+  auto patterm = ICON_SYS + "%.1f tok/s  (%d tokens)  KV %.1f%%";
+  std::snprintf(stat, sizeof(stat), patterm.c_str(),
                 (double)tui.tokens_per_sec,
                 iter->_tokens_generated,
                 (double)mem.kv_percent);
@@ -2371,11 +2388,11 @@ static void handle_slash(const std::string &input,
   // GGUF.  The picker starts in the current sandbox directory.
   if (verb == "/model") {
     if (rest.empty()) {
-      tui.append_line("[sys] Opening model picker…");
+      tui.append_line(ICON_SYS + "Opening model picker…");
       tui.redraw_all();
       rest = tui.file_picker(cfg.sandbox, "Model File");
       if (rest.empty()) {
-        tui.append_line("[sys] /model cancelled.");
+        tui.append_line(ICON_SYS + "/model cancelled.");
         tui.redraw_all();
         return;
       }
@@ -2395,11 +2412,11 @@ static void handle_slash(const std::string &input,
   // embedding GGUF.
   if (verb == "/embed") {
     if (rest.empty()) {
-      tui.append_line("[sys] Opening embedding model picker…");
+      tui.append_line(ICON_SYS + "Opening embedding model picker…");
       tui.redraw_all();
       rest = tui.file_picker(cfg.sandbox, "Embedding Model");
       if (rest.empty()) {
-        tui.append_line("[sys] /embed cancelled.");
+        tui.append_line(ICON_SYS + "/embed cancelled.");
         tui.redraw_all();
         return;
       }
@@ -2418,21 +2435,21 @@ static void handle_slash(const std::string &input,
       // Launch the interactive folder picker starting from the sandbox.
       path = tui.rag_folder_picker(cfg.sandbox);
       if (path.empty()) {
-        tui.append_line("[sys] RAG indexing cancelled.");
+        tui.append_line(ICON_SYS + "RAG indexing cancelled.");
         tui.redraw_all();
         return;
       }
     }
     if (path.find_last_not_of(".bin") != std::string::npos) {
-      tui.append_line("[sys] Loading index: " + path);
+      tui.append_line(ICON_SYS + "Loading index: " + path);
       tui.redraw_all();
       agent.rag_load_index(path, tui);
     } else {
-      tui.append_line("[sys] Indexing: " + path);
+      tui.append_line(ICON_SYS + "Indexing: " + path);
       tui.redraw_all();
       agent.rag_index(path, cfg, tui);
     }
-    tui.append_line("[sys] done");
+    tui.append_line(ICON_SYS + "done");
     tui.redraw_all();
     return;
   }
@@ -2440,7 +2457,7 @@ static void handle_slash(const std::string &input,
   if (verb == "/memory") {
     std::istringstream iss(agent.memory_info_text());
     std::string line;
-    while (std::getline(iss, line)) tui.append_line("[sys] " + line);
+    while (std::getline(iss, line)) tui.append_line(ICON_SYS + "" + line);
     tui.redraw_all();
     return;
   }
@@ -2450,25 +2467,24 @@ static void handle_slash(const std::string &input,
       tui.chat_lines.clear(); }
     std::string sysp = build_system_prompt(cfg);
     agent.reset_conversation(sysp, tui);
-    tui.append_line("[sys] Conversation cleared.");
+    tui.append_line(ICON_SYS + "Conversation cleared.");
     tui.redraw_all();
     return;
   }
 
   if (verb == "/settings") {
-    tui.append_line("[sys] Current settings:");
-    tui.append_line("[sys]   model_path    : " + cfg.model_path);
-    tui.append_line("[sys]   embed_path    : " + cfg.embed_path);
-    tui.append_line("[sys]   sandbox       : " + cfg.sandbox);
-    tui.append_line("[sys]   n_ctx         : " + std::to_string(cfg.n_ctx));
-    tui.append_line("[sys]   n_gpu_layers  : " + std::to_string(cfg.n_gpu_layers));
-    tui.append_line("[sys]   n_max_tokens  : " + std::to_string(cfg.n_max_tokens));
-    tui.append_line("[sys]   temperature   : " + std::to_string(cfg.temperature));
-    tui.append_line("[sys]   top_p         : " + std::to_string(cfg.top_p));
-    tui.append_line("[sys]   top_k         : " + std::to_string(cfg.top_k));
-    tui.append_line("[sys]   penalty_repeat: " + std::to_string(cfg.penalty_repeat));
-    tui.append_line("[sys]   rag_top_k     : " + std::to_string(cfg.rag_top_k));
-    tui.append_line("[sys]   saved to      : " + settings_path());
+    tui.append_line(ICON_SYS + "Current settings:");
+    tui.append_line(ICON_SYS + "  model_path    : " + cfg.model_path);
+    tui.append_line(ICON_SYS + "  embed_path    : " + cfg.embed_path);
+    tui.append_line(ICON_SYS + "  sandbox       : " + cfg.sandbox);
+    tui.append_line(ICON_SYS + "  n_ctx         : " + std::to_string(cfg.n_ctx));
+    tui.append_line(ICON_SYS + "  n_gpu_layers  : " + std::to_string(cfg.n_gpu_layers));
+    tui.append_line(ICON_SYS + "  temperature   : " + std::to_string(cfg.temperature));
+    tui.append_line(ICON_SYS + "  top_p         : " + std::to_string(cfg.top_p));
+    tui.append_line(ICON_SYS + "  top_k         : " + std::to_string(cfg.top_k));
+    tui.append_line(ICON_SYS + "  penalty_repeat: " + std::to_string(cfg.penalty_repeat));
+    tui.append_line(ICON_SYS + "  rag_top_k     : " + std::to_string(cfg.rag_top_k));
+    tui.append_line(ICON_SYS + "  saved to      : " + settings_path());
     tui.redraw_all();
     return;
   }
@@ -2483,7 +2499,7 @@ static void handle_slash(const std::string &input,
     val.erase(0, val.find_first_not_of(" \t"));
 
     if (key.empty() || val.empty()) {
-      tui.append_line("[⚠] Usage: /set <key> <value>");
+      tui.append_line(ICON_ERR + "Usage: /set <key> <value>");
       tui.redraw_all(); return;
     }
 
@@ -2496,11 +2512,10 @@ static void handle_slash(const std::string &input,
       else if (key == "top_k")     { cfg.top_k          = std::stoi(val); needs_reparam = true; }
       else if (key == "penalty_repeat") { cfg.penalty_repeat = std::stof(val); needs_reparam = true; }
       else if (key == "penalty_last_n") { cfg.penalty_last_n = std::stoi(val); needs_reparam = true; }
-      else if (key == "n_max_tokens")   { cfg.n_max_tokens   = std::stoi(val); needs_reparam = true; }
       else if (key == "rag_top_k")      { cfg.rag_top_k      = std::stoi(val); }
       else if (key == "n_gpu_layers")   {
         cfg.n_gpu_layers = std::stoi(val);
-        tui.append_line("[sys] n_gpu_layers will take effect on next /model load.");
+        tui.append_line(ICON_SYS + "n_gpu_layers will take effect on next /model load.");
       } else if (key == "run_allowed") {
         // Accept a comma-separated list of basenames, or "none" to clear.
         cfg.run_allowed.clear();
@@ -2514,18 +2529,18 @@ static void handle_slash(const std::string &input,
           }
         }
         if (cfg.run_allowed.empty()) {
-          tui.append_line("[sys] run_allowed cleared — all sandbox programs permitted.");
+          tui.append_line(ICON_SYS + "run_allowed cleared — all sandbox programs permitted.");
         } else {
           std::string list;
           for (const auto &e : cfg.run_allowed) list += e + " ";
-          tui.append_line("[sys] run_allowed: " + list);
+          tui.append_line(ICON_SYS + "run_allowed: " + list);
         }
       } else {
-        tui.append_line("[⚠] Unknown key '" + key + "'.  Try /help for list.");
+        tui.append_line(ICON_ERR + "Unknown key '" + key + "'.  Try /help for list.");
         ok = false;
       }
     } catch (const std::exception &ex) {
-      tui.append_line(std::string("[⚠] /set: ") + ex.what());
+      tui.append_line(ICON_ERR + "/set: " + ex.what());
       ok = false;
     }
 
@@ -2534,13 +2549,13 @@ static void handle_slash(const std::string &input,
         agent.apply_generation_params(cfg);
       }
       save_settings(cfg);
-      tui.append_line("[sys] " + key + " = " + val);
+      tui.append_line(ICON_SYS + "" + key + " = " + val);
     }
     tui.redraw_all();
     return;
   }
 
-  tui.append_line("[⚠] Unknown command: " + verb + "  (try /help)");
+  tui.append_line(ICON_ERR + "Unknown command: " + verb + "  (try /help)");
   tui.redraw_all();
 }
 
@@ -2557,8 +2572,8 @@ static void welcome(TuiState &tui, const std::string &sandbox) {
   tui.append_line("[logo_5]  ╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ");
   tui.append_line("[logo_6]  ─────────── agentic LLM shell v1.0 ──────────────");
   tui.append_line("");
-  tui.append_line("[sys]  Sandbox : " + sandbox);
-  tui.append_line("[sys]  /help for commands  ·  exit to quit");
+  tui.append_line(ICON_SYS + " Sandbox : " + sandbox);
+  tui.append_line(ICON_SYS + " /help for commands  ·  exit to quit");
   tui.append_line("");
   tui.redraw_all();
 }
@@ -2674,9 +2689,9 @@ int main(int argc, char **argv) {
       agent.setup_embed(cfg.embed_path, tui);
     }
   } else {
-    tui.append_line("[sys] No model specified.  Use /model to open the file picker,");
-    tui.append_line("[sys] or /model <path> to load directly.");
-    tui.append_line("[sys] Example: /model ~/models/qwen2.5-7b-q4_k_m.gguf");
+    tui.append_line(ICON_SYS + "No model specified.  Use /model to open the file picker,");
+    tui.append_line(ICON_SYS + "or /model <path> to load directly.");
+    tui.append_line(ICON_SYS + "Example: /model ~/models/qwen2.5-7b-q4_k_m.gguf");
     tui.redraw_all();
   }
 

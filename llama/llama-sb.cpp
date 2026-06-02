@@ -624,6 +624,11 @@ string Llama::token_to_string(LlamaIter &iter, llama_token tok) {
 
     result.append(buf, n);
 
+    // detect end of max-tokens
+    if (++iter._tokens_generated > _max_tokens) {
+      iter._has_next = false;
+    }
+
     // detect stop words
     if (iter._has_next) {
       for (const auto &stop : _stop_sequences) {
