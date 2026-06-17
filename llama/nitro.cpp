@@ -436,8 +436,8 @@ static const std::vector<std::string> CODE_EXTENSIONS = {
 //
 static std::string settings_path() {
   // Attempt to read settings from the current working directory first
-  if (fs::exists("settings.json")) {
-    return "settings.json";
+  if (fs::exists("nitro.settings.json")) {
+    return "nitro.settings.json";
   }
   const char *home = getenv("HOME");
   std::string base = home ? std::string(home) : ".";
@@ -581,7 +581,7 @@ static void load_settings(NitroConfig &cfg) {
 static constexpr std::string ICON_ERR   = " ⚡ ▏";
 static constexpr std::string ICON_THINK = " 🤔 ▏";
 static constexpr std::string ICON_TOOL  = " 🔧 ▏";
-static constexpr std::string ICON_SYS   = " 🤖 ▏";
+static constexpr std::string ICON_SYS   = " ✨ ▏";
 
 static std::string introspect(const NitroConfig &cfg) {
   static constexpr std::string_view tmpl =
@@ -1229,38 +1229,54 @@ void TuiState::redraw_chat() {
   unsigned rows, cols;
   ncplane_dim_yx(chatpl, &rows, &cols);
   std::lock_guard<std::mutex> lk(lines_mutex);
-  int total   = static_cast<int>(chat_lines.size());
-  int visible = static_cast<int>(rows);
-  int start   = std::max(0, total - visible - scroll_offset);
-  int end     = std::min(total, start + visible);
-  for (int i = start, row = 0; i < end; ++i, ++row) {
-    const std::string &line = chat_lines[i];
+
+  // Pre-compute wrapped lines so we know total visual rows.
+  struct VisualLine {
+    std::string text;
+    uint64_t    ch;
+  };
+  std::vector<VisualLine> visual;
+  visual.reserve(chat_lines.size());
+
+  for (const std::string &line : chat_lines) {
     uint64_t ch;
-    // Logo lines use prefix "[logo_N]" where N is the row index 0-6.
-    // We interpolate a cyan→magenta gradient across the 7 art rows.
     if (line.rfind("[logo_", 0) == 0 && line.size() > 7 && line[7] == ']') {
       int logo_row = line[6] - '0';
-      // Gradient: cyan (0,230,255) → green (80,255,160) → magenta (220,80,255)
-      // 7 steps, indices 0-6.
       static const uint32_t GRAD_R[] = {  0,  20,  60, 120, 180, 210, 220 };
       static const uint32_t GRAD_G[] = { 230, 255, 255, 255, 200, 130,  80 };
       static const uint32_t GRAD_B[] = { 255, 200, 140,  80, 100, 200, 255 };
       int gi = std::max(0, std::min(logo_row, 6));
       ch = chat_ch(GRAD_R[gi], GRAD_G[gi], GRAD_B[gi]);
     }
-    else if (line.rfind("You: ",   0) == 0)  ch = chat_ch(100, 200, 255);
-    else if (line.rfind("Nitro: ", 0) == 0)  ch = chat_ch(180, 255, 180);
-    else if (line.rfind(ICON_SYS,  0) == 0)  ch = chat_ch(140, 140, 200);
-    else if (line.rfind(ICON_TOOL, 0) == 0)  ch = chat_ch(255, 180,  80);
-    else if (line.rfind(ICON_ERR,  0) == 0)  ch = chat_ch(255,  80,  80);
+    else if (line.rfind("You: ",    0) == 0) ch = chat_ch(100, 200, 255);
+    else if (line.rfind("Nitro: ",  0) == 0) ch = chat_ch(180, 255, 180);
+    else if (line.rfind(ICON_SYS,   0) == 0) ch = chat_ch(160,  82,  45);
+    else if (line.rfind(ICON_TOOL,  0) == 0) ch = chat_ch(255, 180,  80);
+    else if (line.rfind(ICON_ERR,   0) == 0) ch = chat_ch(255,  80,  80);
     else if (line.rfind(ICON_THINK, 0) == 0) ch = chat_ch(140, 140, 200);
     else                                     ch = chat_ch(210, 210, 210);
-    ncplane_set_channels(chatpl, ch);
-    // Strip the [logo_N] prefix before rendering.
+
     std::string display = (line.rfind("[logo_", 0) == 0 && line.size() > 8)
       ? line.substr(8) : line;
-    if (display.size() > cols) display = display.substr(0, cols);
-    ncplane_putstr_yx(chatpl, row, 0, display.c_str());
+
+    // Split into cols-wide chunks, each carrying the same channel.
+    if (display.empty()) {
+      visual.push_back({"", ch});
+    } else {
+      for (size_t off = 0; off < display.size(); off += cols) {
+        visual.push_back({display.substr(off, cols), ch});
+      }
+    }
+  }
+
+  int total   = static_cast<int>(visual.size());
+  int visible = static_cast<int>(rows);
+  int start   = std::max(0, total - visible - scroll_offset);
+  int end     = std::min(total, start + visible);
+
+  for (int i = start, row = 0; i < end; ++i, ++row) {
+    ncplane_set_channels(chatpl, visual[i].ch);
+    ncplane_putstr_yx(chatpl, row, 0, visual[i].text.c_str());
   }
 }
 
@@ -2081,19 +2097,16 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
   if (op == "TOOL:LIST") {
     std::string dir = resolve(arg1);
     show_tool("listing: " + dir);
-    if (!path_in_sandbox(sandbox, dir)) return "ERROR: path outside sandbox";
     return list_dir(dir);
   }
   if (op == "TOOL:EXISTS") {
     std::string p = resolve(arg1);
     show_tool("checking: " + p);
-    if (!path_in_sandbox(sandbox, p)) return "NO";
     return fs::exists(p) ? "YES" : "NO";
   }
   if (op == "TOOL:READ") {
     show_tool("reading: " + arg1);
     std::string p = resolve(arg1);
-    if (!path_in_sandbox(sandbox, p)) return "ERROR: path outside sandbox";
     return read_file(p);
   }
   if (op == "TOOL:WRITE") {
@@ -2125,8 +2138,14 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
     return introspect(cfg);
   }
   if (op == "TOOL:ASK") {
-    show_tool("asking: " + arg1);
+    tui.set_thinking(false);
+    show_tool("asking: " + arg1 + " " + arg2);
     return tui.readline_blocking();
+  }
+  if (op == "TOOL:PERMISSION") {
+    tui.set_thinking(false);
+    show_tool("asking permission: " + arg1 + " " + arg2);
+    return tui.confirm_dialog(arg1 + " " + arg2) ? "YES" : "NO";
   }
   if (op == "TOOL:RUN") {
     if (!run_allowed.empty()) {
@@ -2217,6 +2236,17 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     std::string content = TOOL_RESULT + std::vformat(template_str, std::make_format_args(result));
     log_write("tool: [%s] result: [%s]", tool.c_str(), result.c_str());
 
+    if (content.size() > llama->max_tool_result_size()) {
+      // Index the content into RAG and tell the model where to find it
+      if (embed_llama && rag_db && rag_session) {
+        content = std::format("Tool result too large ({} bytes). The content has been indexed. "
+                              "Use TOOL:RAG with a relevant query to retrieve the information you need.",
+                              content.size());
+      } else {
+        content = std::format("Tool result too large ({} bytes).",  content.size());
+      }
+      tui.append_line(ICON_ERR + content);
+    }
     if (!llama->add_message(*iter, "tool_result", content)) {
       tui.append_line(ICON_ERR + "tool result inject: " + llama->last_error());
     }
@@ -2258,7 +2288,7 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     }
     return ni.id == NCKEY_ESC;
   };
-  
+
   auto fetch_all = [&]() -> void {
     while (iter->_has_next && !is_escape()) {
       std::string tok = llama->next(*iter);

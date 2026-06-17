@@ -139,6 +139,11 @@ void Llama::reset() {
   }
 }
 
+int Llama::max_tool_result_size() {
+  // ~3 bytes/tok, 25% of ctx
+  return (llama_n_ctx(_ctx) / 4) * 3;
+}
+
 bool Llama::load_model(string model_path, int n_ctx, int n_batch, int n_gpu_layers, int log_level) {
   ggml_backend_load_all();
 
@@ -480,6 +485,14 @@ bool Llama::batch_decode_tokens(vector<llama_token> &tokens) {
     size_t batch_size = std::min((size_t)n_batch, tokens.size() - i);
     llama_batch batch = llama_batch_get_one(tokens.data() + i, batch_size);
     int result = llama_decode(_ctx, batch);
+    if (result == 1) {
+      // KV full mid-batch - try to evict and retry once
+      if (!make_space_for_tokens(n_batch)) {
+        _last_error = "KV cache exhausted, cannot evict enough space";
+        return false;
+      }
+      result = llama_decode(_ctx, batch);
+    }
     if (result != 0) {
       _last_error = std::format("Failed to decode batch. position:{} error:{} [size:{}]",
                                 i, result, tokens.size());

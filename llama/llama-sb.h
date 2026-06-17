@@ -98,6 +98,7 @@ struct Llama {
   const char *last_error() { return _last_error.c_str(); }
   void set_log_level(int level) { _log_level = level; }
   void reset();
+  int max_tool_result_size();
 
   // memory info
   LlamaMemoryInfo memory_info();
