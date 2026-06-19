@@ -274,7 +274,7 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
     _n_system_tokens = prompt_tokens.size();
   }
 
-  if (!make_space_for_tokens(prompt_tokens.size())) {
+  if (!make_space_for_tokens((prompt_tokens.size() * 3) / 2)) {
     return false;
   }
 
@@ -485,17 +485,8 @@ bool Llama::batch_decode_tokens(vector<llama_token> &tokens) {
     size_t batch_size = std::min((size_t)n_batch, tokens.size() - i);
     llama_batch batch = llama_batch_get_one(tokens.data() + i, batch_size);
     int result = llama_decode(_ctx, batch);
-    if (result == 1) {
-      // KV full mid-batch - try to evict and retry once
-      if (!make_space_for_tokens(n_batch)) {
-        _last_error = "KV cache exhausted, cannot evict enough space";
-        return false;
-      }
-      result = llama_decode(_ctx, batch);
-    }
     if (result != 0) {
-      _last_error = std::format("Failed to decode batch. position:{} error:{} [size:{}]",
-                                i, result, tokens.size());
+      set_decode_error(result, i, tokens.size());
       return false;
     }
   }
@@ -589,11 +580,13 @@ bool Llama::make_space_for_tokens(int n_tokens) {
     return false;
   }
 
+  llama_pos remove_start = pos_min + _n_system_tokens;
+
   // Remove oldest tokens (from pos_min to pos_min + tokens_to_remove)
-  llama_memory_seq_rm(mem, 0, pos_min, pos_min + tokens_to_remove);
+  llama_memory_seq_rm(mem, 0, remove_start, remove_start + tokens_to_remove);
 
   // Shift remaining tokens down
-  llama_memory_seq_add(mem, 0, pos_min + tokens_to_remove, -1, -tokens_to_remove);
+  llama_memory_seq_add(mem, 0, remove_start + tokens_to_remove, -1, -tokens_to_remove);
 
   return true;
 }
@@ -666,5 +659,23 @@ void Llama::set_last_error(const char *message) {
     _last_error = std::format("{}: {}", message, _last_error);
   } else {
     _last_error = std::format("{} failed", message);
+  }
+}
+
+void Llama::set_decode_error(int32_t error, int index, int num_tokens) {
+  if (error == 1) {
+    llama_memory_t mem = llama_get_memory(_ctx);
+    llama_pos pos_min = llama_memory_seq_pos_min(mem, 0);
+    llama_pos pos_max = llama_memory_seq_pos_max(mem, 0);
+    int n_ctx = llama_n_ctx(_ctx);
+    int current_used = pos_max - pos_min + 1;
+    int space_needed = num_tokens;
+    int space_available = n_ctx - current_used;
+    _n_system_tokens;
+    _last_error = std::format("KV exhausted. Reduce batch or context sizes. batchNo:{} requested:{} available:{}",
+                              index, space_needed, space_available);
+  } else {
+    auto message = error == 2 ? "abort" : error == -1 ? "invalid" : "fatal";
+    _last_error = std::format("Failed to decode batch. batchNo:{} error:'{}'", index, message);
   }
 }

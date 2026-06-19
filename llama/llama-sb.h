@@ -123,6 +123,7 @@ struct Llama {
   vector<llama_token> tokenize(const string &prompt);
   string token_to_string(LlamaIter &iter, llama_token tok);
   void set_last_error(const char *message);
+  void set_decode_error(int32_t error, int index, int num_tokens);
 
   llama_model *_model;
   llama_context *_ctx;

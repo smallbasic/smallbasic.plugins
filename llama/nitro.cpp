@@ -2,13 +2,6 @@
 // A standalone agentic LLM shell with notcurses TUI.
 // Uses llama-sb.h as the sole llama.cpp integration layer.
 //
-// Build (example):
-//   g++ -std=c++20 -O2 nitro.cpp llama-sb.cpp \
-//       -I/path/to/llama.cpp/include \
-//       -L/path/to/llama.cpp/build/src \
-//       -lllama -lggml -lnotcurses-core -lnotcurses -lcurl \
-//       -o nitro
-//
 // Usage:
 //   ./nitro [options] [project_dir]
 //
@@ -2247,6 +2240,7 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
       }
       tui.append_line(ICON_ERR + content);
     }
+    tui.tokens_per_sec = tokens_per_sec();
     if (!llama->add_message(*iter, "tool_result", content)) {
       tui.append_line(ICON_ERR + "tool result inject: " + llama->last_error());
     }
@@ -2289,11 +2283,15 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     return ni.id == NCKEY_ESC;
   };
 
-  auto fetch_all = [&]() -> void {
+  auto fetch_tool = [&]() -> void {
     while (iter->_has_next && !is_escape()) {
       std::string tok = llama->next(*iter);
       buffer += tok;
       tui.tick_spinner();
+      auto pos = buffer.find("</think>");
+      if (pos != std::string::npos) {
+        break;
+      }
     }
   };
 
@@ -2328,46 +2326,42 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
       end_think("<think|>");
       end_think("<channel|>");
     }
-    if (think_mode == t_thunk) {
-      auto tool_start = buffer.find("TOOL:");
-      if (tool_start == 0) {
-        fetch_all();
-        invoke_tool(trim(buffer), "TOOL_RESULT: {}");
-        buffer.clear();
-        think_mode = t_init;
-        continue;
-      }
-      tool_start = buffer.find("<|tool_call>call:");
-      if (tool_start != std::string::npos) {
-        // see https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4
-        fetch_all();
-        auto pos = buffer.find_last_not_of("}<tool_call|>");
-        if (pos != std::string::npos) {
-          buffer = buffer.substr(0, pos);
-        }
-        pos = buffer.find_first_not_of('{');
-        if (pos != std::string::npos) {
-          buffer = buffer.substr(0, pos) + buffer.substr(pos + 1);
-        }
-        invoke_tool(trim(buffer), "<|tool_response>{}<tool_response|>");
-        buffer.clear();
-        think_mode = t_init;
-        continue;
-      }
-      auto pos = buffer.find('\n');
+    auto tool_start = buffer.find("TOOL:");
+    if (tool_start == 0) {
+      fetch_tool();
+      invoke_tool(trim(buffer), "TOOL_RESULT: {}");
+      buffer.clear();
+      think_mode = t_init;
+      continue;
+    }
+    tool_start = buffer.find("<|tool_call>call:");
+    if (tool_start != std::string::npos) {
+      // see https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4
+      fetch_tool();
+      auto pos = buffer.find_last_not_of("}<tool_call|>");
       if (pos != std::string::npos) {
-        tui.append_token(buffer.substr(0, pos + 1));
-        buffer = buffer.substr(pos + 1);
+        buffer = buffer.substr(0, pos);
       }
-    } else {
-      auto pos = buffer.find('\n');
+      pos = buffer.find_first_not_of('{');
       if (pos != std::string::npos) {
+        buffer = buffer.substr(0, pos) + buffer.substr(pos + 1);
+      }
+      invoke_tool(trim(buffer), "<|tool_response>{}<tool_response|>");
+      buffer.clear();
+      think_mode = t_init;
+      continue;
+    }
+    auto pos = buffer.find('\n');
+    if (pos != std::string::npos) {
+      if (think_mode == t_think) {
         auto thought = buffer.substr(0, pos + 1);
         if (thought.length() > 1) {
           tui.append_token(ICON_THINK + thought);
         }
-        buffer = buffer.substr(pos + 1);
+      } else {
+        tui.append_token(buffer.substr(0, pos + 1));
       }
+      buffer = buffer.substr(pos + 1);
     }
   }
 
