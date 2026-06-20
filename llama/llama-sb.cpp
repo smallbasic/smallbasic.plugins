@@ -64,6 +64,7 @@ Llama::Llama() :
   _n_system_tokens(0),
   _is_gemma4(false),
   _sampler_dirty(false),
+  _can_shift(false),
   _seed(LLAMA_DEFAULT_SEED) {
   llama_log_set([](enum ggml_log_level level, const char *text, void *user_data) {
     Llama *llama = (Llama *)user_data;
@@ -103,6 +104,7 @@ Llama::Llama(Llama &&other) noexcept
   , _n_system_tokens(other._n_system_tokens)
   , _is_gemma4(other._is_gemma4)
   , _sampler_dirty(other._sampler_dirty)
+  , _can_shift(other._can_shift)
   , _seed(other._seed) {
 }
 
@@ -179,9 +181,10 @@ bool Llama::load_model(string model_path, int n_ctx, int n_batch, int n_gpu_laye
       set_last_error("Create context");
     } else {
       _vocab = llama_model_get_vocab(_model);
+      _template = llama_model_chat_template(_model, nullptr);
+      _is_gemma4 = (_template.find("<|turn>model") != string::npos);
+      _can_shift = llama_memory_can_shift(llama_get_memory(_ctx));
     }
-    _template = llama_model_chat_template(_model, nullptr);
-    _is_gemma4 = (_template.find("<|turn>model") != string::npos);
   }
 
   return _last_error.empty();
@@ -577,6 +580,10 @@ bool Llama::make_space_for_tokens(int n_tokens) {
   int removable = current_used - _n_system_tokens;
   if (tokens_to_remove > removable) {
     _last_error = "Can't make enough space while keeping num_system_tokens tokens";
+    return false;
+  }
+  if (!_can_shift) {
+    _last_error = "Memory type doesn't support shifting, can't evict mid-sequence";
     return false;
   }
 

@@ -148,5 +148,6 @@ struct Llama {
   int _n_system_tokens;
   bool _is_gemma4;
   bool _sampler_dirty;
+  bool _can_shift;
   unsigned int _seed;
 };
