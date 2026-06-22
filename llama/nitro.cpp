@@ -429,8 +429,8 @@ static const std::vector<std::string> CODE_EXTENSIONS = {
 //
 static std::string settings_path() {
   // Attempt to read settings from the current working directory first
-  if (fs::exists("nitro.settings.json")) {
-    return "nitro.settings.json";
+  if (fs::exists("nitro.config.json")) {
+    return "nitro.config.json";
   }
   const char *home = getenv("HOME");
   std::string base = home ? std::string(home) : ".";
@@ -2042,6 +2042,9 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
     rest.erase(0, rest.find_first_not_of(" \t"));
     auto sp2 = rest.find(' ');
     if (sp2 == std::string::npos) {
+      sp2 = rest.find('\n');
+    }
+    if (sp2 == std::string::npos) {
       arg1 = rest;
     } else {
       arg1 = rest.substr(0, sp2);
@@ -2251,9 +2254,9 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
   };
 
   auto start_think = [&](const std::string &tag) -> void {
-    if (think_mode == t_init) {
+    if (think_mode != t_think) {
       auto pos = buffer.find(tag);
-      if (pos != std::string::npos) {
+      if (pos == 0) {
         think_mode = t_think;
         // display prededing text
         buffer = buffer.substr(0, pos);
@@ -2264,7 +2267,7 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
   auto end_think = [&](const std::string &tag) -> void {
     if (think_mode == t_think) {
       auto pos = buffer.find(tag);
-      if (pos != std::string::npos) {
+      if (pos == 0) {
         think_mode = t_thunk;
         // display remaining text
         buffer = buffer.substr(pos + tag.length());
@@ -2312,19 +2315,20 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
     } else {
       buffer += tok;
     }
-    if (think_mode == t_init) {
-      start_think("<think>");
-      start_think("<|think|>");
-      start_think("<think|>");
-      start_think("<|channel>thought");
-    }
+
+    start_think("<think>");
+    start_think("<|think|>");
+    start_think("<think|>");
+    start_think("<|channel>thought");
+
+    end_think("</think>");
+    end_think("</|think|>");
+    end_think("</|think>");
+    end_think("<think|>");
+    end_think("<channel|>");
+
     if (think_mode == t_think) {
       tui.tick_spinner();
-      end_think("</think>");
-      end_think("</|think|>");
-      end_think("</|think>");
-      end_think("<think|>");
-      end_think("<channel|>");
     }
     auto tool_start = buffer.find("TOOL:");
     if (tool_start == 0) {

@@ -231,7 +231,7 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
   int32_t n = 0;
 
   if (_template.empty()) {
-    _last_error = "No chat template available";
+    set_last_error("No chat template available");
     return false;
   }
 
@@ -250,7 +250,7 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
     bool add_ass = (role == "user" || role == "tool" || role == "tool_result");
     n = llama_chat_apply_template(_template.c_str(), &message, 1, add_ass, buf.data(), buf_size);
     if (n < 0) {
-      _last_error = "No chat template no supported";
+      set_last_error("No chat template no supported");
       return false;
     } else if (n > (int32_t)buf.size()) {
       buf.resize(n);
@@ -297,7 +297,7 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
 
     llama_batch decoder_batch = llama_batch_get_one(&decoder_start_token_id, 1);
     if (llama_decode(_ctx, decoder_batch)) {
-      _last_error = "Failed to evaluate decoder start token";
+      set_last_error("Failed to evaluate decoder start token");
       return false;
     }
   }
@@ -310,7 +310,7 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
 
 string Llama::next(LlamaIter &iter) {
   if (!iter._has_next) {
-    _last_error = "Iteration beyond end of stream";
+    set_last_error("Iteration beyond end of stream");
     return "";
   }
 
@@ -328,7 +328,7 @@ string Llama::next(LlamaIter &iter) {
   // prepare the next batch with the sampled token
   llama_batch batch = llama_batch_get_one(&tok, 1);
   if (llama_decode(_ctx, batch)) {
-    _last_error = "Failed to evaluate token during generation";
+    set_last_error("Failed to evaluate token during generation");
     return "";
   }
 
@@ -359,7 +359,7 @@ string Llama::all(LlamaIter &iter) {
     // decode the token
     llama_batch batch = llama_batch_get_one(&tok, 1);
     if (llama_decode(_ctx, batch)) {
-      _last_error = "Failed to evaluate token during generation";
+      set_last_error("Failed to evaluate token during generation");
       break;
     }
   }
@@ -444,7 +444,7 @@ bool Llama::embed_text(const std::string &text, std::vector<float> &out, int emb
   int n_ctx = llama_n_ctx(_ctx);
   int n = tokens.size();
   if (n > n_ctx) {
-    _last_error = std::format("warning: chunk truncated {} -> {} tokens ", n, n_ctx);
+    set_last_error(std::format("warning: chunk truncated {} -> {} tokens ", n, n_ctx));
     n = n_ctx;
     tokens.resize(n);
   }
@@ -461,7 +461,7 @@ bool Llama::embed_text(const std::string &text, std::vector<float> &out, int emb
   }
 
   if (!emb) {
-    _last_error = "no embedding returned\n";
+    set_last_error("no embedding returned");
     return false;
   }
 
@@ -488,6 +488,25 @@ bool Llama::batch_decode_tokens(vector<llama_token> &tokens) {
     size_t batch_size = std::min((size_t)n_batch, tokens.size() - i);
     llama_batch batch = llama_batch_get_one(tokens.data() + i, batch_size);
     int result = llama_decode(_ctx, batch);
+    if (result == 1) {
+      // KV full or fragmented mid-batch - evict oldest tokens and retry
+      if (!make_space_for_tokens(n_batch)) {
+        set_decode_error(result, i, tokens.size());
+        return false;
+      }
+      result = llama_decode(_ctx, batch);
+      if (result == 1) {
+        // Eviction reported enough logical space but decode still failed -
+        // this is fragmentation, not a real space shortage. No defrag API
+        // is available, so fall back to a full non-system flush, which
+        // guarantees one contiguous block.
+        if (!full_flush_except_system()) {
+          set_decode_error(result, i, tokens.size());
+          return false;
+        }
+        result = llama_decode(_ctx, batch);
+      }
+    }
     if (result != 0) {
       set_decode_error(result, i, tokens.size());
       return false;
@@ -504,7 +523,7 @@ bool Llama::configure_sampler() {
   if (!_grammar_src.empty()) {
     llama_sampler *grammar = llama_sampler_init_grammar(_vocab, _grammar_src.c_str(), _grammar_root.c_str());
     if (!grammar) {
-      _last_error = "failed to initialize grammar sampler";
+      set_last_error("failed to initialize grammar sampler");
       return false;
     }
     llama_sampler_chain_add(chain, grammar);
@@ -535,6 +554,21 @@ bool Llama::configure_sampler() {
   return true;
 }
 
+bool Llama::full_flush_except_system() {
+  llama_memory_t mem = llama_get_memory(_ctx);
+  llama_pos pos_min = llama_memory_seq_pos_min(mem, 0);
+  if (pos_min < 0) {
+    return true; // already empty
+  }
+  llama_pos flush_start = pos_min + _n_system_tokens;
+  bool ok = llama_memory_seq_rm(mem, 0, flush_start, -1);
+  if (!ok) {
+    set_last_error("Failed to flush memory past system tokens");
+    return false;
+  }
+  return true;
+}
+
 // Makes space in the context for n_tokens by removing old tokens if necessary
 // Returns true if successful, false if impossible to make space
 //
@@ -549,7 +583,7 @@ bool Llama::configure_sampler() {
 bool Llama::make_space_for_tokens(int n_tokens) {
   int n_ctx = llama_n_ctx(_ctx);
   if (n_tokens > n_ctx) {
-    _last_error = "Too many tokens, increase context size (n_ctx)";
+    set_last_error("Too many tokens, increase context size (n_ctx)");
     return false;
   }
 
@@ -579,11 +613,11 @@ bool Llama::make_space_for_tokens(int n_tokens) {
   // Can't remove more than we have (minus _n_system_tokens)
   int removable = current_used - _n_system_tokens;
   if (tokens_to_remove > removable) {
-    _last_error = "Can't make enough space while keeping num_system_tokens tokens";
+    set_last_error("Can't make enough space while keeping num_system_tokens tokens");
     return false;
   }
   if (!_can_shift) {
-    _last_error = "Memory type doesn't support shifting, can't evict mid-sequence";
+    set_last_error("Memory type doesn't support shifting, can't evict mid-sequence");
     return false;
   }
 
@@ -595,6 +629,7 @@ bool Llama::make_space_for_tokens(int n_tokens) {
   // Shift remaining tokens down
   llama_memory_seq_add(mem, 0, remove_start + tokens_to_remove, -1, -tokens_to_remove);
 
+  set_last_error(std::format("made space for {} tokens", n_tokens));
   return true;
 }
 
@@ -603,13 +638,13 @@ vector<llama_token> Llama::tokenize(const string &prompt) {
 
   int n_prompt = -llama_tokenize(_vocab, prompt.c_str(), prompt.size(), nullptr, 0, true, true);
   if (n_prompt <= 0) {
-    _last_error = "Failed to tokenize prompt";
+    set_last_error("Failed to tokenize prompt");
   } else {
     result.reserve(n_prompt);
     result.resize(n_prompt);
     if (llama_tokenize(_vocab, prompt.c_str(), prompt.size(),
                        result.data(), n_prompt, true, true) < 0) {
-      _last_error = "Failed to tokenize prompt";
+      set_last_error("Failed to tokenize prompt");
     }
   }
   return result;
@@ -658,7 +693,7 @@ string Llama::token_to_string(LlamaIter &iter, llama_token tok) {
   return result;
 }
 
-void Llama::set_last_error(const char *message) {
+void Llama::set_last_error(const string &message) {
   if (!_last_error.empty()) {
     if (_last_error.back() == '\n') {
       _last_error.pop_back();
@@ -679,10 +714,10 @@ void Llama::set_decode_error(int32_t error, int index, int num_tokens) {
     int space_needed = num_tokens;
     int space_available = n_ctx - current_used;
     _n_system_tokens;
-    _last_error = std::format("KV exhausted. Reduce batch or context sizes. batchNo:{} requested:{} available:{}",
-                              index, space_needed, space_available);
+    set_last_error(std::format("KV exhausted. Reduce batch or context sizes. batchNo:{} requested:{} available:{}",
+                               index, space_needed, space_available));
   } else {
     auto message = error == 2 ? "abort" : error == -1 ? "invalid" : "fatal";
-    _last_error = std::format("Failed to decode batch. batchNo:{} error:'{}'", index, message);
+    set_last_error(std::format("Failed to decode batch. batchNo:{} error:'{}'", index, message));
   }
 }

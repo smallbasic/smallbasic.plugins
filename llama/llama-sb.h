@@ -119,10 +119,11 @@ struct Llama {
   bool batch_decode_tokens(vector<llama_token> &tokens);
   bool configure_sampler();
   void dirty() {_sampler_dirty = true; }
+  bool full_flush_except_system();
   bool make_space_for_tokens(int n_tokens);
   vector<llama_token> tokenize(const string &prompt);
   string token_to_string(LlamaIter &iter, llama_token tok);
-  void set_last_error(const char *message);
+  void set_last_error(const string &message);
   void set_decode_error(int32_t error, int index, int num_tokens);
 
   llama_model *_model;
