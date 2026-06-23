@@ -65,6 +65,7 @@ Llama::Llama() :
   _is_gemma4(false),
   _sampler_dirty(false),
   _can_shift(false),
+  _memory_flush(false),
   _seed(LLAMA_DEFAULT_SEED) {
   llama_log_set([](enum ggml_log_level level, const char *text, void *user_data) {
     Llama *llama = (Llama *)user_data;
@@ -105,6 +106,7 @@ Llama::Llama(Llama &&other) noexcept
   , _is_gemma4(other._is_gemma4)
   , _sampler_dirty(other._sampler_dirty)
   , _can_shift(other._can_shift)
+  , _memory_flush(other._memory_flush)
   , _seed(other._seed) {
 }
 
@@ -144,6 +146,14 @@ void Llama::reset() {
 int Llama::max_tool_result_size() {
   // ~3 bytes/tok, 25% of ctx
   return (llama_n_ctx(_ctx) / 4) * 3;
+}
+
+bool Llama::is_memory_flush() {
+  auto result = _memory_flush;
+  if (result) {
+    _memory_flush = false;
+  }
+  return result;
 }
 
 bool Llama::load_model(string model_path, int n_ctx, int n_batch, int n_gpu_layers, int log_level) {
@@ -504,6 +514,7 @@ bool Llama::batch_decode_tokens(vector<llama_token> &tokens) {
           set_decode_error(result, i, tokens.size());
           return false;
         }
+        _memory_flush = true;
         result = llama_decode(_ctx, batch);
       }
     }

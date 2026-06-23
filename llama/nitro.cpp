@@ -223,6 +223,7 @@ struct TuiState {
   float       tokens_per_sec = 0.0f;
   int         kv_used        = 0;
   int         kv_total       = 1;
+  int         kv_percent     = 0;
   size_t      vram_used      = 0;
   size_t      vram_total     = 1;
   int term_rows = 0;
@@ -236,6 +237,8 @@ struct TuiState {
   void tick_spinner();
   // Toggle thinking mode; redraws header immediately.
   void set_thinking(bool on);
+  void update_usage(int tokens_sec, const LlamaMemoryInfo &mem);
+
   // ── lifecycle ─────────────────────────────────────────────────────
   void init();
   void destroy();
@@ -1360,6 +1363,15 @@ void TuiState::set_thinking(bool on) {
   notcurses_render(nc);
 }
 
+void TuiState::update_usage(int tokens_sec, const LlamaMemoryInfo &mem) {
+  tokens_per_sec = tokens_sec;
+  kv_used    = mem.kv_used;
+  kv_total   = mem.kv_total;
+  kv_percent = mem.kv_percent;
+  vram_used  = mem.vram_used;
+  vram_total = mem.vram_total;
+}
+
 //
 // TuiState content helpers
 //
@@ -2033,22 +2045,31 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
   const std::vector<std::string> &run_allowed = cfg.run_allowed;
 
   std::string op, arg1, arg2;
-  auto sp1 = cmd.find_first_of(" \n");
-  if (sp1 == std::string::npos) {
+  auto WS = cmd.find_first_of(" \n");
+  if (WS == std::string::npos) {
     op = trim(cmd);
   } else {
-    op = trim(cmd.substr(0, sp1));
-    std::string rest = cmd.substr(sp1 + 1);
+    op = trim(cmd.substr(0, WS));
+    std::string rest = cmd.substr(WS + 1);
+    // clear leading WS from rest
     rest.erase(0, rest.find_first_not_of(" \t"));
-    auto sp2 = rest.find(' ');
-    if (sp2 == std::string::npos) {
-      sp2 = rest.find('\n');
+
+    // handle space of newline separator
+    // TOOL:WRITE src/render_transport.cpp\n#include "render_transport.h"\n...
+    // TOOL:WRITE src/render_transport.cpp #include "render_transport.h"\n ...
+    auto NL = rest.find('\n');
+    auto SP = rest.find(' ');
+    int sep;
+    if (NL != std::string::npos && (SP == std::string::npos || NL < SP)) {
+      sep = NL;
+    } else {
+      sep = SP;
     }
-    if (sp2 == std::string::npos) {
+    if (sep == std::string::npos) {
       arg1 = rest;
     } else {
-      arg1 = rest.substr(0, sp2);
-      arg2 = rest.substr(sp2 + 1);
+      arg1 = rest.substr(0, sep);
+      arg2 = rest.substr(sep + 1);
     }
   }
 
@@ -2243,12 +2264,15 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
       }
       tui.append_line(ICON_ERR + content);
     }
-    tui.tokens_per_sec = tokens_per_sec();
+    tui.update_usage(tokens_per_sec(), llama->memory_info());
     if (!llama->add_message(*iter, "tool_result", content)) {
       tui.append_line(ICON_ERR + "tool result inject: " + llama->last_error());
     }
     if (!iter->_has_next) {
       tui.append_line(ICON_ERR + "failed to evoke tool response: " + llama->last_error());
+    }
+    if (llama->is_memory_flush()) {
+      tui.append_line(ICON_ERR + "Warning! - memory has been flushed!");
     }
     tui.redraw_all();
   };
@@ -2375,18 +2399,14 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
 
   tui.flush_token_acc();
   tui.set_thinking(false);
-  tui.tokens_per_sec = tokens_per_sec();
-  LlamaMemoryInfo mem = llama->memory_info();
-  tui.kv_used    = mem.kv_used;
-  tui.kv_total   = mem.kv_total;
-  tui.vram_used  = mem.vram_used;
-  tui.vram_total = mem.vram_total;
+  tui.update_usage(tokens_per_sec(), llama->memory_info());
+
   char stat[128];
   auto patterm = ICON_SYS + "%.1f tok/s  (%d tokens)  KV %.1f%%";
   std::snprintf(stat, sizeof(stat), patterm.c_str(),
                 (double)tui.tokens_per_sec,
                 iter->_tokens_generated,
-                (double)mem.kv_percent);
+                (double)tui.kv_percent);
   tui.append_line(stat);
   tui.redraw_all();
   return true;
@@ -2710,8 +2730,12 @@ int main(int argc, char **argv) {
   AgentState agent;
   if (!cfg.model_path.empty()) {
     if (agent.setup_model(cfg, tui)) {
+      tui.append_line(ICON_SYS + "Loading context...");
+      tui.redraw_all();
       std::string sysp = build_system_prompt(cfg);
       agent.reset_conversation(sysp, tui);
+      tui.append_line(ICON_SYS + "Ready");
+      tui.redraw_all();
     }
     if (!cfg.embed_path.empty()) {
       agent.setup_embed(cfg.embed_path, tui);

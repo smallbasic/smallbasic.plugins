@@ -99,6 +99,7 @@ struct Llama {
   void set_log_level(int level) { _log_level = level; }
   void reset();
   int max_tool_result_size();
+  bool is_memory_flush();
 
   // memory info
   LlamaMemoryInfo memory_info();
@@ -150,5 +151,6 @@ struct Llama {
   bool _is_gemma4;
   bool _sampler_dirty;
   bool _can_shift;
+  bool _memory_flush;
   unsigned int _seed;
 };
