@@ -312,6 +312,7 @@ bool Llama::add_message(LlamaIter &iter, const string &role, const string &conte
     }
   }
 
+  iter._tokens_generated = 0;
   iter._t_start = std::chrono::high_resolution_clock::now();
   iter._llama = this;
   iter._has_next = true;
