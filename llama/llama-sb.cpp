@@ -144,8 +144,12 @@ void Llama::reset() {
 }
 
 int Llama::max_tool_result_size() {
-  // ~3 bytes/tok, 25% of ctx
-  return (llama_n_ctx(_ctx) / 4) * 3;
+  // 75% of space available
+  llama_memory_t mem = llama_get_memory(_ctx);
+  llama_pos pos_max = llama_memory_seq_pos_max(mem, 0);
+  int n_ctx = llama_n_ctx(_ctx);
+  int space_available = n_ctx - (pos_max + 1);
+  return std::max(256, (space_available * 3) / 4);
 }
 
 bool Llama::is_memory_flush() {
@@ -386,6 +390,14 @@ string Llama::all(LlamaIter &iter) {
   }
 
   return out;
+}
+
+float Llama::memory_kv_percent() {
+  llama_memory_t mem = llama_get_memory(_ctx);
+  llama_pos pos_max  = llama_memory_seq_pos_max(mem, 0);
+  int n_ctx          = llama_n_ctx(_ctx);
+  int kv_used        = (pos_max < 0) ? 0 : (int)pos_max + 1;
+  return 100.0f * kv_used / n_ctx;
 }
 
 LlamaMemoryInfo Llama::memory_info() {

@@ -103,6 +103,7 @@ struct Llama {
 
   // memory info
   LlamaMemoryInfo memory_info();
+  float memory_kv_percent();
 
   // creates an embedding vector of the given dimension for the given text
   bool embed_text(const std::string &text, std::vector<float> &out, int embed_dim);

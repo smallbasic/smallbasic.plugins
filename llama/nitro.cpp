@@ -1979,9 +1979,9 @@ float AgentState::tokens_per_sec() const {
 }
 
 std::string AgentState::memory_info_status() const {
-  LlamaMemoryInfo m = llama->memory_info();
-  auto message = m.kv_percent > 75 ? "(Warning: Approaching limit)" : "";
-  return std::format("\n[INFO] KV Cache: {}%{}", m.kv_percent, message);
+  float kv_percent = llama->memory_kv_percent();
+  auto message = kv_percent > 75 ? "(Warning: Approaching limit)" : "";
+  return std::format("\n[INFO] KV Cache: {}%{}", kv_percent, message);
 }
 
 std::string AgentState::memory_info_text() const {
