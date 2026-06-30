@@ -235,6 +235,7 @@ struct TuiState {
   InputHistory history;
   // Advance spinner by one frame and redraw the header.
   void tick_spinner();
+
   // Toggle thinking mode; redraws header immediately.
   void set_thinking(bool on);
   void update_usage(int tokens_sec, const LlamaMemoryInfo &mem);
@@ -288,21 +289,23 @@ struct AgentState {
   std::unique_ptr<Llama> llama;
   std::unique_ptr<LlamaIter> iter;
   std::unique_ptr<Llama> embed_llama;
-  std::unique_ptr<RagDB>      rag_db;
+  std::unique_ptr<RagDB> rag_db;
   std::unique_ptr<RagSession> rag_session;
   bool model_loaded = false;
   std::string system_prompt;
 
   bool rag_index(const std::string &path, const NitroConfig &cfg, TuiState &tui) const;
   bool rag_load_index(const std::string &path, TuiState &tui) const;
-  bool run_turn(const std::string &user_message, const NitroConfig &cfg, TuiState &tui) const;
+  bool run_turn(const std::string &user_message, const NitroConfig &cfg, TuiState &tui);
   bool setup_embed(const std::string &path, TuiState &tui);
   bool setup_model(const NitroConfig &cfg, TuiState &tui);
   void apply_generation_params(const NitroConfig &cfg) const;
   void reset_conversation(const std::string &sysprompt, TuiState &tui);
+  std::string memory_info_status() const;
   std::string memory_info_text() const;
-  std::string process_tool(const std::string &cmd, const NitroConfig &cfg, TuiState &tui) const;
+  std::string process_tool(const std::string &cmd, const NitroConfig &cfg, TuiState &tui);
   std::string rag_tool(const NitroConfig &cfg, const std::string &agent_query) const;
+  std::string restart(const NitroConfig &cfg, TuiState &tui);
   float tokens_per_sec() const;
 };
 
@@ -826,7 +829,7 @@ static bool make_dir(const std::string &path) {
 //
 // System prompt
 //
-static std::string build_system_prompt(NitroConfig &cfg) {
+static std::string build_system_prompt(const NitroConfig &cfg) {
   std::string p;
   p +=
     "You are Nitro, an agentic AI assistant for software development. "
@@ -881,7 +884,8 @@ static std::string build_system_prompt(NitroConfig &cfg) {
     "  TOOL:ASK    <query>        ask the user for clarification or additional context\n"
     "  TOOL:INTROSPECT            show current model settings\n"
     "  TOOL:CURL   <url>          HTTP GET, returns response body (max 32 KB)\n"
-    "  TOOL:PERMISSION            ask user for explicit permission\n\n"
+    "  TOOL:PERMISSION            ask user for explicit permission\n"
+    "  TOOL:RESTART               restart after writing current task context to `SESSION.md`\n\n"
 
     "## Tool Decision Rules\n"
     "Use tools ONLY if:\n"
@@ -912,7 +916,27 @@ static std::string build_system_prompt(NitroConfig &cfg) {
     "- Ask clarifying questions if the request is ambiguous or missing parameters\n"
     "- Prefer direct answers when no tools are needed\n"
     "- After each tool result, explain in plain English what was done\n"
-    "- If no user request is provided, respond with a brief readiness message\n\n";
+    "- If no user request is provided, respond with a brief readiness message\n\n"
+
+    "## Auto-Restart Protocol\n"
+    "**When:** - When KV >= 80% (as reported in the tool results footer).\n"
+    "**Steps:**\n"
+    "1. **Save State:** Write current task context to `SESSION.md` using `TOOL:WRITE`.\n"
+    "   - Include: Timestamp, KV usage, current task description, pending actions, and last conversation summary.\n"
+    "   - Don't check if SESSION.md already exists from another session. just use TOOL:WRITE.\n"
+    "2. **Trigger Restart:** Call `TOOL:RESTART`.\n"
+    "**Example `SESSION.md` Content:**\n"
+    "```markdown\n"
+    "# Session State Snapshot\n"
+    "**Timestamp:** <date> <time>\n"
+    "**KV Usage:** <percentage>%\n"
+    "**Current Task:** <task description>\n"
+    "**Pending Actions:**\n"
+    "- <action 1>\n"
+    "- <action 2>\n"
+    "**Last Output:**\n"
+    "<last few lines of conversation>\n"
+    "```\n\n";
 
   for (const auto &kf : cfg.knowledge_files) {
     std::ifstream f(kf);
@@ -1954,6 +1978,12 @@ float AgentState::tokens_per_sec() const {
   return (float)(iter->_tokens_generated / elapsed);
 }
 
+std::string AgentState::memory_info_status() const {
+  LlamaMemoryInfo m = llama->memory_info();
+  auto message = m.kv_percent > 75 ? "(Warning: Approaching limit)" : "";
+  return std::format("\n[INFO] KV Cache: {}%{}", m.kv_percent, message);
+}
+
 std::string AgentState::memory_info_text() const {
   if (!model_loaded) return "No model loaded.";
   LlamaMemoryInfo m = llama->memory_info();
@@ -2037,10 +2067,22 @@ bool AgentState::rag_index(const std::string &path, const NitroConfig &cfg, TuiS
   return true;
 }
 
+std::string AgentState::restart(const NitroConfig &cfg, TuiState &tui) {
+  if (fs::exists("SESSION.md")) {
+    std::vector<std::string> knowledge_files;
+    std::string sysp = build_system_prompt(cfg);
+    reset_conversation(sysp, tui);
+    tui.append_line(ICON_ERR + "Session restarted");
+    tui.redraw_all();
+    return "continue the pending actions found SESSION.md";
+  }
+  return "save work context to SESSION.md then try again";
+}
+
 //
 // Tool dispatch
 //
-std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &cfg, TuiState &tui) const {
+std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &cfg, TuiState &tui) {
   const std::string &sandbox = cfg.sandbox;
   const std::vector<std::string> &run_allowed = cfg.run_allowed;
 
@@ -2159,6 +2201,10 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
     show_tool("asking: " + arg1 + " " + arg2);
     return tui.readline_blocking();
   }
+  if (op == "TOOL:RESTART") {
+    show_tool("restart ...");
+    return restart(cfg, tui);
+  }
   if (op == "TOOL:PERMISSION") {
     tui.set_thinking(false);
     show_tool("asking permission: " + arg1 + " " + arg2);
@@ -2197,7 +2243,7 @@ std::string AgentState::process_tool(const std::string &cmd, const NitroConfig &
 //
 // Agent turn
 //
-bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cfg, TuiState &tui) const {
+bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cfg, TuiState &tui) {
   if (!model_loaded) {
     tui.append_line(ICON_ERR + "No model loaded. Use /model <path>");
     tui.redraw_all();
@@ -2250,9 +2296,11 @@ bool AgentState::run_turn(const std::string &user_message, const NitroConfig &cf
 
     log_write("tool request: mode:[%d] [%s]", think_mode, tool.c_str());
     std::string result = process_tool(tool, cfg, tui);
-    std::string content = TOOL_RESULT + std::vformat(template_str, std::make_format_args(result));
+    if (result.empty()) {
+      return;
+    }
+    std::string content = TOOL_RESULT + std::vformat(template_str, std::make_format_args(result)) + memory_info_status();
     log_write("tool: [%s] result: [%s]", tool.c_str(), result.c_str());
-
     if (content.size() > llama->max_tool_result_size()) {
       // Index the content into RAG and tell the model where to find it
       if (embed_llama && rag_db && rag_session) {
@@ -2711,7 +2759,9 @@ int main(int argc, char **argv) {
 
   // ── Auto-discover knowledge files ─────────────────────────────────
   for (const char *kf : {"nitro.md", "AGENTS.md", "README.md"}) {
-    if (fs::exists(kf)) cfg.knowledge_files.emplace_back(kf);
+    if (fs::exists(kf)) {
+      cfg.knowledge_files.emplace_back(kf);
+    }
   }
 
   // ── Init curl globally ────────────────────────────────────────────
